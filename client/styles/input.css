@@ -1,20 +1,5 @@
 @import 'tailwindcss';
-
-@font-face {
-  font-family: 'InterVariable';
-  font-style: normal;
-  font-weight: 100 900;
-  font-display: swap;
-  src: url('../../assets/inter/web/InterVariable.woff2') format('woff2');
-}
-
-@font-face {
-  font-family: 'InterVariable';
-  font-style: italic;
-  font-weight: 100 900;
-  font-display: swap;
-  src: url('../../assets/inter/web/InterVariable-Italic.woff2') format('woff2');
-}
+@import '@fontsource-variable/inter';
 
 @source "../../client/**/*.{ts,tsx,js,jsx,html}";
 @source "../../index.html";
@@ -140,8 +125,8 @@ html.theme-dark {
 
   body {
     font-family:
-      'InterVariable',
-      'Inter',
+      'Inter Variable',
+      Inter,
       system-ui,
       -apple-system,
       'Segoe UI',
