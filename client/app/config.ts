@@ -1,7 +1,4 @@
-function readTrimmedEnv(
-  value: string | undefined,
-  fallback: string,
-): string {
+function readTrimmedEnv(value: string | undefined, fallback: string): string {
   if (typeof value !== 'string') {
     return fallback;
   }

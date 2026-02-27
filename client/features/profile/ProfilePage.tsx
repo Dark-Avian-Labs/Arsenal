@@ -5,7 +5,10 @@ import { GlassCard } from '../../components/ui/GlassCard';
 import { Input } from '../../components/ui/Input';
 import { Modal } from '../../components/ui/Modal';
 import { apiFetch } from '../../utils/api';
-import { getProfileIconSrc, PROFILE_AVATAR_IDS } from '../../utils/profileIcons';
+import {
+  getProfileIconSrc,
+  PROFILE_AVATAR_IDS,
+} from '../../utils/profileIcons';
 import { useAuth } from '../auth/AuthContext';
 
 export function ProfilePage() {
