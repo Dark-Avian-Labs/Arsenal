@@ -2,7 +2,7 @@ import type { Request, Response } from 'express';
 
 import { GAME_ID } from '../config.js';
 
-const LOCAL_AUTH_SERVICE_FALLBACK = 'http://localhost:3010';
+const LOCAL_AUTH_SERVICE_FALLBACK = 'http://localhost:3000';
 
 function parseBaseUrl(
   rawValue: string | undefined,
