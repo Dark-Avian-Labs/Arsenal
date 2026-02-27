@@ -128,7 +128,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await apiFetch('/api/auth/logout', { method: 'POST' });
     } catch {
-      // Ignore network errors and still redirect to central auth.
+      // ignore
     } finally {
       clearCsrfToken();
       window.location.href = buildCentralAuthLoginUrl();

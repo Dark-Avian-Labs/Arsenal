@@ -89,7 +89,7 @@ function getProto(req: Request): string {
     try {
       return new URL(configuredBase).protocol.replace(':', '');
     } catch {
-      // fall back below
+      // ignore
     }
   }
   if (process.env.NODE_ENV === 'production') return 'https';
@@ -102,7 +102,7 @@ function getHost(req: Request): string {
     try {
       return new URL(configuredBase).host;
     } catch {
-      // fall back below
+      // ignore
     }
   }
   return req.get('host') || 'localhost';
