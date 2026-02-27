@@ -23,7 +23,9 @@ describe('buildAuthLoginUrl', () => {
       const loginUrl = buildAuthLoginUrl(req);
       const parsed = new URL(loginUrl);
       expect(parsed.pathname).toBe('/login');
-      expect(parsed.searchParams.get('next')).toBe('https://appbase.example.com/');
+      expect(parsed.searchParams.get('next')).toBe(
+        'https://appbase.example.com/',
+      );
     } finally {
       process.env.APP_PUBLIC_BASE_URL = original;
     }

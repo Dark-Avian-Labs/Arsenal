@@ -25,7 +25,7 @@ if (NODE_ENV === 'production' && SESSION_SECRET === DEFAULT_SESSION_SECRET) {
   console.error(
     '[FATAL] SESSION_SECRET must be set in production. Refusing to start with the default secret.',
   );
-  process.exit(1); // eslint-disable-line n/no-process-exit
+  process.exit(1);
 }
 
 export const APP_NAME = process.env.APP_NAME?.trim() || 'AppBase';

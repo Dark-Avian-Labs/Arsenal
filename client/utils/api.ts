@@ -1,4 +1,21 @@
 let cachedToken = '';
+let authRedirectPending = false;
+
+function currentAppPath(): string {
+  const { pathname, search, hash } = window.location;
+  return `${pathname}${search}${hash}`;
+}
+
+export function buildCentralAuthLoginUrl(nextPath?: string): string {
+  const next = nextPath && nextPath.length > 0 ? nextPath : currentAppPath();
+  return `/api/auth/login?next=${encodeURIComponent(next)}`;
+}
+
+export function redirectToCentralAuth(nextPath?: string): void {
+  if (authRedirectPending) return;
+  authRedirectPending = true;
+  window.location.href = buildCentralAuthLoginUrl(nextPath);
+}
 
 async function getCsrfToken(): Promise<string> {
   if (cachedToken) return cachedToken;
@@ -42,5 +59,9 @@ export async function apiFetch(
     headers.set('Content-Type', 'application/json');
   }
 
-  return fetch(url, { ...init, headers });
+  const response = await fetch(url, { ...init, headers });
+  if (response.status === 401) {
+    redirectToCentralAuth();
+  }
+  return response;
 }

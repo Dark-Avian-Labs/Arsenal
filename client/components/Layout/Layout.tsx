@@ -1,138 +1,76 @@
-import { useState, useCallback } from 'react';
-import { Outlet, NavLink } from 'react-router-dom';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { Link, Outlet } from 'react-router-dom';
 
 import { SearchBar } from './SearchBar';
-import bgArt from '../../assets/background.txt?raw';
-import feathers from '../../assets/feathers.png';
+import bgArt from '../../../assets/background.txt?raw';
+import feathers from '../../../assets/feathers.png';
+import { APP_DISPLAY_NAME, LEGAL_ENTITY_NAME } from '../../app/config';
+import { APP_PATHS } from '../../app/paths';
+import { Menu } from '../../components/ui/Menu';
 import { useTheme } from '../../context/ThemeContext';
-import { apiFetch, clearCsrfToken } from '../../utils/api';
+import { useAuth } from '../../features/auth/AuthContext';
+import { buildCentralAuthLoginUrl } from '../../utils/api';
+import { getProfileIconSrc } from '../../utils/profileIcons';
 
 export function Layout() {
-  const [showChangePassword, setShowChangePassword] = useState(false);
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [passwordStatus, setPasswordStatus] = useState<{
-    type: 'ok' | 'err';
-    message: string;
-  } | null>(null);
-  const [passwordSaving, setPasswordSaving] = useState(false);
   const { mode, toggleMode } = useTheme();
+  const { account, logout } = useAuth();
+  const currentYear = new Date().getFullYear();
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
 
   const handleLogout = useCallback(async () => {
-    try {
-      await apiFetch('/api/auth/logout', { method: 'POST' });
-    } catch {
-      // If logout request fails, still clear local CSRF and continue to login.
-    } finally {
-      clearCsrfToken();
-      window.location.href = '/login';
-    }
-  }, []);
+    await logout();
+  }, [logout]);
 
-  const handleChangePassword = useCallback(async () => {
-    const current = currentPassword;
-    const next = newPassword;
-    const confirm = confirmPassword;
-    if (!current || !next) {
-      setPasswordStatus({
-        type: 'err',
-        message: 'Current password and new password are required.',
-      });
-      return;
-    }
-    if (next.length < 8) {
-      setPasswordStatus({
-        type: 'err',
-        message: 'New password must be at least 8 characters.',
-      });
-      return;
-    }
-    if (next !== confirm) {
-      setPasswordStatus({ type: 'err', message: 'Passwords do not match.' });
-      return;
-    }
-
-    setPasswordSaving(true);
-    try {
-      const response = await apiFetch('/api/auth/change-password', {
-        method: 'POST',
-        body: JSON.stringify({
-          current_password: current,
-          new_password: next,
-        }),
-      });
-      const body = (await response.json().catch(() => null)) as {
-        error?: string;
-      } | null;
-      if (!response.ok) {
-        setPasswordStatus({
-          type: 'err',
-          message: body?.error || 'Failed to change password.',
-        });
-        return;
+  useEffect(() => {
+    if (!userMenuOpen) return undefined;
+    const handlePointerDown = (event: MouseEvent) => {
+      if (!menuRef.current?.contains(event.target as Node)) {
+        setUserMenuOpen(false);
       }
-      setPasswordStatus({ type: 'ok', message: 'Password updated.' });
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
-    } catch {
-      setPasswordStatus({
-        type: 'err',
-        message: 'Failed to change password.',
-      });
-    } finally {
-      setPasswordSaving(false);
-    }
-  }, [confirmPassword, currentPassword, newPassword]);
+    };
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setUserMenuOpen(false);
+    };
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [userMenuOpen]);
+
+  const profile = account.profile;
+  const isLoggedIn = account.isAuthenticated && profile !== null;
+  const isAdmin = profile?.isAdmin === true;
+  const avatarSrc = getProfileIconSrc(profile?.avatarId ?? 1);
 
   return (
     <div className="flex min-h-screen flex-col">
       <div className="bg-art" aria-hidden="true">
         {bgArt}
       </div>
-      <header className="relative z-10 px-6 py-4">
-        <div className="mx-auto flex max-w-[2000px] items-center justify-between gap-4">
-          <h1 className="brand-lockup">
+      <header className="relative z-30 h-[100px] px-6">
+        <div className="mx-auto grid h-full w-full max-w-[1900px] grid-cols-[1fr_auto_1fr] items-center gap-4">
+          <Link to={APP_PATHS.home} className="brand-lockup w-fit">
             <img
               src={feathers}
               alt="Dark Avian Labs feather mark"
               className="brand-lockup__icon"
             />
-            <span className="brand-lockup__title">AppBase</span>
-          </h1>
+            <span
+              className={`brand-lockup__title brand-lockup--fx ${mode === 'light' ? 'brand-lockup--light' : ''}`}
+            >
+              {APP_DISPLAY_NAME}
+            </span>
+          </Link>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <SearchBar />
+          <div className="justify-self-center">
+            {isLoggedIn ? <SearchBar /> : null}
+          </div>
 
-            <nav className="flex gap-2">
-              <NavLink
-                to="/"
-                end
-                className={({ isActive }) =>
-                  `inline-flex items-center rounded-2xl border px-4 py-2 text-sm transition-all ${
-                    isActive
-                      ? 'border-accent bg-accent-weak text-accent'
-                      : 'border-glass-border text-muted hover:border-glass-border-hover hover:text-foreground'
-                  }`
-                }
-              >
-                Home
-              </NavLink>
-              <NavLink
-                to="/admin"
-                className={({ isActive }) =>
-                  `inline-flex items-center rounded-2xl border px-4 py-2 text-sm transition-all ${
-                    isActive
-                      ? 'border-accent bg-accent-weak text-accent'
-                      : 'border-glass-border text-muted hover:border-glass-border-hover hover:text-foreground'
-                  }`
-                }
-              >
-                Admin
-              </NavLink>
-            </nav>
-
+          <div className="flex flex-wrap items-center justify-end gap-3">
             <button
               type="button"
               className="icon-toggle-btn"
@@ -142,97 +80,82 @@ export function Layout() {
             >
               <span aria-hidden="true">{mode === 'dark' ? '☀' : '☾'}</span>
             </button>
-            <button
-              type="button"
-              className="btn btn-secondary text-sm"
-              onClick={() => {
-                setShowChangePassword(true);
-                setPasswordStatus(null);
-              }}
-            >
-              Change Password
-            </button>
-            <button
-              type="button"
-              className="btn btn-secondary text-sm"
-              onClick={handleLogout}
-            >
-              Logout
-            </button>
+            <div ref={menuRef} className="relative">
+              <button
+                type="button"
+                className="icon-toggle-btn profile-avatar-btn"
+                aria-haspopup="menu"
+                aria-expanded={userMenuOpen}
+                aria-label="Open user menu"
+                onClick={() => setUserMenuOpen((prev) => !prev)}
+              >
+                <img src={avatarSrc} alt="" className="profile-avatar-image" />
+              </button>
+              {userMenuOpen && (
+                <Menu>
+                  {!isLoggedIn ? (
+                    <a
+                      href={buildCentralAuthLoginUrl()}
+                      className="user-menu-item"
+                      role="menuitem"
+                      onClick={() => setUserMenuOpen(false)}
+                    >
+                      Login
+                    </a>
+                  ) : (
+                    <>
+                      {isAdmin && (
+                        <Link
+                          to={APP_PATHS.admin}
+                          className="user-menu-item"
+                          role="menuitem"
+                          onClick={() => setUserMenuOpen(false)}
+                        >
+                          Admin
+                        </Link>
+                      )}
+                      <Link
+                        to={APP_PATHS.profile}
+                        className="user-menu-item"
+                        role="menuitem"
+                        onClick={() => setUserMenuOpen(false)}
+                      >
+                        Profile
+                      </Link>
+                      <button
+                        type="button"
+                        className="user-menu-item text-left"
+                        role="menuitem"
+                        onClick={() => {
+                          setUserMenuOpen(false);
+                          handleLogout();
+                        }}
+                      >
+                        Logout
+                      </button>
+                    </>
+                  )}
+                </Menu>
+              )}
+            </div>
           </div>
         </div>
       </header>
-      <main className="relative z-10 flex-1 px-6 pb-6">
-        <Outlet />
-      </main>
-
-      {showChangePassword && (
-        <div
-          className="modal-overlay"
-          onClick={() => {
-            setShowChangePassword(false);
-            setPasswordStatus(null);
-          }}
-        >
-          <div className="modal max-w-md" onClick={(e) => e.stopPropagation()}>
-            <h3 className="mb-3 text-lg font-semibold text-foreground">
-              Change Password
-            </h3>
-            <div className="space-y-3">
-              <input
-                type="password"
-                className="form-input"
-                placeholder="Current password"
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-              />
-              <input
-                type="password"
-                className="form-input"
-                placeholder="New password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-              />
-              <input
-                type="password"
-                className="form-input"
-                placeholder="Confirm new password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-              />
-            </div>
-            {passwordStatus && (
-              <p
-                className={`mt-3 text-sm ${
-                  passwordStatus.type === 'ok' ? 'text-success' : 'text-danger'
-                }`}
-              >
-                {passwordStatus.message}
-              </p>
-            )}
-            <div className="mt-4 flex justify-end gap-2">
-              <button
-                type="button"
-                className="btn btn-secondary text-sm"
-                onClick={() => {
-                  setShowChangePassword(false);
-                  setPasswordStatus(null);
-                }}
-              >
-                Close
-              </button>
-              <button
-                type="button"
-                className="btn btn-accent text-sm"
-                onClick={handleChangePassword}
-                disabled={passwordSaving}
-              >
-                {passwordSaving ? 'Saving...' : 'Update Password'}
-              </button>
-            </div>
-          </div>
+      <main className="relative z-0 flex-1 px-6 pb-6">
+        <div className="mx-auto w-full max-w-[1900px]">
+          <Outlet />
         </div>
-      )}
+      </main>
+      <footer className="relative z-10 flex h-[50px] items-center justify-center px-6">
+        <div className="mx-auto w-full max-w-[1900px] text-center">
+          <Link
+            to={APP_PATHS.legal}
+            className="text-sm text-muted hover:text-foreground"
+          >
+            ©{currentYear} {LEGAL_ENTITY_NAME}
+          </Link>
+        </div>
+      </footer>
     </div>
   );
 }

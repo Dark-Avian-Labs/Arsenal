@@ -6,10 +6,8 @@ import session from 'express-session';
 import helmet from 'helmet';
 import { createRequire } from 'module';
 import path from 'path';
-import { fileURLToPath } from 'url';
 
 import {
-  authLoginRedirect,
   requireAuthApi,
   requireGameAccess,
   requirePageGameAccess,
@@ -36,8 +34,6 @@ import { authRouter } from './routes/auth.js';
 
 const require = createRequire(import.meta.url);
 const SQLiteStore = require('better-sqlite3-session-store')(session);
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 ensureDataDirs();
 
@@ -68,7 +64,6 @@ const baselineLimiter = rateLimit({
   skip: (req) =>
     req.path === '/healthz' ||
     req.path === '/favicon.ico' ||
-    req.path.startsWith('/icons/') ||
     /^\/assets\/.+\.(?:css|js|png|jpe?g|gif|webp|svg|ico|woff2?)$/i.test(
       req.path,
     ),
@@ -146,6 +141,13 @@ const publicPageLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+const staticAssetLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5000,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 app.use('/api/auth', authRouter);
 
 app.use(
@@ -156,7 +158,6 @@ app.use(
   apiRouter,
 );
 
-app.use('/icons', express.static(path.join(PROJECT_ROOT, 'icons')));
 app.get('/favicon.ico', publicPageLimiter, (_req, res) => {
   res.sendFile(path.join(PROJECT_ROOT, 'favicon.ico'));
 });
@@ -178,18 +179,24 @@ app.get('/readyz', (_req, res) => {
   }
 });
 
-if (NODE_ENV === 'production') {
-  const clientDir = path.resolve(__dirname, '..', 'client');
-  app.use(publicPageLimiter, express.static(clientDir));
-
-  app.get('/login', publicPageLimiter, (req, res) => {
-    authLoginRedirect(req, res);
-  });
-
-  app.get(/.*/, publicPageLimiter, requirePageGameAccess, (_req, res) => {
-    res.sendFile(path.join(clientDir, 'index.html'));
-  });
-}
+const clientDir = path.join(PROJECT_ROOT, 'dist', 'client');
+const clientIndexPath = path.join(clientDir, 'index.html');
+app.use(
+  '/assets',
+  staticAssetLimiter,
+  express.static(path.join(clientDir, 'assets'), {
+    maxAge: '1y',
+    immutable: true,
+  }),
+);
+app.use(publicPageLimiter, express.static(clientDir, { maxAge: '1h' }));
+app.use(publicPageLimiter, requirePageGameAccess, (req, res, next) => {
+  if (req.method !== 'GET' && req.method !== 'HEAD') {
+    next();
+    return;
+  }
+  res.sendFile(clientIndexPath);
+});
 
 app.use(
   (
@@ -220,7 +227,7 @@ function shutdown(): void {
     } catch (err) {
       console.error('[Shutdown] Failed to close central DB:', err);
     }
-    process.exit(0); // eslint-disable-line n/no-process-exit -- required for graceful shutdown
+    process.exit(0);
   }
   const timeout = setTimeout(() => closeAndExit(), SHUTDOWN_TIMEOUT_MS);
   server.close(() => {

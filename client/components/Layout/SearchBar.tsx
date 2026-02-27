@@ -1,5 +1,7 @@
 import { useState } from 'react';
 
+import { SEARCH_PLACEHOLDER } from '../../app/config';
+
 export function SearchBar() {
   const [query, setQuery] = useState('');
 
@@ -8,7 +10,7 @@ export function SearchBar() {
       <input
         type="text"
         className="search-box w-52"
-        placeholder="Search scaffold..."
+        placeholder={SEARCH_PLACEHOLDER}
         value={query}
         onChange={(e) => setQuery(e.target.value)}
       />

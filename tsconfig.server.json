@@ -1,16 +1,10 @@
 {
+  "extends": "./tsconfig.base.json",
   "compilerOptions": {
-    "target": "ES2022",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true,
     "outDir": "dist/server",
     "rootDir": "server",
-    "declaration": true,
     "sourceMap": true,
     "typeRoots": ["./node_modules/@types", "./server/types"]
   },

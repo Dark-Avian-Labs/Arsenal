@@ -1,5 +1,21 @@
 @import 'tailwindcss';
 
+@font-face {
+  font-family: 'InterVariable';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('../../assets/inter/web/InterVariable.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'InterVariable';
+  font-style: italic;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('../../assets/inter/web/InterVariable-Italic.woff2') format('woff2');
+}
+
 @source "../../client/**/*.{ts,tsx,js,jsx,html}";
 @source "../../index.html";
 
@@ -77,6 +93,8 @@
 :root {
   --theme-mode: dark;
   --ascii-opacity: 0.05;
+  --color-light: 0, 0, 0;
+  --color-dark: 255, 255, 255;
   --color-accent-weak: color-mix(in srgb, var(--color-accent) 10%, transparent);
   --color-accent-weak-2: color-mix(
     in srgb,
@@ -122,6 +140,8 @@ html.theme-dark {
 
   body {
     font-family:
+      'InterVariable',
+      'Inter',
       system-ui,
       -apple-system,
       'Segoe UI',
@@ -235,8 +255,8 @@ html.theme-dark {
   }
 
   .brand-lockup__icon {
-    width: clamp(22px, 1.9vw, 30px);
-    height: clamp(22px, 1.9vw, 30px);
+    width: clamp(40px, 3vw, 56px);
+    height: clamp(40px, 3vw, 56px);
     object-fit: contain;
     flex: 0 0 auto;
   }
@@ -244,10 +264,33 @@ html.theme-dark {
   .brand-lockup__title {
     margin: 0;
     min-width: 0;
-    font-size: clamp(1.2rem, 1.7vw, 1.5rem);
+    font-size: clamp(1.8rem, 2.8vw, 2.75rem);
     line-height: 1.2;
     font-weight: 700;
     letter-spacing: 0.01em;
+  }
+
+  .brand-lockup__title.brand-lockup--fx {
+    color: rgb(var(--color-dark));
+  }
+
+  .brand-lockup__title.brand-lockup--fx.brand-lockup--light {
+    color: rgb(var(--color-light));
+  }
+
+  .brand-lockup__title.brand-lockup--fx {
+    font-family: Inter, sans-serif;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-shadow:
+      -0.05em 0 0.015em rgba(var(--color-dark), 0.5),
+      0.05em 0 0.015em rgba(var(--color-dark), 0.5);
+  }
+
+  .brand-lockup__title.brand-lockup--fx.brand-lockup--light {
+    text-shadow:
+      -0.05em 0 0.015em rgba(var(--color-light), 0.5),
+      0.05em 0 0.015em rgba(var(--color-light), 0.5);
   }
 
   .btn {
@@ -338,6 +381,86 @@ html.theme-dark {
     background: var(--color-glass-hover);
   }
 
+  .profile-avatar-btn {
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .profile-avatar-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center bottom;
+    border-radius: 999px;
+  }
+
+  .user-menu {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 8px);
+    min-width: 180px;
+    padding: 6px;
+    border-radius: 12px;
+    z-index: 60;
+  }
+
+  .user-menu-item {
+    width: 100%;
+    display: block;
+    border: none;
+    background: transparent;
+    border-radius: 10px;
+    padding: 10px 12px;
+    color: var(--color-muted);
+    text-decoration: none;
+    font-size: 14px;
+    line-height: 1.2;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .user-menu-item:hover,
+  .user-menu-item:focus-visible {
+    color: var(--color-foreground);
+    background: var(--color-glass-hover);
+    outline: none;
+  }
+
+  .profile-icon-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+    gap: 10px;
+  }
+
+  .profile-icon-option {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    border-radius: 12px;
+    padding: 4px;
+    border: 1px solid var(--color-glass-border);
+    background: var(--color-glass);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .profile-icon-option:hover {
+    border-color: var(--color-glass-border-hover);
+    background: var(--color-glass-hover);
+  }
+
+  .profile-icon-option--selected {
+    border-color: var(--color-accent);
+    background: var(--color-accent-weak);
+  }
+
+  .profile-icon-option__image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center bottom;
+    border-radius: 10px;
+  }
+
   .custom-scroll::-webkit-scrollbar {
     width: 8px;
   }
@@ -372,6 +495,12 @@ html.theme-dark {
 
   .form-input::placeholder {
     color: var(--color-muted);
+  }
+
+  .form-input.form-input-readonly {
+    color: var(--color-muted);
+    background: color-mix(in srgb, var(--color-glass) 65%, transparent);
+    border-color: var(--color-glass-border);
   }
 
   .riven-select option {
