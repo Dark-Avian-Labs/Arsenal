@@ -3,7 +3,6 @@ import prettier from 'eslint-config-prettier';
 import importPlugin from 'eslint-plugin-import-x';
 import n from 'eslint-plugin-n';
 import promise from 'eslint-plugin-promise';
-import react from 'eslint-plugin-react';
 import reactHooks from 'eslint-plugin-react-hooks';
 import tseslint from 'typescript-eslint';
 
@@ -103,11 +102,7 @@ export default [
   {
     files: ['client/**/*.{ts,tsx}'],
     plugins: {
-      react,
       'react-hooks': reactHooks,
-    },
-    settings: {
-      react: { version: 'detect' },
     },
     languageOptions: {
       globals: {
