@@ -1,10 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 
-import {
-  buildAuthLoginUrl,
-  fetchRemoteAuthState,
-  syncSessionFromAuth,
-} from './remoteAuth.js';
+import { buildAuthLoginUrl, fetchRemoteAuthState, syncSessionFromAuth } from './remoteAuth.js';
 
 function wantsJson(req: Request): boolean {
   return req.accepts('json') !== false;
@@ -26,11 +22,7 @@ function touchSessionFromState(
   }
 }
 
-export async function requireAuth(
-  req: Request,
-  res: Response,
-  next: NextFunction,
-): Promise<void> {
+export async function requireAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
   const state = await syncSessionFromAuth(req);
   if (state.authenticated) {
     next();
@@ -43,11 +35,7 @@ export async function requireAuth(
   res.redirect(buildAuthLoginUrl(req));
 }
 
-export async function requireAdmin(
-  req: Request,
-  res: Response,
-  next: NextFunction,
-): Promise<void> {
+export async function requireAdmin(req: Request, res: Response, next: NextFunction): Promise<void> {
   const state = await syncSessionFromAuth(req);
   if (!state.authenticated || !state.user) {
     res.status(401).json({ error: 'Authentication required' });
@@ -61,11 +49,7 @@ export async function requireAdmin(
 }
 
 export function requireGameAccess(gameId: string) {
-  return async (
-    req: Request,
-    res: Response,
-    next: NextFunction,
-  ): Promise<void> => {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     const state = await fetchRemoteAuthState(req, gameId);
     if (!state.authenticated || !state.user) {
       res.status(401).json({ error: 'Authentication required' });
@@ -73,20 +57,14 @@ export function requireGameAccess(gameId: string) {
     }
     touchSessionFromState(req, state);
     if (!state.has_game_access) {
-      res
-        .status(403)
-        .json({ error: 'Access to this application is not granted.' });
+      res.status(403).json({ error: 'Access to this application is not granted.' });
       return;
     }
     next();
   };
 }
 
-export function requireAuthApi(
-  req: Request,
-  res: Response,
-  next: NextFunction,
-): Promise<void> {
+export function requireAuthApi(req: Request, res: Response, next: NextFunction): Promise<void> {
   return requireAuth(req, res, next);
 }
 

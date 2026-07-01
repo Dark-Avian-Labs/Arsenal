@@ -20,7 +20,7 @@ AppBase is a reusable starter for new Dark Avian Labs apps. It keeps the shared 
 1. Install dependencies:
 
    ```bash
-   npm install
+   pnpm install
    ```
 
 2. Create your env file:
@@ -32,8 +32,8 @@ AppBase is a reusable starter for new Dark Avian Labs apps. It keeps the shared 
 3. Build and run:
 
    ```bash
-   npm run build
-   npm start
+   pnpm run build
+   pnpm start
    ```
 
 ## Environment
@@ -61,16 +61,19 @@ AppBase is a reusable starter for new Dark Avian Labs apps. It keeps the shared 
 
 ## Scripts
 
-| Script                  | Description                                |
-| ----------------------- | ------------------------------------------ |
-| `npm run typecheck`     | Run both server and client type checks.    |
-| `npm run build`         | Typecheck + compile server + build client. |
-| `npm start`             | Run production server from `dist/`.        |
-| `npm run lint`          | Run ESLint (client + server rulesets).     |
-| `npm run test`          | Run Vitest once.                           |
-| `npm run test:watch`    | Run Vitest in watch mode.                  |
-| `npm run test:coverage` | Run Vitest with V8 coverage report.        |
-| `npm run format`        | Run Prettier.                              |
+| Script                   | Description                                     |
+| ------------------------ | ----------------------------------------------- |
+| `pnpm run validate`      | Preflight + format, lint, typecheck, and tests. |
+| `pnpm run typecheck`     | Run both server and client type checks.         |
+| `pnpm run build`         | Typecheck + compile server + build client.      |
+| `pnpm start`             | Run production server from `dist/`.             |
+| `pnpm run lint`          | Run oxlint.                                     |
+| `pnpm run lint:fix`      | Run oxlint with auto-fix.                       |
+| `pnpm run format`        | Run oxfmt.                                      |
+| `pnpm run check-format`  | Check formatting with oxfmt.                    |
+| `pnpm run test`          | Run Vitest once.                                |
+| `pnpm run test:watch`    | Run Vitest in watch mode.                       |
+| `pnpm run test:coverage` | Run Vitest with V8 coverage report.             |
 
 ## Scaffold Contracts
 

@@ -1,6 +1,6 @@
 import type { AnchorHTMLAttributes, ButtonHTMLAttributes } from 'react';
 
-type ButtonVariant = 'accent' | 'secondary' | 'danger';
+type ButtonVariant = 'accent' | 'secondary' | 'danger' | 'cancel';
 
 function variantClass(variant: ButtonVariant): string {
   switch (variant) {
@@ -8,6 +8,8 @@ function variantClass(variant: ButtonVariant): string {
       return 'btn-accent';
     case 'danger':
       return 'btn-danger';
+    case 'cancel':
+      return 'btn-cancel';
     default:
       return 'btn-secondary';
   }
@@ -18,13 +20,11 @@ interface BaseProps {
   className?: string;
 }
 
-interface ButtonProps
-  extends ButtonHTMLAttributes<HTMLButtonElement>, BaseProps {
+interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement>, BaseProps {
   href?: never;
 }
 
-interface LinkButtonProps
-  extends AnchorHTMLAttributes<HTMLAnchorElement>, BaseProps {
+interface LinkButtonProps extends AnchorHTMLAttributes<HTMLAnchorElement>, BaseProps {
   href: string;
 }
 

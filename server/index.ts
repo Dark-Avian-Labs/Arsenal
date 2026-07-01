@@ -1,17 +1,14 @@
+import { createRequire } from 'module';
+import path from 'path';
+
 import cookieParser from 'cookie-parser';
 import { csrfSync } from 'csrf-sync';
 import express from 'express';
 import { rateLimit } from 'express-rate-limit';
 import session from 'express-session';
 import helmet from 'helmet';
-import { createRequire } from 'module';
-import path from 'path';
 
-import {
-  requireAuthApi,
-  requireGameAccess,
-  requirePageGameAccess,
-} from './auth/middleware.js';
+import { requireAuthApi, requireGameAccess, requirePageGameAccess } from './auth/middleware.js';
 import {
   PORT,
   HOST,
@@ -45,9 +42,7 @@ const app = express();
 
 if (TRUST_PROXY) app.set('trust proxy', 1);
 if (NODE_ENV === 'production' && SECURE_COOKIES && !TRUST_PROXY) {
-  throw new Error(
-    'TRUST_PROXY must be enabled in production when SECURE_COOKIES is enabled.',
-  );
+  throw new Error('TRUST_PROXY must be enabled in production when SECURE_COOKIES is enabled.');
 }
 
 app.use(helmet());
@@ -64,9 +59,7 @@ const baselineLimiter = rateLimit({
   skip: (req) =>
     req.path === '/healthz' ||
     req.path === '/favicon.ico' ||
-    /^\/assets\/.+\.(?:css|js|png|jpe?g|gif|webp|svg|ico|woff2?)$/i.test(
-      req.path,
-    ),
+    /^\/assets\/.+\.(?:css|js|png|jpe?g|gif|webp|svg|ico|woff2?)$/i.test(req.path),
 });
 app.use(baselineLimiter);
 
@@ -150,13 +143,7 @@ const staticAssetLimiter = rateLimit({
 
 app.use('/api/auth', authRouter);
 
-app.use(
-  '/api',
-  appApiLimiter,
-  requireAuthApi,
-  requireGameAccess(GAME_ID),
-  apiRouter,
-);
+app.use('/api', appApiLimiter, requireAuthApi, requireGameAccess(GAME_ID), apiRouter);
 
 app.get('/favicon.ico', publicPageLimiter, (_req, res) => {
   res.sendFile(path.join(PROJECT_ROOT, 'favicon.ico'));
@@ -198,22 +185,13 @@ app.use(publicPageLimiter, requirePageGameAccess, (req, res, next) => {
   res.sendFile(clientIndexPath);
 });
 
-app.use(
-  (
-    err: Error,
-    _req: express.Request,
-    res: express.Response,
-    _next: express.NextFunction,
-  ) => {
-    console.error('[Error]', err.stack ?? err.message);
-    res.status(500).json({ error: 'Internal server error' });
-  },
-);
+app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  console.error('[Error]', err.stack ?? err.message);
+  res.status(500).json({ error: 'Internal server error' });
+});
 
 const server = app.listen(PORT, HOST, () => {
-  console.log(
-    `[${APP_NAME}] Server running on http://${HOST}:${PORT} (${NODE_ENV})`,
-  );
+  console.log(`[${APP_NAME}] Server running on http://${HOST}:${PORT} (${NODE_ENV})`);
 });
 
 const SHUTDOWN_TIMEOUT_MS = 10_000;

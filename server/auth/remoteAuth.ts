@@ -4,18 +4,13 @@ import { GAME_ID } from '../config.js';
 
 const LOCAL_AUTH_SERVICE_FALLBACK = 'http://localhost:3000';
 
-function parseBaseUrl(
-  rawValue: string | undefined,
-  envName: string,
-): string | null {
+function parseBaseUrl(rawValue: string | undefined, envName: string): string | null {
   const trimmed = rawValue?.trim();
   if (!trimmed) return null;
   try {
     const parsed = new URL(trimmed);
     if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-      console.warn(
-        `[auth.remoteAuth] Ignoring ${envName}: URL must use http/https protocol.`,
-      );
+      console.warn(`[auth.remoteAuth] Ignoring ${envName}: URL must use http/https protocol.`);
       return null;
     }
     return parsed.toString().replace(/\/+$/, '');
@@ -29,10 +24,7 @@ const parsedFallbackAuthServiceUrl = parseBaseUrl(
   process.env.AUTH_FALLBACK_SERVICE_URL,
   'AUTH_FALLBACK_SERVICE_URL',
 );
-const parsedPrimaryAuthServiceUrl = parseBaseUrl(
-  process.env.AUTH_SERVICE_URL,
-  'AUTH_SERVICE_URL',
-);
+const parsedPrimaryAuthServiceUrl = parseBaseUrl(process.env.AUTH_SERVICE_URL, 'AUTH_SERVICE_URL');
 
 if (
   process.env.AUTH_FALLBACK_SERVICE_URL?.trim() &&
@@ -45,14 +37,9 @@ if (
   );
 }
 
-const DEFAULT_AUTH_SERVICE_URL =
-  parsedFallbackAuthServiceUrl ?? LOCAL_AUTH_SERVICE_FALLBACK;
-const AUTH_SERVICE_URL =
-  parsedPrimaryAuthServiceUrl ?? DEFAULT_AUTH_SERVICE_URL;
-const AUTH_FETCH_TIMEOUT_MS = Number.parseInt(
-  process.env.AUTH_FETCH_TIMEOUT_MS ?? '5000',
-  10,
-);
+const DEFAULT_AUTH_SERVICE_URL = parsedFallbackAuthServiceUrl ?? LOCAL_AUTH_SERVICE_FALLBACK;
+const AUTH_SERVICE_URL = parsedPrimaryAuthServiceUrl ?? DEFAULT_AUTH_SERVICE_URL;
+const AUTH_FETCH_TIMEOUT_MS = Number.parseInt(process.env.AUTH_FETCH_TIMEOUT_MS ?? '5000', 10);
 const SESSION_TOUCH_INTERVAL_MS = 5 * 60 * 1000;
 const AUTH_STATE_CACHE_KEY = Symbol('appBaseAuthStateCache');
 
@@ -195,9 +182,7 @@ export async function fetchRemoteAuthState(
   return await cache[cacheKey];
 }
 
-export async function syncSessionFromAuth(
-  req: Request,
-): Promise<RemoteAuthState> {
+export async function syncSessionFromAuth(req: Request): Promise<RemoteAuthState> {
   const state = await fetchRemoteAuthState(req, GAME_ID);
   if (!state.authenticated || !state.user) {
     delete req.session.user_id;
@@ -218,11 +203,7 @@ export async function syncSessionFromAuth(
   return state;
 }
 
-export async function proxyAuthJson(
-  req: Request,
-  res: Response,
-  path: string,
-): Promise<void> {
+export async function proxyAuthJson(req: Request, res: Response, path: string): Promise<void> {
   const url = `${resolveAuthServiceUrl(req)}${path}`;
   const method = req.method.toUpperCase();
   const controller = new AbortController();
@@ -262,10 +243,7 @@ export async function proxyAuthJson(
   }
 }
 
-export async function proxyAuthLogout(
-  req: Request,
-  res: Response,
-): Promise<void> {
+export async function proxyAuthLogout(req: Request, res: Response): Promise<void> {
   const host = getHost(req);
   const proto = getProto(req);
   const next = `${proto}://${host}/login`;

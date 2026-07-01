@@ -1,16 +1,17 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { Link, Outlet } from 'react-router-dom';
 
-import { SearchBar } from './SearchBar';
 import bgArt from '../../../assets/background.txt?raw';
 import feathers from '../../../assets/feathers.png';
 import { APP_DISPLAY_NAME, LEGAL_ENTITY_NAME } from '../../app/config';
 import { APP_PATHS } from '../../app/paths';
 import { Menu } from '../../components/ui/Menu';
+import { UiStyleSelector } from '../../components/ui/UiStyleSelector';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../features/auth/AuthContext';
 import { buildCentralAuthLoginUrl } from '../../utils/api';
 import { getProfileIconSrc } from '../../utils/profileIcons';
+import { SearchBar } from './SearchBar';
 
 export function Layout() {
   const { mode, toggleMode } = useTheme();
@@ -52,23 +53,13 @@ export function Layout() {
         {bgArt}
       </div>
       <header className="relative z-30 h-[100px] px-6">
-        <div className="mx-auto grid h-full w-full max-w-[1900px] grid-cols-[1fr_auto_1fr] items-center gap-4">
+        <div className="mx-auto grid h-full w-full max-w-[2000px] grid-cols-[1fr_auto_1fr] items-center gap-4">
           <Link to={APP_PATHS.home} className="brand-lockup w-fit">
-            <img
-              src={feathers}
-              alt="Dark Avian Labs feather mark"
-              className="brand-lockup__icon"
-            />
-            <span
-              className={`brand-lockup__title brand-lockup--fx ${mode === 'light' ? 'brand-lockup--light' : ''}`}
-            >
-              {APP_DISPLAY_NAME}
-            </span>
+            <img src={feathers} alt="Dark Avian Labs feather mark" className="brand-lockup__icon" />
+            <span className="brand-lockup__title brand-lockup--fx">{APP_DISPLAY_NAME}</span>
           </Link>
 
-          <div className="justify-self-center">
-            {isLoggedIn ? <SearchBar /> : null}
-          </div>
+          <div className="justify-self-center">{isLoggedIn ? <SearchBar /> : null}</div>
 
           <div className="flex flex-wrap items-center justify-end gap-3">
             <button
@@ -135,6 +126,8 @@ export function Layout() {
                       </button>
                     </>
                   )}
+                  <div className="user-menu-divider" role="separator" />
+                  <UiStyleSelector />
                 </Menu>
               )}
             </div>
@@ -142,16 +135,13 @@ export function Layout() {
         </div>
       </header>
       <main className="relative z-0 flex-1 px-6 pb-6">
-        <div className="mx-auto w-full max-w-[1900px]">
+        <div className="mx-auto w-full max-w-[2000px]">
           <Outlet />
         </div>
       </main>
       <footer className="relative z-10 flex h-[50px] items-center justify-center px-6">
-        <div className="mx-auto w-full max-w-[1900px] text-center">
-          <Link
-            to={APP_PATHS.legal}
-            className="text-sm text-muted hover:text-foreground"
-          >
+        <div className="mx-auto w-full max-w-[2000px] text-center">
+          <Link to={APP_PATHS.legal} className="text-muted hover:text-foreground text-sm">
             ©{currentYear} {LEGAL_ENTITY_NAME}
           </Link>
         </div>

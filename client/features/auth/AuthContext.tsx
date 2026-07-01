@@ -8,6 +8,9 @@ import {
   type ReactNode,
 } from 'react';
 
+import { apiFetch, buildCentralAuthLoginUrl, clearCsrfToken } from '../../utils/api';
+import { normalizeAvatarId } from '../../utils/profileIcons';
+import { getStoredProfile, mergeStoredProfile } from '../profile/profileStore';
 import type {
   AppAccountProfile,
   AppAccountState,
@@ -15,21 +18,12 @@ import type {
   RemoteAuthUser,
   RemoteAuthState,
 } from './types';
-import {
-  apiFetch,
-  buildCentralAuthLoginUrl,
-  clearCsrfToken,
-} from '../../utils/api';
-import { normalizeAvatarId } from '../../utils/profileIcons';
-import { getStoredProfile, mergeStoredProfile } from '../profile/profileStore';
 
 interface AuthContextValue {
   status: AuthStatus;
   account: AppAccountState;
   updateProfile: (
-    updates: Partial<
-      Pick<AppAccountProfile, 'displayName' | 'email' | 'avatarId'>
-    >,
+    updates: Partial<Pick<AppAccountProfile, 'displayName' | 'email' | 'avatarId'>>,
   ) => void;
   logout: () => Promise<void>;
 }
@@ -112,17 +106,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const updateProfile = useCallback<AuthContextValue['updateProfile']>(
-    (updates) => {
-      setAccount((prev) => {
-        if (!prev.profile) {
-          return prev;
-        }
-        return { ...prev, profile: mergeStoredProfile(prev.profile, updates) };
-      });
-    },
-    [],
-  );
+  const updateProfile = useCallback<AuthContextValue['updateProfile']>((updates) => {
+    setAccount((prev) => {
+      if (!prev.profile) {
+        return prev;
+      }
+      return { ...prev, profile: mergeStoredProfile(prev.profile, updates) };
+    });
+  }, []);
 
   const logout = useCallback(async () => {
     try {

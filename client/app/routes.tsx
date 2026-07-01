@@ -1,9 +1,9 @@
 import { lazy, Suspense } from 'react';
 import { Route, Routes } from 'react-router-dom';
 
-import { APP_PATHS } from './paths';
 import { Layout } from '../components/Layout/Layout';
 import { RequireAuth } from '../features/auth/RequireAuth';
+import { APP_PATHS } from './paths';
 
 const HomePage = lazy(() =>
   import('../features/home/HomePage').then((mod) => ({
@@ -29,7 +29,7 @@ const LegalPage = lazy(() =>
 function RouteFallback() {
   return (
     <div className="flex min-h-screen items-center justify-center">
-      <p className="text-sm text-muted">Loading...</p>
+      <p className="text-muted text-sm">Loading...</p>
     </div>
   );
 }

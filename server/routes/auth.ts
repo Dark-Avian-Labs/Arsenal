@@ -1,11 +1,7 @@
 import { Router, type Request, type Response } from 'express';
 import { rateLimit } from 'express-rate-limit';
 
-import {
-  authLoginRedirect,
-  authStatus,
-  redirectIfAuthenticated,
-} from '../auth/middleware.js';
+import { authLoginRedirect, authStatus, redirectIfAuthenticated } from '../auth/middleware.js';
 import { proxyAuthJson, proxyAuthLogout } from '../auth/remoteAuth.js';
 
 export const authRouter = Router();
@@ -20,18 +16,13 @@ authRouter.use(
 );
 
 authRouter.get('/csrf', (req: Request, res: Response) => {
-  const token =
-    (res.locals as { csrfToken?: string }).csrfToken ?? req.session.csrfToken;
+  const token = (res.locals as { csrfToken?: string }).csrfToken ?? req.session.csrfToken;
   res.json({ csrfToken: token ?? '' });
 });
 
-authRouter.get(
-  '/login',
-  redirectIfAuthenticated,
-  (req: Request, res: Response) => {
-    authLoginRedirect(req, res);
-  },
-);
+authRouter.get('/login', redirectIfAuthenticated, (req: Request, res: Response) => {
+  authLoginRedirect(req, res);
+});
 
 authRouter.post('/login', async (req: Request, res: Response) => {
   await proxyAuthJson(req, res, '/api/auth/login');

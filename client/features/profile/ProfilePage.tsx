@@ -5,10 +5,7 @@ import { GlassCard } from '../../components/ui/GlassCard';
 import { Input } from '../../components/ui/Input';
 import { Modal } from '../../components/ui/Modal';
 import { apiFetch } from '../../utils/api';
-import {
-  getProfileIconSrc,
-  PROFILE_AVATAR_IDS,
-} from '../../utils/profileIcons';
+import { getProfileIconSrc, PROFILE_AVATAR_IDS } from '../../utils/profileIcons';
 import { useAuth } from '../auth/AuthContext';
 
 export function ProfilePage() {
@@ -39,7 +36,7 @@ export function ProfilePage() {
     return (
       <div className="mx-auto max-w-4xl">
         <GlassCard className="p-6">
-          <p className="text-sm text-muted">Unable to load profile data.</p>
+          <p className="text-muted text-sm">Unable to load profile data.</p>
         </GlassCard>
       </div>
     );
@@ -113,16 +110,12 @@ export function ProfilePage() {
   return (
     <div className="mx-auto max-w-4xl space-y-6">
       <GlassCard className="p-6">
-        <h1 className="text-2xl font-semibold text-foreground">Profile</h1>
-        <p className="mt-1 text-sm text-muted">
-          Manage your user settings for this application.
-        </p>
+        <h1 className="text-foreground text-2xl font-semibold">Profile</h1>
+        <p className="text-muted mt-1 text-sm">Manage your user settings for this application.</p>
       </GlassCard>
 
       <GlassCard className="p-6">
-        <h2 className="mb-3 text-lg font-semibold text-foreground">
-          Profile Icon
-        </h2>
+        <h2 className="text-foreground mb-3 text-lg font-semibold">Profile Icon</h2>
         <div className="profile-icon-grid">
           {PROFILE_AVATAR_IDS.map((id) => (
             <button
@@ -135,11 +128,7 @@ export function ProfilePage() {
               }}
               aria-label={`Select profile icon ${id}`}
             >
-              <img
-                src={getProfileIconSrc(id)}
-                alt=""
-                className="profile-icon-option__image"
-              />
+              <img src={getProfileIconSrc(id)} alt="" className="profile-icon-option__image" />
             </button>
           ))}
         </div>
@@ -148,25 +137,15 @@ export function ProfilePage() {
       <GlassCard className="p-6">
         <div className="grid gap-4 md:grid-cols-2">
           <div>
-            <label className="mb-1.5 block text-sm text-muted">Username</label>
-            <Input
-              type="text"
-              readOnlyStyle
-              value={profile.username}
-              readOnly
-            />
+            <label className="text-muted mb-1.5 block text-sm">Username</label>
+            <Input type="text" readOnlyStyle value={profile.username} readOnly />
           </div>
           <div>
-            <label className="mb-1.5 block text-sm text-muted">Profile</label>
-            <Input
-              type="text"
-              readOnlyStyle
-              value={profile.isAdmin ? 'Admin' : 'User'}
-              readOnly
-            />
+            <label className="text-muted mb-1.5 block text-sm">Profile</label>
+            <Input type="text" readOnlyStyle value={profile.isAdmin ? 'Admin' : 'User'} readOnly />
           </div>
           <div>
-            <label className="mb-1.5 block text-sm text-muted">Name</label>
+            <label className="text-muted mb-1.5 block text-sm">Name</label>
             <Input
               type="text"
               value={displayName}
@@ -178,7 +157,7 @@ export function ProfilePage() {
             />
           </div>
           <div>
-            <label className="mb-1.5 block text-sm text-muted">Email</label>
+            <label className="text-muted mb-1.5 block text-sm">Email</label>
             <Input
               type="email"
               value={email}
@@ -205,22 +184,18 @@ export function ProfilePage() {
             Save
           </Button>
         </div>
-        {saveStatus && (
-          <p className="mt-3 text-sm text-success">{saveStatus}</p>
-        )}
+        {saveStatus && <p className="text-success mt-3 text-sm">{saveStatus}</p>}
       </GlassCard>
 
       <Modal
         open={showChangePassword}
-        className="max-w-md"
+        className="glass-modal-surface max-w-md"
         onClose={() => {
           setShowChangePassword(false);
           setPasswordStatus(null);
         }}
       >
-        <h3 className="mb-3 text-lg font-semibold text-foreground">
-          Change Password
-        </h3>
+        <h3 className="text-foreground mb-3 text-lg font-semibold">Change Password</h3>
         <div className="space-y-3">
           <Input
             type="password"
@@ -250,11 +225,10 @@ export function ProfilePage() {
             {passwordStatus.message}
           </p>
         )}
-        <div className="mt-4 flex justify-end gap-2">
+        <div className="modal-actions">
           <Button
             type="button"
-            variant="secondary"
-            className="text-sm"
+            variant="cancel"
             onClick={() => {
               setShowChangePassword(false);
               setPasswordStatus(null);
@@ -265,7 +239,6 @@ export function ProfilePage() {
           <Button
             type="button"
             variant="accent"
-            className="text-sm"
             onClick={handleChangePassword}
             disabled={passwordSaving}
           >

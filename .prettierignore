@@ -1,6 +1,0 @@
-dist/
-node_modules/
-data/
-*.db
-*.lzma
-package-lock.json

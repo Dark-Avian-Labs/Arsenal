@@ -1,9 +1,6 @@
 import type { InputHTMLAttributes } from 'react';
 
-interface InputProps extends Omit<
-  InputHTMLAttributes<HTMLInputElement>,
-  'className'
-> {
+interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'className'> {
   readOnlyStyle?: boolean;
   className?: string;
 }

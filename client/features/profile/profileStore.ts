@@ -41,9 +41,7 @@ export function getStoredProfile(userId: number): StoredProfile | undefined {
 
 export function mergeStoredProfile(
   profile: AppAccountProfile,
-  updates: Partial<
-    Pick<AppAccountProfile, 'displayName' | 'email' | 'avatarId'>
-  >,
+  updates: Partial<Pick<AppAccountProfile, 'displayName' | 'email' | 'avatarId'>>,
 ): AppAccountProfile {
   const nextProfile: AppAccountProfile = {
     ...profile,
