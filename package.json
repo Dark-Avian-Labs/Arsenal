@@ -8,6 +8,9 @@
     "typecheck": "pnpm run typecheck:server && pnpm run typecheck:client",
     "typecheck:server": "tsc -p tsconfig.server.json --noEmit",
     "typecheck:client": "tsc -p tsconfig.json --noEmit",
+    "dev": "node scripts/dev.mjs",
+    "dev:server": "tsx watch --env-file=.env server/index.ts",
+    "dev:client": "vite",
     "build": "pnpm run typecheck && tsc -p tsconfig.server.json && vite build",
     "start": "node --env-file=.env dist/server/index.js",
     "validate": "node run-quality-checks.mjs",
@@ -20,6 +23,7 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
+    "@fontsource-variable/cascadia-mono": "^5.2.2",
     "@fontsource-variable/geist": "^5.2.9",
     "@fontsource-variable/geist-mono": "^5.2.8",
     "@fontsource-variable/inter": "^5.2.8",
@@ -50,8 +54,9 @@
     "oxfmt": "^0.57.0",
     "oxlint": "^1.72.0",
     "tailwindcss": "^4.3.2",
+    "tsx": "^4.22.4",
     "typescript": "^6.0.3",
-    "vite": "^8.1.0",
+    "vite": "^8.1.2",
     "vitest": "^4.1.9"
   },
   "engines": {

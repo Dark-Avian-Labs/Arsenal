@@ -1,0 +1,112 @@
+@import "compass/css3";
+
+@mixin hex ($height, $background){
+  $radius : round($height/sqrt(3)) ;
+  $half-radius : round($radius/2);
+  margin: 0 $half-radius;
+  width: $radius;
+  height: $height;
+  background-color: $background;
+  position: absolute;
+  &:before {
+    content: " ";
+    width: 0; height: 0;
+    border-right: $half-radius solid $background;
+    border-top: $height/2 solid transparent;
+    border-bottom: $height/2 solid transparent;
+    position: absolute;
+    left: $half-radius*-1;
+  }
+  &:after {
+    content: "";
+    width: 0;
+    position: absolute;
+    right: $half-radius*-1;
+    border-left: $half-radius solid $background;
+    border-top: $height/2 solid transparent;
+    border-bottom: $height/2 solid transparent;
+  }
+}
+
+body {
+  background:#aab2b5;
+}
+.honeywarp{
+  width: 335px;
+  height:661px;
+  position: absolute;
+  right:0;
+  top:0;
+  overflow:hidden;
+}
+
+.honeycomb {
+  @include hex (154px, white);
+  position: absolute;
+  opacity:0.5;
+}
+//types//
+.type1 {
+  box-shadow: 0px 0px 0px white;
+  opacity:0.1;
+}
+.type2 {
+  box-shadow: 0px 0px 10px white;
+  opacity:0.3;
+}
+.type3 {
+  box-shadow: 0px 0px 20px white;
+  opacity:0.5;
+}
+/// each hex ////
+.terminal_honeycomb1{
+  left:193px;
+  top:181px;
+}
+.terminal_honeycomb2{
+  left:193px;
+  top:346px;
+}
+.terminal_honeycomb3{
+  left:51px;
+  top:263px;
+}
+.terminal_honeycomb4{
+  left:51px;
+  top:426px;
+}
+.terminal_honeycomb5{
+  @include hex (74px, white);
+  left:0px;
+  top:385px;
+}
+.terminal_honeycomb6{
+  @include hex (74px, white);
+  left: 147px;
+  top: 226px;
+}
+.terminal_honeycomb7{
+  @include hex (28px, white);
+  left: 137px;
+  top: 170px;
+}
+.terminal_honeycomb8{
+  @include hex (140px, white);
+  left: 293px;
+  top: 40px;
+}
+.terminal_honeycomb9{
+  @include hex (64px, white);
+  left: 250px;
+  top: 0px;
+}
+.terminal_honeycomb10{
+  @include hex (273px, white);
+  left: 234px;
+  top: 204px;
+}
+.terminal_honeycomb11{
+  @include hex (220px, white);
+  left: 218px;
+  top: 438px;
+}

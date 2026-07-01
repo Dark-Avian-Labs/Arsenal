@@ -20,8 +20,3 @@ export const SEARCH_PLACEHOLDER = readTrimmedEnv(
   import.meta.env.VITE_SEARCH_PLACEHOLDER as string | undefined,
   'Search scaffold...',
 );
-
-export const AUTH_ADMIN_URL = readTrimmedEnv(
-  import.meta.env.VITE_AUTH_ADMIN_URL as string | undefined,
-  'http://localhost:3000/admin',
-);

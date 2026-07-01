@@ -1,37 +1,21 @@
-import fs from 'fs';
-import path from 'path';
-
 import Database from 'better-sqlite3';
 
-import { CENTRAL_DB_PATH } from '../config.js';
+import { SESSION_DB_PATH } from '../config.js';
 
-let centralDb: Database.Database | null = null;
+let sessionDb: Database.Database | null = null;
 
-export function getCentralDb(): Database.Database {
-  if (!centralDb) {
-    const dbDir = path.dirname(CENTRAL_DB_PATH);
-    if (!fs.existsSync(dbDir)) {
-      fs.mkdirSync(dbDir, { recursive: true });
-    }
-    centralDb = new Database(CENTRAL_DB_PATH);
-    centralDb.pragma('journal_mode = WAL');
-    centralDb.pragma('foreign_keys = ON');
+export function getSessionDb(): Database.Database {
+  if (!sessionDb) {
+    sessionDb = new Database(SESSION_DB_PATH);
+    sessionDb.pragma('journal_mode = WAL');
+    sessionDb.pragma('foreign_keys = ON');
   }
-  return centralDb;
+  return sessionDb;
 }
 
-export function closeAll(): void {
-  if (centralDb) {
-    centralDb.close();
-    centralDb = null;
+export function closeSessionDb(): void {
+  if (sessionDb) {
+    sessionDb.close();
+    sessionDb = null;
   }
 }
-
-process.on('SIGINT', () => {
-  closeAll();
-  process.exit(0);
-});
-process.on('SIGTERM', () => {
-  closeAll();
-  process.exit(0);
-});

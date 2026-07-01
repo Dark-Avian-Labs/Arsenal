@@ -8,35 +8,32 @@ import { rateLimit } from 'express-rate-limit';
 import session from 'express-session';
 import helmet from 'helmet';
 
-import { requireAuthApi, requireGameAccess, requirePageGameAccess } from './auth/middleware.js';
 import {
   PORT,
   HOST,
   SESSION_SECRET,
   NODE_ENV,
-  CENTRAL_DB_PATH,
+  SESSION_DB_PATH,
   TRUST_PROXY,
   SECURE_COOKIES,
   COOKIE_DOMAIN,
-  GAME_ID,
   APP_NAME,
   PROJECT_ROOT,
   SESSION_COOKIE_NAME,
   ensureDataDirs,
 } from './config.js';
-import { createCentralSchema } from './db/centralSchema.js';
-import { getCentralDb } from './db/connection.js';
+import { getSessionDb } from './db/connection.js';
+import { createSessionSchema } from './db/sessionSchema.js';
 import { apiRouter } from './routes/api.js';
-import { authRouter } from './routes/auth.js';
 
 const require = createRequire(import.meta.url);
 const SQLiteStore = require('better-sqlite3-session-store')(session);
 
 ensureDataDirs();
 
-const centralDb = getCentralDb();
-createCentralSchema(centralDb);
-console.log(`[${APP_NAME}] Central DB ready (${CENTRAL_DB_PATH})`);
+const sessionDb = getSessionDb();
+createSessionSchema(sessionDb);
+console.log(`[${APP_NAME}] Session store ready (${SESSION_DB_PATH})`);
 
 const app = express();
 
@@ -64,7 +61,7 @@ const baselineLimiter = rateLimit({
 app.use(baselineLimiter);
 
 const sessionStore = new SQLiteStore({
-  client: centralDb,
+  client: sessionDb,
   expired: { clear: true, intervalMs: 15 * 60 * 1000 },
 });
 
@@ -112,14 +109,6 @@ app.use((req, res, next) => {
   next();
 });
 
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-app.use('/api/auth', authLimiter);
-
 const appApiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 600,
@@ -141,9 +130,7 @@ const staticAssetLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-app.use('/api/auth', authRouter);
-
-app.use('/api', appApiLimiter, requireAuthApi, requireGameAccess(GAME_ID), apiRouter);
+app.use('/api', appApiLimiter, apiRouter);
 
 app.get('/favicon.ico', publicPageLimiter, (_req, res) => {
   res.sendFile(path.join(PROJECT_ROOT, 'favicon.ico'));
@@ -159,7 +146,7 @@ app.get('/healthz', (_req, res) => {
 
 app.get('/readyz', (_req, res) => {
   try {
-    centralDb.prepare('SELECT 1').get();
+    sessionDb.prepare('SELECT 1').get();
     res.json({ status: 'ready', app: APP_NAME });
   } catch {
     res.status(503).json({ status: 'not_ready', app: APP_NAME });
@@ -177,7 +164,7 @@ app.use(
   }),
 );
 app.use(publicPageLimiter, express.static(clientDir, { maxAge: '1h' }));
-app.use(publicPageLimiter, requirePageGameAccess, (req, res, next) => {
+app.use(publicPageLimiter, (req, res, next) => {
   if (req.method !== 'GET' && req.method !== 'HEAD') {
     next();
     return;
@@ -201,9 +188,9 @@ function shutdown(): void {
     if (done) return;
     done = true;
     try {
-      centralDb.close();
+      sessionDb.close();
     } catch (err) {
-      console.error('[Shutdown] Failed to close central DB:', err);
+      console.error('[Shutdown] Failed to close session DB:', err);
     }
     process.exit(0);
   }

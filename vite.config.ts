@@ -11,6 +11,7 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   const devApiTarget = env.VITE_DEV_API_TARGET || 'http://127.0.0.1:3002';
   const base = env.VITE_BASE_PATH || '/';
+  const devPort = Number.parseInt(env.VITE_DEV_PORT || '5173', 10);
 
   return {
     base,
@@ -25,7 +26,7 @@ export default defineConfig(({ mode }) => {
       emptyOutDir: true,
     },
     server: {
-      port: 5173,
+      port: Number.isFinite(devPort) && devPort > 0 ? devPort : 5173,
       proxy: {
         '/api': {
           target: devApiTarget,

@@ -59,9 +59,13 @@ All design tokens and component classes live in **`client/styles/input.css`** (T
 --shadow-panel
 --radius-ui, --radius-ui-lg, --radius-ui-sm   (Clear overrides these to 4px / 6px / 3px)
 --color-accent-weak, --color-accent-weak-2
+--ascii-opacity, --ascii-canvas-fg, --ascii-canvas-fg-bright, --ascii-canvas-fg-accent
+--hex-side-fill, --hex-cluster-scale   (4K viewport = 1×)
 ```
 
 Game-domain scaffold tokens (`--color-dmg-*`, `--color-rarity-*`, `--color-riven*`) are pre-defined for Warframe-style apps.
+
+`body` uses a fixed gradient (`--color-bg-start` → `--color-bg-end` with `--color-bg-glow` radials). Shell background components sit above that gradient.
 
 ### Light mode
 
@@ -88,6 +92,18 @@ Use these class names and primitives — do not invent one-off glass or button p
 | Toasts              | `.toast-pill` with optional `data-tone="success\|error\|warning"`                                         |
 | Form focus          | `.form-input:focus` and `.form-group input:focus` — accent border + soft glow ring                        |
 | Theme on `<html>`   | `dark` + exactly one `ui-prism` / `ui-shadow` / `ui-clear`                                                |
+| Shell background    | `AsciiWaveBackground` (`.bg-art` canvas) centered; `HexSideBackground` (`.hex-side-panel`) on both sides  |
+
+### Shell background
+
+The layout renders three fixed background layers behind content (`z-index: 0`):
+
+1. **`HexSideBackground`** — scattered hex clusters clipped at the left/right edges. Uses theme tokens `--hex-side-fill`. Opacity toggles instantly on a per-hex random schedule (no fade). Scales with viewport; **4K (3840×2160) is 1×** via `--hex-cluster-scale` (`clamp(0.35, min(100vw/3840px, 100vh/2160px), 1)`).
+2. **`AsciiWaveBackground`** — canvas diagonal scan wave across ASCII art. Reads `--ascii-canvas-fg`, `--ascii-canvas-fg-bright`, `--ascii-canvas-fg-accent`, and `--ascii-opacity`. Respects `prefers-reduced-motion`.
+
+Assets live in `assets/background.txt` (base frame), `background2.txt` (alt frame), and `background3.txt` (accent mask). Logic is in `client/lib/asciiBackground/` (shared with Codex).
+
+When porting or tuning backgrounds, keep all three ASCII files dimensionally aligned and copy `AsciiWaveBackground`, `HexSideBackground`, and the `.bg-art` / `.hex-side-*` CSS blocks together.
 
 ### Modal pattern
 
@@ -212,7 +228,8 @@ Also ensure:
 - Full `input.css` includes `html.ui-shadow` and `html.ui-clear` token blocks and component overrides at the bottom of the file.
 - `ThemeContext` exposes `uiStyle` / `setUiStyle` (`prism`, `shadow`, `clear`).
 - `UiStyleSelector` in the user menu (or equivalent settings surface).
-- Font packages: `@fontsource-variable/geist`, `geist-mono`, `inter`, `material-symbols-rounded`.
+- Font packages: `@fontsource-variable/geist`, `geist-mono`, `inter`, `material-symbols-rounded`, `cascadia-mono` (ASCII canvas).
+- Shell backgrounds: `AsciiWaveBackground`, `HexSideBackground`, `assets/background*.txt`, and `client/lib/asciiBackground/`.
 
 ### Clerk (optional)
 
@@ -229,6 +246,8 @@ Checklist after design changes:
 - [ ] `theme-init.js` logic matches (minus app-specific localStorage fallback keys)
 - [ ] Modal, dropdown, and button class names unchanged
 - [ ] Layout `max-w-[2000px]` preserved
+- [ ] Shell background assets and `asciiBackground` lib kept in sync with Codex when wave behavior changes
+- [ ] `--hex-cluster-scale` reference viewport (3840×2160) unchanged unless intentionally retuning side hex size
 
 ## Scripts
 

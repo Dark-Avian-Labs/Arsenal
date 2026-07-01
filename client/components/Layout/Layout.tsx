@@ -1,38 +1,32 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, Outlet } from 'react-router-dom';
 
-import bgArt from '../../../assets/background.txt?raw';
 import feathers from '../../../assets/feathers.png';
 import { APP_DISPLAY_NAME, LEGAL_ENTITY_NAME } from '../../app/config';
 import { APP_PATHS } from '../../app/paths';
+import { MaterialSymbol } from '../../components/ui/MaterialSymbol';
 import { Menu } from '../../components/ui/Menu';
 import { UiStyleSelector } from '../../components/ui/UiStyleSelector';
 import { useTheme } from '../../context/ThemeContext';
-import { useAuth } from '../../features/auth/AuthContext';
-import { buildCentralAuthLoginUrl } from '../../utils/api';
-import { getProfileIconSrc } from '../../utils/profileIcons';
+import { AsciiWaveBackground } from './AsciiWaveBackground';
+import { HexSideBackground } from './HexSideBackground';
 import { SearchBar } from './SearchBar';
 
 export function Layout() {
   const { mode, toggleMode } = useTheme();
-  const { account, logout } = useAuth();
   const currentYear = new Date().getFullYear();
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [settingsMenuOpen, setSettingsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
-  const handleLogout = useCallback(async () => {
-    await logout();
-  }, [logout]);
-
   useEffect(() => {
-    if (!userMenuOpen) return undefined;
+    if (!settingsMenuOpen) return undefined;
     const handlePointerDown = (event: MouseEvent) => {
       if (!menuRef.current?.contains(event.target as Node)) {
-        setUserMenuOpen(false);
+        setSettingsMenuOpen(false);
       }
     };
     const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setUserMenuOpen(false);
+      if (event.key === 'Escape') setSettingsMenuOpen(false);
     };
     document.addEventListener('mousedown', handlePointerDown);
     document.addEventListener('keydown', handleEscape);
@@ -40,18 +34,12 @@ export function Layout() {
       document.removeEventListener('mousedown', handlePointerDown);
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [userMenuOpen]);
-
-  const profile = account.profile;
-  const isLoggedIn = account.isAuthenticated && profile !== null;
-  const isAdmin = profile?.isAdmin === true;
-  const avatarSrc = getProfileIconSrc(profile?.avatarId ?? 1);
+  }, [settingsMenuOpen]);
 
   return (
     <div className="flex min-h-screen flex-col">
-      <div className="bg-art" aria-hidden="true">
-        {bgArt}
-      </div>
+      <HexSideBackground />
+      <AsciiWaveBackground />
       <header className="relative z-30 h-[100px] px-6">
         <div className="mx-auto grid h-full w-full max-w-[2000px] grid-cols-[1fr_auto_1fr] items-center gap-4">
           <Link to={APP_PATHS.home} className="brand-lockup w-fit">
@@ -59,7 +47,9 @@ export function Layout() {
             <span className="brand-lockup__title brand-lockup--fx">{APP_DISPLAY_NAME}</span>
           </Link>
 
-          <div className="justify-self-center">{isLoggedIn ? <SearchBar /> : null}</div>
+          <div className="justify-self-center">
+            <SearchBar />
+          </div>
 
           <div className="flex flex-wrap items-center justify-end gap-3">
             <button
@@ -74,59 +64,16 @@ export function Layout() {
             <div ref={menuRef} className="relative">
               <button
                 type="button"
-                className="icon-toggle-btn profile-avatar-btn"
+                className="icon-toggle-btn"
                 aria-haspopup="menu"
-                aria-expanded={userMenuOpen}
-                aria-label="Open user menu"
-                onClick={() => setUserMenuOpen((prev) => !prev)}
+                aria-expanded={settingsMenuOpen}
+                aria-label="Open settings menu"
+                onClick={() => setSettingsMenuOpen((prev) => !prev)}
               >
-                <img src={avatarSrc} alt="" className="profile-avatar-image" />
+                <MaterialSymbol name="settings" />
               </button>
-              {userMenuOpen && (
+              {settingsMenuOpen && (
                 <Menu>
-                  {!isLoggedIn ? (
-                    <a
-                      href={buildCentralAuthLoginUrl()}
-                      className="user-menu-item"
-                      role="menuitem"
-                      onClick={() => setUserMenuOpen(false)}
-                    >
-                      Login
-                    </a>
-                  ) : (
-                    <>
-                      {isAdmin && (
-                        <Link
-                          to={APP_PATHS.admin}
-                          className="user-menu-item"
-                          role="menuitem"
-                          onClick={() => setUserMenuOpen(false)}
-                        >
-                          Admin
-                        </Link>
-                      )}
-                      <Link
-                        to={APP_PATHS.profile}
-                        className="user-menu-item"
-                        role="menuitem"
-                        onClick={() => setUserMenuOpen(false)}
-                      >
-                        Profile
-                      </Link>
-                      <button
-                        type="button"
-                        className="user-menu-item text-left"
-                        role="menuitem"
-                        onClick={() => {
-                          setUserMenuOpen(false);
-                          handleLogout();
-                        }}
-                      >
-                        Logout
-                      </button>
-                    </>
-                  )}
-                  <div className="user-menu-divider" role="separator" />
                   <UiStyleSelector />
                 </Menu>
               )}

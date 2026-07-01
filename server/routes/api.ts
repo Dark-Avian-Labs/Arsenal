@@ -17,3 +17,8 @@ apiRouter.use(
 apiRouter.get('/health', (_req: Request, res: Response) => {
   res.json({ status: 'ok', app: APP_NAME });
 });
+
+apiRouter.get('/csrf', (req: Request, res: Response) => {
+  const token = (res.locals as { csrfToken?: string }).csrfToken ?? req.session.csrfToken;
+  res.json({ csrfToken: token ?? '' });
+});

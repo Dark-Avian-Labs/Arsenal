@@ -1,26 +1,9 @@
 let cachedToken = '';
-let authRedirectPending = false;
-
-function currentAppPath(): string {
-  const { pathname, search, hash } = window.location;
-  return `${pathname}${search}${hash}`;
-}
-
-export function buildCentralAuthLoginUrl(nextPath?: string): string {
-  const next = nextPath && nextPath.length > 0 ? nextPath : currentAppPath();
-  return `/api/auth/login?next=${encodeURIComponent(next)}`;
-}
-
-export function redirectToCentralAuth(nextPath?: string): void {
-  if (authRedirectPending) return;
-  authRedirectPending = true;
-  window.location.href = buildCentralAuthLoginUrl(nextPath);
-}
 
 async function getCsrfToken(): Promise<string> {
   if (cachedToken) return cachedToken;
   try {
-    const res = await fetch('/api/auth/csrf');
+    const res = await fetch('/api/csrf');
     if (res.ok) {
       const data = await res.json();
       cachedToken = (data.csrfToken as string) ?? '';
@@ -51,9 +34,5 @@ export async function apiFetch(url: string, init?: RequestInit): Promise<Respons
     headers.set('Content-Type', 'application/json');
   }
 
-  const response = await fetch(url, { ...init, headers });
-  if (response.status === 401) {
-    redirectToCentralAuth();
-  }
-  return response;
+  return fetch(url, { ...init, headers });
 }
