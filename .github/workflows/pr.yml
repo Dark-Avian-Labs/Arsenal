@@ -5,7 +5,7 @@ permissions:
   pull-requests: read
 
 env:
-  NODE_VERSION: 25
+  NODE_VERSION: 26
 
 on:
   pull_request:
@@ -16,18 +16,18 @@ concurrency:
 
 jobs:
   validate:
-    runs-on: blacksmith-4vcpu-ubuntu-2404
-    timeout-minutes: 10
+    runs-on: blacksmith-8vcpu-ubuntu-2404
+    timeout-minutes: 15
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: useblacksmith/checkout@v1
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm

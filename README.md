@@ -1,21 +1,30 @@
 # AppBase
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![PR](https://github.com/Dark-Avian-Labs/AppBase/actions/workflows/pr.yml/badge.svg)](https://github.com/Dark-Avian-Labs/AppBase/actions/workflows/pr.yml)
+![Node](https://img.shields.io/badge/Node-%3E%3D26-339933?logo=node.js&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-6.x-3178C6?logo=typescript&logoColor=white)
+![React](https://img.shields.io/badge/React-19.x-61DAFB?logo=react&logoColor=black)
+![Vite](https://img.shields.io/badge/Vite-8.x-646CFF?logo=vite&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4.x-06B6D4?logo=tailwindcss&logoColor=white)
+[![Cursor](https://img.shields.io/badge/Cursor-IDE-141414?logo=cursor&logoColor=white)](https://cursor.com)
+
 AppBase is a reusable starter for new Dark Avian Labs apps. It ships the shared shell UX, design system, and server baseline while leaving domain features intentionally empty. Authentication is not included by default — wire [Clerk](client/clerk/) when an app needs it.
 
-## Included baseline
+## Features
 
 - Express server with `helmet`, sessions, CSRF, layered rate limiting, health/readiness endpoints, and graceful shutdown
-- React + Vite + Tailwind shell page with:
-  - top header with brand lockup
-  - search input placeholder
-  - settings menu with theme mode + UI style picker
-  - theme toggle
-  - layered shell background: animated ASCII wave canvas (center) + subtle hex clusters (left/right)
-- Shared design tokens and glass styles
-- Reusable UI primitives: `Button`, `Input`, `GlassCard`, `Modal`, `Menu`
+- React + Vite + Tailwind shell with theme mode + UI style picker and layered ASCII/hex backgrounds
+- Shared design tokens, glass surfaces, and UI primitives (`Button`, `Input`, `GlassCard`, `Modal`, `Menu`)
 - Optional Clerk styling helpers in `client/clerk/` (not wired by default)
+- Org engineering standards under [`docs/org-standards/`](docs/org-standards/)
 
-## Setup
+## Requirements
+
+- Node.js 26+
+- pnpm 11+
+
+## Quick start
 
 1. Install dependencies:
 
@@ -43,6 +52,12 @@ AppBase is a reusable starter for new Dark Avian Labs apps. It ships the shared 
    pnpm run build
    pnpm start
    ```
+
+## Examples
+
+```bash
+curl -sS http://127.0.0.1:3002/api/health
+```
 
 ## Environment
 
@@ -80,33 +95,20 @@ AppBase is a reusable starter for new Dark Avian Labs apps. It ships the shared 
 | `pnpm run test:watch`    | Run Vitest in watch mode.                        |
 | `pnpm run test:coverage` | Run Vitest with V8 coverage report.              |
 
-## Scaffold Contracts
+## Development
 
-Use these contracts so app ports stay low-risk and consistent:
+- Design system and porting contracts: [AGENTS.md](AGENTS.md)
+- Org CI/README/validate standards: [docs/org-standards/](docs/org-standards/)
+- Agent wiki: [openwiki/quickstart.md](openwiki/quickstart.md)
 
-- `client/app/`
-  - `config.ts`: env-driven display/config constants for shell text and links
-  - `paths.ts`: central route path definitions
-  - `routes.tsx`: route wiring only (no domain logic)
-- `client/features/<feature>/`
-  - keep page-level UI and feature state together
-  - feature modules import shared shell primitives from `client/components/ui/`
-- `client/components/`
-  - `Layout/`: global app shell (header/content/footer + menu, `AsciiWaveBackground`, `HexSideBackground`)
-  - `ui/`: reusable primitives only (`Button`, `Input`, `GlassCard`, `Modal`, `Menu`)
-- `client/lib/asciiBackground/`
-  - canvas wave animation for the center ASCII art (ported from Codex)
-- `assets/`
-  - `background.txt`, `background2.txt`, `background3.txt` — ASCII art frames + accent mask for the wave animation
-- `server/routes/`
-  - keep routes thin and scoped; mount from `server/index.ts`
-  - keep `/api/health` and `/api/csrf` as baseline; add app-specific routes under dedicated route modules
-- `client/clerk/` (optional)
-  - Clerk appearance builders and auth shell for apps that use `@clerk/react`
+### Scaffold contracts
 
-## Extending AppBase
+- `client/app/` — `config.ts`, `paths.ts`, `routes.tsx` (routing only)
+- `client/features/<feature>/` — page UI + feature state
+- `client/components/ui/` — shared primitives only
+- `server/routes/` — thin routes; keep `/api/health` and `/api/csrf`
+- `client/clerk/` — optional Clerk appearance helpers
 
-- Add new API routes under `server/routes/` and mount them in `server/index.ts` under `/api`.
-- Add app-specific features under `client/features/<feature>/` and wire pages in `client/app/routes.tsx`.
-- For Clerk apps, see `AGENTS.md` and `client/clerk/` for sign-in and profile modal styling.
-- Build new visual surfaces from existing UI primitives before adding one-off class patterns.
+## License
+
+MIT

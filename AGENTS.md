@@ -1,5 +1,23 @@
 # AppBase
 
+## Org standards
+
+Dark Avian Labs engineering conventions (README shape, CI/PR runners, validate, OpenWiki, release tracks) live in [`docs/org-standards/`](docs/org-standards/). New apps and ports should follow those docs; this file focuses on the **design system**.
+
+Defaults: Node **26+**, pnpm **11.x**, `pnpm run validate`, OKF OpenWiki under `openwiki/`, Blacksmith runners with `useblacksmith/checkout@v1` and `actions/setup-node@v7`.
+
+## OpenWiki
+
+This repository has documentation located in the /openwiki directory.
+
+Start here:
+
+- [OpenWiki quickstart](openwiki/quickstart.md)
+
+OpenWiki includes repository overview, architecture notes, workflows, domain concepts, operations, integrations, testing guidance, and source maps.
+
+When working in this repository, read the OpenWiki quickstart first, then follow its links to the relevant architecture, workflow, domain, operation, and testing notes.
+
 ## Overview
 
 AppBase is the shared starter for Dark Avian Labs web apps (Codex, Armory, and new projects). It ships the **DAL design system**: a two-axis theme model (light/dark color mode + UI style), glass-surface components, and shell primitives that sibling apps mirror manually.
@@ -255,4 +273,4 @@ See `README.md` for `pnpm run build`, `pnpm start`, `pnpm run validate`, etc.
 
 Quality checks use **oxlint** (lint) and **oxfmt** (format). Run `pnpm run validate` before committing — it runs runtime preflight, formatting, lint, typecheck, and tests in sequence via `run-quality-checks.mjs`.
 
-Node >= 25 and pnpm >= 11 required (`package.json` `engines` / `packageManager`).
+Node >= 26 and pnpm >= 11 required (`package.json` `engines` / `packageManager`).
