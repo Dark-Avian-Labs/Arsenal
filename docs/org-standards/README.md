@@ -11,6 +11,7 @@ Canonical engineering conventions for DAL application repositories. Copy pattern
 | [validate.md](validate.md)                 | `pnpm run validate` / Rust validate contract              |
 | [openwiki.md](openwiki.md)                 | OKF OpenWiki requirements                                 |
 | [workflow-templates/](workflow-templates/) | Example `pr.yml`, `ci.yml`, `release.yml`, Discord notify |
+| [personal-repos.md](personal-repos.md)     | Same conventions with **GitHub-hosted** runners           |
 
 ## Defaults
 
@@ -20,6 +21,8 @@ Canonical engineering conventions for DAL application repositories. Copy pattern
 - **Discord:** `iShark5060/actions-discord-status@v1` on `blacksmith-2vcpu-ubuntu-2404`
 - **Quality gate:** every app exposes one named validate entrypoint (`pnpm run validate` or `scripts/validate` for Rust)
 - **Docs:** OKF OpenWiki under `openwiki/`; agents start at `openwiki/quickstart.md`
+
+Personal / non-Blacksmith repos: use [personal-repos.md](personal-repos.md) (`ubuntu-latest` / `windows-latest`, `actions/checkout@v7`).
 
 ## Design system
 
