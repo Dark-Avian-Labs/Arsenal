@@ -3,7 +3,7 @@ type: Repository Overview
 title: AppBase Quickstart
 description: Reusable Express + React/Vite/Tailwind starter for Dark Avian Labs apps, shipping the DAL design system and a hardened server baseline with no domain features.
 tags: [overview, starter, express, react, design-system]
-timestamp: 2026-07-21T00:00:00Z
+timestamp: 2026-07-27T15:55:00Z
 ---
 
 # What AppBase is
@@ -21,7 +21,7 @@ across sibling apps.
 
 - **Server:** Express 5 with `helmet`, `express-session` (SQLite store via `better-sqlite3`),
   `csrf-sync`, layered `express-rate-limit`, and health/readiness endpoints (`server/index.ts`).
-- **Client:** React 19 + React Router 7, built by Vite 8, styled with Tailwind CSS v4
+- **Client:** React 19 + React Router 8, built by Vite 8, styled with Tailwind CSS v4
   (`client/main.tsx`, `vite.config.ts`).
 - **Tooling:** TypeScript 6, **oxlint** + **oxfmt** (not ESLint/Prettier), Vitest 4
   (`package.json`).

@@ -1,6 +1,6 @@
 {
-  "updatedAt": "2026-07-21T00:00:00Z",
-  "command": "init",
-  "gitHead": "5e0e6a2e4fccdda35737e902c03c7a9586966bbe",
-  "model": "Opus 4.8"
+  "updatedAt": "2026-07-27T15:55:00Z",
+  "command": "update",
+  "gitHead": "6684bc509cca2526609986cd08456ef50d129481",
+  "model": "Cursor Grok 4.5"
 }

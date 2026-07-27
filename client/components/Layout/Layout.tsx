@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, Outlet } from 'react-router-dom';
+import { Link, Outlet } from 'react-router';
 
 import feathers from '../../../assets/feathers.png';
 import { APP_DISPLAY_NAME, LEGAL_ENTITY_NAME } from '../../app/config';
