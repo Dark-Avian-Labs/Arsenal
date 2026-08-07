@@ -64,6 +64,7 @@ jobs:
           generate_release_notes: true
           files: dist/*
           fail_on_unmatched_files: true
+          upload_checksums: true
 
   discord-status:
     runs-on: blacksmith-2vcpu-ubuntu-2404
@@ -73,4 +74,8 @@ jobs:
       - uses: iShark5060/actions-discord-status@v1
         with:
           webhook: ${{ secrets.DISCORD_WEBHOOK }}
+          job_results: ${{ join(needs.*.result, '\n') }}
+          mention_on: failure
+          content: '<@${{ secrets.DISCORD_USERID }}>'
+          title: ${{ github.workflow }}
 ```
