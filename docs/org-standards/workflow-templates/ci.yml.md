@@ -45,7 +45,11 @@ jobs:
       - uses: iShark5060/actions-discord-status@v1
         with:
           webhook: ${{ secrets.DISCORD_WEBHOOK }}
-          # … status/title/description …
+          job_results: ${{ join(needs.*.result, '\n') }}
+          mention_on: failure
+          content: '<@${{ secrets.DISCORD_USERID }}>'
+          title: ${{ github.workflow }}
+          # optional description for human-readable outcome text
 ```
 
 ## Direct deploy static site (Track C)
@@ -74,4 +78,12 @@ jobs:
     runs-on: blacksmith-2vcpu-ubuntu-2404
     needs: [validate, deploy]
     if: always()
+    steps:
+      - uses: iShark5060/actions-discord-status@v1
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK }}
+          job_results: ${{ join(needs.*.result, '\n') }}
+          mention_on: failure
+          content: '<@${{ secrets.DISCORD_USERID }}>'
+          title: ${{ github.workflow }}
 ```
