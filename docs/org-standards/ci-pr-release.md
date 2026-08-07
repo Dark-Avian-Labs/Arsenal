@@ -11,12 +11,12 @@ Do not use `ubuntu-latest` or `blacksmith-4vcpu-*` for new/updated jobs.
 
 ## Required actions
 
-| Concern                       | Pin                                     |
-| ----------------------------- | --------------------------------------- |
-| Checkout (Blacksmith jobs)    | `useblacksmith/checkout@v1`             |
-| pnpm                          | `pnpm/action-setup@v6`                  |
-| Node                          | `actions/setup-node@v7` (`cache: pnpm`) |
-| Discord status                | `iShark5060/actions-discord-status@v1` (`job_results` + `mention_on: failure`) |
+| Concern                       | Pin                                                                                |
+| ----------------------------- | ---------------------------------------------------------------------------------- |
+| Checkout (Blacksmith jobs)    | `useblacksmith/checkout@v1`                                                        |
+| pnpm                          | `pnpm/action-setup@v6`                                                             |
+| Node                          | `actions/setup-node@v7` (`cache: pnpm`)                                            |
+| Discord status                | `iShark5060/actions-discord-status@v1` (`job_results` + `mention_on: failure`)     |
 | GitHub Release (manual track) | `iShark5060/actions-gh-release@v1` (`upload_checksums: true` when uploading files) |
 
 Optional local composite: `.github/actions/pnpm-install-fresh` (drop lockfile then `pnpm install`) — used by Armory/Codex/TC-Bot style CI.
