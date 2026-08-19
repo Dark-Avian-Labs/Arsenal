@@ -45,7 +45,6 @@ body {
   position: absolute;
   opacity:0.5;
 }
-//types//
 .type1 {
   box-shadow: 0px 0px 0px white;
   opacity:0.1;
@@ -58,7 +57,6 @@ body {
   box-shadow: 0px 0px 20px white;
   opacity:0.5;
 }
-/// each hex ////
 .terminal_honeycomb1{
   left:193px;
   top:181px;

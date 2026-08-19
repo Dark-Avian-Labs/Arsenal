@@ -9,7 +9,7 @@
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4.x-06B6D4?logo=tailwindcss&logoColor=white)
 [![Cursor](https://img.shields.io/badge/Cursor-IDE-141414?logo=cursor&logoColor=white)](https://cursor.com)
 
-AppBase is a reusable starter for new Dark Avian Labs apps. It ships the shared shell UX, design system, and server baseline while leaving domain features intentionally empty. Authentication is not included by default — wire [Clerk](client/clerk/) when an app needs it.
+AppBase is the starter for new Dark Avian Labs web apps. It ships the shared shell, glass design system, and Express server baseline, with domain features left empty on purpose. Authentication is not wired by default. Add [Clerk](client/clerk/) when an app needs it.
 
 ## Features
 
