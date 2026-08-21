@@ -28,12 +28,12 @@ When building a new app from AppBase, copy the design contracts below so the UI 
 
 AppBase uses **two independent axes**:
 
-| Axis           | Values                       | HTML classes                               | Default |
-| -------------- | ---------------------------- | ------------------------------------------ | ------- |
-| **Color mode** | `light` / `dark`             | `html.dark` (absent = light)               | `dark`  |
-| **UI style**   | `prism` / `shadow` / `clear` | `html.ui-prism` / `ui-shadow` / `ui-clear` | `prism` |
+| Axis           | Values                                   | HTML classes                                              | Default |
+| -------------- | ---------------------------------------- | --------------------------------------------------------- | ------- |
+| **Color mode** | `light` / `dark`                         | `html.dark` (absent = light)                              | `dark`  |
+| **UI style**   | `prism` / `shadow` / `clear` / `acrylic` | `html.ui-prism` / `ui-shadow` / `ui-clear` / `ui-acrylic` | `prism` |
 
-**Prism** is the baseline frosted-glass look — no extra CSS block is required beyond base tokens. **Shadow** adds heavier glass and deeper panel shadows. **Clear** removes backdrop blur, uses flat solid surfaces, and shrinks radii via `--radius-ui`.
+**Prism** is the baseline frosted-glass look — no extra CSS block is required beyond base tokens. **Shadow** adds heavier glass and deeper panel shadows. **Clear** removes backdrop blur, uses flat solid surfaces, and shrinks radii via `--radius-ui`. **Acrylic** is the signed-off Windows 11 flyout material (variant D): `blur(40px) saturate(200%) contrast(1.08)`, a 55% tint, exclusion grain, and tiled noise. Do not add `brightness()` to it.
 
 ### Boot order (avoid FOUC)
 
@@ -75,7 +75,7 @@ All design tokens and component classes live in **`client/styles/input.css`** (T
 --color-surface-modal, --color-surface-thead
 --color-bg-start, --color-bg-end, --color-bg-glow
 --shadow-panel
---radius-ui, --radius-ui-lg, --radius-ui-sm   (Clear overrides these to 4px / 6px / 3px)
+--radius-ui, --radius-ui-lg, --radius-ui-sm   (Clear: 4px / 6px / 3px; Acrylic: 8px / 8px / 4px)
 --color-accent-weak, --color-accent-weak-2
 --ascii-opacity, --ascii-canvas-fg, --ascii-canvas-fg-bright, --ascii-canvas-fg-accent
 --hex-side-fill, --hex-cluster-scale   (4K viewport = 1×)
@@ -93,6 +93,7 @@ Game-domain scaffold tokens (`--color-dmg-*`, `--color-rarity-*`, `--color-riven
 
 - **Shadow:** `html.dark.ui-shadow`, `html.ui-shadow:not(.dark)` — token overrides + stronger blur/shadow on `.glass-*`, modals, menus.
 - **Clear:** `html.dark.ui-clear`, `html.ui-clear:not(.dark)` — solid surfaces, no `::before` shine, no backdrop-filter, 4px radii.
+- **Acrylic:** `html.dark.ui-acrylic`, `html.ui-acrylic:not(.dark)` — Win11 D material on `.glass-*`, modals, menus, and dropdowns. Exclusion lives on `::before`, noise on `::after` (`client/styles/acrylic-noise.svg`). Radii go to 8px / 4px. A parent with `opacity < 1`, `filter`, `mask`, `clip-path`, or its own `backdrop-filter` will kill the blur; Acrylic therefore skips `#root` blur and overlay `backdrop-filter` while a modal is open.
 
 ## Component contracts
 
@@ -109,7 +110,7 @@ Use these class names and primitives — do not invent one-off glass or button p
 | Stale client banner | `stale-update-banner` + gold `stale-update-cta` with `stale-update-cta__label` text "Refresh now!"        |
 | Toasts              | `.toast-pill` with optional `data-tone="success\|error\|warning"`                                         |
 | Form focus          | `.form-input:focus` and `.form-group input:focus` — accent border + soft glow ring                        |
-| Theme on `<html>`   | `dark` + exactly one `ui-prism` / `ui-shadow` / `ui-clear`                                                |
+| Theme on `<html>`   | `dark` + exactly one `ui-prism` / `ui-shadow` / `ui-clear` / `ui-acrylic`                                 |
 | Shell background    | `AsciiWaveBackground` (`.bg-art` canvas) centered; `HexSideBackground` (`.hex-side-panel`) on both sides  |
 
 ### Shell background
@@ -177,7 +178,7 @@ AppBase ships **centralized auth** by default and does **not** depend on Clerk. 
 
 | File                 | Purpose                                                                                                       |
 | -------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `clerk-auth.css`     | Glass-themed overrides for Clerk sign-in/up and profile modals (Prism / Shadow / Clear aware)                 |
+| `clerk-auth.css`     | Glass-themed overrides for Clerk sign-in/up and profile modals (Prism / Shadow / Clear / Acrylic aware)       |
 | `clerkAppearance.ts` | `buildClerkAppearance()` and `buildClerkProfileAppearance()` — maps Clerk `appearance` API to DAL CSS classes |
 | `ClerkAuthShell.tsx` | Auth page wrapper: `glass-surface` card + `clerk-auth-shell` + title/subtitle                                 |
 | `index.ts`           | Barrel exports                                                                                                |
@@ -239,12 +240,13 @@ If you only need the default look:
 3. Set `index.html` to `class="dark ui-prism"` and include `theme-init.js` in `<head>`.
 4. Use the component class names above; default UI style requires no extra CSS.
 
-### All themes (Prism + Shadow + Clear)
+### All themes (Prism + Shadow + Clear + Acrylic)
 
 Also ensure:
 
-- Full `input.css` includes `html.ui-shadow` and `html.ui-clear` token blocks and component overrides at the bottom of the file.
-- `ThemeContext` exposes `uiStyle` / `setUiStyle` (`prism`, `shadow`, `clear`).
+- Full `input.css` includes `html.ui-shadow`, `html.ui-clear`, and `html.ui-acrylic` token blocks and component overrides at the bottom of the file.
+- `client/styles/acrylic-noise.svg` sits next to `input.css` (Acrylic tiles it at 128px).
+- `ThemeContext` exposes `uiStyle` / `setUiStyle` (`prism`, `shadow`, `clear`, `acrylic`).
 - `UiStyleSelector` in the user menu (or equivalent settings surface).
 - Font packages: `@fontsource-variable/geist`, `geist-mono`, `inter`, `material-symbols-rounded`, `cascadia-mono` (ASCII canvas).
 - Shell backgrounds: `AsciiWaveBackground`, `HexSideBackground`, `assets/background*.txt`, and `client/lib/asciiBackground/`.
@@ -261,7 +263,8 @@ Checklist after design changes:
 
 - [ ] Token values match across apps (oklch color space)
 - [ ] `dal.theme.mode` / `dal.ui.style` cookie keys unchanged
-- [ ] `theme-init.js` logic matches (minus app-specific localStorage fallback keys)
+- [ ] `theme-init.js` logic matches (minus app-specific localStorage fallback keys), including `acrylic` in the UI style list
+- [ ] `acrylic-noise.svg` copied next to `input.css` if Acrylic is enabled
 - [ ] Modal, dropdown, and button class names unchanged
 - [ ] Layout `max-w-[2000px]` preserved
 - [ ] Shell background assets and `asciiBackground` lib kept in sync with Codex when wave behavior changes

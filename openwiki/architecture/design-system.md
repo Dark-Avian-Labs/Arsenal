@@ -3,7 +3,7 @@ type: Architecture Overview
 title: DAL Design System
 description: The two-axis theme model, glass-surface component contracts, design tokens, UI primitives, theme boot/persistence, and layered shell backgrounds.
 tags: [design-system, theming, tailwind, ui, glass]
-timestamp: 2026-07-21T00:00:00Z
+timestamp: 2026-08-21T19:10:00Z
 ---
 
 # Overview
@@ -16,13 +16,14 @@ system in [Clerk integration](../integrations/clerk.md).
 
 # Two-axis theme model
 
-| Axis       | Values                       | HTML classes                               | Default |
-| ---------- | ---------------------------- | ------------------------------------------ | ------- |
-| Color mode | `light` / `dark`             | `html.dark` (absent = light)               | `dark`  |
-| UI style   | `prism` / `shadow` / `clear` | `html.ui-prism` / `ui-shadow` / `ui-clear` | `prism` |
+| Axis       | Values                                   | HTML classes                                              | Default |
+| ---------- | ---------------------------------------- | --------------------------------------------------------- | ------- |
+| Color mode | `light` / `dark`                         | `html.dark` (absent = light)                              | `dark`  |
+| UI style   | `prism` / `shadow` / `clear` / `acrylic` | `html.ui-prism` / `ui-shadow` / `ui-clear` / `ui-acrylic` | `prism` |
 
 The two axes combine freely (e.g. light + clear). **Prism** is the baseline glass look, **Shadow**
-adds heavier blur/shadow, **Clear** removes backdrop blur and shrinks radii. Types and helpers are
+adds heavier blur/shadow, **Clear** removes backdrop blur and shrinks radii, **Acrylic** is the
+Windows 11 flyout material (variant D: blur + saturate, tint, exclusion, noise). Types and helpers are
 defined in `client/context/ThemeContext.tsx` (`ThemeMode`, `UiStyle`, `UI_STYLES`,
 `UI_STYLE_LABELS`).
 
@@ -33,12 +34,12 @@ defined in `client/context/ThemeContext.tsx` (`ThemeMode`, `UiStyle`, `UI_STYLES
    cookie/localStorage.
 3. `ThemeProvider` re-applies on change and persists — it deliberately **skips the first write**
    (via `hasMountedRef`) so it does not clobber the pre-hydration classes
-   (`client/context/ThemeContext.tsx:122`).
+   (`client/context/ThemeContext.tsx:138`).
 
 # Persistence and the theme API
 
 `useTheme()` exposes `{ mode, setMode, toggleMode, uiStyle, setUiStyle, cycleUiStyle }`
-(`client/context/ThemeContext.tsx:184`). Persistence keys:
+(`client/context/ThemeContext.tsx:190`). Persistence keys:
 
 | Setting    | Cookie           | localStorage                            |
 | ---------- | ---------------- | --------------------------------------- |
@@ -48,15 +49,16 @@ defined in `client/context/ThemeContext.tsx` (`ThemeMode`, `UiStyle`, `UI_STYLES
 The shared `dal.*` keys let choices sync across DAL subdomains when
 `VITE_SHARED_THEME_COOKIE_DOMAIN` is set (see [configuration](../operations/configuration.md)); the
 `appbase.theme.mode` key is the app-local fallback. Cookies are written `SameSite=Lax`, and `Secure`
-only over HTTPS (`client/context/ThemeContext.tsx:100`).
+only over HTTPS (`client/context/ThemeContext.tsx:106`).
 
 # Tokens and CSS architecture
 
 All design tokens and component classes live in **`client/styles/input.css`** (Tailwind v4 with
 `@theme`, `@layer components`, and style-specific overrides). Light mode overrides tokens via
-`html:not(.dark)`; Shadow and Clear override via `html.ui-shadow` / `html.ui-clear` blocks. See
-`AGENTS.md` → "CSS architecture" for the full token list (`--color-*`, `--radius-ui*`,
-`--shadow-panel`, ASCII/hex tokens, etc.).
+`html:not(.dark)`; Shadow, Clear, and Acrylic override via `html.ui-shadow` / `html.ui-clear` /
+`html.ui-acrylic` blocks. Acrylic tiles `client/styles/acrylic-noise.svg` and maps exclusion/noise
+onto surface `::before` / `::after`. See `AGENTS.md` → "CSS architecture" for the full token list
+(`--color-*`, `--radius-ui*`, `--shadow-panel`, ASCII/hex tokens, etc.).
 
 # Component contracts and primitives
 
@@ -93,4 +95,6 @@ files as a unit when porting.
   keeps the checklist.
 - **Keep exactly one `ui-*` class on `<html>`** plus optional `dark`; `ThemeProvider` enforces this
   by removing the others before adding the active one.
+- **Acrylic blur dies** if a parent has `opacity < 1`, `filter`, `mask`, `clip-path`, or its own
+  `backdrop-filter`. Do not add `brightness()` to the Acrylic filter.
 - **Don't rename the `dal.*` cookie/localStorage keys** — cross-app theme sync depends on them.
