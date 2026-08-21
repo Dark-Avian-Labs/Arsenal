@@ -81,7 +81,11 @@ All design tokens and component classes live in **`client/styles/input.css`** (T
 --hex-side-fill, --hex-cluster-scale   (4K viewport = 1×)
 ```
 
-Game-domain scaffold tokens (`--color-dmg-*`, `--color-rarity-*`, `--color-riven*`) are pre-defined for Warframe-style apps.
+Game-domain scaffold:
+
+- **Hue rarity ladder** (canonical): `--color-rarity-gray`, `-white`, `-green`, `-teal`, `-blue`, `-purple`, `-pink`, `-gold`, `-orange`, `-red`.
+- **Domain aliases** (default mapping): `common→gray`, `uncommon→green`, `rare→blue`, `epic→purple`, `legendary→gold`, `mythic→red`, `lord→orange`, `exclusive→red`, `peculiar→pink`. Apps rebind these, they do not invent new hue tokens. Do not point rarity at `--color-danger` / `--color-accent`.
+- Damage / riven: `--color-dmg-*`, `--color-riven*`.
 
 `body` uses a fixed gradient (`--color-bg-start` → `--color-bg-end` with `--color-bg-glow` radials). Shell background components sit above that gradient.
 
