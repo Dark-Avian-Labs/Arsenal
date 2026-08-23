@@ -17,24 +17,31 @@ production. This page maps the tree and the build wiring; runtime behavior lives
 
 ```
 server/                 Express API + static host
-├── index.ts            App entry: middleware chain, routes, listen, shutdown
-├── config.ts           Env-derived config + PROJECT_ROOT/DATA_DIR resolution
-├── routes/api.ts       /api router (/health, /csrf)
-├── db/connection.ts    Lazy better-sqlite3 session DB (WAL)
+├── index.ts            Entrypoint: listen, signals, crash guards, shutdown
+├── app.ts              createApp() factory: full middleware chain + routes
+├── config.ts           dotenvx env loading + config + PROJECT_ROOT/DATA_DIR
+├── clerkEnv.ts         Clerk key normalization/enforcement
+├── logger.ts           Structured JSON logger
+├── auth/               Clerk middleware, role helpers, authorized parties
+├── http/               helmetCsp (Clerk-aware CSP), requestId
+├── routes/             api.ts (/health, /csrf) + auth.ts (/auth/me)
+├── db/connection.ts    Lazy better-sqlite3 session DB (WAL, busy_timeout)
 ├── db/sessionSchema.ts CREATE TABLE sessions + index
+├── db/sqliteSessionStore.ts  In-repo express-session store
 └── types/              express-session type augmentation
 
 client/                 React SPA
 ├── main.tsx            Root render: BrowserRouter + ThemeProvider
-├── App.tsx             Renders AppRoutes
+├── App.tsx             ClerkProvider/AuthProvider composition → AppRoutes
 ├── app/                Routing only: config.ts, paths.ts, routes.tsx
-├── features/           Page UI (home, legal)
+├── features/           Page UI (home, legal, auth)
+├── lib/scaffoldSearch.ts Header search index (Home / Legal / Sign-in / Sign-up)
 ├── components/Layout/  Shell: Layout, backgrounds, SearchBar
 ├── components/ui/       Shared primitives (Button, Modal, Menu, …)
 ├── context/            ThemeContext (theme + UI style)
 ├── lib/asciiBackground/ Canvas ASCII wave helpers
 ├── styles/input.css    ALL design tokens + component classes (Tailwind v4)
-└── clerk/              Optional Clerk styling (not wired by default)
+└── clerk/              Clerk appearance helpers + auth shell (wired)
 
 scripts/                dev.mjs (dual dev), runtime-preflight.mjs
 docs/org-standards/     DAL engineering conventions
@@ -45,7 +52,7 @@ run-quality-checks.mjs  pnpm run validate entrypoint
 # Server/client boundary
 
 There is one process in production: the Express server serves `dist/client` as static assets and
-falls back to `index.html` for client-side routing (`server/index.ts:156`). The client talks to the
+falls back to `index.html` for client-side routing (`server/app.ts`). The client talks to the
 server only through `/api` (`client/utils/api.ts`, `server/routes/api.ts`). In development the two
 run as separate processes with a Vite proxy — see
 [development & build](workflows/development-and-build.md).
@@ -68,8 +75,8 @@ proxy documented in [development & build](workflows/development-and-build.md).
 
 # Where to start
 
-- Server entry: `server/index.ts`
-- Client entry: `client/main.tsx` → `client/app/routes.tsx`
+- Server entry: `server/index.ts` → `server/app.ts`
+- Client entry: `client/main.tsx` → `client/App.tsx` → `client/app/routes.tsx`
 - Build config: `vite.config.ts`, `tsconfig.server.json`
 
 # What to watch out for

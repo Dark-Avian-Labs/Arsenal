@@ -41,17 +41,26 @@ after a Node version change.
 # Testing
 
 Tests run on Vitest with the Node environment, matching `server/**/*.test.ts` and
-`client/**/*.test.ts`, V8 coverage into `coverage/` (`vitest.config.ts`). Today the suite is minimal:
-`server/db/sessionSchema.test.ts` verifies `createSessionSchema` creates the `sessions` table against
-an in-memory SQLite DB. Add tests beside the code they cover; a deeper testing guide is deferred to
-the quickstart Backlog until the suite grows.
+`client/**/*.test.ts`, V8 coverage into `coverage/` (`vitest.config.ts`). The suite covers:
+
+- `server/app.test.ts` — supertest integration tests against `createApp()` with an in-memory
+  session DB: health/readiness, helmet + CSP headers, rate-limit headers, request-ID echoing,
+  CSRF issue/reject/accept flow, auth 401s, JSON body limits, API 404s.
+- `server/db/sqliteSessionStore.test.ts` — the in-repo session store (round-trip, expiry,
+  destroy/touch/clearExpired).
+- `server/db/sessionSchema.test.ts` — schema creation.
+- `client/lib/scaffoldSearch.test.ts` — header search matcher (title / hint / path).
+
+Add tests beside the code they cover.
 
 # PR CI
 
-`.github/workflows/pr.yml` runs on `pull_request` on a Blacksmith 8-vCPU runner: checkout
-(`useblacksmith/checkout@v1`) → `pnpm/action-setup@v6` → `actions/setup-node@v7` (Node 26,
-`cache: pnpm`) → `pnpm install --frozen-lockfile` → **`pnpm run validate`** → **`pnpm run build`**.
-Validate and build are the only gates; AppBase has no release/deploy workflow by design
+`.github/workflows/pr.yml` runs on `pull_request` on a Blacksmith 8-vCPU runner: checkout →
+pnpm setup → Node 26 (`cache: pnpm`) → `pnpm install --frozen-lockfile` →
+`pnpm audit --audit-level high` → **`pnpm run validate`** → **`pnpm run build`**. All third-party
+actions are **pinned to commit SHAs** (tag in a trailing comment); Dependabot
+(`.github/dependabot.yml`) keeps both npm deps and the action pins current. Validate and build are
+the only gates; AppBase has no release/deploy workflow by design
 (`docs/org-standards/ci-pr-release.md` → "Starter").
 
 # Org standards
