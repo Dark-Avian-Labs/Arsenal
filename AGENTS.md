@@ -172,11 +172,9 @@ Place `UiStyleSelector` after primary menu items, separated by `user-menu-divide
 | `UiStyleSelector` | Theme style picker for user menu                           |
 | `MaterialSymbol`  | Material Symbols Rounded icon span                         |
 
-## Optional: Clerk authentication styling
+## Clerk authentication styling
 
-AppBase ships **centralized auth** by default and does **not** depend on Clerk. The `client/clerk/` folder is an optional add-on for apps that use [`@clerk/react`](https://clerk.com/docs/references/react/overview).
-
-**Not wired by default** — no Clerk CSS in `input.css`, no `@clerk/react` in `package.json`, and `main.tsx` does not import Clerk styles.
+AppBase ships [Clerk](https://clerk.com/docs/references/react/overview) authentication **wired by default**: `@clerk/express` middleware + `/api/auth/me` on the server (`server/auth/`), `ClerkProvider`/`AuthProvider`/`ProtectedRoute` and sign-in/up pages on the client (`client/features/auth/`), and `@/clerk/clerk-auth.css` imported in `main.tsx`. Without Clerk keys the app runs unauthenticated (dev convenience); production requires keys. The `client/clerk/` folder holds the appearance layer.
 
 ### Files (`client/clerk/`)
 
@@ -187,18 +185,18 @@ AppBase ships **centralized auth** by default and does **not** depend on Clerk. 
 | `ClerkAuthShell.tsx` | Auth page wrapper: `glass-surface` card + `clerk-auth-shell` + title/subtitle                                 |
 | `index.ts`           | Barrel exports                                                                                                |
 
-### Enable in a Clerk app
+### Wiring conventions
 
-1. Install Clerk: `pnpm add @clerk/react` (and configure `VITE_CLERK_PUBLISHABLE_KEY` / server `CLERK_SECRET_KEY`).
-2. Import Clerk styles **after** the main design system CSS:
+1. Configure `VITE_CLERK_PUBLISHABLE_KEY` / server `CLERK_SECRET_KEY` (empty = auth disabled outside production).
+2. Clerk styles load **after** the main design system CSS in `main.tsx`:
 
    ```ts
    import './styles/input.css';
    import '@/clerk/clerk-auth.css';
    ```
 
-3. Wrap sign-in/up routes with `ClerkAuthShell` and pass `appearance={buildClerkAppearance(mode)}` from `useTheme()`.
-4. For the account profile modal (`clerk.openUserProfile`), pass `appearance: buildClerkProfileAppearance(mode)`.
+3. Sign-in/up routes wrap Clerk components with `ClerkAuthShell` and pass `appearance={buildClerkAppearance(mode)}` from `useTheme()` (see `client/features/auth/SignInPage.tsx`).
+4. For the account profile modal / `UserButton`, pass `appearance: buildClerkProfileAppearance(mode)`.
 
 ### Sign-in page pattern
 
@@ -255,9 +253,9 @@ Also ensure:
 - Font packages: `@fontsource-variable/geist`, `geist-mono`, `inter`, `material-symbols-rounded`, `cascadia-mono` (ASCII canvas).
 - Shell backgrounds: `AsciiWaveBackground`, `HexSideBackground`, `assets/background*.txt`, and `client/lib/asciiBackground/`.
 
-### Clerk (optional)
+### Clerk
 
-If the app uses Clerk, also copy `client/clerk/` and import `@/clerk/clerk-auth.css` in `main.tsx`. See **Optional: Clerk authentication styling** above.
+Copy `client/clerk/`, `client/features/auth/`, and `server/auth/`, and import `@/clerk/clerk-auth.css` in `main.tsx`. See **Clerk authentication styling** above.
 
 ### Staying aligned with Codex / Armory
 

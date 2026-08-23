@@ -1,0 +1,78 @@
+import { useAuth as useClerkAuth } from '@clerk/react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react';
+
+import { apiFetch, clearCsrfToken } from '../../utils/api';
+
+export type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated' | 'error';
+
+export interface AuthState {
+  status: AuthStatus;
+  userId: string | null;
+  isAdmin: boolean;
+}
+
+interface AuthContextValue {
+  auth: AuthState;
+  refresh: () => Promise<void>;
+}
+
+const UNAUTHENTICATED: AuthState = { status: 'unauthenticated', userId: null, isAdmin: false };
+
+const AuthContext = createContext<AuthContextValue>({
+  auth: UNAUTHENTICATED,
+  refresh: async () => {},
+});
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const { isLoaded, isSignedIn } = useClerkAuth();
+  const [auth, setAuth] = useState<AuthState>({ status: 'loading', userId: null, isAdmin: false });
+
+  const refresh = useCallback(async () => {
+    if (!isLoaded) return;
+    if (!isSignedIn) {
+      clearCsrfToken();
+      setAuth(UNAUTHENTICATED);
+      return;
+    }
+    try {
+      const res = await apiFetch('/api/auth/me');
+      if (res.status === 401) {
+        setAuth(UNAUTHENTICATED);
+        return;
+      }
+      if (!res.ok) throw new Error(`Unexpected status ${res.status}`);
+      const data = (await res.json()) as { userId?: string | null; isAdmin?: boolean };
+      setAuth({
+        status: 'authenticated',
+        userId: data.userId ?? null,
+        isAdmin: data.isAdmin === true,
+      });
+    } catch {
+      setAuth({ status: 'error', userId: null, isAdmin: false });
+    }
+  }, [isLoaded, isSignedIn]);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  const value = useMemo(() => ({ auth, refresh }), [auth, refresh]);
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+export function DisabledAuthProvider({ children }: { children: ReactNode }) {
+  const value = useMemo(() => ({ auth: UNAUTHENTICATED, refresh: async () => {} }), []);
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+export function useAuth(): AuthContextValue {
+  return useContext(AuthContext);
+}

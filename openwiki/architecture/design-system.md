@@ -11,7 +11,7 @@ timestamp: 2026-08-21T19:10:00Z
 AppBase ships the **DAL design system**: a frosted-glass UI driven by two independent axes, a single
 token stylesheet, and a small set of primitives that sibling apps mirror manually. The canonical,
 exhaustive contract (token names, class names, porting checklist) lives in the root **`AGENTS.md`**;
-this page is the map into it and the code that implements it. Optional auth styling extends this
+this page is the map into it and the code that implements it. Auth styling extends this
 system in [Clerk integration](../integrations/clerk.md).
 
 # Two-axis theme model

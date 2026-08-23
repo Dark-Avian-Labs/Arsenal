@@ -14,6 +14,16 @@ const LegalPage = lazy(() =>
     default: mod.LegalPage,
   })),
 );
+const SignInPage = lazy(() =>
+  import('../features/auth/SignInPage').then((mod) => ({
+    default: mod.SignInPage,
+  })),
+);
+const SignUpPage = lazy(() =>
+  import('../features/auth/SignUpPage').then((mod) => ({
+    default: mod.SignUpPage,
+  })),
+);
 
 function RouteFallback() {
   return (
@@ -30,6 +40,9 @@ export function AppRoutes() {
         <Route element={<Layout />}>
           <Route path={APP_PATHS.home} element={<HomePage />} />
           <Route path={APP_PATHS.legal} element={<LegalPage />} />
+          {/* Clerk path routing needs the wildcard for multi-step flows. */}
+          <Route path={`${APP_PATHS.signIn}/*`} element={<SignInPage />} />
+          <Route path={`${APP_PATHS.signUp}/*`} element={<SignUpPage />} />
         </Route>
       </Routes>
     </Suspense>

@@ -9,6 +9,7 @@ export function getSessionDb(): Database.Database {
     sessionDb = new Database(SESSION_DB_PATH);
     sessionDb.pragma('journal_mode = WAL');
     sessionDb.pragma('foreign_keys = ON');
+    sessionDb.pragma('busy_timeout = 5000');
   }
   return sessionDb;
 }

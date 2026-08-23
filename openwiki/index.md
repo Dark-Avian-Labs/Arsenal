@@ -23,4 +23,4 @@ okf_version: '0.1'
 
 # Integrations
 
-- [Clerk Authentication Styling](integrations/clerk.md) — Optional glass-themed Clerk auth (not wired by default)
+- [Clerk authentication](integrations/clerk.md) — Wired server/client Clerk stack and glass appearance

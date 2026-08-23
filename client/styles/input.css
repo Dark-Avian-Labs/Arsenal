@@ -72,7 +72,6 @@
   --color-dmg-void: oklch(76% 0.15 302);
   --color-dmg-true: oklch(100% 0 0);
 
-  /* Hue rarity ladder. Apps alias domain names onto these. */
   --color-rarity-gray: oklch(72% 0.015 260);
   --color-rarity-white: oklch(88% 0.005 264);
   --color-rarity-green: oklch(72% 0.18 145);
@@ -221,8 +220,6 @@ html.ui-clear:not(.dark) {
   --radius-ui-sm: 3px;
 }
 
-/* Acrylic is Win11 variant D: blur + saturate, tint, exclusion, grain.
-   Do not add brightness(). That was the discarded first pass and kills chroma. */
 html.ui-acrylic {
   --radius-ui: 8px;
   --radius-ui-lg: 8px;
