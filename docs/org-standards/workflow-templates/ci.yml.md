@@ -59,13 +59,15 @@ jobs:
   validate:
     runs-on: blacksmith-8vcpu-ubuntu-2404
     steps:
-      - uses: useblacksmith/checkout@v1
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
+      # Pin to commit SHAs in real workflows (see pr.yml.md).
+      - uses: useblacksmith/checkout@2d63ce5ba61677748c4e92f6eb578a8694226225 # v1.2.0
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: '26'
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - run: pnpm audit --audit-level high
       - run: pnpm run validate
       - run: pnpm run build
 

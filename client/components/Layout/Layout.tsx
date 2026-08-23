@@ -2,12 +2,13 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, Outlet } from 'react-router';
 
 import feathers from '../../../assets/feathers.png';
-import { APP_DISPLAY_NAME, LEGAL_ENTITY_NAME } from '../../app/config';
+import { APP_DISPLAY_NAME, CLERK_ENABLED, LEGAL_ENTITY_NAME } from '../../app/config';
 import { APP_PATHS } from '../../app/paths';
 import { MaterialSymbol } from '../../components/ui/MaterialSymbol';
 import { Menu } from '../../components/ui/Menu';
 import { UiStyleSelector } from '../../components/ui/UiStyleSelector';
 import { useTheme } from '../../context/ThemeContext';
+import { AuthControls } from '../../features/auth/AuthControls';
 import { AsciiWaveBackground } from './AsciiWaveBackground';
 import { HexSideBackground } from './HexSideBackground';
 import { SearchBar } from './SearchBar';
@@ -52,6 +53,7 @@ export function Layout() {
           </div>
 
           <div className="flex flex-wrap items-center justify-end gap-3">
+            {CLERK_ENABLED && <AuthControls />}
             <button
               type="button"
               className="icon-toggle-btn"
@@ -65,15 +67,15 @@ export function Layout() {
               <button
                 type="button"
                 className="icon-toggle-btn"
-                aria-haspopup="menu"
                 aria-expanded={settingsMenuOpen}
+                aria-controls="settings-menu"
                 aria-label="Open settings menu"
                 onClick={() => setSettingsMenuOpen((prev) => !prev)}
               >
                 <MaterialSymbol name="settings" />
               </button>
               {settingsMenuOpen && (
-                <Menu>
+                <Menu id="settings-menu">
                   <UiStyleSelector />
                 </Menu>
               )}

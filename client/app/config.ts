@@ -18,5 +18,39 @@ export const LEGAL_ENTITY_NAME = readTrimmedEnv(
 
 export const SEARCH_PLACEHOLDER = readTrimmedEnv(
   import.meta.env.VITE_SEARCH_PLACEHOLDER as string | undefined,
-  'Search scaffold...',
+  'Search...',
+);
+
+export const CLERK_PUBLISHABLE_KEY = readTrimmedEnv(
+  import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as string | undefined,
+  '',
+);
+
+/** When no publishable key is configured the app runs without authentication. */
+export const CLERK_ENABLED = CLERK_PUBLISHABLE_KEY.length > 0;
+
+// Legal/contact details come from env so the template ships without real PII.
+export const LEGAL_CONTACT_NAME = readTrimmedEnv(
+  import.meta.env.VITE_LEGAL_CONTACT_NAME as string | undefined,
+  'Legal contact not configured',
+);
+
+export const LEGAL_CONTACT_STREET = readTrimmedEnv(
+  import.meta.env.VITE_LEGAL_CONTACT_STREET as string | undefined,
+  '',
+);
+
+export const LEGAL_CONTACT_CITY = readTrimmedEnv(
+  import.meta.env.VITE_LEGAL_CONTACT_CITY as string | undefined,
+  '',
+);
+
+export const LEGAL_CONTACT_PHONE = readTrimmedEnv(
+  import.meta.env.VITE_LEGAL_CONTACT_PHONE as string | undefined,
+  '',
+);
+
+export const LEGAL_CONTACT_EMAIL = readTrimmedEnv(
+  import.meta.env.VITE_LEGAL_CONTACT_EMAIL as string | undefined,
+  '',
 );

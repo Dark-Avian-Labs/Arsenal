@@ -1,38 +1,58 @@
 let cachedToken = '';
 
-async function getCsrfToken(): Promise<string> {
-  if (cachedToken) return cachedToken;
+async function fetchCsrfToken(): Promise<string> {
   try {
     const res = await fetch('/api/csrf');
     if (res.ok) {
-      const data = await res.json();
-      cachedToken = (data.csrfToken as string) ?? '';
-      return cachedToken;
+      const data = (await res.json()) as { csrfToken?: string };
+      return data.csrfToken ?? '';
     }
   } catch {
-    // ignore
+    // Network failure: caller proceeds without a token and surfaces the 403.
   }
   return '';
+}
+
+async function getCsrfToken(): Promise<string> {
+  if (!cachedToken) {
+    cachedToken = await fetchCsrfToken();
+  }
+  return cachedToken;
 }
 
 export function clearCsrfToken(): void {
   cachedToken = '';
 }
 
+function isCsrfRejection(response: Response): boolean {
+  return response.status === 403 && response.headers.get('X-CSRF-Error') === '1';
+}
+
 export async function apiFetch(url: string, init?: RequestInit): Promise<Response> {
   const method = (init?.method ?? 'GET').toUpperCase();
   const needsCsrf = method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS';
 
-  const headers = new Headers(init?.headers);
+  const buildHeaders = (token: string): Headers => {
+    const headers = new Headers(init?.headers);
+    if (needsCsrf && token) headers.set('X-CSRF-Token', token);
+    if (!headers.has('Content-Type') && init?.body && typeof init.body === 'string') {
+      headers.set('Content-Type', 'application/json');
+    }
+    return headers;
+  };
 
-  if (needsCsrf) {
-    const token = await getCsrfToken();
-    if (token) headers.set('X-CSRF-Token', token);
+  const token = needsCsrf ? await getCsrfToken() : '';
+  const response = await fetch(url, { ...init, headers: buildHeaders(token) });
+
+  if (needsCsrf && isCsrfRejection(response)) {
+    // The session (and with it the token) may have rotated, e.g. after a
+    // fresh login. Fetch a new token and retry the request once.
+    clearCsrfToken();
+    const freshToken = await getCsrfToken();
+    if (freshToken && freshToken !== token) {
+      return fetch(url, { ...init, headers: buildHeaders(freshToken) });
+    }
   }
 
-  if (!headers.has('Content-Type') && init?.body && typeof init.body === 'string') {
-    headers.set('Content-Type', 'application/json');
-  }
-
-  return fetch(url, { ...init, headers });
+  return response;
 }

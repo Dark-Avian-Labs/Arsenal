@@ -1,6 +1,17 @@
+import {
+  LEGAL_CONTACT_CITY,
+  LEGAL_CONTACT_EMAIL,
+  LEGAL_CONTACT_NAME,
+  LEGAL_CONTACT_PHONE,
+  LEGAL_CONTACT_STREET,
+} from '../../app/config';
 import { GlassCard } from '../../components/ui/GlassCard';
 
 export function LegalPage() {
+  const responsiblePerson = [LEGAL_CONTACT_NAME, LEGAL_CONTACT_STREET, LEGAL_CONTACT_CITY]
+    .filter(Boolean)
+    .join(', ');
+
   return (
     <div className="mx-auto max-w-5xl">
       <GlassCard className="p-8">
@@ -8,11 +19,11 @@ export function LegalPage() {
 
         <section className="text-muted mt-6 space-y-2 text-sm">
           <h2 className="text-foreground text-lg font-semibold">Contact</h2>
-          <p>Lutz Schwemer Panchez</p>
-          <p>Holsteiner Str. 1</p>
-          <p>21465 Reinbek</p>
-          <p>Phone: +49 176 72439032</p>
-          <p>E-Mail: shark@shark5060.net</p>
+          <p>{LEGAL_CONTACT_NAME}</p>
+          {LEGAL_CONTACT_STREET && <p>{LEGAL_CONTACT_STREET}</p>}
+          {LEGAL_CONTACT_CITY && <p>{LEGAL_CONTACT_CITY}</p>}
+          {LEGAL_CONTACT_PHONE && <p>Phone: {LEGAL_CONTACT_PHONE}</p>}
+          {LEGAL_CONTACT_EMAIL && <p>E-Mail: {LEGAL_CONTACT_EMAIL}</p>}
         </section>
 
         <section className="text-muted mt-8 space-y-3 text-sm">
@@ -70,9 +81,9 @@ export function LegalPage() {
           <p>Last updated: December 29, 2025.</p>
 
           <h3 className="text-foreground pt-2 text-base font-semibold">Responsible Person</h3>
-          <p>Lutz Schwemer Panchez, Holsteiner Str. 1, 21465 Reinbek</p>
-          <p>Phone: +49 176 72439032</p>
-          <p>E-Mail: shark@shark5060.net</p>
+          <p>{responsiblePerson}</p>
+          {LEGAL_CONTACT_PHONE && <p>Phone: {LEGAL_CONTACT_PHONE}</p>}
+          {LEGAL_CONTACT_EMAIL && <p>E-Mail: {LEGAL_CONTACT_EMAIL}</p>}
 
           <h3 className="text-foreground pt-2 text-base font-semibold">Types of Data Processed</h3>
           <ul className="list-disc space-y-1 pl-5">

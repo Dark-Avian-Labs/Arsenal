@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-const apiTarget = process.env.VITE_DEV_API_TARGET?.trim() || 'http://127.0.0.1:3002';
+const apiTarget = process.env.VITE_DEV_API_TARGET?.trim() || 'http://127.0.0.1:3000';
 const vitePort = process.env.VITE_DEV_PORT?.trim() || '5173';
 
 const devEnv = {
@@ -54,5 +54,6 @@ console.log(`[dev] API server target: ${apiTarget}`);
 console.log(`[dev] Vite client: http://127.0.0.1:${vitePort}`);
 console.log('[dev] Press Ctrl+C to stop both processes.\n');
 
-start('server', [tsxCli, 'watch', '--env-file=.env', 'server/index.ts']);
+// The server loads .env.development itself (server/config.ts, via dotenvx).
+start('server', [tsxCli, 'watch', 'server/index.ts']);
 start('client', [viteCli, '--port', vitePort]);
