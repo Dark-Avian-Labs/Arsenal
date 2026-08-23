@@ -8,12 +8,6 @@ export function getClerkFapiOrigin(): string {
   return fromEnv.replace(/\/+$/, '');
 }
 
-/**
- * Helmet with the org-approved CSP extensions for Clerk (and Cloudflare
- * Turnstile, which Clerk uses for bot protection). `style-src 'unsafe-inline'`
- * is required by Clerk components and React inline styles; script-src stays
- * strict.
- */
 export function createAppHelmet() {
   const clerkFapi = getClerkFapiOrigin();
   const defaults = helmet.contentSecurityPolicy.getDefaultDirectives();

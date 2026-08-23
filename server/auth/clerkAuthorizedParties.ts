@@ -23,11 +23,6 @@ function isAllowedOrigin(origin: string, isDevEnv: boolean): boolean {
   return origin.startsWith('https://') || (isDevEnv && origin.startsWith('http://'));
 }
 
-/**
- * Origins Clerk accepts as the `azp` (authorized party) claim. Restricting
- * this prevents session tokens minted for another origin from being replayed
- * against this app.
- */
 export function getClerkAuthorizedParties(): string[] {
   const nodeEnv = (process.env.NODE_ENV ?? '').trim().toLowerCase();
   const isDevEnv = nodeEnv !== 'production';

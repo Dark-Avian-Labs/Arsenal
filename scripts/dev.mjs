@@ -54,6 +54,5 @@ console.log(`[dev] API server target: ${apiTarget}`);
 console.log(`[dev] Vite client: http://127.0.0.1:${vitePort}`);
 console.log('[dev] Press Ctrl+C to stop both processes.\n');
 
-// The server loads .env.development itself (server/config.ts, via dotenvx).
 start('server', [tsxCli, 'watch', 'server/index.ts']);
 start('client', [viteCli, '--port', vitePort]);

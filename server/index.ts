@@ -37,8 +37,6 @@ function shutdown(exitCode: number): void {
 process.on('SIGINT', () => shutdown(0));
 process.on('SIGTERM', () => shutdown(0));
 
-// Crash guards: log with full context, then exit non-zero so the process
-// manager restarts a clean instance instead of running in a corrupted state.
 process.on('unhandledRejection', (reason) => {
   log('error', 'Unhandled promise rejection; shutting down', {
     error: reason instanceof Error ? (reason.stack ?? reason.message) : String(reason),

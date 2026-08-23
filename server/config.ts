@@ -6,15 +6,6 @@ import { config as loadEnv } from '@dotenvx/dotenvx';
 
 import { normalizeClerkEnv } from './clerkEnv.js';
 
-/**
- * Env loading (in-process via dotenvx, no CLI wrapper needed):
- * 1. `.env.keys` (gitignored) provides DOTENV_PRIVATE_KEY_* so encrypted
- *    values in the committed env files can be decrypted at load time.
- * 2. `.env.<NODE_ENV>` is loaded (`.env.test` when NODE_ENV=test, otherwise
- *    `.env.production` / `.env.development` with fallback between them).
- * Values already present in process.env always win (dotenvx does not
- * override), so PM2/CI-provided vars take priority.
- */
 function resolveEnvFilePath(projectRoot: string): string | null {
   const normalizedNodeEnv = (process.env.NODE_ENV ?? '').trim().toLowerCase();
 
@@ -83,7 +74,6 @@ function resolveSessionDbPath(): string {
 
 export const SESSION_DB_PATH = resolveSessionDbPath();
 
-// Org port map: AppBase 3000, BudgetPlanner 3001, Armory 3002. Codex also defaults to 3001.
 const _port = parseInt(process.env.PORT || '3000', 10);
 export const PORT = Number.isFinite(_port) && _port > 0 ? _port : 3000;
 const _shutdownTimeoutMs = parseInt(process.env.SHUTDOWN_TIMEOUT_MS || '10000', 10);
@@ -113,12 +103,6 @@ function parseBooleanEnv(value: string | undefined): boolean | undefined {
 export const TRUST_PROXY = parseBooleanEnv(process.env.TRUST_PROXY) ?? false;
 export const SECURE_COOKIES =
   parseBooleanEnv(process.env.SECURE_COOKIES) ?? NODE_ENV === 'production';
-/**
- * Intentionally org-wide in production (`.darkavianlabs.com`): all Dark Avian
- * Labs apps share one Clerk login across subdomains, and the theme cookie is
- * shared the same way. Leave empty for a host-only cookie when an app must
- * not participate in that shared surface.
- */
 export const COOKIE_DOMAIN = process.env.COOKIE_DOMAIN?.trim() || undefined;
 export const SESSION_COOKIE_NAME = process.env.SESSION_COOKIE_NAME?.trim() || `${APP_ID}.sid`;
 export const APP_PUBLIC_BASE_URL = process.env.APP_PUBLIC_BASE_URL?.trim() || '';

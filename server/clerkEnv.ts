@@ -8,11 +8,6 @@ export function isEncryptedEnvValue(value: string | undefined): boolean {
   return trimEnv(value).startsWith(ENCRYPTED_PREFIX);
 }
 
-/**
- * Normalizes Clerk env vars (client builds use VITE_CLERK_PUBLISHABLE_KEY, the
- * server uses CLERK_PUBLISHABLE_KEY) and fails fast in production when keys
- * are missing or still dotenvx-encrypted.
- */
 export function normalizeClerkEnv(options?: { requireKeys?: boolean }): void {
   const requireKeys = options?.requireKeys ?? process.env.NODE_ENV === 'production';
   const publishable =

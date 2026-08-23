@@ -85,8 +85,6 @@ describe('CSRF protection', () => {
     const csrfRes = await agent.get('/api/csrf');
     const token = csrfRes.body.csrfToken as string;
 
-    // No POST routes exist in the template; passing CSRF means we reach the
-    // API 404 handler instead of the 403 rejection.
     const res = await agent.post('/api/anything').set('X-CSRF-Token', token).send({});
     expect(res.status).toBe(404);
   });

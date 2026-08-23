@@ -34,7 +34,6 @@ export interface AppBundle {
 }
 
 export interface CreateAppOptions {
-  /** Inject a DB (e.g. in-memory) for tests; defaults to the configured session DB. */
   sessionDb?: Database.Database;
 }
 
@@ -198,14 +197,12 @@ export function createApp(options: CreateAppOptions = {}): AppBundle {
       return;
     }
     if (!clientBuildPresent) {
-      // Re-check so a build finishing after server start is picked up.
       clientBuildPresent = fs.existsSync(clientIndexPath);
       if (!clientBuildPresent) {
         res.status(503).json({ error: 'Client build missing. Run `pnpm run build` first.' });
         return;
       }
     }
-    // The SPA shell must revalidate so deploys are picked up promptly.
     res.setHeader('Cache-Control', 'no-cache');
     res.sendFile(clientIndexPath);
   };
@@ -234,7 +231,6 @@ export function createApp(options: CreateAppOptions = {}): AppBundle {
       };
 
       if (maybe.code === 'EBADCSRFTOKEN') {
-        // Header lets the client distinguish CSRF failures and retry with a fresh token.
         res.setHeader('X-CSRF-Error', '1');
         res.status(403).json({ error: 'Invalid CSRF token', code: 'CSRF_INVALID' });
         return;

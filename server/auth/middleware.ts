@@ -11,12 +11,6 @@ export function isClerkConfigured(): boolean {
   return Boolean(process.env.CLERK_PUBLISHABLE_KEY?.trim() && process.env.CLERK_SECRET_KEY?.trim());
 }
 
-/**
- * Real Clerk middleware when keys are configured; a pass-through otherwise so
- * the template still boots in development before Clerk is set up. In that
- * fallback every request is treated as unauthenticated (`requireAuthApi`
- * responds 401). Production refuses to start without keys (see clerkEnv.ts).
- */
 export function clerkMiddleware(): RequestHandler {
   if (!isClerkConfigured()) {
     return (_req, _res, next) => next();

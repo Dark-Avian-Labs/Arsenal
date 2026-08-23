@@ -1,11 +1,5 @@
 export const APP_ADMIN_ROLE = 'admin' as const;
 
-/**
- * Org convention: Clerk session tokens carry `metadata.apps` (from the user's
- * public metadata), mapping app IDs to roles, e.g. `{ "apps": { "appbase":
- * "admin" } }`. Configure the session token template in the Clerk dashboard to
- * include `"metadata": "{{user.public_metadata}}"`.
- */
 export type AppMetadata = {
   apps?: Record<string, string>;
 };
