@@ -37,8 +37,6 @@ function composeClassName(variant: ButtonVariant, className?: string): string {
 }
 
 export function Button(props: ButtonProps | LinkButtonProps) {
-  // variant/className are destructured out so they don't leak onto the DOM
-  // element or override the composed class list.
   if ('href' in props && props.href) {
     const { href, variant = 'secondary', className, children, ...anchorProps } = props;
     return (

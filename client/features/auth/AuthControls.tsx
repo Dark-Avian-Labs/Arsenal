@@ -5,7 +5,6 @@ import { Link } from 'react-router';
 import { APP_PATHS } from '../../app/paths';
 import { useTheme } from '../../context/ThemeContext';
 
-/** Header auth widget. Only render when Clerk is enabled (needs ClerkProvider). */
 export function AuthControls() {
   const { mode } = useTheme();
 

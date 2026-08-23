@@ -8,7 +8,7 @@ async function fetchCsrfToken(): Promise<string> {
       return data.csrfToken ?? '';
     }
   } catch {
-    // Network failure: caller proceeds without a token and surfaces the 403.
+    // ignore
   }
   return '';
 }
@@ -45,8 +45,6 @@ export async function apiFetch(url: string, init?: RequestInit): Promise<Respons
   const response = await fetch(url, { ...init, headers: buildHeaders(token) });
 
   if (needsCsrf && isCsrfRejection(response)) {
-    // The session (and with it the token) may have rotated, e.g. after a
-    // fresh login. Fetch a new token and retry the request once.
     clearCsrfToken();
     const freshToken = await getCsrfToken();
     if (freshToken && freshToken !== token) {

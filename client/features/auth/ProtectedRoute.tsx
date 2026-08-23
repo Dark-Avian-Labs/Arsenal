@@ -6,7 +6,6 @@ import { useAuth } from './AuthContext';
 
 interface ProtectedRouteProps {
   children: ReactNode;
-  /** Additionally require the org admin role (Clerk `metadata.apps` claim). */
   requireAdmin?: boolean;
 }
 

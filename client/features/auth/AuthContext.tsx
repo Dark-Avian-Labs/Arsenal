@@ -31,11 +31,6 @@ const AuthContext = createContext<AuthContextValue>({
   refresh: async () => {},
 });
 
-/**
- * Mirrors the server's view of the session via /api/auth/me (Clerk client
- * state alone doesn't know about server-side roles). Must be mounted inside
- * <ClerkProvider>.
- */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { isLoaded, isSignedIn } = useClerkAuth();
   const [auth, setAuth] = useState<AuthState>({ status: 'loading', userId: null, isAdmin: false });
@@ -43,7 +38,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(async () => {
     if (!isLoaded) return;
     if (!isSignedIn) {
-      // Sign-out rotates the session; the cached CSRF token dies with it.
       clearCsrfToken();
       setAuth(UNAUTHENTICATED);
       return;
@@ -74,7 +68,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-/** Used when Clerk is not configured: every visitor is signed out. */
 export function DisabledAuthProvider({ children }: { children: ReactNode }) {
   const value = useMemo(() => ({ auth: UNAUTHENTICATED, refresh: async () => {} }), []);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
