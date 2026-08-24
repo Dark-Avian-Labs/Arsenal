@@ -111,7 +111,7 @@ Use these class names and primitives — do not invent one-off glass or button p
 | Buttons             | `btn btn-accent`, `btn btn-danger`, `btn btn-cancel` (modal dismiss), `btn btn-secondary`                 |
 | Modals              | `Modal` component with `className` including `glass-modal-surface`; footers use `modal-actions`           |
 | Dropdowns           | `SelectDropdown` with `triggerClassName` / `placement`; user-menu triggers use `user-menu-select-trigger` |
-| Stale client banner | `stale-update-banner` + gold `stale-update-cta` with `stale-update-cta__label` text "Refresh now!"        |
+| Stale client banner | `stale-update-banner` + gold `stale-update-cta` with `stale-update-cta__label` text "Refresh"             |
 | Toasts              | `.toast-pill` with optional `data-tone="success\|error\|warning"`                                         |
 | Form focus          | `.form-input:focus` and `.form-group input:focus` — accent border + soft glow ring                        |
 | Theme on `<html>`   | `dark` + exactly one `ui-prism` / `ui-shadow` / `ui-clear` / `ui-acrylic`                                 |
