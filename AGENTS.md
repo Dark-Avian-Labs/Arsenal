@@ -2,27 +2,27 @@
 
 ## Org standards
 
-Dark Avian Labs engineering conventions (README shape, CI/PR runners, validate, OpenWiki, release tracks) live in [`docs/org-standards/`](docs/org-standards/). New apps and ports should follow those docs; this file focuses on the **design system**.
+Dark Avian Labs engineering conventions (README shape, CI/PR runners, validate, release tracks) live in [`docs/org-standards/`](docs/org-standards/). New apps and ports should follow those docs. This file is the design-system contract plus AppBase runtime gotchas.
 
-Defaults: Node **26+**, pnpm **11.x**, `pnpm run validate`, OKF OpenWiki under `openwiki/`, Blacksmith runners with `useblacksmith/checkout@v1` and `actions/setup-node@v7`.
-
-## OpenWiki
-
-This repository has documentation located in the /openwiki directory.
-
-Start here:
-
-- [OpenWiki quickstart](openwiki/quickstart.md)
-
-OpenWiki includes repository overview, architecture notes, workflows, domain concepts, operations, integrations, testing guidance, and source maps.
-
-When working in this repository, read the OpenWiki quickstart first, then follow its links to the relevant architecture, workflow, domain, operation, and testing notes.
+Defaults: Node **26+**, pnpm **11.x** (`packageManager` must be an exact version, not a dist-tag), `pnpm run validate`, Blacksmith runners with `useblacksmith/checkout@v1` and `actions/setup-node@v7`.
 
 ## Overview
 
-AppBase is the shared starter for Dark Avian Labs web apps (Codex, Armory, and new projects). It ships the **DAL design system**: a two-axis theme model (light/dark color mode + UI style), glass-surface components, and shell primitives that sibling apps mirror manually.
+AppBase is the starter for Dark Avian Labs web apps. Domain features are empty on purpose. It ships the **DAL design system**: a two-axis theme model (light/dark color mode + UI style), glass-surface components, and shell primitives that sibling apps mirror by hand. There is no shared UI package.
 
-When building a new app from AppBase, copy the design contracts below so the UI stays consistent across the ecosystem. Codex and Armory are the reference implementations — if AppBase and a live app diverge, prefer the patterns documented here and in those apps' `input.css` files.
+When building a new app from AppBase, copy the design contracts below. Codex and Armory are the live reference implementations. If AppBase and a live app diverge, prefer the patterns documented here and in those apps' `input.css` files.
+
+## Runtime
+
+Default listen port is **3000** (BudgetPlanner and Codex **3001**, Armory **3002**). Codex and BudgetPlanner share 3001; set `PORT` if you run both. Dev is two processes: Vite `5173` proxies `/api` to Express.
+
+The server loads `.env.keys` then `.env.<NODE_ENV>` in-process. `pnpm start` needs `NODE_ENV=production` or it loads the development env file. `scripts/dev.mjs` forces `SECURE_COOKIES=0` so local HTTP login works. Keep `VITE_*` plaintext; encrypting them garbles `vite build`. Production requires `SESSION_SECRET` of at least 32 characters, decrypted Clerk keys, and `TRUST_PROXY` if `SECURE_COOKIES` is on.
+
+Empty Clerk keys are fine in development (unauthenticated). Placeholder keys are not: the middleware throws 500 on every request. Leave the keys empty instead of using fake values. Once keys are set, `APP_PUBLIC_BASE_URL` is required. Admin is Clerk public metadata `apps.<APP_ID> === 'admin'`; the Clerk session token must include `"metadata": "{{user.public_metadata}}"`. Production `COOKIE_DOMAIN=.darkavianlabs.com` shares one login across DAL apps; authorization is per-app via `metadata.apps`, not separate Clerk instances.
+
+Add API routes on `apiRouter` above the `/api` 404. Load balancers should hit `/readyz` (session DB), not `/healthz`. Sign-in/up routes need `/sign-in/*` and `/sign-up/*` wildcards. Session storage is vendored in `server/db/sqliteSessionStore.ts`; do not swap it for the unmaintained npm package.
+
+On Windows, Cursor agent shells may prepend bundled Node 22. After changing Node versions, run `pnpm rebuild better-sqlite3`.
 
 ## Theme model
 
@@ -119,7 +119,7 @@ Use these class names and primitives — do not invent one-off glass or button p
 
 ### Shell background
 
-The layout renders three fixed background layers behind content (`z-index: 0`):
+The layout renders two fixed background layers behind content (`z-index: 0`), above the body gradient:
 
 1. **`HexSideBackground`** — scattered hex clusters clipped at the left/right edges. Uses theme tokens `--hex-side-fill`. Opacity toggles instantly on a per-hex random schedule (no fade). Scales with viewport; **4K (3840×2160) is 1×** via `--hex-cluster-scale` (`clamp(0.35, min(100vw/3840px, 100vh/2160px), 1)`).
 2. **`AsciiWaveBackground`** — canvas diagonal scan wave across ASCII art. Reads `--ascii-canvas-fg`, `--ascii-canvas-fg-bright`, `--ascii-canvas-fg-accent`, and `--ascii-opacity`. Respects `prefers-reduced-motion`.

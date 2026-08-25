@@ -1,5 +1,7 @@
 import { createRequire } from 'node:module';
 
+// Node 26+ and pnpm major from package.json#packageManager. Keep packageManager
+// an exact version (pnpm@11.22.0); Corepack rejects dist-tags like latest-11.
 const MIN_NODE_MAJOR = 26;
 const MIN_PNPM_MAJOR = 11;
 

@@ -1,3 +1,5 @@
+# PR-only starter: there is no ci.yml or deploy. Copy this file into new DAL
+# apps. Use blacksmith-8vcpu-* here, not ubuntu-latest or blacksmith-4vcpu-*.
 name: AppBase PR Checks
 
 permissions:
@@ -35,12 +37,17 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
 
+      # Keep the lockfile. Do not delete pnpm-lock.yaml to work around
+      # --frozen-lockfile (the old pnpm-install-fresh action). pnpm does not
+      # record the root package version, so a version-only bump cannot desync it.
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Audit dependencies
         run: pnpm audit --audit-level high
 
+      # `pnpm run validate` is run-quality-checks.mjs. Do not expand this into
+      # separate format/lint/typecheck/test steps. Build stays its own step.
       - name: Run quality checks
         run: pnpm run validate
 

@@ -118,7 +118,6 @@ Secrets in the committed env files are encrypted with dotenvx
 
 - Design system and porting contracts: [AGENTS.md](AGENTS.md)
 - Org CI/README/validate standards: [docs/org-standards/](docs/org-standards/)
-- Agent wiki: [openwiki/quickstart.md](openwiki/quickstart.md)
 
 ### Scaffold contracts
 
