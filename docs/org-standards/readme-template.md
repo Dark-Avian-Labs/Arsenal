@@ -52,7 +52,7 @@ curl -sS http://127.0.0.1:<port>/api/health
 
 ## Development
 
-Agent-oriented docs: [openwiki/quickstart.md](openwiki/quickstart.md).
+Design system: AppBase `AGENTS.md`.
 Org engineering standards: AppBase `docs/org-standards/`.
 
 ## License
