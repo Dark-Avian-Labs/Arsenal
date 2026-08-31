@@ -13,7 +13,8 @@ function isPlaceholderClerkKey(value: string): boolean {
 }
 
 function hasClerkKeyPrefix(value: string, kind: 'pk' | 'sk'): boolean {
-  return value.startsWith(`${kind}_test_`) || value.startsWith(`${kind}_live_`);
+  const prefixes = [`${kind}_test_`, `${kind}_live_`] as const;
+  return prefixes.some((prefix) => value.startsWith(prefix) && value.length > prefix.length);
 }
 
 export function isClerkConfigured(): boolean {
