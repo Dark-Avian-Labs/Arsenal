@@ -88,6 +88,27 @@ export const NODE_ENV = process.env.NODE_ENV || 'development';
 export const APP_NAME = process.env.APP_NAME?.trim() || 'AppBase';
 export const APP_ID = process.env.APP_ID?.trim() || 'appbase';
 
+function readPackageVersion(projectRoot: string): string {
+  try {
+    const pkgPath = path.join(projectRoot, 'package.json');
+    const raw = fs.readFileSync(pkgPath, 'utf-8');
+    const pkg: unknown = JSON.parse(raw);
+    if (!pkg || typeof pkg !== 'object' || !('version' in pkg)) {
+      return '0.0.0';
+    }
+    const version = pkg.version;
+    if (typeof version !== 'string') {
+      return '0.0.0';
+    }
+    const v = version.trim();
+    return v.length > 0 ? v : '0.0.0';
+  } catch {
+    return '0.0.0';
+  }
+}
+
+export const APP_VERSION = readPackageVersion(PROJECT_ROOT);
+
 const DEFAULT_SESSION_SECRET = 'appbase-dev-only-secret-change-me-32ch';
 const envSessionSecret = process.env.SESSION_SECRET?.trim() || '';
 if (isEncryptedEnvValue(envSessionSecret)) {

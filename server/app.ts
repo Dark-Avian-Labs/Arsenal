@@ -8,9 +8,10 @@ import express from 'express';
 import { rateLimit } from 'express-rate-limit';
 import session from 'express-session';
 
-import { clerkMiddleware } from './auth/middleware.js';
+import { clerkMiddleware, getClerkAuthState } from './auth/middleware.js';
 import {
   APP_NAME,
+  APP_VERSION,
   COOKIE_DOMAIN,
   NODE_ENV,
   PROJECT_ROOT,
@@ -26,6 +27,7 @@ import { createAppHelmet } from './http/helmetCsp.js';
 import { getRequestId, requestIdMiddleware } from './http/requestId.js';
 import { log } from './logger.js';
 import { apiRouter } from './routes/api.js';
+import { bindClerkUserSessionMiddleware } from './session/bindClerkUserSession.js';
 
 export interface AppBundle {
   app: express.Express;
@@ -123,6 +125,18 @@ export function createApp(options: CreateAppOptions = {}): AppBundle {
 
   app.use(csrfSynchronisedProtection);
   app.locals.generateCsrfToken = generateToken;
+  app.use(
+    '/api',
+    bindClerkUserSessionMiddleware(
+      (req) => getClerkAuthState(req).userId,
+      (req) => {
+        const generate = req.app.locals.generateCsrfToken as
+          | ((request: express.Request, overwrite?: boolean) => string)
+          | undefined;
+        generate?.(req, true);
+      },
+    ),
+  );
 
   app.use('/api', (req, res, next) => {
     const startedAt = Date.now();
@@ -157,6 +171,11 @@ export function createApp(options: CreateAppOptions = {}): AppBundle {
     max: 5000,
     standardHeaders: true,
     legacyHeaders: false,
+  });
+
+  app.get('/api/version', (_req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({ version: APP_VERSION });
   });
 
   app.use('/api', appApiLimiter, apiRouter);

@@ -20,7 +20,7 @@ The server loads `.env.keys` then `.env.<NODE_ENV>` in-process. `pnpm start` nee
 
 Empty Clerk keys are fine in development (unauthenticated). Placeholder keys are not: the middleware throws 500 on every request. Leave the keys empty instead of using fake values. Once keys are set, `APP_PUBLIC_BASE_URL` is required. Admin is Clerk public metadata `apps.<APP_ID> === 'admin'`; the Clerk session token must include `"metadata": "{{user.public_metadata}}"`. Production `COOKIE_DOMAIN=.darkavianlabs.com` shares one login across DAL apps; authorization is per-app via `metadata.apps`, not separate Clerk instances.
 
-Add API routes on `apiRouter` above the `/api` 404. Load balancers should hit `/readyz` (session DB), not `/healthz`. Sign-in/up routes need `/sign-in/*` and `/sign-up/*` wildcards. Session storage is vendored in `server/db/sqliteSessionStore.ts`; do not swap it for the unmaintained npm package.
+Add API routes on `apiRouter` above the `/api` 404. `GET /api/version` returns `{ version }` from `package.json` for the stale-client banner. Load balancers should hit `/readyz` (session DB), not `/healthz`. Sign-in/up routes need `/sign-in/*` and `/sign-up/*` wildcards. Session storage is vendored in `server/db/sqliteSessionStore.ts`; do not swap it for the unmaintained npm package. `bindClerkUserSessionMiddleware` on `/api` regenerates the express session and CSRF token when the Clerk user id changes (anonymous → signed-in, user switch, and sign-out). It skips `/health` and `/version` so probes do not persist sessions. Wrap the route tree in `ErrorBoundary` (`client/components/ui/ErrorBoundary.tsx`).
 
 On Windows, Cursor agent shells may prepend bundled Node 22. After changing Node versions, run `pnpm rebuild better-sqlite3`.
 
@@ -103,26 +103,26 @@ Game-domain scaffold:
 
 Use these class names and primitives — do not invent one-off glass or button patterns.
 
-| Area                | Spec                                                                                                      |
-| ------------------- | --------------------------------------------------------------------------------------------------------- |
-| Layout max width    | `max-w-[2000px]` on header, main wrapper, and footer                                                      |
-| Glass surfaces      | `glass-surface` (panels/cards), `glass-modal-surface` (dialogs), `glass-shell` (auth shells)              |
-| Header nav          | `header-link` with `.active` — 40px height, 1rem radius, accent when active                               |
-| Buttons             | `btn btn-accent`, `btn btn-danger`, `btn btn-cancel` (modal dismiss), `btn btn-secondary`                 |
-| Modals              | `Modal` component with `className` including `glass-modal-surface`; footers use `modal-actions`           |
-| Dropdowns           | `SelectDropdown` with `triggerClassName` / `placement`; user-menu triggers use `user-menu-select-trigger` |
-| Stale client banner | `stale-update-banner` + gold `stale-update-cta` with `stale-update-cta__label` text "Refresh"             |
-| Toasts              | `.toast-pill` with optional `data-tone="success\|error\|warning"`                                         |
-| Form focus          | `.form-input:focus` and `.form-group input:focus` — accent border + soft glow ring                        |
-| Theme on `<html>`   | `dark` + exactly one `ui-prism` / `ui-shadow` / `ui-clear` / `ui-acrylic`                                 |
-| Shell background    | `AsciiWaveBackground` (`.bg-art` canvas) centered; `HexSideBackground` (`.hex-side-panel`) on both sides  |
+| Area                | Spec                                                                                                                                                                                                                                   |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Layout max width    | `max-w-[2000px]` on header, main wrapper, and footer                                                                                                                                                                                   |
+| Glass surfaces      | `glass-surface` (panels/cards), `glass-modal-surface` (dialogs), `glass-shell` (auth shells)                                                                                                                                           |
+| Header nav          | `header-link` with `.active` — 40px height, 1rem radius, accent when active                                                                                                                                                            |
+| Buttons             | `btn btn-accent`, `btn btn-danger`, `btn btn-cancel` (modal dismiss), `btn btn-secondary`                                                                                                                                              |
+| Modals              | `Modal` component with `className` including `glass-modal-surface`; footers use `modal-actions`                                                                                                                                        |
+| Dropdowns           | `SelectDropdown` with `triggerClassName` / `placement`; user-menu triggers use `user-menu-select-trigger`                                                                                                                              |
+| Stale client banner | `StaleClientUpdateBanner` (`client/components/Layout/StaleClientUpdateBanner.tsx`) + `useStaleBundlePrompt` (polls `/api/version`). CSS: `stale-update-banner` + gold `stale-update-cta` with `stale-update-cta__label` text "Refresh" |
+| Toasts              | `Toast` (`client/components/ui/Toast.tsx`) — `.toast-pill` with optional `data-tone="success\|error\|warning"`                                                                                                                         |
+| Form focus          | `.form-input:focus` and `.form-group input:focus` — accent border + soft glow ring                                                                                                                                                     |
+| Theme on `<html>`   | `dark` + exactly one `ui-prism` / `ui-shadow` / `ui-clear` / `ui-acrylic`                                                                                                                                                              |
+| Shell background    | `AsciiWaveBackground` (`.bg-art` canvas) centered; `HexSideBackground` (`.hex-side-panel`) on both sides                                                                                                                               |
 
 ### Shell background
 
 The layout renders two fixed background layers behind content (`z-index: 0`), above the body gradient:
 
 1. **`HexSideBackground`** — scattered hex clusters clipped at the left/right edges. Uses theme tokens `--hex-side-fill`. Opacity toggles instantly on a per-hex random schedule (no fade). Scales with viewport; **4K (3840×2160) is 1×** via `--hex-cluster-scale` (`clamp(0.35, min(100vw/3840px, 100vh/2160px), 1)`).
-2. **`AsciiWaveBackground`** — canvas diagonal scan wave across ASCII art. Reads `--ascii-canvas-fg`, `--ascii-canvas-fg-bright`, `--ascii-canvas-fg-accent`, and `--ascii-opacity`. Respects `prefers-reduced-motion`.
+2. **`AsciiWaveBackground`** — canvas diagonal scan wave across ASCII art. Reads `--ascii-canvas-fg`, `--ascii-canvas-fg-bright`, `--ascii-canvas-fg-accent`, and `--ascii-opacity`. Capped at 30fps. Respects `prefers-reduced-motion`. Cascadia Mono is lazy-loaded from `useAsciiBackgroundCanvas` rather than imported in `input.css`.
 
 Assets live in `assets/background.txt` (base frame), `background2.txt` (alt frame), and `background3.txt` (accent mask). Logic is in `client/lib/asciiBackground/` (shared with Codex).
 
@@ -161,16 +161,18 @@ Place `UiStyleSelector` after primary menu items, separated by `user-menu-divide
 
 ## UI primitives (`client/components/ui/`)
 
-| Component         | Purpose                                                    |
-| ----------------- | ---------------------------------------------------------- |
-| `Button`          | `variant`: `accent` \| `secondary` \| `danger` \| `cancel` |
-| `Input`           | Wraps `.form-input`                                        |
-| `GlassCard`       | `<section className="glass-surface">`                      |
-| `Modal`           | Accessible dialog with overlay + body blur                 |
-| `Menu`            | User dropdown shell (`glass-surface` + positioning)        |
-| `SelectDropdown`  | Accessible custom select (portaled menu)                   |
-| `UiStyleSelector` | Theme style picker for user menu                           |
-| `MaterialSymbol`  | Material Symbols Rounded icon span                         |
+| Component         | Purpose                                                      |
+| ----------------- | ------------------------------------------------------------ |
+| `Button`          | `variant`: `accent` \| `secondary` \| `danger` \| `cancel`   |
+| `Input`           | Wraps `.form-input`                                          |
+| `GlassCard`       | `<section className="glass-surface">`                        |
+| `Modal`           | Accessible dialog with overlay + body blur                   |
+| `Menu`            | User dropdown shell (`glass-surface` + positioning)          |
+| `SelectDropdown`  | Accessible custom select (portaled menu)                     |
+| `Toast`           | `.toast-pill` status message (`data-tone`, optional dismiss) |
+| `ErrorBoundary`   | Top-level render-crash shell with a Reload button            |
+| `UiStyleSelector` | Theme style picker for user menu                             |
+| `MaterialSymbol`  | Material Symbols Rounded icon span                           |
 
 ## Clerk authentication styling
 
@@ -250,7 +252,7 @@ Also ensure:
 - `client/styles/acrylic-noise.svg` sits next to `input.css` (Acrylic tiles it at 128px).
 - `ThemeContext` exposes `uiStyle` / `setUiStyle` (`prism`, `shadow`, `clear`, `acrylic`).
 - `UiStyleSelector` in the user menu (or equivalent settings surface).
-- Font packages: `@fontsource-variable/geist`, `geist-mono`, `inter`, `material-symbols-rounded`, `cascadia-mono` (ASCII canvas).
+- Fonts: latin-subset `@font-face` for Inter / Geist / Geist Mono in `input.css`; keep Material Symbols as `@import`; Cascadia Mono is lazy-loaded by the ASCII canvas hook (`@fontsource-variable/cascadia-mono`).
 - Shell backgrounds: `AsciiWaveBackground`, `HexSideBackground`, `assets/background*.txt`, and `client/lib/asciiBackground/`.
 
 ### Clerk
