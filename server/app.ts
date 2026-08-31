@@ -69,6 +69,19 @@ export function createApp(options: CreateAppOptions = {}): AppBundle {
   });
   app.use(baselineLimiter);
 
+  app.get('/healthz', (_req, res) => {
+    res.json({ status: 'ok', app: APP_NAME });
+  });
+
+  app.get('/readyz', (_req, res) => {
+    try {
+      sessionDb.prepare('SELECT 1').get();
+      res.json({ status: 'ready', app: APP_NAME });
+    } catch {
+      res.status(503).json({ status: 'not_ready', app: APP_NAME });
+    }
+  });
+
   app.use(clerkMiddleware());
 
   const cookieOptions: express.CookieOptions = {
@@ -109,11 +122,7 @@ export function createApp(options: CreateAppOptions = {}): AppBundle {
   });
 
   app.use(csrfSynchronisedProtection);
-
-  app.use((req, res, next) => {
-    (res.locals as { csrfToken?: string }).csrfToken = generateToken(req);
-    next();
-  });
+  app.locals.generateCsrfToken = generateToken;
 
   app.use('/api', (req, res, next) => {
     const startedAt = Date.now();
@@ -158,19 +167,6 @@ export function createApp(options: CreateAppOptions = {}): AppBundle {
 
   app.use('/api', (_req, res) => {
     res.status(404).json({ error: 'Not found' });
-  });
-
-  app.get('/healthz', (_req, res) => {
-    res.json({ status: 'ok', app: APP_NAME });
-  });
-
-  app.get('/readyz', (_req, res) => {
-    try {
-      sessionDb.prepare('SELECT 1').get();
-      res.json({ status: 'ready', app: APP_NAME });
-    } catch {
-      res.status(503).json({ status: 'not_ready', app: APP_NAME });
-    }
   });
 
   const clientDir = path.join(PROJECT_ROOT, 'dist', 'client');

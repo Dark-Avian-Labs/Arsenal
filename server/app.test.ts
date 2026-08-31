@@ -17,10 +17,11 @@ afterAll(() => {
 });
 
 describe('health endpoints', () => {
-  it('GET /healthz responds ok', async () => {
+  it('GET /healthz responds ok without creating a session cookie', async () => {
     const res = await request(bundle.app).get('/healthz');
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('ok');
+    expect(res.headers['set-cookie']).toBeUndefined();
   });
 
   it('GET /readyz probes the session DB', async () => {

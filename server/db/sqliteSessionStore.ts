@@ -29,11 +29,15 @@ export class SqliteSessionStore extends Store {
 
     const interval = options.cleanupIntervalMs ?? DEFAULT_CLEANUP_INTERVAL_MS;
     if (interval > 0) {
+      let loggedCleanupError = false;
       this.cleanupTimer = setInterval(() => {
         try {
           this.clearExpired();
-        } catch {
-          // ignore
+        } catch (error) {
+          if (!loggedCleanupError) {
+            loggedCleanupError = true;
+            console.error('[session-store] Failed to clear expired sessions', error);
+          }
         }
       }, interval);
       this.cleanupTimer.unref();
