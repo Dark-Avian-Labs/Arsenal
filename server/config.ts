@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url';
 
 import { config as loadEnv } from '@dotenvx/dotenvx';
 
-import { normalizeClerkEnv } from './clerkEnv.js';
+import { isEncryptedEnvValue, normalizeClerkEnv } from './clerkEnv.js';
 
 function resolveEnvFilePath(projectRoot: string): string | null {
   const normalizedNodeEnv = (process.env.NODE_ENV ?? '').trim().toLowerCase();
@@ -14,23 +14,26 @@ function resolveEnvFilePath(projectRoot: string): string | null {
     return fs.existsSync(testPath) ? testPath : null;
   }
 
-  const envFileByMode: Record<string, string> = {
-    production: '.env.production',
-    development: '.env.development',
-  };
-  const prioritizedFiles = [
-    envFileByMode[normalizedNodeEnv],
-    '.env.production',
-    '.env.development',
-  ].filter((value, index, values): value is string => {
-    return typeof value === 'string' && values.indexOf(value) === index;
-  });
+  if (
+    normalizedNodeEnv &&
+    normalizedNodeEnv !== 'production' &&
+    normalizedNodeEnv !== 'development'
+  ) {
+    throw new Error(
+      `[FATAL] Unsupported NODE_ENV "${process.env.NODE_ENV}". Use production, development, or test.`,
+    );
+  }
 
-  for (const fileName of prioritizedFiles) {
-    const candidatePath = path.join(projectRoot, fileName);
-    if (fs.existsSync(candidatePath)) {
-      return candidatePath;
-    }
+  const isProduction = normalizedNodeEnv === 'production';
+  const fileName = isProduction ? '.env.production' : '.env.development';
+  const candidatePath = path.join(projectRoot, fileName);
+  if (fs.existsSync(candidatePath)) {
+    return candidatePath;
+  }
+  if (isProduction) {
+    throw new Error(
+      `[FATAL] Missing ${fileName}. Refusing to start production without the matching env file.`,
+    );
   }
   return null;
 }
@@ -85,8 +88,34 @@ export const NODE_ENV = process.env.NODE_ENV || 'development';
 export const APP_NAME = process.env.APP_NAME?.trim() || 'AppBase';
 export const APP_ID = process.env.APP_ID?.trim() || 'appbase';
 
+function readPackageVersion(projectRoot: string): string {
+  try {
+    const pkgPath = path.join(projectRoot, 'package.json');
+    const raw = fs.readFileSync(pkgPath, 'utf-8');
+    const pkg: unknown = JSON.parse(raw);
+    if (!pkg || typeof pkg !== 'object' || !('version' in pkg)) {
+      return '0.0.0';
+    }
+    const version = pkg.version;
+    if (typeof version !== 'string') {
+      return '0.0.0';
+    }
+    const v = version.trim();
+    return v.length > 0 ? v : '0.0.0';
+  } catch {
+    return '0.0.0';
+  }
+}
+
+export const APP_VERSION = readPackageVersion(PROJECT_ROOT);
+
 const DEFAULT_SESSION_SECRET = 'appbase-dev-only-secret-change-me-32ch';
 const envSessionSecret = process.env.SESSION_SECRET?.trim() || '';
+if (isEncryptedEnvValue(envSessionSecret)) {
+  throw new Error(
+    '[FATAL] SESSION_SECRET is still encrypted. Ensure DOTENV_PRIVATE_KEY_* is available (see .env.keys) or run via dotenvx.',
+  );
+}
 if (NODE_ENV === 'production' && envSessionSecret.length < 32) {
   throw new Error('[FATAL] SESSION_SECRET must be set and at least 32 characters in production.');
 }

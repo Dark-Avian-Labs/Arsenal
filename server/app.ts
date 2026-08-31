@@ -8,9 +8,10 @@ import express from 'express';
 import { rateLimit } from 'express-rate-limit';
 import session from 'express-session';
 
-import { clerkMiddleware } from './auth/middleware.js';
+import { clerkMiddleware, getClerkAuthState } from './auth/middleware.js';
 import {
   APP_NAME,
+  APP_VERSION,
   COOKIE_DOMAIN,
   NODE_ENV,
   PROJECT_ROOT,
@@ -26,6 +27,7 @@ import { createAppHelmet } from './http/helmetCsp.js';
 import { getRequestId, requestIdMiddleware } from './http/requestId.js';
 import { log } from './logger.js';
 import { apiRouter } from './routes/api.js';
+import { bindClerkUserSessionMiddleware } from './session/bindClerkUserSession.js';
 
 export interface AppBundle {
   app: express.Express;
@@ -69,6 +71,19 @@ export function createApp(options: CreateAppOptions = {}): AppBundle {
   });
   app.use(baselineLimiter);
 
+  app.get('/healthz', (_req, res) => {
+    res.json({ status: 'ok', app: APP_NAME });
+  });
+
+  app.get('/readyz', (_req, res) => {
+    try {
+      sessionDb.prepare('SELECT 1').get();
+      res.json({ status: 'ready', app: APP_NAME });
+    } catch {
+      res.status(503).json({ status: 'not_ready', app: APP_NAME });
+    }
+  });
+
   app.use(clerkMiddleware());
 
   const cookieOptions: express.CookieOptions = {
@@ -109,11 +124,19 @@ export function createApp(options: CreateAppOptions = {}): AppBundle {
   });
 
   app.use(csrfSynchronisedProtection);
-
-  app.use((req, res, next) => {
-    (res.locals as { csrfToken?: string }).csrfToken = generateToken(req);
-    next();
-  });
+  app.locals.generateCsrfToken = generateToken;
+  app.use(
+    '/api',
+    bindClerkUserSessionMiddleware(
+      (req) => getClerkAuthState(req).userId,
+      (req) => {
+        const generate = req.app.locals.generateCsrfToken as
+          | ((request: express.Request, overwrite?: boolean) => string)
+          | undefined;
+        generate?.(req, true);
+      },
+    ),
+  );
 
   app.use('/api', (req, res, next) => {
     const startedAt = Date.now();
@@ -150,6 +173,11 @@ export function createApp(options: CreateAppOptions = {}): AppBundle {
     legacyHeaders: false,
   });
 
+  app.get('/api/version', (_req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({ version: APP_VERSION });
+  });
+
   app.use('/api', appApiLimiter, apiRouter);
 
   app.get('/favicon.ico', publicPageLimiter, (_req, res) => {
@@ -158,19 +186,6 @@ export function createApp(options: CreateAppOptions = {}): AppBundle {
 
   app.use('/api', (_req, res) => {
     res.status(404).json({ error: 'Not found' });
-  });
-
-  app.get('/healthz', (_req, res) => {
-    res.json({ status: 'ok', app: APP_NAME });
-  });
-
-  app.get('/readyz', (_req, res) => {
-    try {
-      sessionDb.prepare('SELECT 1').get();
-      res.json({ status: 'ready', app: APP_NAME });
-    } catch {
-      res.status(503).json({ status: 'not_ready', app: APP_NAME });
-    }
   });
 
   const clientDir = path.join(PROJECT_ROOT, 'dist', 'client');

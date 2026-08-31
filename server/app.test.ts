@@ -17,10 +17,11 @@ afterAll(() => {
 });
 
 describe('health endpoints', () => {
-  it('GET /healthz responds ok', async () => {
+  it('GET /healthz responds ok without creating a session cookie', async () => {
     const res = await request(bundle.app).get('/healthz');
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('ok');
+    expect(res.headers['set-cookie']).toBeUndefined();
   });
 
   it('GET /readyz probes the session DB', async () => {
@@ -33,6 +34,14 @@ describe('health endpoints', () => {
     const res = await request(bundle.app).get('/api/health');
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('ok');
+  });
+
+  it('GET /api/version returns the package version', async () => {
+    const res = await request(bundle.app).get('/api/version');
+    expect(res.status).toBe(200);
+    expect(typeof res.body.version).toBe('string');
+    expect(res.body.version.length).toBeGreaterThan(0);
+    expect(res.headers['cache-control']).toBe('no-store');
   });
 });
 

@@ -1,8 +1,9 @@
 import { createApp } from './app.js';
 import { APP_NAME, HOST, NODE_ENV, PORT, SESSION_DB_PATH, SHUTDOWN_TIMEOUT_MS } from './config.js';
+import { closeSessionDb } from './db/connection.js';
 import { log } from './logger.js';
 
-const { app, sessionDb, sessionStore } = createApp();
+const { app, sessionStore } = createApp();
 log('info', 'Session store ready', { app: APP_NAME, path: SESSION_DB_PATH });
 
 const server = app.listen(PORT, HOST, () => {
@@ -20,7 +21,7 @@ function shutdown(exitCode: number): void {
     done = true;
     sessionStore.dispose();
     try {
-      sessionDb.close();
+      closeSessionDb();
     } catch (err) {
       log('error', 'Failed to close session DB during shutdown', { error: String(err) });
     }
@@ -32,6 +33,11 @@ function shutdown(exitCode: number): void {
     clearTimeout(timeout);
     closeAndExit();
   });
+  server.closeIdleConnections();
+  const forceCloseMs = Math.max(0, SHUTDOWN_TIMEOUT_MS - 500);
+  setTimeout(() => {
+    server.closeAllConnections();
+  }, forceCloseMs);
 }
 
 process.on('SIGINT', () => shutdown(0));

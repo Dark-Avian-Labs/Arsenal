@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, Outlet } from 'react-router';
 
 import feathers from '../../../assets/feathers.png';
-import { APP_DISPLAY_NAME, CLERK_ENABLED, LEGAL_ENTITY_NAME } from '../../app/config';
+import { APP_DISPLAY_NAME, APP_VERSION, CLERK_ENABLED, LEGAL_ENTITY_NAME } from '../../app/config';
 import { APP_PATHS } from '../../app/paths';
 import { MaterialSymbol } from '../../components/ui/MaterialSymbol';
 import { Menu } from '../../components/ui/Menu';
@@ -12,6 +12,7 @@ import { AuthControls } from '../../features/auth/AuthControls';
 import { AsciiWaveBackground } from './AsciiWaveBackground';
 import { HexSideBackground } from './HexSideBackground';
 import { SearchBar } from './SearchBar';
+import { StaleClientUpdateBanner } from './StaleClientUpdateBanner';
 
 export function Layout() {
   const { mode, toggleMode } = useTheme();
@@ -95,6 +96,7 @@ export function Layout() {
           </Link>
         </div>
       </footer>
+      <StaleClientUpdateBanner appVersion={APP_VERSION} />
     </div>
   );
 }
