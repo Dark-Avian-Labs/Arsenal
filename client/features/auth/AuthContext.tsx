@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from 'react';
 
-import { apiFetch, clearCsrfToken } from '../../utils/api';
+import { apiFetch, clearCsrfToken, setClerkTokenGetter } from '../../utils/api';
 
 export type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated' | 'error';
 
@@ -32,8 +32,15 @@ const AuthContext = createContext<AuthContextValue>({
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const { isLoaded, isSignedIn } = useClerkAuth();
+  const { isLoaded, isSignedIn, getToken } = useClerkAuth();
   const [auth, setAuth] = useState<AuthState>({ status: 'loading', userId: null, isAdmin: false });
+
+  useEffect(() => {
+    setClerkTokenGetter((options) => getToken(options));
+    return () => {
+      setClerkTokenGetter(null);
+    };
+  }, [getToken]);
 
   const refresh = useCallback(async () => {
     if (!isLoaded) return;
@@ -69,6 +76,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 }
 
 export function DisabledAuthProvider({ children }: { children: ReactNode }) {
+  useEffect(() => {
+    setClerkTokenGetter(null);
+  }, []);
   const value = useMemo(() => ({ auth: UNAUTHENTICATED, refresh: async () => {} }), []);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
