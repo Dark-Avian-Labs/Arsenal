@@ -51,6 +51,7 @@ describe('security headers', () => {
     expect(res.headers['x-content-type-options']).toBe('nosniff');
     expect(res.headers['content-security-policy']).toContain("script-src 'self'");
     expect(res.headers['content-security-policy']).toContain('https://challenges.cloudflare.com');
+    expect(res.headers['content-security-policy']).toContain('https://*.protect.clerk.com');
   });
 
   it('emits rate limit headers on API routes', async () => {

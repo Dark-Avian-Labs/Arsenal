@@ -39,7 +39,7 @@ PR/CI validate jobs must call **`pnpm run validate`** (or Rust `scripts/validate
 
 ### A — semantic-release (in `ci.yml`)
 
-Used by: Armory, Codex, TC-Bot, AerieDrive, InfoGraphic.
+Used by: Armory, Codex, BudgetPlanner, Outfitter, TC-Bot, AerieDrive, InfoGraphic.
 
 - `.releaserc.json` + `version` job that runs `pnpm exec semantic-release`
 - Typical job order: `deployment-check` → `version` → `validate` → `build-and-deploy` → `discord-status`

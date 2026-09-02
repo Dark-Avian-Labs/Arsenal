@@ -52,8 +52,12 @@ AppBase is the starter for new Dark Avian Labs web apps. It ships the shared she
 
 ## Examples
 
+In-app probe for humans and README copy. Load balancers should hit `/readyz` (session DB). `/healthz` is process liveness and does not open a session.
+
 ```bash
 curl -sS http://127.0.0.1:3000/api/health
+curl -sS http://127.0.0.1:3000/healthz
+curl -sS http://127.0.0.1:3000/readyz
 ```
 
 ## Ports
