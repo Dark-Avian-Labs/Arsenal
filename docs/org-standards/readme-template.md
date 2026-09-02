@@ -34,7 +34,11 @@ Use this shape for every DAL app `README.md`. Domain-only sections go after the 
 
 ```bash
 curl -sS http://127.0.0.1:<port>/api/health
+curl -sS http://127.0.0.1:<port>/healthz
+curl -sS http://127.0.0.1:<port>/readyz
 ```
+
+`/api/health` is the in-app probe. `/healthz` is process liveness. Load balancers should hit `/readyz` (session DB).
 ````
 
 ## Environment

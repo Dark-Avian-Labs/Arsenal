@@ -2,7 +2,6 @@ import fs from 'fs';
 import path from 'path';
 
 import type Database from 'better-sqlite3';
-import cookieParser from 'cookie-parser';
 import { csrfSync } from 'csrf-sync';
 import express from 'express';
 import { rateLimit } from 'express-rate-limit';
@@ -56,7 +55,6 @@ export function createApp(options: CreateAppOptions = {}): AppBundle {
 
   app.use(express.json({ limit: '100kb' }));
   app.use(express.urlencoded({ extended: true, limit: '100kb' }));
-  app.use(cookieParser());
 
   const baselineLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
