@@ -1,5 +1,5 @@
 # PR-only starter: there is no ci.yml or deploy. Copy this file into new DAL
-# apps. Use blacksmith-8vcpu-* here, not ubuntu-latest or blacksmith-4vcpu-*.
+# apps. Start with blacksmith-4vcpu-* and right-size as usage data accumulates.
 name: AppBase PR Checks
 
 permissions:
@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   validate:
-    runs-on: blacksmith-8vcpu-ubuntu-2404
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 15
 
     steps:
