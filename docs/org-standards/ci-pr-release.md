@@ -4,10 +4,10 @@ Policy for new and updated workflows. The living PR workflow is AppBase [`.githu
 
 ## Runner tiers
 
-| Workload                                                     | Runner                                                                    |
-| ------------------------------------------------------------ | ------------------------------------------------------------------------- |
-| Validate, build, deploy, semantic-release, Rust compile/test | `blacksmith-8vcpu-ubuntu-2404` (Windows: `blacksmith-8vcpu-windows-2025`) |
-| Notifications, cheap gates (`deployment-check`)              | `blacksmith-2vcpu-ubuntu-2404`                                            |
+| Workload                                                                                           | Runner                          |
+| -------------------------------------------------------------------------------------------------- | ------------------------------- |
+| Node PR/CI (validate, version, build, deploy) and utility jobs (`deployment-check`, Discord, etc.) | `blacksmith-2vcpu-ubuntu-2404`  |
+| Rust compile, test, and release EXE builds (Poltergeist)                                           | `blacksmith-8vcpu-windows-2025` |
 
 Do not use `ubuntu-latest` or `blacksmith-4vcpu-*` for new/updated DAL jobs.
 

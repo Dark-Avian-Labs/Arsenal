@@ -4,12 +4,12 @@ Same engineering conventions as the rest of [org standards](README.md) (README s
 
 ## Runner and action pins
 
-| Concern       | Personal repos                     | DAL apps (Blacksmith)          |
-| ------------- | ---------------------------------- | ------------------------------ |
-| Heavy jobs    | `ubuntu-latest` / `windows-latest` | `blacksmith-8vcpu-*`           |
-| Notifications | `ubuntu-latest`                    | `blacksmith-2vcpu-ubuntu-2404` |
-| Checkout      | `actions/checkout@v7`              | `useblacksmith/checkout@v1`    |
-| Node setup    | `actions/setup-node@v7`            | `actions/setup-node@v7`        |
+| Concern              | Personal repos          | DAL apps (Blacksmith)           |
+| -------------------- | ----------------------- | ------------------------------- |
+| Node / utility jobs  | `ubuntu-latest`         | `blacksmith-2vcpu-ubuntu-2404`  |
+| Rust compile/release | `windows-latest`        | `blacksmith-8vcpu-windows-2025` |
+| Checkout             | `actions/checkout@v7`   | `useblacksmith/checkout@v1`     |
+| Node setup           | `actions/setup-node@v7` | `actions/setup-node@v7`         |
 
 Do **not** pin Blacksmith runners or `useblacksmith/checkout` in personal repos.
 
