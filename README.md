@@ -74,8 +74,10 @@ Default listen ports so the apps can sit side by side. Codex still defaults to 3
 ## Environment
 
 Secrets in the committed env files are encrypted with dotenvx
-(`pnpm dotenvx encrypt -f .env.production -k SESSION_SECRET -k CLERK_SECRET_KEY`);
-`VITE_*` values stay plaintext so `vite build` can read them directly.
+(`pnpm dotenvx encrypt -f .env.production -k SESSION_SECRET -k CLERK_SECRET_KEY`).
+`pnpm dev` decrypts `.env.development` before starting Vite, same pattern CI uses for
+`vite build`. Bare `vite` / `pnpm run dev:client` / unwrapped `pnpm run build` still
+read the file as text, so encrypting `VITE_*` garbles those.
 
 | Variable                          | Description                                                              |
 | --------------------------------- | ------------------------------------------------------------------------ |
@@ -107,7 +109,7 @@ Secrets in the committed env files are encrypted with dotenvx
 | ------------------------ | ------------------------------------------------ |
 | `pnpm run validate`      | Preflight + format, lint, typecheck, and tests.  |
 | `pnpm run typecheck`     | Run both server and client type checks.          |
-| `pnpm dev`               | Vite dev server + Express API with watch reload. |
+| `pnpm dev`               | Decrypt `.env.development`, then Vite + Express. |
 | `pnpm run build`         | Typecheck + compile server + build client.       |
 | `pnpm start`             | Run production server from `dist/`.              |
 | `pnpm run lint`          | Run oxlint.                                      |
