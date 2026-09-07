@@ -1,5 +1,6 @@
 # PR-only starter: there is no ci.yml or deploy. Copy this file into new DAL
 # apps. Node jobs use blacksmith-2vcpu-*. Rust compile/release stays on 8vcpu.
+# Also please remove all comments from this file. Keep the action version comments.
 name: AppBase PR Checks
 
 permissions:
