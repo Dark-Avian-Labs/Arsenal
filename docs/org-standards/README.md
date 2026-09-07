@@ -15,9 +15,9 @@ The living PR workflow is [`.github/workflows/pr.yml`](../../.github/workflows/p
 
 ## Defaults
 
-- **Node** `>=26`, **pnpm** `11.x` for TypeScript/JavaScript apps
+- **Node** `>=26`, **pnpm** `12.x` for TypeScript/JavaScript apps
 - **Checkout** on Blacksmith: `useblacksmith/checkout@v1` (never `actions/checkout`)
-- **Node setup:** `actions/setup-node@v7`
+- **Node + pnpm setup:** `pnpm/setup@v2` (`runtime: node@26`, `cache: true`, `require-lockfile: true`)
 - **Discord:** `iShark5060/actions-discord-status@v1` on `blacksmith-2vcpu-ubuntu-2404`
 - **Quality gate:** every app exposes one named validate entrypoint (`pnpm run validate` or `scripts/validate` for Rust)
 - **Agent docs:** root `AGENTS.md` in each app. Design system lives in AppBase `AGENTS.md`.
