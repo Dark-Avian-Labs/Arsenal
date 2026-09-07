@@ -15,15 +15,14 @@ Do not use `ubuntu-latest` or `blacksmith-4vcpu-*` for new/updated DAL jobs.
 
 Third-party actions are **pinned to commit SHAs** with the release tag in a trailing comment. Dependabot (`package-ecosystem: github-actions`) rewrites the SHA and the tag comment; do not ignore minor/patch updates for pinned actions.
 
-| Concern                       | Action (pin the current release SHA)                                            |
-| ----------------------------- | ------------------------------------------------------------------------------- |
-| Checkout (Blacksmith jobs)    | `useblacksmith/checkout` (v1 line)                                              |
-| pnpm                          | `pnpm/action-setup` (v6 line)                                                   |
-| Node                          | `actions/setup-node` (v7 line, `cache: pnpm`)                                   |
-| Discord status                | `iShark5060/actions-discord-status` (`job_results` + `mention_on: failure`)     |
-| GitHub Release (manual track) | `iShark5060/actions-gh-release` (`upload_checksums: true` when uploading files) |
+| Concern                       | Action (pin the current release SHA)                                                |
+| ----------------------------- | ----------------------------------------------------------------------------------- |
+| Checkout (Blacksmith jobs)    | `useblacksmith/checkout` (v1 line)                                                  |
+| Node + pnpm                   | `pnpm/setup` (v2 line, `runtime: node@26`, `cache: true`, `require-lockfile: true`) |
+| Discord status                | `iShark5060/actions-discord-status` (`job_results` + `mention_on: failure`)         |
+| GitHub Release (manual track) | `iShark5060/actions-gh-release` (`upload_checksums: true` when uploading files)     |
 
-Install is `pnpm install --frozen-lockfile`, then `pnpm audit --audit-level high`. If frozen-lockfile fails, the lockfile drifted; fix that. Do not delete `pnpm-lock.yaml` on each CI run.
+`pnpm/setup` with `require-lockfile: true` installs from the lockfile (`pnpm install --frozen-lockfile`). Then `pnpm audit --audit-level high`. If the lockfile drifted, fix that. Do not delete `pnpm-lock.yaml` on each CI run. Codex's Dependabot catalog-repair job is the exception: it sets `install: false` and runs `pnpm install --lockfile-only --no-frozen-lockfile`.
 
 ## Workflow files
 

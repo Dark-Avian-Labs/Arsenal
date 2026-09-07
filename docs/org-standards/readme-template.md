@@ -22,7 +22,7 @@ Use this shape for every DAL app `README.md`. Domain-only sections go after the 
 ## Requirements
 
 - Node.js 26+
-- pnpm 11+
+- pnpm 12+
 
 ## Quick start
 

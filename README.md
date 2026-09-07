@@ -23,7 +23,7 @@ AppBase is the starter for new Dark Avian Labs web apps. It ships the shared she
 ## Requirements
 
 - Node.js 26+
-- pnpm 11+
+- pnpm 12+
 
 ## Quick start
 

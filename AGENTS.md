@@ -4,7 +4,7 @@
 
 Dark Avian Labs engineering conventions (README shape, CI/PR runners, validate, release tracks) live in [`docs/org-standards/`](docs/org-standards/). New apps and ports should follow those docs. This file is the design-system contract plus AppBase runtime gotchas.
 
-Defaults: Node **26+**, pnpm **11.x** (`packageManager` must be an exact version, not a dist-tag), `pnpm run validate`, Blacksmith runners with `useblacksmith/checkout@v1` and `actions/setup-node@v7`.
+Defaults: Node **26+**, pnpm **12.x** (`packageManager` must be an exact version, not a dist-tag), `pnpm run validate`, Blacksmith runners with `useblacksmith/checkout@v1` and `pnpm/setup@v2`.
 
 ## Overview
 
@@ -280,4 +280,4 @@ See `README.md` for `pnpm run build`, `pnpm start`, `pnpm run validate`, etc.
 
 Quality checks use **oxlint** (lint) and **oxfmt** (format). Run `pnpm run validate` before committing — it runs runtime preflight, formatting, lint, typecheck, and tests in sequence via `run-quality-checks.mjs`.
 
-Node >= 26 and pnpm >= 11 required (`package.json` `engines` / `packageManager`).
+Node >= 26 and pnpm >= 12 required (`package.json` `engines` / `packageManager`).
