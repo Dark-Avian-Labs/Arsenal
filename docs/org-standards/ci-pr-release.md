@@ -30,12 +30,12 @@ Do **not** run `pnpm audit` inside `pr.yml` / `ci.yml`. Registry incidents stall
 
 ## Workflow files
 
-| File           | Trigger                                                           | Role                                                                                         |
-| -------------- | ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| `pr.yml`       | `pull_request`                                                    | Install → `pnpm run validate` → `pnpm run build` → Playwright Chromium + `pnpm run test:e2e` |
-| `ci.yml`       | `push` to `main` / `workflow_dispatch`                            | Per release track below                                                                      |
+| File           | Trigger                                                                              | Role                                                                                         |
+| -------------- | ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------- |
+| `pr.yml`       | `pull_request`                                                                       | Install → `pnpm run validate` → `pnpm run build` → Playwright Chromium + `pnpm run test:e2e` |
+| `ci.yml`       | `push` to `main` / `workflow_dispatch`                                               | Per release track below                                                                      |
 | `security.yml` | every `pull_request`; lockfile/`package.json` push; weekly cron; `workflow_dispatch` | `audit` + required `security` gate                                                           |
-| `release.yml`  | `workflow_dispatch`                                               | Manual artifact releases (Poltergeist only)                                                  |
+| `release.yml`  | `workflow_dispatch`                                                                  | Manual artifact releases (Poltergeist only)                                                  |
 
 PR/CI validate jobs must call **`pnpm run validate`** (or Rust `scripts/validate`), not re-list format/lint/typecheck/test as separate steps.
 
