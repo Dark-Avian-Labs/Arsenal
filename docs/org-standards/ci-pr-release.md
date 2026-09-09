@@ -26,16 +26,16 @@ Third-party actions are **pinned to commit SHAs** with the release tag in a trai
 
 `pnpm/setup` with `require-lockfile: true` installs from the lockfile (`pnpm install --frozen-lockfile`). If the lockfile drifted, fix that. Do not delete `pnpm-lock.yaml` on each CI run. Codex's Dependabot catalog-repair job is the exception: it sets `install: false` and runs `pnpm install --lockfile-only --no-frozen-lockfile`.
 
-Do **not** run `pnpm audit` inside `pr.yml` / `ci.yml`. Registry incidents stall validate and deploy for minutes. Audit lives in `security.yml`: lockfile/`package.json` changes, weekly schedule, and `workflow_dispatch`. That job uses `install: false` so it does not download the package graph. Tradeoff: a high advisory published between dependency PRs is caught by the Monday job, not by every validation. Make `security.yml` a required check if you want dependency PRs blocked on audit.
+Do **not** run `pnpm audit` inside `pr.yml` / `ci.yml`. Registry incidents stall validate and deploy for minutes. Audit lives in `security.yml`: every `pull_request` (so a required check never goes pending), lockfile/`package.json` pushes, weekly schedule, and `workflow_dispatch`. The `audit` job uses `install: false` and skips the registry call when a PR did not touch dependency files. Require the **`security`** job (not `audit`): it stays green when audit is skipped and fails when audit fails. Tradeoff: a high advisory published between dependency PRs is caught by the Monday job, not by every validation.
 
 ## Workflow files
 
-| File           | Trigger                                                           | Role                                                                                         |
-| -------------- | ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| `pr.yml`       | `pull_request`                                                    | Install → `pnpm run validate` → `pnpm run build` → Playwright Chromium + `pnpm run test:e2e` |
-| `ci.yml`       | `push` to `main` / `workflow_dispatch`                            | Per release track below                                                                      |
-| `security.yml` | lockfile/`package.json` PR+push, weekly cron, `workflow_dispatch` | `pnpm audit --audit-level high` only                                                         |
-| `release.yml`  | `workflow_dispatch`                                               | Manual artifact releases (Poltergeist only)                                                  |
+| File           | Trigger                                                                              | Role                                                                                         |
+| -------------- | ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------- |
+| `pr.yml`       | `pull_request`                                                                       | Install → `pnpm run validate` → `pnpm run build` → Playwright Chromium + `pnpm run test:e2e` |
+| `ci.yml`       | `push` to `main` / `workflow_dispatch`                                               | Per release track below                                                                      |
+| `security.yml` | every `pull_request`; lockfile/`package.json` push; weekly cron; `workflow_dispatch` | `audit` + required `security` gate                                                           |
+| `release.yml`  | `workflow_dispatch`                                                                  | Manual artifact releases (Poltergeist only)                                                  |
 
 PR/CI validate jobs must call **`pnpm run validate`** (or Rust `scripts/validate`), not re-list format/lint/typecheck/test as separate steps.
 
