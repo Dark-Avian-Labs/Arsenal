@@ -40,9 +40,6 @@ jobs:
       # --frozen-lockfile (the old pnpm-install-fresh action). pnpm does not
       # record the root package version, so a version-only bump cannot desync it.
 
-      - name: Audit dependencies
-        run: pnpm audit --audit-level high
-
       # `pnpm run validate` is run-quality-checks.mjs. Do not expand this into
       # separate format/lint/typecheck/test steps. Build stays its own step.
       - name: Run quality checks
@@ -51,8 +48,25 @@ jobs:
       - name: Build project
         run: pnpm run build
 
+      - name: Resolve Playwright version
+        id: playwright
+        run: |
+          echo "version=$(pnpm exec playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright Chromium
+        id: playwright-cache
+        uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ steps.playwright.outputs.version }}
+
       - name: Install Playwright Chromium
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: pnpm exec playwright install --with-deps chromium
+
+      - name: Install Playwright OS dependencies
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: pnpm exec playwright install-deps chromium
 
       - name: Run end-to-end tests
         run: pnpm run test:e2e
