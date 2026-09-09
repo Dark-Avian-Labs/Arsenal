@@ -2,7 +2,7 @@
 
 Use this shape for every DAL app `README.md`. Domain-only sections go after Gotchas and before License.
 
-````markdown
+```markdown
 <p align="center">
   <img src="https://raw.githubusercontent.com/Dark-Avian-Labs/.github/refs/heads/main/banner.png" alt="Dark Avian Labs">
 </p>
@@ -28,7 +28,7 @@ Use this shape for every DAL app `README.md`. Domain-only sections go after Gotc
 ## License
 
 MIT
-````
+```
 
 ## Conventions
 
