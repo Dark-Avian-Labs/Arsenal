@@ -18,7 +18,7 @@ Default listen port is **3000** (BudgetPlanner and Codex **3001**, Armory **3002
 
 The server loads `.env.keys` then `.env.<NODE_ENV>` in-process. `pnpm start` needs `NODE_ENV=production` or it loads the development env file. `pnpm run dev` decrypts `.env.development` with dotenvx before spawning Vite and the API (`scripts/dev.mjs` also forces `SECURE_COOKIES=0` so local HTTP login works). `vite`, `dev:client`, and unwrapped `pnpm run build` still read the env file as text, so encrypting `VITE_*` garbles those. Production requires `SESSION_SECRET` of at least 32 characters, decrypted Clerk keys, and `TRUST_PROXY` if `SECURE_COOKIES` is on.
 
-Empty Clerk keys are fine in development (unauthenticated). Placeholder keys are not: the middleware throws 500 on every request. Leave the keys empty instead of using fake values. Once keys are set, `APP_PUBLIC_BASE_URL` is required. Admin is Clerk public metadata `apps.<APP_ID> === 'admin'`; the Clerk session token must include `"metadata": "{{user.public_metadata}}"`. Production `COOKIE_DOMAIN=.darkavianlabs.com` shares one login across DAL apps; authorization is per-app via `metadata.apps`, not separate Clerk instances.
+Empty Clerk keys are fine outside production: `isClerkConfigured()` skips Clerk and treats every request as signed out (Vitest and Playwright rely on this). Placeholder keys (`pk_test_placeholder` / `sk_test_placeholder`) are fatal at boot — leave both keys empty instead of faking values. Once keys are set, `APP_PUBLIC_BASE_URL` is required. Signed-in Playwright is later: decrypt `.env.development` and use a dedicated CI Clerk user (testing tokens). Do not invent local fake keys. Admin is Clerk public metadata `apps.<APP_ID> === 'admin'`; the Clerk session token must include `"metadata": "{{user.public_metadata}}"`. Production `COOKIE_DOMAIN=.darkavianlabs.com` shares one login across DAL apps; authorization is per-app via `metadata.apps`, not separate Clerk instances.
 
 Add API routes on `apiRouter` above the `/api` 404. `GET /api/version` returns `{ version }` from `package.json` for the stale-client banner. `GET /api/health` is the in-app probe (README / curl). Load balancers should hit `/readyz` (session DB). `/healthz` is process liveness and does not open a session. Sign-in/up routes need `/sign-in/*` and `/sign-up/*` wildcards. Session storage is vendored in `server/db/sqliteSessionStore.ts`; do not swap it for the unmaintained npm package. `bindClerkUserSessionMiddleware` on `/api` regenerates the express session and CSRF token when the Clerk user id changes (anonymous → signed-in, user switch, and sign-out). It skips `/health` and `/version` so probes do not persist sessions. Wrap the route tree in `ErrorBoundary` (`client/components/ui/ErrorBoundary.tsx`).
 
@@ -281,3 +281,15 @@ See `README.md` for `pnpm run build`, `pnpm start`, `pnpm run validate`, etc.
 Quality checks use **oxlint** (lint) and **oxfmt** (format). Run `pnpm run validate` before committing — it runs runtime preflight, formatting, lint, typecheck, and tests in sequence via `run-quality-checks.mjs`.
 
 Node >= 26 and pnpm >= 12 required (`package.json` `engines` / `packageManager`).
+
+## Tests
+
+`pnpm run validate` is the quality gate: preflight, oxfmt, oxlint, typecheck, Vitest. In CI that Vitest step is instrumented (`pnpm run test:coverage`); locally `pnpm test` stays uninstrumented. Use `pnpm run test:watch` while iterating.
+
+HTTP tests that need the real stack (health, CSRF, Helmet, `/api/version`) go through `createApp()` in `server/app.ts` (`server/app.test.ts`). `createApp` already injects an in-memory session DB in tests; do not add extra HTTP route suites for the same probes. `server/index.ts` only opens the session store then listens.
+
+Vitest is Node-only (`*.test.ts`). Do not add happy-dom or `*.test.tsx` until there is a real component test.
+
+Playwright (`pnpm run test:e2e`) is **not** inside validate. It boots the compiled server (`dist/server/index.js`) on port **3100** with a throwaway session sqlite file and hits Chromium smokes (probes, CSRF, API 404, SPA served when `dist/client` exists). Run `pnpm run build` first, and `pnpm run test:e2e:install` once per machine. The runner and browser downloads are Apache-2.0 / free; no cloud grid.
+
+Empty Clerk keys keep `isClerkConfigured()` false so Vitest and Playwright run signed out. Signed-in e2e is later via decrypted `.env.development` plus a dedicated CI Clerk user. Do not invent local fake keys.
