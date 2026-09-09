@@ -26,13 +26,15 @@ Third-party actions are **pinned to commit SHAs** with the release tag in a trai
 
 ## Workflow files
 
-| File          | Trigger                                | Role                                                                           |
-| ------------- | -------------------------------------- | ------------------------------------------------------------------------------ |
-| `pr.yml`      | `pull_request`                         | Install → `pnpm run validate` → `pnpm run build` (+ coverage when tests exist) |
-| `ci.yml`      | `push` to `main` / `workflow_dispatch` | Per release track below                                                        |
-| `release.yml` | `workflow_dispatch`                    | Manual artifact releases (Poltergeist only)                                    |
+| File          | Trigger                                | Role                                                                                         |
+| ------------- | -------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `pr.yml`      | `pull_request`                         | Install → `pnpm run validate` → `pnpm run build` → Playwright Chromium + `pnpm run test:e2e` |
+| `ci.yml`      | `push` to `main` / `workflow_dispatch` | Per release track below                                                                      |
+| `release.yml` | `workflow_dispatch`                    | Manual artifact releases (Poltergeist only)                                                  |
 
 PR/CI validate jobs must call **`pnpm run validate`** (or Rust `scripts/validate`), not re-list format/lint/typecheck/test as separate steps.
+
+After **`pnpm run build`**, Node apps that ship Playwright install Chromium (`pnpm exec playwright install --with-deps chromium`) and run `pnpm run test:e2e`. Playwright is not part of validate. TC-Bot has no Playwright; skip those steps there.
 
 ## Release tracks
 
@@ -42,6 +44,8 @@ Used by: Armory, Codex, BudgetPlanner, Outfitter, TC-Bot, AerieDrive, InfoGraphi
 
 - `.releaserc.json` + `version` job that runs `pnpm exec semantic-release`
 - Typical job order: `deployment-check` → `version` → `validate` → `build-and-deploy` → `discord-status`
+- `build-and-deploy` runs the production build, then Playwright Chromium + `pnpm run test:e2e`, then SSH deploy. TC-Bot has no Playwright.
+- Path filters on `push` must include `e2e/**` and `playwright.config.ts` (and `shared/**` when the app has that tree) so those changes still deploy.
 - No separate `release.yml`
 
 ### B — manual GitHub Release (`release.yml`)

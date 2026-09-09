@@ -1,7 +1,8 @@
 // `pnpm run validate`: preflight, then format → lint → typecheck → test.
-// CI calls this script, then `pnpm run build` as a separate step. Skip the
-// Tests step only when the app has no suite yet; do not add an empty Vitest
-// project just to keep the name.
+// In CI the Tests step is `test:coverage`; locally it is uninstrumented `test`.
+// CI calls this script, then `pnpm run build` as a separate step (Playwright
+// follows build, not this script). Skip the Tests step only when the app has
+// no suite yet; do not add an empty Vitest project just to keep the name.
 
 import { spawnSync } from 'node:child_process';
 
@@ -17,7 +18,7 @@ const steps = [
   { name: 'Formatting', command: 'pnpm run check-format' },
   { name: 'Lint', command: 'pnpm run lint' },
   { name: 'Typecheck', command: 'pnpm run typecheck' },
-  { name: 'Tests', command: 'pnpm run test' },
+  { name: 'Tests', command: process.env.CI ? 'pnpm run test:coverage' : 'pnpm run test' },
 ];
 
 const results = [];
