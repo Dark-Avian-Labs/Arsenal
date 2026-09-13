@@ -6,12 +6,12 @@ The living PR workflow is [`.github/workflows/pr.yml`](../../.github/workflows/p
 
 ## Documents
 
-| Doc                                      | Purpose                                               |
-| ---------------------------------------- | ----------------------------------------------------- |
-| [readme-template.md](readme-template.md) | Root `README.md` shape, badges, section order         |
-| [ci-pr-release.md](ci-pr-release.md)     | Blacksmith runners, action pins, three release tracks |
-| [validate.md](validate.md)               | `pnpm run validate` / Rust validate contract          |
-| [personal-repos.md](personal-repos.md)   | Same conventions with **GitHub-hosted** runners       |
+| Doc                                      | Purpose                                                     |
+| ---------------------------------------- | ----------------------------------------------------------- |
+| [readme-template.md](readme-template.md) | Root `README.md` shape, badges, warmer intro, section order |
+| [ci-pr-release.md](ci-pr-release.md)     | Blacksmith runners, action pins, three release tracks       |
+| [validate.md](validate.md)               | `pnpm run validate` / Rust validate contract                |
+| [personal-repos.md](personal-repos.md)   | Same conventions with **GitHub-hosted** runners             |
 
 ## Defaults
 

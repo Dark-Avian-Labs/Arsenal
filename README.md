@@ -13,18 +13,14 @@
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4.x-06B6D4?logo=tailwindcss&logoColor=white&style=flat-square)
 [![Cursor](https://img.shields.io/badge/Cursor-IDE-141414?logo=cursor&logoColor=white&style=flat-square)](https://cursor.com)
 
-Starter for Dark Avian Labs web apps. Ships the glass shell, Express baseline, and Clerk wiring. Domain features are empty on purpose. There is no shared UI package — sibling apps copy these contracts by hand.
+AppBase is the empty house the other Dark Avian Labs web apps grow up in. Glass shell, Express API, Vite client, the same buttons and panels you see on Codex and Armory. Domain features stay out on purpose, so a new app copies the look instead of inheriting a half-finished product.
 
-Default API port is **3000**. Vite is **5173**.
+There is no shared UI package. When the glass or layout changes here, the same change lands in the sibling apps by hand.
 
 ## Gotchas
 
-- Encrypted `.env.development` / `.env.production` need `.env.keys` or `DOTENV_PRIVATE_KEY_*`. Never encrypt `VITE_*` — unwrapped Vite reads ciphertext.
-- `pnpm start` loads `.env.production` only when `NODE_ENV=production`. Without that it loads the development file.
-- Empty Clerk keys skip auth (fine in dev). Placeholder keys (`pk_test_placeholder`) are fatal — leave them empty, do not fake values. Once keys are set, `APP_PUBLIC_BASE_URL` is required.
-- Production login is shared across DAL apps via `COOKIE_DOMAIN=.darkavianlabs.com`. Admin is Clerk public metadata `apps.<APP_ID> === 'admin'`; the session token must include `"metadata": "{{user.public_metadata}}"`.
-- After changing Node versions on Windows, `pnpm rebuild better-sqlite3`.
-- Design system and porting contracts: [AGENTS.md](AGENTS.md). Org CI/README/validate: [docs/org-standards/](docs/org-standards/).
+- Encrypted env files need `.env.keys`. Leave `VITE_*` plaintext or Vite reads ciphertext.
+- `pnpm start` only loads `.env.production` when `NODE_ENV=production`.
 
 ## License
 

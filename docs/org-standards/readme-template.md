@@ -19,7 +19,7 @@ Use this shape for every DAL app `README.md`. Domain-only sections go after Gotc
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4.x-06B6D4?logo=tailwindcss&logoColor=white&style=flat-square)
 [![Cursor](https://img.shields.io/badge/Cursor-IDE-141414?logo=cursor&logoColor=white&style=flat-square)](https://cursor.com)
 
-<1–3 sentence product blurb. Live URL on its own line if the app is hosted.>
+<Warm intro, about 6–8 sentences. What the app is for, who it is for, and one concrete thing you can do with it. Live URL on its own line if the app is hosted.>
 
 ## Gotchas
 
@@ -38,3 +38,5 @@ MIT
 - Omit empty stubs. One extra domain heading is fine when it is actually needed (Poltergeist editions, TC-Bot Sheets, etc.).
 - Rust apps: swap Node/TS/React badges for Rust edition and platform; quality gate is `scripts/validate`.
 - Banner is the shared org strip at `https://raw.githubusercontent.com/Dark-Avian-Labs/.github/refs/heads/main/banner.png`. Do not invent a per-repo image.
+- Do not link `AGENTS.md` or `docs/org-standards/` from the README. Those are for agents, not GitHub visitors.
+- Do not mention sign-in. Hosted apps show it on first load.
