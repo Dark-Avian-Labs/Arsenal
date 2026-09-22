@@ -33,6 +33,11 @@ export const CLERK_PUBLISHABLE_KEY = readTrimmedEnv(
 
 export const CLERK_ENABLED = CLERK_PUBLISHABLE_KEY.length > 0;
 
+export const APP_ID = readTrimmedEnv(
+  import.meta.env.VITE_APP_ID as string | undefined,
+  'appbase',
+).toLowerCase();
+
 export const LEGAL_CONTACT_NAME = readTrimmedEnv(
   import.meta.env.VITE_LEGAL_CONTACT_NAME as string | undefined,
   'Legal contact not configured',
