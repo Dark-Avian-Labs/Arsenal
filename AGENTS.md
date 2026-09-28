@@ -14,7 +14,7 @@ When building a new app from AppBase, copy the design contracts below. Codex and
 
 ## Runtime
 
-Default listen port is **3000** (BudgetPlanner and Codex **3001**, Armory **3002**). Codex and BudgetPlanner share 3001; set `PORT` if you run both. Dev is two processes: Vite `5173` proxies `/api` to Express.
+Default listen port is **3000**. Codex is **3001**, Armory **3002**, BudgetPlanner **3003**, Outfitter **3004**, Sentinel **3005**. Dev is two processes: Vite `5173` proxies `/api` to Express.
 
 The server loads `.env.keys` then `.env.<NODE_ENV>` in-process. `pnpm start` needs `NODE_ENV=production` or it loads the development env file. `pnpm run dev` decrypts `.env.development` with dotenvx before spawning Vite and the API (`scripts/dev.mjs` also forces `SECURE_COOKIES=0` so local HTTP login works). `vite`, `dev:client`, and unwrapped `pnpm run build` still read the env file as text, so encrypting `VITE_*` garbles those. Production requires `SESSION_SECRET` of at least 32 characters, decrypted Clerk keys, and `TRUST_PROXY` if `SECURE_COOKIES` is on.
 

@@ -47,6 +47,9 @@ export function Layout() {
 
   return (
     <div className="flex min-h-screen flex-col">
+      <a href="#main-content" className="skip-link">
+        Skip to main content
+      </a>
       <HexSideBackground />
       <AsciiWaveBackground />
       <DalAppNav currentAppId={APP_ID} />
@@ -92,7 +95,7 @@ export function Layout() {
           </div>
         </div>
       </header>
-      <main className="relative z-0 flex-1 px-6 pb-6">
+      <main id="main-content" className="relative z-0 flex-1 px-6 pb-6">
         <div className="mx-auto w-full max-w-[2000px]">
           <Outlet />
         </div>
