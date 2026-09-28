@@ -105,7 +105,7 @@ Use these class names and primitives — do not invent one-off glass or button p
 
 | Area                | Spec                                                                                                                                                                                                                                   |
 | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Layout max width    | `max-w-[2000px]` on header, main wrapper, and footer                                                                                                                                                                                   |
+| Layout max width    | `max-w-[2000px]` on header, main wrapper, and footer. A mobile-first app may use the compact shell instead: `max-w-3xl` on those three regions and an `h-14` header. Keep the feather mark and the `vX.Y.Z` badge either way |
 | Glass surfaces      | `glass-surface` (panels/cards), `glass-modal-surface` (dialogs), `glass-shell` (auth shells)                                                                                                                                           |
 | Header nav          | `header-link` with `.active` — 40px height, 1rem radius, accent when active                                                                                                                                                            |
 | Buttons             | `btn btn-accent`, `btn btn-danger`, `btn btn-cancel` (modal dismiss), `btn btn-secondary`                                                                                                                                              |
@@ -270,7 +270,7 @@ Checklist after design changes:
 - [ ] `theme-init.js` logic matches (minus app-specific localStorage fallback keys), including `acrylic` in the UI style list
 - [ ] `acrylic-noise.svg` copied next to `input.css` if Acrylic is enabled
 - [ ] Modal, dropdown, and button class names unchanged
-- [ ] Layout `max-w-[2000px]` preserved
+- [ ] Layout width is `max-w-[2000px]`, or the compact `max-w-3xl` shell when the app is mobile-first
 - [ ] Shell background assets and `asciiBackground` lib kept in sync with Codex when wave behavior changes
 - [ ] `--hex-cluster-scale` reference viewport (3840×2160) unchanged unless intentionally retuning side hex size
 
