@@ -88,22 +88,6 @@
 
   --shadow-panel: 0 8px 32px oklch(0% 0 0 / 0.25);
 
-  --color-dmg-impact: oklch(68% 0.03 248);
-  --color-dmg-puncture: oklch(78% 0.04 240);
-  --color-dmg-slash: oklch(68% 0.09 45);
-  --color-dmg-heat: oklch(67% 0.2 35);
-  --color-dmg-cold: oklch(82% 0.12 230);
-  --color-dmg-electricity: oklch(86% 0.15 102);
-  --color-dmg-toxin: oklch(72% 0.2 145);
-  --color-dmg-blast: oklch(74% 0.16 55);
-  --color-dmg-radiation: oklch(86% 0.12 102);
-  --color-dmg-gas: oklch(78% 0.12 160);
-  --color-dmg-magnetic: oklch(65% 0.1 250);
-  --color-dmg-viral: oklch(78% 0.08 200);
-  --color-dmg-corrosive: oklch(86% 0.15 102);
-  --color-dmg-void: oklch(76% 0.15 302);
-  --color-dmg-true: oklch(100% 0 0);
-
   --color-rarity-gray: oklch(72% 0.015 260);
   --color-rarity-white: oklch(88% 0.005 264);
   --color-rarity-green: oklch(72% 0.18 145);
@@ -124,9 +108,6 @@
   --color-rarity-lord: var(--color-rarity-orange);
   --color-rarity-exclusive: var(--color-rarity-red);
   --color-rarity-peculiar: var(--color-rarity-pink);
-
-  --color-riven: oklch(62% 0.12 290);
-  --color-riven-light: oklch(78% 0.12 290);
 }
 
 :root {

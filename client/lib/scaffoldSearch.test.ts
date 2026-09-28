@@ -8,8 +8,7 @@ describe('searchScaffoldPages', () => {
   });
 
   it('matches title, hint, and path', () => {
-    expect(searchScaffoldPages('legal').map((item) => item.id)).toEqual(['legal']);
-    expect(searchScaffoldPages('privacy').map((item) => item.id)).toEqual(['legal']);
+    expect(searchScaffoldPages('legal').map((item) => item.id)).toEqual([]);
     expect(searchScaffoldPages('/sign-in').map((item) => item.id)).toEqual(['sign-in']);
   });
 });

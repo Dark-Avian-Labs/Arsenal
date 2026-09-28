@@ -12,6 +12,7 @@ import {
   APP_NAME,
   APP_VERSION,
   COOKIE_DOMAIN,
+  LEGAL_PAGE_URL,
   NODE_ENV,
   PROJECT_ROOT,
   SECURE_COOKIES,
@@ -205,6 +206,10 @@ export function createApp(options: CreateAppOptions = {}): AppBundle {
       clientIndexPath,
     });
   }
+
+  app.get('/legal', publicPageLimiter, (_req, res) => {
+    res.redirect(LEGAL_PAGE_URL);
+  });
 
   app.use(
     '/assets',

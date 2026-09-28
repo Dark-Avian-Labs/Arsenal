@@ -38,27 +38,25 @@ export const APP_ID = readTrimmedEnv(
   'appbase',
 ).toLowerCase();
 
-export const LEGAL_CONTACT_NAME = readTrimmedEnv(
-  import.meta.env.VITE_LEGAL_CONTACT_NAME as string | undefined,
-  'Legal contact not configured',
+const DEFAULT_LEGAL_PAGE_URL = 'https://darkavianlabs.com/legal';
+
+function isSafeLegalUrl(url: string): boolean {
+  if (url.startsWith('/') && !url.startsWith('//') && !url.includes('\\') && !url.includes('://')) {
+    return true;
+  }
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === 'https:' || parsed.protocol === 'http:';
+  } catch {
+    return false;
+  }
+}
+
+const resolvedLegalPageUrl = readTrimmedEnv(
+  import.meta.env.VITE_LEGAL_PAGE_URL as string | undefined,
+  DEFAULT_LEGAL_PAGE_URL,
 );
 
-export const LEGAL_CONTACT_STREET = readTrimmedEnv(
-  import.meta.env.VITE_LEGAL_CONTACT_STREET as string | undefined,
-  '',
-);
-
-export const LEGAL_CONTACT_CITY = readTrimmedEnv(
-  import.meta.env.VITE_LEGAL_CONTACT_CITY as string | undefined,
-  '',
-);
-
-export const LEGAL_CONTACT_PHONE = readTrimmedEnv(
-  import.meta.env.VITE_LEGAL_CONTACT_PHONE as string | undefined,
-  '',
-);
-
-export const LEGAL_CONTACT_EMAIL = readTrimmedEnv(
-  import.meta.env.VITE_LEGAL_CONTACT_EMAIL as string | undefined,
-  '',
-);
+export const LEGAL_PAGE_URL = isSafeLegalUrl(resolvedLegalPageUrl)
+  ? resolvedLegalPageUrl
+  : DEFAULT_LEGAL_PAGE_URL;

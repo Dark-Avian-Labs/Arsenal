@@ -5,6 +5,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
@@ -16,7 +17,8 @@ export type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated' | 'erro
 export interface AuthState {
   status: AuthStatus;
   userId: string | null;
-  isAdmin: boolean;
+  /** Absent when this app has no admin role. */
+  isAdmin?: boolean;
 }
 
 interface AuthContextValue {
@@ -34,6 +36,7 @@ const AuthContext = createContext<AuthContextValue>({
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { isLoaded, isSignedIn, getToken } = useClerkAuth();
   const [auth, setAuth] = useState<AuthState>({ status: 'loading', userId: null, isAdmin: false });
+  const refreshGenerationRef = useRef(0);
 
   useEffect(() => {
     setClerkTokenGetter((options) => getToken(options));
@@ -44,26 +47,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(async () => {
     if (!isLoaded) return;
+    const generation = ++refreshGenerationRef.current;
+    const applyAuth = (next: AuthState): void => {
+      if (refreshGenerationRef.current === generation) setAuth(next);
+    };
     if (!isSignedIn) {
       clearCsrfToken();
-      setAuth(UNAUTHENTICATED);
+      applyAuth(UNAUTHENTICATED);
       return;
     }
     try {
       const res = await apiFetch('/api/auth/me');
       if (res.status === 401) {
-        setAuth(UNAUTHENTICATED);
+        applyAuth(UNAUTHENTICATED);
         return;
       }
       if (!res.ok) throw new Error(`Unexpected status ${res.status}`);
       const data = (await res.json()) as { userId?: string | null; isAdmin?: boolean };
-      setAuth({
+      applyAuth({
         status: 'authenticated',
         userId: data.userId ?? null,
         isAdmin: data.isAdmin === true,
       });
     } catch {
-      setAuth({ status: 'error', userId: null, isAdmin: false });
+      applyAuth({ status: 'error', userId: null, isAdmin: false });
     }
   }, [isLoaded, isSignedIn]);
 
