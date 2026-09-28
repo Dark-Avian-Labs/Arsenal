@@ -17,11 +17,6 @@ AppBase is the empty house the other Dark Avian Labs web apps grow up in. Glass 
 
 There is no shared UI package. When the glass or layout changes here, the same change lands in the sibling apps by hand.
 
-## Gotchas
-
-- Encrypted env files need `.env.keys`. Leave `VITE_*` plaintext or Vite reads ciphertext.
-- `pnpm start` only loads `.env.production` when `NODE_ENV=production`.
-
 ## License
 
 MIT

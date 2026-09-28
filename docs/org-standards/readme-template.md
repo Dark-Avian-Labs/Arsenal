@@ -1,6 +1,6 @@
 # README template
 
-Use this shape for every DAL app `README.md`. Domain-only sections go after Gotchas and before License.
+Use this shape for every DAL app `README.md`. A domain-only section, when one is needed, goes before License.
 
 ```markdown
 <p align="center">
@@ -21,10 +21,6 @@ Use this shape for every DAL app `README.md`. Domain-only sections go after Gotc
 
 <Warm intro, about 6–8 sentences. What the app is for, who it is for, and one concrete thing you can do with it. Live URL on its own line if the app is hosted.>
 
-## Gotchas
-
-- Only things that bite at boot, deploy, or first run. Env names live in `.env.example`; scripts live in `package.json`.
-
 ## License
 
 MIT
@@ -34,7 +30,7 @@ MIT
 
 - Shared org banner first (`banner.png` in `Dark-Avian-Labs/.github`), then H1 = product name only.
 - Badges under H1: License + CI/PR (when those workflows exist) + runtime/stack + Cursor. All shields use `style=flat-square`. GitHub's own workflow SVGs cannot be restyled; use the shields.io `github/actions/workflow/status` URLs above.
-- Drop Requirements, Quick start, Examples, Environment tables, and Scripts tables. Readers already know how to run a Node app.
+- Drop Requirements, Quick start, Examples, Environment tables, Scripts tables, and Gotchas. Env names live in `.env.example`. Scripts live in `package.json`.
 - Omit empty stubs. One extra domain heading is fine when it is actually needed (Poltergeist editions, TC-Bot Sheets, etc.).
 - Rust apps: swap Node/TS/React badges for Rust edition and platform; quality gate is `scripts/validate`.
 - Banner is the shared org strip at `https://raw.githubusercontent.com/Dark-Avian-Labs/.github/refs/heads/main/banner.png`. Do not invent a per-repo image.
