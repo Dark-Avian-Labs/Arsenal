@@ -17,7 +17,6 @@ export type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated' | 'erro
 export interface AuthState {
   status: AuthStatus;
   userId: string | null;
-  /** Absent when this app has no admin role. */
   isAdmin?: boolean;
 }
 

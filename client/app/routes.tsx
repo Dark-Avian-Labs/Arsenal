@@ -34,7 +34,6 @@ export const router = createBrowserRouter(
     >
       <Route element={<Layout />}>
         <Route path={APP_PATHS.home} element={<HomePage />} />
-        {/* Clerk path routing needs the wildcard for multi-step flows. */}
         <Route path={`${APP_PATHS.signIn}/*`} element={<SignInPage />} />
         <Route path={`${APP_PATHS.signUp}/*`} element={<SignUpPage />} />
         <Route path="*" element={<NotFoundPage />} />

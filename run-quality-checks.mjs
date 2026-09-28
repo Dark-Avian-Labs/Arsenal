@@ -1,9 +1,3 @@
-// `pnpm run validate`: preflight, then format → lint → typecheck → test.
-// In CI the Tests step is `test:coverage`; locally it is uninstrumented `test`.
-// CI calls this script, then `pnpm run build` as a separate step (Playwright
-// follows build, not this script). Skip the Tests step only when the app has
-// no suite yet; do not add an empty Vitest project just to keep the name.
-
 import { spawnSync } from 'node:child_process';
 
 const preflight = spawnSync('node', ['scripts/runtime-preflight.mjs'], {
