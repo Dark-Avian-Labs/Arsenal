@@ -1,8 +1,6 @@
 name: Dependency audit
 
 env:
-  COREPACK_ENABLE_DOWNLOAD_PROMPT: '0'
-
 on:
   schedule:
     - cron: '11 6 * * 1'
@@ -86,7 +84,7 @@ jobs:
 
       - name: Enable pnpm
         if: steps.filter.outputs.skip != 'true'
-        run: corepack enable && corepack prepare pnpm@12.6.0 --activate
+        run: npm install -g pnpm@12.6.0
 
       - name: Audit dependencies
         if: steps.filter.outputs.skip != 'true'

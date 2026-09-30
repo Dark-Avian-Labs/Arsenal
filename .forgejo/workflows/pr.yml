@@ -2,7 +2,6 @@ name: AppBase PR Checks
 
 env:
   CI: true
-  COREPACK_ENABLE_DOWNLOAD_PROMPT: '0'
 
 on:
   pull_request:
@@ -21,7 +20,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Enable pnpm
-        run: corepack enable && corepack prepare pnpm@12.6.0 --activate
+        run: npm install -g pnpm@12.6.0
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
