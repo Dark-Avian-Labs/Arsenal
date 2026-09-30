@@ -46,7 +46,20 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit != 'true'
         env:
           PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT: 300000
-        run: pnpm exec playwright install --with-deps chromium
+          # Playwright queries IPv6 first and aborts the download when that
+          # 5s attempt fails. The error text still prints this timeout.
+          NODE_OPTIONS: --require /tmp/force-ipv4.cjs
+        run: |
+          cat > /tmp/force-ipv4.cjs << 'EOF'
+          const dns = require('dns');
+          const lookup = dns.promises.lookup.bind(dns.promises);
+          dns.promises.lookup = (hostname, options) => {
+            const opts = options && typeof options === 'object' ? { ...options, family: 4 } : { family: 4 };
+            return lookup(hostname, opts);
+          };
+          EOF
+          node -e "require('dns').promises.lookup('cdn.playwright.dev',{all:true}).then(a=>console.log(a))"
+          pnpm exec playwright install --with-deps chromium
 
       - name: Install Playwright OS dependencies
         if: steps.playwright-cache.outputs.cache-hit == 'true'
