@@ -1,9 +1,5 @@
 name: Dependency audit
 
-permissions:
-  contents: read
-  pull-requests: read
-
 env:
   COREPACK_ENABLE_DOWNLOAD_PROMPT: '0'
 
@@ -26,7 +22,6 @@ concurrency:
 
 jobs:
   audit:
-    if: github.server_url == 'https://git.darkavianlabs.com'
     runs-on: light-node26
     timeout-minutes: 10
     defaults:
@@ -100,7 +95,7 @@ jobs:
   security:
     name: security
     needs: [audit]
-    if: always() && !cancelled() && github.server_url == 'https://git.darkavianlabs.com'
+    if: always() && !cancelled()
     runs-on: light
     timeout-minutes: 5
     defaults:

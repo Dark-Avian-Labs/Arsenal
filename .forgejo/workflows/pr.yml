@@ -1,9 +1,5 @@
 name: AppBase PR Checks
 
-permissions:
-  contents: read
-  pull-requests: read
-
 env:
   CI: true
   COREPACK_ENABLE_DOWNLOAD_PROMPT: '0'
@@ -17,7 +13,6 @@ concurrency:
 
 jobs:
   validate:
-    if: github.server_url == 'https://git.darkavianlabs.com'
     runs-on: build-node26
     timeout-minutes: 20
 
