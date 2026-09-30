@@ -2,7 +2,7 @@
 
 Canonical engineering conventions for DAL application repositories. Copy patterns from here into sibling apps. Same mirror model as the design system: no shared npm package or org-level reusable workflow package yet.
 
-The living PR workflow is [`.github/workflows/pr.yml`](../../.github/workflows/pr.yml). Track A CI is Armory/Codex `ci.yml`.
+The living PR workflow is [`.forgejo/workflows/pr.yml`](../../.forgejo/workflows/pr.yml). Track A CI is Armory/Codex `ci.yml`.
 
 ## Documents
 

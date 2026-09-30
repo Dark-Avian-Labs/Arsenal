@@ -1,6 +1,6 @@
 # CI, PR, and release
 
-Policy for new and updated workflows. The living PR workflow is AppBase [`.github/workflows/pr.yml`](../../.github/workflows/pr.yml). Track A `ci.yml` lives in Armory/Codex.
+Policy for new and updated workflows. The living PR workflow is AppBase [`.forgejo/workflows/pr.yml`](../../.forgejo/workflows/pr.yml). Track A `ci.yml` lives in Armory/Codex.
 
 ## Runner tiers
 
