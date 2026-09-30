@@ -1,6 +1,5 @@
 name: Dependency audit
 
-env:
 on:
   schedule:
     - cron: '11 6 * * 1'
