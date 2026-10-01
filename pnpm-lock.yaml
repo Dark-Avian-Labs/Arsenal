@@ -173,8 +173,8 @@ importers:
         specifier: ^6.17.2
         version: 6.17.2(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@dark-avian-labs/sentinel-agent':
-        specifier: https://github.com/Dark-Avian-Labs/Sentinel/releases/download/agent-v0.1.0/dark-avian-labs-sentinel-agent-0.1.0.tgz
-        version: https://github.com/Dark-Avian-Labs/Sentinel/releases/download/agent-v0.1.0/dark-avian-labs-sentinel-agent-0.1.0.tgz(express@5.2.1)
+        specifier: https://git.darkavianlabs.com/Dark-Avian-Labs/Sentinel/releases/download/agent-v0.1.0/dark-avian-labs-sentinel-agent-0.1.0.tgz
+        version: https://git.darkavianlabs.com/Dark-Avian-Labs/Sentinel/releases/download/agent-v0.1.0/dark-avian-labs-sentinel-agent-0.1.0.tgz(express@5.2.1)
       '@dotenvx/dotenvx':
         specifier: ^2.31.1
         version: 2.31.1
@@ -331,8 +331,8 @@ packages:
       react-dom:
         optional: true
 
-  '@dark-avian-labs/sentinel-agent@https://github.com/Dark-Avian-Labs/Sentinel/releases/download/agent-v0.1.0/dark-avian-labs-sentinel-agent-0.1.0.tgz':
-    resolution: {integrity: sha512-77l8cjioTf2FU/RsLg6JFWngPCDa3p6eVaHioMk3hDdwPXE3vExzcUH/mupl96ax8lxHGfoQrSWH1l7/qyIrnw==, tarball: https://github.com/Dark-Avian-Labs/Sentinel/releases/download/agent-v0.1.0/dark-avian-labs-sentinel-agent-0.1.0.tgz}
+  '@dark-avian-labs/sentinel-agent@https://git.darkavianlabs.com/Dark-Avian-Labs/Sentinel/releases/download/agent-v0.1.0/dark-avian-labs-sentinel-agent-0.1.0.tgz':
+    resolution: {integrity: sha512-77l8cjioTf2FU/RsLg6JFWngPCDa3p6eVaHioMk3hDdwPXE3vExzcUH/mupl96ax8lxHGfoQrSWH1l7/qyIrnw==, tarball: https://git.darkavianlabs.com/Dark-Avian-Labs/Sentinel/releases/download/agent-v0.1.0/dark-avian-labs-sentinel-agent-0.1.0.tgz}
     version: 0.1.0
     engines: {node: '>=26.0.0'}
     peerDependencies:
@@ -2206,7 +2206,7 @@ snapshots:
       react: 19.3.0
       react-dom: 19.3.0(react@19.3.0)
 
-  '@dark-avian-labs/sentinel-agent@https://github.com/Dark-Avian-Labs/Sentinel/releases/download/agent-v0.1.0/dark-avian-labs-sentinel-agent-0.1.0.tgz(express@5.2.1)':
+  '@dark-avian-labs/sentinel-agent@https://git.darkavianlabs.com/Dark-Avian-Labs/Sentinel/releases/download/agent-v0.1.0/dark-avian-labs-sentinel-agent-0.1.0.tgz(express@5.2.1)':
     dependencies:
       express: 5.2.1
 
