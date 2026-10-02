@@ -71,6 +71,7 @@ export function createApp(options: CreateAppOptions = {}): AppBundle {
       req.path === '/healthz' ||
       req.path === '/readyz' ||
       req.path === '/favicon.ico' ||
+      req.path === '/favicon.svg' ||
       /^\/assets\/.+\.(?:css|js|png|jpe?g|gif|webp|svg|ico|woff2?)$/i.test(req.path),
   });
   app.use(baselineLimiter);
