@@ -5,7 +5,6 @@
 # AppBase
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](LICENSE)
-[![PR](https://img.shields.io/github/actions/workflow/status/Dark-Avian-Labs/AppBase/pr.yml?style=flat-square&label=PR)](https://github.com/Dark-Avian-Labs/AppBase/actions/workflows/pr.yml)
 ![Node](https://img.shields.io/badge/Node-%3E%3D26-339933?logo=node.js&logoColor=white&style=flat-square)
 ![TypeScript](https://img.shields.io/badge/TypeScript-7.x-3178C6?logo=typescript&logoColor=white&style=flat-square)
 ![React](https://img.shields.io/badge/React-19.x-61DAFB?logo=react&logoColor=black&style=flat-square)
@@ -13,9 +12,34 @@
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4.x-06B6D4?logo=tailwindcss&logoColor=white&style=flat-square)
 [![Cursor](https://img.shields.io/badge/Cursor-IDE-141414?logo=cursor&logoColor=white&style=flat-square)](https://cursor.com)
 
-AppBase is the empty house the other Dark Avian Labs web apps grow up in. Glass shell, Express API, Vite client, the same buttons and panels you see on Codex and Armory. Domain features stay out on purpose, so a new app copies the look instead of inheriting a half-finished product.
+AppBase is the empty house a new Dark Avian Labs web app starts from. Glass panels, an Express API, a Vite client, Clerk sign-in, and the same buttons you see on Codex and Armory. The product features stay out on purpose.
 
-There is no shared UI package. When the glass or layout changes here, the same change lands in the sibling apps by hand.
+It is for the next app, so that app copies a finished shell instead of inheriting a half-built Codex.
+
+## Features
+
+**The shell, and nothing else.** Layout, theme, sign-in, session, and the legal link are here. There is no collection, no budget, and no catalog to delete before you begin.
+
+**The same sign-in shape as the hosted apps.** Clerk, a session cookie, and the allowed-origins list match the apps that already share an account. A new app can join that list instead of inventing a second login.
+
+**A left rail ready for the lab menu.** The nav hook the other apps use is already wired, so a sibling can show up beside this one once it has a public URL.
+
+## What you should know
+
+There is no shared UI package. When the glass or the layout changes here, the same change is copied into Codex, Armory, and the others by hand. Shipping a tweak only in AppBase leaves the live apps on the old look.
+
+This repo is not a public site. Nobody is meant to use an AppBase deployment as a product.
+
+## Self-hosting
+
+Node 26 or newer, and pnpm 12. Copy `.env.example` to `.env.development`. `pnpm dev` reads that file. Clerk keys can stay empty there. Production refuses to start without them, which the example already says.
+
+```
+pnpm install
+pnpm dev
+```
+
+A hosted process needs `NODE_ENV=production` and `.env.production`. Fill the Clerk keys before `pnpm run build`. The client bundle reads `VITE_` values at build time. Point `APP_PUBLIC_BASE_URL` and the cookie settings at the host you are actually using. The example is filled in with the lab's domains.
 
 ## License
 
