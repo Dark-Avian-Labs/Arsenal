@@ -71,6 +71,7 @@ export function createApp(options: CreateAppOptions = {}): AppBundle {
       req.path === '/healthz' ||
       req.path === '/readyz' ||
       req.path === '/favicon.ico' ||
+      req.path === '/favicon.png' ||
       req.path === '/favicon.svg' ||
       /^\/assets\/.+\.(?:css|js|png|jpe?g|gif|webp|svg|ico|woff2?)$/i.test(req.path),
   });
@@ -191,65 +192,74 @@ export function createApp(options: CreateAppOptions = {}): AppBundle {
 
   app.use('/api', appApiLimiter, apiRouter);
 
+  const faviconPng = path.join(PROJECT_ROOT, 'public', 'favicon.png');
+  app.get('/favicon.png', publicPageLimiter, (_req, res) => {
+    res.sendFile(faviconPng);
+  });
   app.get('/favicon.ico', publicPageLimiter, (_req, res) => {
-    res.sendFile(path.join(PROJECT_ROOT, 'favicon.ico'));
+    res.sendFile(faviconPng);
   });
 
   app.use('/api', (_req, res) => {
     res.status(404).json({ error: 'Not found' });
   });
 
-  const clientDir = path.join(PROJECT_ROOT, 'dist', 'client');
-  const clientIndexPath = path.join(clientDir, 'index.html');
-  let clientBuildPresent = fs.existsSync(clientIndexPath);
-  if (!clientBuildPresent && NODE_ENV === 'production') {
-    log('warn', 'Client build missing; page routes return 503 until `pnpm run build` runs.', {
-      clientIndexPath,
-    });
-  }
-
   app.get('/legal', publicPageLimiter, (_req, res) => {
     res.redirect(LEGAL_PAGE_URL);
   });
 
-  app.use(
-    '/assets',
-    staticAssetLimiter,
-    express.static(path.join(clientDir, 'assets'), {
-      maxAge: '1y',
-      immutable: true,
-    }),
-  );
-
-  const spaFallback: express.RequestHandler = (req, res, next) => {
-    if (req.method !== 'GET' && req.method !== 'HEAD') {
-      next();
-      return;
+  if (NODE_ENV !== 'development') {
+    const clientDir =
+      NODE_ENV !== 'production' && process.env.E2E_CLIENT_DIR?.trim()
+        ? path.resolve(process.env.E2E_CLIENT_DIR.trim())
+        : path.join(PROJECT_ROOT, 'dist', 'client');
+    const clientIndexPath = path.join(clientDir, 'index.html');
+    let clientBuildPresent = fs.existsSync(clientIndexPath);
+    if (!clientBuildPresent && NODE_ENV === 'production') {
+      log('warn', 'Client build missing; page routes return 503 until `pnpm run build` runs.', {
+        clientIndexPath,
+      });
     }
-    if (!clientBuildPresent) {
-      clientBuildPresent = fs.existsSync(clientIndexPath);
-      if (!clientBuildPresent) {
-        res.status(503).json({ error: 'Client build missing. Run `pnpm run build` first.' });
+
+    app.use(
+      '/assets',
+      staticAssetLimiter,
+      express.static(path.join(clientDir, 'assets'), {
+        maxAge: '1y',
+        immutable: true,
+      }),
+    );
+
+    const spaFallback: express.RequestHandler = (req, res, next) => {
+      if (req.method !== 'GET' && req.method !== 'HEAD') {
+        next();
         return;
       }
-    }
-    res.setHeader('Cache-Control', 'no-cache');
-    res.sendFile(clientIndexPath);
-  };
-
-  app.use(
-    publicPageLimiter,
-    express.static(clientDir, {
-      maxAge: '1h',
-      index: false,
-      setHeaders: (res, filePath) => {
-        if (filePath.endsWith('index.html')) {
-          res.setHeader('Cache-Control', 'no-cache');
+      if (!clientBuildPresent) {
+        clientBuildPresent = fs.existsSync(clientIndexPath);
+        if (!clientBuildPresent) {
+          res.status(503).json({ error: 'Client build missing. Run `pnpm run build` first.' });
+          return;
         }
-      },
-    }),
-    spaFallback,
-  );
+      }
+      res.setHeader('Cache-Control', 'no-cache');
+      res.sendFile(clientIndexPath);
+    };
+
+    app.use(
+      publicPageLimiter,
+      express.static(clientDir, {
+        maxAge: '1h',
+        index: false,
+        setHeaders: (res, filePath) => {
+          if (filePath.endsWith('index.html')) {
+            res.setHeader('Cache-Control', 'no-cache');
+          }
+        },
+      }),
+      spaFallback,
+    );
+  }
 
   app.use(
     (err: unknown, req: express.Request, res: express.Response, _next: express.NextFunction) => {
