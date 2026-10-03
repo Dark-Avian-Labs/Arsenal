@@ -6,15 +6,15 @@ Org conventions live in `docs/org-standards/`.
 
 ## Shared across apps
 
-Ports: AppBase 3000, Codex 3001, Armory 3002, BudgetPlanner 3003, Outfitter 3004, Sentinel 3005. Vite proxies `/api` to Express. Playwright uses 3100 through 3105 in that same order.
+Ports: AppBase 3000, Codex 3001, Armory 3002, BudgetPlanner 3003, Outfitter 3004, Sentinel 3005. Vite proxies `/api` to Express. Signed-out Playwright uses 3100 for AppBase, 3101 Codex, 3102 Armory, 3103 BudgetPlanner, 3104 Outfitter, and 3100 again for Sentinel. Signed-in Playwright uses 4100 through 4104 for AppBase, Codex, Armory, BudgetPlanner, and Outfitter. Sentinel has no signed-in project.
 
 Node 26+, pnpm 12.x, exact `packageManager`. Corepack rejects dist-tags. `pnpm run validate` is preflight, oxfmt, oxlint, typecheck, then Vitest. CI runs `test:coverage`. Playwright is outside validate. On Windows, Cursor shells may prepend Node 22. After a Node change, run `pnpm rebuild better-sqlite3`.
 
 The server loads `.env.keys`, then `.env.<NODE_ENV>`. `pnpm start` loads the development env unless `NODE_ENV=production`. Leave `VITE_*` plaintext. Encrypting them garbles Vite. Production needs `SESSION_SECRET` of at least 32 characters, and `TRUST_PROXY` when `SECURE_COOKIES` is on.
 
-Empty Clerk keys outside production mean signed out. `isClerkConfigured()` is false, and Vitest and Playwright rely on that. Placeholder keys are fatal: `pk_test_placeholder`, `sk_test_placeholder`, and bare `pk_test_` / `sk_test_` prefixes. Leave both keys empty. Do not invent local fake keys. Once keys are set, `APP_PUBLIC_BASE_URL` is required. Admin is Clerk public metadata `apps.<APP_ID> === 'admin'`. The session token must include `"metadata": "{{user.public_metadata}}"`. Production `COOKIE_DOMAIN=.darkavianlabs.com` shares one login. Authorization stays per app. `isAdmin` is optional. Some apps have no admin role.
+Empty Clerk keys outside production mean signed out. `isClerkConfigured()` is false, and Vitest and the signed-out Playwright project rely on that. Placeholder keys are fatal: `pk_test_placeholder`, `sk_test_placeholder`, and bare `pk_test_` / `sk_test_` prefixes. Leave both keys empty. Do not invent local fake keys. The signed-in Playwright project loads `.env.development` when `E2E_CLERK_USER_EMAIL` is set. It stays unregistered and prints a warning when that email is missing, `.env.development` cannot be decrypted, or the `pk_test_` / `sk_test_` keys are missing. The rest of the suite still passes. Once keys are set, `APP_PUBLIC_BASE_URL` is required. Admin is Clerk public metadata `apps.<APP_ID> === 'admin'`. The session token must include `"metadata": "{{user.public_metadata}}"`. Production `COOKIE_DOMAIN=.darkavianlabs.com` shares one login. Authorization stays per app. `isAdmin` is optional. Some apps have no admin role.
 
-Agents sign in with Clerk Agent Tasks. Decrypt `.env.development` and read `E2E_CLERK_USER_EMAIL` or `E2E_CLERK_USER_ID`. POST `https://api.clerk.com/v1/agents/tasks` with `CLERK_SECRET_KEY`. Send `agent_name`, `task_description`, `permissions` `*`, `redirect_url` for that app's Vite origin, and `on_behalf_of` with `user_id` or `identifier`. Open the URL Clerk returns. The same development user works for AppBase, Codex, Armory, BudgetPlanner, and Outfitter. Cookies are host-only, so each origin needs its own task.
+Agents sign in with Clerk Agent Tasks. Decrypt `.env.development` and read `E2E_CLERK_USER_ID`. Email and password are the Forgejo secrets `E2E_CLERK_USER_EMAIL` and `E2E_CLERK_USER_PASSWORD`. POST `https://api.clerk.com/v1/agents/tasks` with `CLERK_SECRET_KEY`. Send `agent_name`, `task_description`, `permissions` `*`, `redirect_url` for that app's Vite origin, and `on_behalf_of` with `user_id` or `identifier`. Open the URL Clerk returns. The same development user works for AppBase, Codex, Armory, BudgetPlanner, and Outfitter. Cookies are host-only, so each origin needs its own task.
 
 Session storage is `server/db/sqliteSessionStore.ts`. Do not replace it with the npm package. `bindClerkUserSessionMiddleware` regenerates the session and CSRF token when the Clerk user id changes. It skips `/health` and `/version`.
 
@@ -40,4 +40,4 @@ When the shell changes here, copy it to the sibling apps by hand.
 
 ## Tests
 
-Vitest here is Node-only. Do not add happy-dom or `*.test.tsx` until there is a real component test. HTTP tests go through `createApp()`. Playwright uses port 3100 after `pnpm run build`.
+Vitest here is Node-only. Do not add happy-dom or `*.test.tsx` until there is a real component test. HTTP tests go through `createApp()`. In development the API does not serve the SPA. Test and production serve `dist/client` when `index.html` exists, and return 503 when it does not. Signed-out Playwright uses port 3100 after `pnpm run build`. Signed-in Playwright uses port 4100 and builds the client into `dist/e2e-client`. `pnpm run build` still writes `dist/client`.
