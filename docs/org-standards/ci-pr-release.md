@@ -48,4 +48,4 @@ Per app, with the suffix `ARMORY`, `BUDGET_PLANNER`, `CODEX`, `SENTINEL`, or `OU
 
 The template pull-request job also reads `DOTENV_PRIVATE_KEY_DEVELOPMENT_TEMPLATE`. If that secret is missing, the template's signed-in Playwright project stays unregistered and prints a warning.
 
-Budget Planner's build decrypts `.env.production`, so the pull request build and the deploy build both receive `DOTENV_PRIVATE_KEY_PRODUCTION`. The deploy step receives it too. CI does not push commits to `main`.
+Budget Planner's build decrypts `.env.production`, so the pull request build and each app deploy build receive `DOTENV_PRIVATE_KEY_PRODUCTION`. CI does not push commits to `main`.
