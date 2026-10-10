@@ -49,9 +49,7 @@ export function arcaneMaxRankFromLevelStats(levelStatsJson: string | null | unde
         return stats.length - 1;
       }
     }
-  } catch {
-    // ignore
-  }
+  } catch {}
   return DEFAULT_ARCANE_MAX_RANK;
 }
 

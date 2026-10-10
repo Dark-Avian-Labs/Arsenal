@@ -1,9 +1,9 @@
 import { Show } from '@clerk/react';
+import { safeAuthRedirectPath } from '@dark-avian-labs/ui';
 import type { ReactNode } from 'react';
 import { useLocation } from 'react-router';
 
 import { AccountRequiredPage } from './AccountRequiredPage';
-import { safeAuthRedirectPath } from './authRedirect';
 
 export function RequireAuth({ children }: { children: ReactNode }) {
   const location = useLocation();

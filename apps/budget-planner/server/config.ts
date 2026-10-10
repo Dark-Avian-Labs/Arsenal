@@ -5,9 +5,9 @@ import {
   isClerkConfigured,
   isEncryptedEnvValue,
   loadAppEnv,
-  parseIntEnv,
   readPackageVersion,
   readReleaseVersion,
+  readServerEnv,
   resolveProjectRoot,
 } from '@dark-avian-labs/server-kit';
 
@@ -26,17 +26,15 @@ export const APP_VERSION = readReleaseVersion(PROJECT_ROOT, readPackageVersion(P
 export const DATA_DIR = path.join(PROJECT_ROOT, 'data');
 export const APP_DB_PATH = process.env.APP_DB_PATH || path.join(DATA_DIR, 'app.db');
 
-export const PORT = parseIntEnv(process.env.PORT, 3003);
-export const HOST = process.env.HOST || '127.0.0.1';
-export const NODE_ENV = process.env.NODE_ENV || 'development';
-export const SHUTDOWN_TIMEOUT_MS = parseIntEnv(process.env.SHUTDOWN_TIMEOUT_MS, 10_000);
-
-export const APP_NAME = process.env.APP_NAME?.trim() || 'BudgetPlanner';
-export const APP_ID = process.env.APP_ID?.trim() || 'budgetplanner';
-
-export const TRUST_PROXY = process.env.TRUST_PROXY === '1' || process.env.TRUST_PROXY === 'true';
-export const SECURE_COOKIES =
-  process.env.SECURE_COOKIES === '1' || process.env.SECURE_COOKIES === 'true';
+const serverEnv = readServerEnv({ port: 3003, appName: 'BudgetPlanner', appId: 'budgetplanner' });
+export const PORT = serverEnv.PORT;
+export const HOST = serverEnv.HOST;
+export const NODE_ENV = serverEnv.NODE_ENV;
+export const SHUTDOWN_TIMEOUT_MS = serverEnv.SHUTDOWN_TIMEOUT_MS;
+export const APP_NAME = serverEnv.APP_NAME;
+export const APP_ID = serverEnv.APP_ID;
+export const TRUST_PROXY = serverEnv.TRUST_PROXY;
+export const SECURE_COOKIES = serverEnv.SECURE_COOKIES;
 const clerkPublishable =
   process.env.CLERK_PUBLISHABLE_KEY?.trim() || process.env.VITE_CLERK_PUBLISHABLE_KEY?.trim() || '';
 const clerkSecret = process.env.CLERK_SECRET_KEY?.trim() || '';
@@ -50,10 +48,7 @@ export const CLERK_PUBLISHABLE_KEY = clerkPublishable;
 export const CLERK_SECRET_KEY = clerkSecret;
 export const CLERK_CONFIGURED = isClerkConfigured();
 
-export const LEGAL_PAGE_URL =
-  process.env.LEGAL_PAGE_URL?.trim() ||
-  process.env.VITE_LEGAL_PAGE_URL?.trim() ||
-  'https://darkavianlabs.com/legal';
+export const LEGAL_PAGE_URL = serverEnv.LEGAL_PAGE_URL;
 
 export function ensureDataDirs(): void {
   fs.mkdirSync(DATA_DIR, { recursive: true });

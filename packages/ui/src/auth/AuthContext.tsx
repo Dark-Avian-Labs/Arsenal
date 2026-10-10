@@ -10,7 +10,7 @@ import {
   type ReactNode,
 } from 'react';
 
-import { apiFetch, setClerkTokenGetter } from '../api/apiFetch';
+import { API_UNAUTHORIZED_EVENT, apiFetch, setClerkTokenGetter } from '../api/apiFetch';
 
 export type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated' | 'error';
 
@@ -68,9 +68,13 @@ export function AuthProvider({
       }
       if (!res.ok) throw new Error(`Unexpected status ${res.status}`);
       const data = (await res.json()) as { userId?: string | null; isAdmin?: boolean };
+      if (!data.userId) {
+        applyAuth(UNAUTHENTICATED);
+        return;
+      }
       applyAuth({
         status: 'authenticated',
-        userId: data.userId ?? null,
+        userId: data.userId,
         isAdmin: data.isAdmin === true,
       });
     } catch {
@@ -80,6 +84,14 @@ export function AuthProvider({
 
   useEffect(() => {
     void refresh();
+  }, [refresh]);
+
+  useEffect(() => {
+    const handleUnauthorized = (): void => {
+      void refresh();
+    };
+    window.addEventListener(API_UNAUTHORIZED_EVENT, handleUnauthorized);
+    return () => window.removeEventListener(API_UNAUTHORIZED_EVENT, handleUnauthorized);
   }, [refresh]);
 
   const value = useMemo(() => {

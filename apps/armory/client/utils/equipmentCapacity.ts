@@ -1,4 +1,5 @@
-import { NECRAMECH_ITEM_MAX_RANK, WARFRAME_MAX_RANK } from '../../shared/equipmentRankStats.js';
+import { NECRAMECH_ITEM_MAX_RANK, WARFRAME_MAX_RANK } from '@dark-avian-labs/warframe-catalog';
+
 import type { EquipmentType } from '../types/warframe';
 import { getWeaponModCapacityBase } from './weaponValence';
 

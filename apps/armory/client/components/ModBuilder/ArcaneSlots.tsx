@@ -124,9 +124,7 @@ function ArcaneSlotCell({
           onDrop(parsed as Arcane);
         }
       }
-    } catch {
-      // ignore
-    }
+    } catch {}
   };
 
   const tooltipContent =

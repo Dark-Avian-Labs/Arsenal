@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
-# Uploads /tmp/<APP>-<VERSION>.tgz, installs it as a new release directory, switches the
-# `current` symlink, restarts PM2 and verifies /api/version. Rolls the symlink back on failure.
 set -euo pipefail
 
 for v in APP VERSION SHA PM2_NAME PORT DOTENV_PRIVATE_KEY_PRODUCTION SSH_PRIVATE_KEY SERVER_KNOWN_HOST SERVER_HOST SERVER_USER SERVER_PATH SERVER_SSH_PORT; do

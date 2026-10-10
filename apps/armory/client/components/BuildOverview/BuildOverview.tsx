@@ -1,4 +1,5 @@
 import { ConfirmModal, LoadErrorBanner, MaterialSymbol, Modal } from '@dark-avian-labs/ui';
+import { apiFetch } from '@dark-avian-labs/ui';
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 
@@ -7,7 +8,6 @@ import { useBuildFavorites } from '../../hooks/useBuildFavorites';
 import { useBuildStorage } from '../../hooks/useBuildStorage';
 import { useLoadoutStorage, type Loadout } from '../../hooks/useLoadoutStorage';
 import { type BuildVisibility, type StoredBuild } from '../../types/warframe';
-import { apiFetch } from '../../utils/api';
 import {
   formatLoadoutSlotTypeLabel,
   getBuildPickerCategory,

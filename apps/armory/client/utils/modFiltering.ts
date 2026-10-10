@@ -289,9 +289,7 @@ function parseModDescriptionLines(mod: Mod): string[] {
     if (Array.isArray(parsed)) {
       return parsed.filter((entry): entry is string => typeof entry === 'string');
     }
-  } catch {
-    // ignore
-  }
+  } catch {}
   return [raw];
 }
 

@@ -1,6 +1,5 @@
+import { apiFetch } from '@dark-avian-labs/ui';
 import { useCallback, useEffect, useRef, useState } from 'react';
-
-import { apiFetch } from '../../utils/api';
 
 type ImportSnapshot = {
   running: boolean;
@@ -60,9 +59,7 @@ export function WarframeImportAdminTool() {
       try {
         const next = parseSnapshot(JSON.parse((event as MessageEvent).data));
         if (next) applySnapshot(next);
-      } catch {
-        // ignore
-      }
+      } catch {}
     });
     stream.onerror = () => {
       if (disposed) return;
@@ -83,9 +80,7 @@ export function WarframeImportAdminTool() {
     if (!snapshot?.running) return undefined;
 
     const poll = window.setInterval(() => {
-      void loadStatus().catch(() => {
-        // ignore
-      });
+      void loadStatus().catch(() => {});
     }, 2000);
 
     return () => window.clearInterval(poll);

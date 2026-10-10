@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { isAppAdmin, metadataFromSessionClaims } from './clerk.js';
+import { isAppAdmin, metadataFromSessionClaims } from './clerk.ts';
 
 describe('metadataFromSessionClaims', () => {
   it('reads apps from the metadata claim', () => {

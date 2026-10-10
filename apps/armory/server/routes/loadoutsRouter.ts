@@ -1,10 +1,10 @@
+import { timingSafeEqualString } from '@dark-avian-labs/server-kit';
 import { Router, type Request, type Response } from 'express';
 
 import { getClerkUserId } from '../auth/clerkUser.ts';
 import { getClerkAuthState } from '../auth/middleware.ts';
 import { canReadBuild } from '../buildAccess.ts';
 import { getUserDb } from '../db/connection.ts';
-import { timingSafeEqualString } from '../http/timingSafeEqual.ts';
 import { canReadLoadout } from '../loadoutAccess.ts';
 import {
   buildReadAccessContext,

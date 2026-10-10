@@ -1,17 +1,18 @@
 import {
-  abilitySlugFromDisplayName,
-  buildAbilityKey,
-  buildAbilityKeyFromDePath,
-} from './abilitySlugRegistry.ts';
-import {
   ARCHON_COLORS,
   type ArchonColor,
   archonSlugForSortOrder,
   archonVariantFromTauforged,
   buildArchonShardKey,
   parseArchonShardKey,
-} from './archonShardRegistry.ts';
-import { resolveHelminthArmoryKey, resolveHelminthDePath } from './helminthRegistry.ts';
+} from '@dark-avian-labs/warframe-catalog';
+import { resolveHelminthArmoryKey, resolveHelminthDePath } from '@dark-avian-labs/warframe-catalog';
+
+import {
+  abilitySlugFromDisplayName,
+  buildAbilityKey,
+  buildAbilityKeyFromDePath,
+} from './abilitySlugRegistry.ts';
 
 export interface HelminthConfigV1 {
   replaced_ability_index: number;

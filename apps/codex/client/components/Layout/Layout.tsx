@@ -11,6 +11,9 @@ import {
   isSentinelAdmin,
   useTheme,
 } from '@dark-avian-labs/ui';
+import { useAuth } from '@dark-avian-labs/ui';
+import feathers from '@dark-avian-labs/ui/feathers.svg';
+import worFavicon from '@dark-avian-labs/wor-assets/favicon.svg';
 import {
   useEffect,
   useLayoutEffect,
@@ -31,11 +34,8 @@ import {
   LEGAL_PAGE_URL,
 } from '../../app/config';
 import { APP_PATHS } from '../../app/paths';
-import feathers from '../../assets/feathers.svg';
 import epic7Favicon from '../../assets/games/epic7/favicon.svg';
 import warframeFavicon from '../../assets/games/warframe/favicon.svg';
-import worFavicon from '../../assets/games/wor/favicon.svg';
-import { useAuth } from '../../features/auth/AuthContext';
 import { rememberLastGamePath } from '../../features/auth/authRedirect';
 import { ChunkErrorBoundary } from '../ui/ChunkErrorBoundary';
 import { LazySuspenseFallback } from '../ui/LazySuspenseFallback';

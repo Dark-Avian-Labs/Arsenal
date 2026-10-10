@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { getClerkAuthorizedParties } from './clerkAuthorizedParties.js';
+import { getClerkAuthorizedParties } from './clerkAuthorizedParties.ts';
 
 describe('getClerkAuthorizedParties', () => {
   const previousEnv = {

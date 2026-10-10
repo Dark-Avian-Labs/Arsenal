@@ -137,9 +137,7 @@ function readInitiatorMasked(summaryJson: string | null, initiatorHash: string):
       if (typeof parsed._initiatorMasked === 'string' && parsed._initiatorMasked.length > 0) {
         return parsed._initiatorMasked;
       }
-    } catch {
-      // ignore
-    }
+    } catch {}
   }
   return initiatorMaskedFromHash(initiatorHash);
 }

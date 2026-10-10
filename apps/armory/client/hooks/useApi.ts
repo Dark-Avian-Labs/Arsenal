@@ -1,6 +1,7 @@
+import { apiFetch } from '@dark-avian-labs/ui';
 import { useState, useEffect, useCallback } from 'react';
 
-import { apiFetch, readApiErrorMessage } from '../utils/api';
+import { readApiErrorMessage } from '../utils/apiError';
 
 interface ApiState<T> {
   data: T | null;

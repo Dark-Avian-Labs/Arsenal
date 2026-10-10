@@ -1,50 +1,18 @@
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
 
 import {
   getAppPublicBaseUrl,
-  normalizeClerkEnv,
+  loadAppEnv,
   readPackageVersion,
   readReleaseVersion,
+  readServerEnv,
   requireAbsoluteSqlitePath,
+  resolveProjectRoot,
 } from '@dark-avian-labs/server-kit';
-import dotenvx from '@dotenvx/dotenvx';
 
-import { resolveEnvFilePath } from './core.ts';
-
-const { config: loadEnv } = dotenvx;
-
-const projectRoot = process.cwd();
-const envKeysPath = path.join(projectRoot, '.env.keys');
-if (fs.existsSync(envKeysPath)) {
-  try {
-    loadEnv({ path: envKeysPath, quiet: true });
-  } catch (error) {
-    console.error(`[Config] Failed to load environment keys from "${envKeysPath}".`, error);
-    throw error;
-  }
-}
-
-const envPath = resolveEnvFilePath(projectRoot);
-if (envPath) {
-  try {
-    loadEnv({ path: envPath, quiet: true });
-  } catch (error) {
-    console.error(`[Config] Failed to load environment via loadEnv from "${envPath}".`, error);
-    throw error;
-  }
-} else {
-  console.debug(
-    `[Config] No env file resolved (envPath is null); skipping loadEnv for cwd "${projectRoot}".`,
-  );
-}
-
-normalizeClerkEnv();
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const parentName = path.basename(path.resolve(__dirname, '..'));
-export const PROJECT_ROOT = path.resolve(__dirname, parentName === 'dist' ? '../..' : '..');
+export const PROJECT_ROOT = resolveProjectRoot(import.meta.url);
+loadAppEnv(PROJECT_ROOT);
 
 export const APP_VERSION = readReleaseVersion(PROJECT_ROOT, readPackageVersion(PROJECT_ROOT));
 
@@ -143,28 +111,15 @@ export const REQUIRED_EXPORTS = [
   'ExportWeapons',
 ] as const;
 
-const _port = parseInt(process.env.PORT || '3001', 10);
-export const PORT = Number.isFinite(_port) && _port > 0 ? _port : 3001;
-
-const _shutdownTimeoutMs = parseInt(process.env.SHUTDOWN_TIMEOUT_MS || '10000', 10);
-export const SHUTDOWN_TIMEOUT_MS =
-  Number.isFinite(_shutdownTimeoutMs) && _shutdownTimeoutMs > 0 ? _shutdownTimeoutMs : 10_000;
-export const HOST = process.env.HOST || '127.0.0.1';
-export const APP_NAME = process.env.APP_NAME?.trim() || 'Codex';
-export const APP_ID = process.env.APP_ID?.trim() || 'codex';
-export const NODE_ENV = process.env.NODE_ENV || 'production';
-
-function parseBooleanEnv(value: string | undefined): boolean | undefined {
-  if (value == null) return undefined;
-  const normalized = value.trim().toLowerCase();
-  if (normalized === 'true' || normalized === '1') return true;
-  if (normalized === 'false' || normalized === '0') return false;
-  return undefined;
-}
-
-export const TRUST_PROXY = parseBooleanEnv(process.env.TRUST_PROXY) ?? false;
-export const SECURE_COOKIES =
-  parseBooleanEnv(process.env.SECURE_COOKIES) ?? NODE_ENV === 'production';
+const serverEnv = readServerEnv({ port: 3001, appName: 'Codex', appId: 'codex' });
+export const PORT = serverEnv.PORT;
+export const SHUTDOWN_TIMEOUT_MS = serverEnv.SHUTDOWN_TIMEOUT_MS;
+export const HOST = serverEnv.HOST;
+export const APP_NAME = serverEnv.APP_NAME;
+export const APP_ID = serverEnv.APP_ID;
+export const NODE_ENV = serverEnv.NODE_ENV;
+export const TRUST_PROXY = serverEnv.TRUST_PROXY;
+export const SECURE_COOKIES = serverEnv.SECURE_COOKIES;
 const ALLOWED_PROTOCOLS = ['http', 'https'] as const;
 type AllowedProtocol = (typeof ALLOWED_PROTOCOLS)[number];
 
@@ -210,10 +165,7 @@ if (!DOMAIN_LABEL_REGEX.test(APP_SUBDOMAIN)) {
 
 export const APP_PUBLIC_BASE_URL = getAppPublicBaseUrl();
 
-export const LEGAL_PAGE_URL =
-  process.env.VITE_LEGAL_PAGE_URL?.trim() ||
-  process.env.LEGAL_PAGE_URL?.trim() ||
-  'https://darkavianlabs.com/legal';
+export const LEGAL_PAGE_URL = serverEnv.LEGAL_PAGE_URL;
 
 export function ensureDataDirs(): void {
   fs.mkdirSync(DATA_DIR, { recursive: true });

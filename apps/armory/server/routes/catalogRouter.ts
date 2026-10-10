@@ -1,14 +1,17 @@
 import { log } from '@dark-avian-labs/server-kit';
-import { Router, type Request, type Response } from 'express';
-
-import { ARTIFACT_SLOT_STORAGE_VALUES } from '../../shared/artifactSlotState.ts';
-import { MAX_ARTIFACT_SLOTS_STORAGE_LENGTH } from '../../shared/equipmentSlotConfig.ts';
-import { ARCANE_PUBLIC_LIST_SQL, bindArcanePublicListParams } from '../arcaneCatalog.ts';
+import { ARTIFACT_SLOT_STORAGE_VALUES } from '@dark-avian-labs/warframe-catalog';
+import { MAX_ARTIFACT_SLOTS_STORAGE_LENGTH } from '@dark-avian-labs/warframe-catalog';
+import {
+  ARCANE_PUBLIC_LIST_SQL,
+  bindArcanePublicListParams,
+} from '@dark-avian-labs/warframe-catalog/server';
 import {
   classifyArcaneCompatTags,
   isOperatorOnlyArcane,
   type ArcaneCompatTag,
-} from '../arcaneCompat.ts';
+} from '@dark-avian-labs/warframe-catalog/server';
+import { Router, type Request, type Response } from 'express';
+
 import { getClerkUserId } from '../auth/clerkUser.ts';
 import { requireArmoryAdmin } from '../auth/middleware.ts';
 import { bustCatalogResponseCache, sendCachedCatalogJson } from '../cache/catalogResponseCache.ts';

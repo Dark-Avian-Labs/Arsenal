@@ -1,4 +1,4 @@
-import { abilityPathBasename } from './helminthAbilityResolve.ts';
+import { abilityPathBasename } from '@dark-avian-labs/warframe-catalog';
 
 const ARMORY_ABILITY_PREFIX = '/Armory/Ability/';
 

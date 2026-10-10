@@ -24,9 +24,7 @@ function readInitialAtragraphModsEnabled(): boolean {
     const stored = window.localStorage.getItem(ATRAGRAPH_MODS_STORAGE_KEY);
     if (stored === 'false') return false;
     if (stored === 'true') return true;
-  } catch {
-    // ignore
-  }
+  } catch {}
   return true;
 }
 
@@ -38,9 +36,7 @@ export function AtragraphModsProvider({ children }: { children: ReactNode }) {
     if (!hasMountedRef.current) return;
     try {
       window.localStorage.setItem(ATRAGRAPH_MODS_STORAGE_KEY, String(atragraphModsEnabled));
-    } catch {
-      // ignore
-    }
+    } catch {}
   }, [atragraphModsEnabled]);
 
   useEffect(() => {

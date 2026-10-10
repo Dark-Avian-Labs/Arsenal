@@ -43,9 +43,7 @@ function parseAmmoCost(weapon: Weapon): number {
     if (Array.isArray(behaviors) && behaviors.length > 0) {
       return behaviors[0].ammoRequirement ?? 1;
     }
-  } catch {
-    // ignore
-  }
+  } catch {}
   return 1;
 }
 

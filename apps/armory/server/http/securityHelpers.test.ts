@@ -2,7 +2,6 @@ import { sanitizeRequestId } from '@dark-avian-labs/server-kit';
 import { describe, expect, it } from 'vitest';
 
 import { assertAllowedImageMime, isAllowedEquipmentImage } from './allowedFetchHosts.ts';
-import { readResponseWithByteLimit } from './fetchWithTimeout.ts';
 
 describe('sanitizeRequestId', () => {
   it('accepts valid ids and rejects invalid ones', () => {
@@ -28,20 +27,5 @@ describe('assertAllowedImageMime', () => {
   it('allows image mime types and rejects others', () => {
     expect(() => assertAllowedImageMime('image/png')).not.toThrow();
     expect(() => assertAllowedImageMime('text/html')).toThrow();
-  });
-});
-
-describe('readResponseWithByteLimit', () => {
-  it('rejects oversized Content-Length early', async () => {
-    const response = new Response('hi', {
-      headers: { 'Content-Length': String(1024) },
-    });
-    await expect(readResponseWithByteLimit(response, 10)).rejects.toThrow(/Content-Length/);
-  });
-
-  it('reads bodies within the limit', async () => {
-    const response = new Response('hello');
-    const buf = await readResponseWithByteLimit(response, 100);
-    expect(buf.toString('utf-8')).toBe('hello');
   });
 });

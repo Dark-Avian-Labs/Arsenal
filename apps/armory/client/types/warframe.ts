@@ -312,5 +312,5 @@ export const ELEMENT_COMBINATIONS: Record<string, { a: PrimaryElement; b: Primar
 
 export const ELEMENT_PRIORITY: PrimaryElement[] = ['Heat', 'Cold', 'Electricity', 'Toxin'];
 
-export type { EquipmentSlotConfig } from '../../shared/equipmentSlotConfig.js';
-export { EQUIPMENT_SLOT_CONFIGS } from '../../shared/equipmentSlotConfig.js';
+export type { EquipmentSlotConfig } from '@dark-avian-labs/warframe-catalog';
+export { EQUIPMENT_SLOT_CONFIGS } from '@dark-avian-labs/warframe-catalog';

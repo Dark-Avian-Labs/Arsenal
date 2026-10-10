@@ -79,21 +79,21 @@ function assetStemMap(modules: Record<string, string>): Record<string, string> {
 }
 
 export const ICONS = assetStemMap(
-  import.meta.glob('../../assets/games/wor/ranks/*.png', {
+  import.meta.glob('../../../../../packages/wor-assets/ranks/*.png', {
     eager: true,
     import: 'default',
   }) as Record<string, string>,
 );
 
 const CLASS_ICONS = assetStemMap(
-  import.meta.glob('../../assets/games/wor/classes/*.svg', {
+  import.meta.glob('../../../../../packages/wor-assets/classes/*.svg', {
     eager: true,
     import: 'default',
   }) as Record<string, string>,
 );
 
 const FACTION_ICONS = assetStemMap(
-  import.meta.glob('../../assets/games/wor/factions/*.png', {
+  import.meta.glob('../../../../../packages/wor-assets/factions/*.png', {
     eager: true,
     import: 'default',
   }) as Record<string, string>,

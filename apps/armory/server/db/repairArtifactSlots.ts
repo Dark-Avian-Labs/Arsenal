@@ -1,6 +1,6 @@
 import { log } from '@dark-avian-labs/server-kit';
+import { hasMeaningfulArtifactSlotOverrides } from '@dark-avian-labs/warframe-catalog';
 
-import { hasMeaningfulArtifactSlotOverrides } from '../../shared/artifactSlotState.ts';
 import { getCatalogDb } from './connection.ts';
 
 function parseArtifactSlots(raw: string | null): string[] {

@@ -13,11 +13,11 @@ import {
   useRovingMenu,
   useTheme,
 } from '@dark-avian-labs/ui';
+import feathers from '@dark-avian-labs/ui/feathers.svg';
 import { Suspense, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, Outlet, useLocation } from 'react-router';
 
-import feathers from '../../../assets/feathers.svg';
 import {
   APP_DISPLAY_NAME,
   APP_ID,

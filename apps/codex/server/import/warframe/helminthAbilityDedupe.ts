@@ -2,4 +2,4 @@ export {
   abilityPathBasename,
   compareHelminthAbilityPaths,
   dedupeHelminthAbilityRows,
-} from '../../../shared/warframeImport/helminthAbilityResolve.ts';
+} from '@dark-avian-labs/warframe-catalog';

@@ -1,7 +1,7 @@
+import { apiFetch } from '@dark-avian-labs/ui';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { WarframeSyncResult as SyncResult } from '../../../shared/warframeTypes.js';
-import { apiFetch } from '../../utils/api';
 
 type WarframeSyncAdminToolProps = {
   onSyncComplete?: (result: SyncResult) => void | Promise<void>;

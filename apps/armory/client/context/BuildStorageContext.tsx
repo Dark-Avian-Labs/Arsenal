@@ -1,3 +1,4 @@
+import { apiFetch, useAuth } from '@dark-avian-labs/ui';
 import {
   createContext,
   useCallback,
@@ -9,9 +10,8 @@ import {
   type ReactNode,
 } from 'react';
 
-import { useAuth } from '../features/auth/AuthContext';
 import type { BuildConfig, BuildVisibility, StoredBuild } from '../types/warframe';
-import { apiFetch, UnauthorizedError, readApiErrorMessage } from '../utils/api';
+import { readApiErrorMessage } from '../utils/apiError';
 import { normalizeRivenConfigMembership } from '../utils/riven';
 
 function mapBuildRows(rows: Array<Record<string, unknown>>): StoredBuild[] {
@@ -98,14 +98,7 @@ export function BuildStorageProvider({ children }: { children: ReactNode }) {
       }
       return mapped;
     } catch (error) {
-      if (error instanceof UnauthorizedError) {
-        console.error('Failed to refresh builds (unauthorized)', {
-          url: error.url,
-          status: error.response.status,
-        });
-      } else {
-        console.error('Failed to refresh builds', error);
-      }
+      console.error('Failed to refresh builds', error);
       if (generation === refreshGenerationRef.current) {
         setBuilds([]);
       }

@@ -5,5 +5,22 @@
   "files": [
     "*.json",
     "*.ts"
-  ]
+  ],
+  "type": "module",
+  "exports": {
+    "./vite": "./vite.ts",
+    "./playwright": "./playwright.ts",
+    "./e2e": "./e2e.ts",
+    "./tsconfig.base.json": "./tsconfig.base.json",
+    "./tsconfig.client.json": "./tsconfig.client.json",
+    "./tsconfig.server.json": "./tsconfig.server.json"
+  },
+  "dependencies": {
+    "@clerk/testing": "catalog:",
+    "@dotenvx/dotenvx": "catalog:",
+    "@playwright/test": "catalog:",
+    "@tailwindcss/vite": "catalog:",
+    "@vitejs/plugin-react": "catalog:",
+    "vite": "catalog:"
+  }
 }

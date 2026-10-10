@@ -7,7 +7,8 @@
     ".": "./src/index.ts",
     "./styles.css": "./src/styles/input.css",
     "./clerk-auth.css": "./src/styles/clerk-auth.css",
-    "./icons": "./src/icons/index.tsx"
+    "./icons": "./src/icons/index.tsx",
+    "./feathers.svg": "./src/assets/feathers.svg"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json --noEmit",

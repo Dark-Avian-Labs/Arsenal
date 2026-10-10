@@ -1,12 +1,12 @@
 import { useAuth } from '@clerk/react';
 import { SelectDropdown } from '@dark-avian-labs/ui';
+import { apiJson } from '@dark-avian-labs/ui';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router';
 
 import { APP_PATHS, planPath } from '../../app/paths';
 import type { PlanSummary } from '../../lib/types';
-import { apiJson } from '../../utils/api';
 
 export function PlanSwitcher() {
   const { t } = useTranslation();

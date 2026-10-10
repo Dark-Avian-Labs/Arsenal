@@ -10,6 +10,8 @@ export class ApiError extends Error {
   }
 }
 
+export const API_UNAUTHORIZED_EVENT = 'dal:api-unauthorized';
+
 export type ClerkTokenGetter = (options?: { skipCache?: boolean }) => Promise<string | null>;
 
 let getClerkToken: ClerkTokenGetter | null = null;
@@ -71,6 +73,10 @@ export async function apiFetch(url: string, init?: RequestInit): Promise<Respons
     }
   }
 
+  if (response.status === 401 && typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent(API_UNAUTHORIZED_EVENT, { detail: { url } }));
+  }
+
   return response;
 }
 
@@ -85,9 +91,7 @@ export async function apiJson<T>(url: string, init?: RequestInit): Promise<T> {
       if (Array.isArray(data.fields)) {
         fields = data.fields.filter((field): field is string => typeof field === 'string');
       }
-    } catch {
-      // ignore
-    }
+    } catch {}
     throw new ApiError(message, res.status, fields);
   }
   if (res.status === 204) return undefined as T;

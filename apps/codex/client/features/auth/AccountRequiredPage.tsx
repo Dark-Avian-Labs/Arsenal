@@ -1,8 +1,8 @@
+import { buildAuthPagePath } from '@dark-avian-labs/ui';
 import { Link } from 'react-router';
 
 import { LEGAL_PAGE_URL } from '../../app/config';
 import { APP_PATHS } from '../../app/paths';
-import { buildAuthPagePath } from './authRedirect';
 
 interface AccountRequiredPageProps {
   returnTo?: string;

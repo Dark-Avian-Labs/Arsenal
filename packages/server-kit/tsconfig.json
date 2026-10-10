@@ -1,0 +1,7 @@
+{
+  "extends": "@dark-avian-labs/config/tsconfig.server.json",
+  "compilerOptions": {
+    "rootDir": "src"
+  },
+  "include": ["src"]
+}

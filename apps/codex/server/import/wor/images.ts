@@ -168,9 +168,7 @@ export async function readResponseBodyCapped(
   } catch (error) {
     try {
       await reader.cancel();
-    } catch {
-      // ignore
-    }
+    } catch {}
     throw error;
   }
   return Buffer.concat(chunks);

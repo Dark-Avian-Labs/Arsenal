@@ -1,6 +1,5 @@
+import { apiFetch } from '@dark-avian-labs/ui';
 import { useCallback, useState } from 'react';
-
-import { apiFetch, UnauthorizedError } from '../utils/api';
 
 export function useBuildFavorites() {
   const [favoriteBusy, setFavoriteBusy] = useState(false);
@@ -13,9 +12,7 @@ export function useBuildFavorites() {
       });
       return response.ok;
     } catch (error) {
-      if (!(error instanceof UnauthorizedError)) {
-        console.error('Failed to favorite build', error);
-      }
+      console.error('Failed to favorite build', error);
       return false;
     } finally {
       setFavoriteBusy(false);
@@ -30,9 +27,7 @@ export function useBuildFavorites() {
       });
       return response.ok;
     } catch (error) {
-      if (!(error instanceof UnauthorizedError)) {
-        console.error('Failed to unfavorite build', error);
-      }
+      console.error('Failed to unfavorite build', error);
       return false;
     } finally {
       setFavoriteBusy(false);

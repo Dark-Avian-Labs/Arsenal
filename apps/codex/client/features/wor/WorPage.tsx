@@ -1,4 +1,16 @@
 import { ConfirmModal, LoadErrorBanner, MaterialSymbol, Modal, Toast } from '@dark-avian-labs/ui';
+import { apiFetch } from '@dark-avian-labs/ui';
+import {
+  cycleTriFilter,
+  cycleTriState,
+  matchesAnyTriFilter,
+  matchesBoolTri,
+  matchesTriFilter,
+  pruneTriFilter,
+  triFilterState,
+  type FilterTriState,
+  type TriFilterMap,
+} from '@dark-avian-labs/wor-assets/triFilter';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
@@ -19,18 +31,6 @@ import { HeaderSearch } from '../../components/Layout/HeaderSearch';
 import { useLayoutSlots } from '../../components/Layout/useLayoutSlots';
 import { FilterIconButton } from '../../components/ui/FilterIconButton';
 import { useAutoDismissMessage } from '../../hooks/useAutoDismissMessage';
-import {
-  cycleTriFilter,
-  cycleTriState,
-  matchesAnyTriFilter,
-  matchesBoolTri,
-  matchesTriFilter,
-  pruneTriFilter,
-  triFilterState,
-  type FilterTriState,
-  type TriFilterMap,
-} from '../../lib/triFilter';
-import { apiFetch } from '../../utils/api';
 import {
   HIDE_COMPLETED_STORAGE_KEY,
   ICONS,
@@ -222,9 +222,7 @@ export function WorPage() {
     setHideCompleted(nextValue);
     try {
       localStorage.setItem(HIDE_COMPLETED_STORAGE_KEY, nextValue ? '1' : '0');
-    } catch {
-      // ignore
-    }
+    } catch {}
   }, []);
 
   const stats = useMemo((): WorStats => {

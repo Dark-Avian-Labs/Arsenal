@@ -2,12 +2,6 @@ import { spawnSync } from 'node:child_process';
 import { appendFileSync, existsSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
-// Usage: node scripts/ci/release.mjs <app-dir-name>
-// Writes GITHUB_OUTPUT: version, previous, release (true|false), tag.
-// Writes notes to $RUNNER_TEMP/notes-<app>.md.
-// Last release for an app is the git tag <app>-v<version>, for example armory-v1.74.5.
-// CI creates the next tag. This script only prints the name.
-
 const app = process.argv[2];
 if (!app || !/^[\w.-]+$/.test(app)) throw new Error('app required');
 if (!existsSync(path.join('apps', app, 'package.json'))) throw new Error(`unknown app ${app}`);
@@ -24,9 +18,7 @@ try {
   previous = git(['describe', '--tags', '--abbrev=0', '--match', `${prefix}*`]).slice(
     prefix.length,
   );
-} catch {
-  // first release of this app in this repo
-}
+} catch {}
 
 const range = previous ? `${prefix}${previous}..HEAD` : 'HEAD';
 const paths = ['--', `apps/${app}`, 'packages', 'pnpm-lock.yaml', 'pnpm-workspace.yaml'];

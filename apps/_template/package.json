@@ -16,7 +16,7 @@
     "typecheck": "pnpm run typecheck:server && pnpm run typecheck:client",
     "typecheck:server": "tsc -p tsconfig.server.json --noEmit",
     "typecheck:client": "tsc -p tsconfig.json --noEmit",
-    "dev": "dotenvx run --strict -f .env.development -- node scripts/dev.mjs",
+    "dev": "dotenvx run --strict -f .env.development -- node ../../scripts/dev.mjs",
     "dev:server": "node --watch server/index.ts",
     "dev:client": "vite",
     "build": "pnpm run typecheck && vite build",

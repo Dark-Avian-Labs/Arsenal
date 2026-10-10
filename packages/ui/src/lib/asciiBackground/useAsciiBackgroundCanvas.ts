@@ -32,9 +32,7 @@ async function loadCascadiaMono(): Promise<void> {
   try {
     await import('@fontsource-variable/cascadia-mono');
     await document.fonts.load(`${DEFAULT_CASCADIA_TYPOGRAPHY.fontSizePx}px ${CASCADIA_FONT_STACK}`);
-  } catch {
-    // ignore
-  }
+  } catch {}
 }
 
 export function useAsciiBackgroundCanvas(

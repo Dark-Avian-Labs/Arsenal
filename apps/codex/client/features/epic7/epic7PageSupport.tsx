@@ -1,4 +1,6 @@
 import { MaterialSymbol } from '@dark-avian-labs/ui';
+import { apiFetch } from '@dark-avian-labs/ui';
+import type { TriFilterMap } from '@dark-avian-labs/wor-assets/triFilter';
 import { memo, useCallback, useEffect, useReducer, useRef, useState } from 'react';
 
 import {
@@ -15,8 +17,6 @@ import {
 } from '../../../server/games/epic7/constants';
 import type { ClassKey, ElementKey } from '../../../server/games/epic7/constants';
 import { useAutoDismissMessage } from '../../hooks/useAutoDismissMessage';
-import type { TriFilterMap } from '../../lib/triFilter';
-import { apiFetch } from '../../utils/api';
 
 export type Epic7Hero = {
   id: number;

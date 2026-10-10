@@ -1,5 +1,6 @@
 import { useAuth } from '@clerk/react';
 import { Button, Input, MaterialSymbol } from '@dark-avian-labs/ui';
+import { apiJson } from '@dark-avian-labs/ui';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router';
@@ -9,7 +10,6 @@ import { planPath } from '../../app/paths';
 import { FormSelect } from '../../components/ui/FormSelect';
 import { RequireAuth } from '../../features/auth/RequireAuth';
 import type { Me, PlanSummary } from '../../lib/types';
-import { apiJson } from '../../utils/api';
 
 function HomeInner() {
   const { t } = useTranslation();

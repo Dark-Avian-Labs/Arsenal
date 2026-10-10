@@ -2,7 +2,7 @@ import path from 'path';
 
 import Database from 'better-sqlite3';
 
-import { migrateArtifactSlotsFromOverframe } from './migrateArtifactSlotsFromOverframe.ts';
+import { migrateArtifactSlotsFromOverframe } from '@dark-avian-labs/warframe-catalog/server';
 
 function resolveDbPath(): string {
   const arg = process.argv.find((a) => !a.startsWith('-') && a.endsWith('.db'));

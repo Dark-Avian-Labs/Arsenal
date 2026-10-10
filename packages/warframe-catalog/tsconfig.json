@@ -1,0 +1,4 @@
+{
+  "extends": "@dark-avian-labs/config/tsconfig.server.json",
+  "include": ["src"]
+}

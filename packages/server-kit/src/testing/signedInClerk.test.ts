@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { clerkFrontendApiOrigin, isSignedInClerkConfigured } from './signedInClerk.js';
+import { clerkFrontendApiOrigin, isSignedInClerkConfigured } from './signedInClerk.ts';
 
 describe('isSignedInClerkConfigured', () => {
   it('rejects an empty email', () => {

@@ -4,7 +4,7 @@ export type {
   IncarnonPerkOption,
   IncarnonStatModifier,
   IncarnonStatName,
-} from '../../shared/incarnonTypes';
+} from '@dark-avian-labs/warframe-catalog';
 
 export interface IncarnonSelection {
   tier: number;

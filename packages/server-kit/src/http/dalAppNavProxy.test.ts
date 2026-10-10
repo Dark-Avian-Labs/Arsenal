@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { handleDalAppNavProxy } from './dalAppNavProxy.js';
+import { handleDalAppNavProxy } from './dalAppNavProxy.ts';
 
 function mockRes() {
   const res = {

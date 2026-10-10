@@ -1,9 +1,9 @@
 import { MaterialSymbol } from '@dark-avian-labs/ui';
+import { apiFetch } from '@dark-avian-labs/ui';
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 
 import { buildEquipmentBuildsListPath, buildNewPath, userBuildsPath } from '../../app/paths';
-import { apiFetch } from '../../utils/api';
 
 type EquipmentSearchResult = {
   kind: 'equipment';

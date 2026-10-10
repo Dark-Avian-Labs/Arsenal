@@ -1,7 +1,7 @@
+import { buildArchonShardKey } from '@dark-avian-labs/warframe-catalog';
 import { describe, expect, it } from 'vitest';
 
 import { buildAbilityKey } from './abilitySlugRegistry.ts';
-import { buildArchonShardKey } from './archonShardRegistry.ts';
 import { resolveHelminthFromConfig, resolveArchonShardKey } from './buildReference.ts';
 
 const TITANIA_ABILITIES = [

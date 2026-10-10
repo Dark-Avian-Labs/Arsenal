@@ -1,4 +1,5 @@
 import { Button, Input, MaterialSymbol, Modal } from '@dark-avian-labs/ui';
+import { ApiError, apiJson } from '@dark-avian-labs/ui';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -22,7 +23,6 @@ import type {
   EntryKind,
   PlanDetail,
 } from '../../lib/types';
-import { ApiError, apiJson } from '../../utils/api';
 
 type FieldEditor = 'closed' | 'add' | 'rename';
 
@@ -145,7 +145,7 @@ export function EntrySheet({
     if (mode === 'edit' && entry) setForm(entryToForm(entry));
     else setForm(emptyForm(data.categories[0]?.id ?? '', selectedMonth.year, selectedMonth.month));
     resetFieldEditors();
-  }, [open, mode, entry?.id]); // ponytail: snapshot category/month at open; adding a category must not reset the form
+  }, [open, mode, entry?.id]); // Snapshot category and month when the sheet opens. Adding a category must not reset the form.
 
   useEffect(() => {
     if (!form.category_id || data.categories.some((c) => c.id === form.category_id)) return;

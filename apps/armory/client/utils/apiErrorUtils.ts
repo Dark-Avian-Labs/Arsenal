@@ -11,18 +11,14 @@ export async function getApiErrorDetails(response: Response): Promise<string> {
     if (typeof body.message === 'string' && body.message.length > 0) {
       return `${statusText}: ${body.message}`;
     }
-  } catch {
-    // ignore
-  }
+  } catch {}
 
   try {
     const text = await response.clone().text();
     if (text.trim().length > 0) {
       return `${statusText}: ${text.trim()}`;
     }
-  } catch {
-    // ignore
-  }
+  } catch {}
 
   return statusText || 'Unknown API error';
 }

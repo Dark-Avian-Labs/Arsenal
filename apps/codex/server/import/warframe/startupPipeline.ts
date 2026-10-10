@@ -4,7 +4,7 @@ import path from 'path';
 import { log as writeLog } from '@dark-avian-labs/server-kit';
 
 import type { PipelineStepKey } from '../../../shared/warframeImport/pipelineSteps.ts';
-import { EXPORTS_DIR, PROJECT_ROOT, REQUIRED_EXPORTS } from '../../config.ts';
+import { EXPORTS_DIR, REQUIRED_EXPORTS } from '../../config.ts';
 import { getCatalogDb } from './db/connection.ts';
 import { processExports, backfillModDescriptions } from './db/queries.ts';
 import { resetCatalogData } from './db/resetCatalogData.ts';
@@ -51,6 +51,7 @@ import { populateWarframeMarketLinksTable } from './warframeMarket/populateWarfr
 import {
   generateWarframeRankExceptions,
   isWarframeRankExceptionsSourceAvailable,
+  WARFRAME_RANK_EXCEPTIONS_OUT_PATH,
   warframeRankExceptionsSourceChanged,
 } from './warframeRankExceptions.ts';
 
@@ -418,9 +419,7 @@ async function runStartupPipelineInner(
   if (shouldRunStep('warframeRankExceptions', rankExceptionsSourceChanged, options)) {
     const reason = isStepForced('warframeRankExceptions', options)
       ? 'Force step requested — regenerating rank exception registry.'
-      : !fs.existsSync(
-            path.join(PROJECT_ROOT, 'shared/warframeImport/warframeRankExceptions.generated.ts'),
-          )
+      : !fs.existsSync(WARFRAME_RANK_EXCEPTIONS_OUT_PATH)
         ? 'Generated registry missing — building from source JSON.'
         : 'Source JSON changed — regenerating rank exception registry.';
     log(`[Rank Exceptions] ${reason}`);

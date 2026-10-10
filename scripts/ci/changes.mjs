@@ -1,10 +1,6 @@
 import { spawnSync } from 'node:child_process';
 import { appendFileSync } from 'node:fs';
 
-// Decides which apps to deploy. Outputs <app>=true|false for each app to GITHUB_OUTPUT.
-// Rules: FORCE lists apps or "all"; otherwise diff BEFORE..AFTER. packages/, lockfile, workspace
-// file, scripts/ci and the deploy workflows affect every app; apps/<x>/ affects x.
-
 const APPS = ['armory', 'budget-planner', 'codex', 'sentinel', 'outfitter'];
 const { BEFORE = '', AFTER = 'HEAD', FORCE = '' } = process.env;
 
@@ -34,8 +30,7 @@ if (!BEFORE || /^0+$/.test(BEFORE) || git(['cat-file', '-e', `${BEFORE}^{commit}
 const files = (git(['diff', '--name-only', BEFORE, AFTER]) ?? '').split('\n').filter(Boolean);
 console.log(`Changed files:\n${files.join('\n')}`);
 
-// Dependency files always deploy everything. devDependencies include Vite and Tailwind, which
-// change the client bundle, and a lockfile-only diff can be a transitive production bump.
+// A lockfile or devDependency bump can change the client bundle, so these paths deploy every app.
 const global = files.some(
   (file) =>
     file.startsWith('packages/') ||

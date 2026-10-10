@@ -1,6 +1,5 @@
+import { apiJson } from '@dark-avian-labs/ui';
 import i18n from 'i18next';
-
-import { apiJson } from '../utils/api';
 
 export const LOCALES = ['en', 'de'] as const;
 export type AppLocale = (typeof LOCALES)[number];
@@ -33,9 +32,7 @@ export function readStoredLocale(): AppLocale | null {
 export function writeStoredLocale(locale: AppLocale): void {
   try {
     window.localStorage.setItem(storageKey(), locale);
-  } catch {
-    // ignore
-  }
+  } catch {}
 }
 
 export function resolveInitialLocale(): AppLocale {
@@ -63,9 +60,7 @@ export async function setUserLocale(locale: AppLocale, syncRemote: boolean): Pro
       method: 'PATCH',
       body: JSON.stringify({ locale }),
     });
-  } catch {
-    // ignore
-  }
+  } catch {}
 }
 
 export async function syncLocaleFromServer(): Promise<void> {
@@ -76,8 +71,6 @@ export async function syncLocaleFromServer(): Promise<void> {
       await applyLocale(me.locale);
       return;
     }
-  } catch {
-    // ignore
-  }
+  } catch {}
   await applyLocale(resolveInitialLocale());
 }

@@ -1,7 +1,7 @@
+import { apiFetch } from '@dark-avian-labs/ui';
 import { useState, useEffect, useCallback } from 'react';
 
 import type { BuildVisibility } from '../types/warframe';
-import { apiFetch } from '../utils/api';
 import { getApiErrorDetails } from '../utils/apiErrorUtils';
 
 export interface LoadoutBuild {

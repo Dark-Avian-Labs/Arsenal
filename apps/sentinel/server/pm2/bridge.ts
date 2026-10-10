@@ -149,9 +149,7 @@ export function startPm2Bridge(intervalMs = 10_000): Pm2BridgeHandle {
       });
       try {
         writeHostSnapshot(Date.now());
-      } catch {
-        // ignore
-      }
+      } catch {}
     });
   };
 

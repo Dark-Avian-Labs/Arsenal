@@ -4,11 +4,11 @@ import path from 'node:path';
 import express, { type Express, type RequestHandler, type Router } from 'express';
 import { rateLimit } from 'express-rate-limit';
 
-import { clerkMiddleware, rejectCrossSiteWrites } from './auth/middleware.js';
-import { handleDalAppNavProxy } from './http/dalAppNavProxy.js';
-import { createAppHelmet } from './http/helmetCsp.js';
-import { getRequestId, requestIdMiddleware } from './http/requestId.js';
-import { log } from './logger.js';
+import { clerkMiddleware, rejectCrossSiteWrites } from './auth/middleware.ts';
+import { handleDalAppNavProxy } from './http/dalAppNavProxy.ts';
+import { createAppHelmet } from './http/helmetCsp.ts';
+import { getRequestId, requestIdMiddleware } from './http/requestId.ts';
+import { log } from './logger.ts';
 
 export interface CreateAppOptions {
   appName: string;
@@ -24,7 +24,6 @@ export interface CreateAppOptions {
   readiness?: () => boolean | Promise<boolean>;
   rateLimits?: { api?: number; write?: number; page?: number; asset?: number };
   mountBeforeApi?: (app: Express) => void;
-  /** App-specific mounts: rate limits, static files. Does not mount a session. */
   mount?: (app: Express) => void;
   helmet?: { hsts?: boolean; extraScriptSrc?: string[]; extraConnectSrc?: string[] };
 }

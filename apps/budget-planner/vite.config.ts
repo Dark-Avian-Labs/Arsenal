@@ -1,43 +1,12 @@
-import path from 'path';
-import { fileURLToPath } from 'url';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-import tailwindcss from '@tailwindcss/vite';
-import react from '@vitejs/plugin-react';
-import { defineConfig, loadEnv } from 'vite';
+import { defineAppVite } from '@dark-avian-labs/config/vite';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const rootDir = path.dirname(fileURLToPath(import.meta.url));
 
-export default defineConfig(({ mode }) => {
-  const fileEnv = loadEnv(mode, process.cwd(), '');
-  const envValue = (key: string, fallback = '') =>
-    process.env[key]?.trim() || fileEnv[key]?.trim() || fallback;
-
-  const devApiTarget = envValue('VITE_DEV_API_TARGET', 'http://127.0.0.1:3003');
-  const devPort = Number.parseInt(envValue('VITE_DEV_PORT', '5173'), 10);
-
-  return {
-    base: '/',
-    plugins: [react(), tailwindcss()],
-    define: {
-      'import.meta.env.VITE_APP_VERSION': JSON.stringify(process.env.APP_VERSION ?? '0.0.0-dev'),
-    },
-    resolve: {
-      alias: {
-        '@': path.resolve(__dirname, 'client'),
-      },
-    },
-    build: {
-      outDir: 'dist/client',
-      emptyOutDir: true,
-    },
-    server: {
-      port: Number.isFinite(devPort) && devPort > 0 ? devPort : 5173,
-      proxy: {
-        '/api': {
-          target: devApiTarget,
-          changeOrigin: true,
-        },
-      },
-    },
-  };
+export default defineAppVite({
+  rootDir,
+  devApiTarget: 'http://127.0.0.1:3003',
+  devPort: 5173,
 });

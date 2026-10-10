@@ -1,4 +1,5 @@
-import { formatSiriusOrionBuildDisplayName } from '../../shared/siriusOrionRegistry.js';
+import { formatSiriusOrionBuildDisplayName } from '@dark-avian-labs/warframe-catalog';
+
 import { normalizeEquipmentName } from './specialItems';
 
 export function isLotusUniqueName(value: string): boolean {

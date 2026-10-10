@@ -4,7 +4,7 @@ In-process agent for Sentinel. Collects event-loop lag, HTTP latency by route pa
 
 ## Install
 
-Apps in this repo depend on it with `"@dark-avian-labs/sentinel-agent": "workspace:*"`. The package is compiled to `dist`; apps import that. App releases are tags named `<app>-vX.Y.Z` and do not publish this package on their own.
+Apps in this repo depend on it with `"@dark-avian-labs/sentinel-agent": "workspace:*"` and import the TypeScript source. App releases are tags named `<app>-vX.Y.Z` and do not publish this package on their own.
 
 ## Usage
 

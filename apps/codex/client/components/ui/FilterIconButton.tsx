@@ -1,6 +1,5 @@
+import type { FilterTriState } from '@dark-avian-labs/wor-assets/triFilter';
 import type { ReactNode } from 'react';
-
-import type { FilterTriState } from '../../lib/triFilter';
 
 type FilterIconButtonProps = {
   state: FilterTriState;

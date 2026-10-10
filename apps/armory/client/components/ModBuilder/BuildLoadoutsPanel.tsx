@@ -1,8 +1,8 @@
+import { apiFetch } from '@dark-avian-labs/ui';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 
 import { buildLoadoutPath } from '../../app/paths';
-import { apiFetch } from '../../utils/api';
 
 type LoadoutRow = {
   id: string;

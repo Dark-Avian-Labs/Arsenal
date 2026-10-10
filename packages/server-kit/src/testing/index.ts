@@ -2,8 +2,8 @@ import http from 'node:http';
 
 import type { Express } from 'express';
 
-export { clerkFrontendApiOrigin, isSignedInClerkConfigured } from './signedInClerk.js';
-export { mockResponse } from './mockResponse.js';
+export { clerkFrontendApiOrigin, isSignedInClerkConfigured } from './signedInClerk.ts';
+export { mockResponse } from './mockResponse.ts';
 
 export async function withServer<T>(app: Express, fn: (baseUrl: string) => Promise<T>): Promise<T> {
   const server = http.createServer(app);

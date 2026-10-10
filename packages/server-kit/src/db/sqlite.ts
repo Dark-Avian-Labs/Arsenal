@@ -3,7 +3,7 @@ import path from 'node:path';
 
 import Database from 'better-sqlite3';
 
-import { DEFAULT_SQLITE_PRAGMAS } from './sqlitePragmas.js';
+import { DEFAULT_SQLITE_PRAGMAS } from './sqlitePragmas.ts';
 
 export interface DbSingletonOptions {
   pragmas?: string[];

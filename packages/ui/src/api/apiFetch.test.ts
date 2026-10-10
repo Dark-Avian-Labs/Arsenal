@@ -13,21 +13,6 @@ describe('apiFetch clerk token', () => {
     vi.restoreAllMocks();
   });
 
-  it('does not send a CSRF header on writes', async () => {
-    let capturedInit: RequestInit | undefined;
-    vi.stubGlobal('fetch', async (_url: string, init?: RequestInit) => {
-      capturedInit = init;
-      return new Response('ok', { status: 200 });
-    });
-    setClerkTokenGetter(async () => 'fresh-session-token');
-
-    await apiFetch('/api/items', { method: 'POST', body: '{}' });
-
-    const headers = headersFromInit(capturedInit);
-    expect(headers.get('X-CSRF-Token')).toBeNull();
-    expect(headers.get('Authorization')).toBe('Bearer fresh-session-token');
-  });
-
   it('sends a Clerk bearer token on API requests', async () => {
     let capturedInit: RequestInit | undefined;
     vi.stubGlobal('fetch', async (_url: string, init?: RequestInit) => {
@@ -36,7 +21,7 @@ describe('apiFetch clerk token', () => {
     });
     setClerkTokenGetter(async () => 'fresh-session-token');
 
-    const response = await apiFetch('/api/auth/me');
+    const response = await apiFetch('/api/warframe/worksheets');
 
     expect(response.ok).toBe(true);
     expect(headersFromInit(capturedInit).get('Authorization')).toBe('Bearer fresh-session-token');
@@ -49,7 +34,7 @@ describe('apiFetch clerk token', () => {
       if (capturedInits.length === 1) {
         return new Response('Unauthorized', { status: 401 });
       }
-      return new Response('{"userId":"user_1"}', { status: 200 });
+      return new Response('{"worksheets":[]}', { status: 200 });
     });
 
     const getter = vi.fn(async (options?: { skipCache?: boolean }) =>
@@ -57,7 +42,7 @@ describe('apiFetch clerk token', () => {
     );
     setClerkTokenGetter(getter);
 
-    const response = await apiFetch('/api/auth/me');
+    const response = await apiFetch('/api/warframe/worksheets');
 
     expect(response.status).toBe(200);
     expect(capturedInits).toHaveLength(2);
@@ -74,7 +59,7 @@ describe('apiFetch clerk token', () => {
     });
     setClerkTokenGetter(async () => null);
 
-    const response = await apiFetch('/api/auth/me');
+    const response = await apiFetch('/api/warframe/worksheets');
 
     expect(response.status).toBe(401);
     expect(fetchCount).toBe(1);

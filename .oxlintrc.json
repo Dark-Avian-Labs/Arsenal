@@ -7,11 +7,11 @@
     "perf": "warn"
   },
   "ignorePatterns": ["**/dist/**", "**/coverage/**", "**/*.generated.ts", "**/scripts/data/**"],
-  // Owner decision, 2026-10-10: leave these for a later pass. They need a
-  // per-component call (live regions, dialogs, effect state, hook deps, tests).
+  // Owner decision, 2026-10-10: leave these off. The hook and compiler rules
+  // are mostly noise, and several "fixes" would break refetch, form reset, and
+  // import-log scroll. prefer-tag-over-role stays off for output and dialog.
   // Oxlint has no "info" severity. "warn" still prints "warning", and
-  // run-quality-checks.mjs treats any warning line as a failed mark, so these
-  // are off. The warn-level rules below are included for the same reason.
+  // run-quality-checks.mjs treats any warning line as a failed mark.
   "rules": {
     "eslint/no-await-in-loop": "off",
     "eslint/no-shadow": "off",

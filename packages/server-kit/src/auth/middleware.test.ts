@@ -9,8 +9,8 @@ vi.mock('@clerk/express', () => ({
   clerkMiddleware: () => (_req: Request, _res: Response, next: NextFunction) => next(),
 }));
 
-import { withServer } from '../testing/index.js';
-import { isClerkConfigured, rejectCrossSiteWrites, requireAuthApi } from './middleware.js';
+import { withServer } from '../testing/index.ts';
+import { isClerkConfigured, rejectCrossSiteWrites, requireAuthApi } from './middleware.ts';
 
 describe('isClerkConfigured', () => {
   const previousPublishable = process.env.CLERK_PUBLISHABLE_KEY;

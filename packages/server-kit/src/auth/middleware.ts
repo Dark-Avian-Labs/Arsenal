@@ -1,8 +1,8 @@
 import { clerkMiddleware as clerkExpressMiddleware, getAuth } from '@clerk/express';
 import type { NextFunction, Request, RequestHandler, Response } from 'express';
 
-import { isAppAdmin, metadataFromSessionClaims } from './clerk.js';
-import { getClerkAuthorizedParties } from './clerkAuthorizedParties.js';
+import { isAppAdmin, metadataFromSessionClaims } from './clerk.ts';
+import { getClerkAuthorizedParties } from './clerkAuthorizedParties.ts';
 
 export { getAuth };
 
@@ -62,12 +62,6 @@ export function getClerkAuthState(req: Request): ClerkAuthState {
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
-/**
- * CSRF replacement, mounted on /api in createApp so every app gets it. A cross-site
- * form or fetch can carry cookies but cannot set an Authorization header or make
- * Sec-Fetch-Site read same-origin. Every write therefore needs a Bearer header:
- * the Clerk token from the client, or a service token (Sentinel ingest).
- */
 export function rejectCrossSiteWrites(req: Request, res: Response, next: NextFunction): void {
   if (SAFE_METHODS.has(req.method)) return next();
   if (req.headers['sec-fetch-site'] === 'cross-site') {

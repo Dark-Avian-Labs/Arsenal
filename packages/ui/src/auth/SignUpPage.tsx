@@ -10,15 +10,17 @@ export function SignUpPage({
   routing = 'path',
   title = 'Create account',
   subtitle,
+  fallbackPath,
 }: {
   routing?: 'path' | 'hash';
   title?: string;
   subtitle?: string;
+  fallbackPath?: string;
 } = {}) {
   const { appName, clerkEnabled, paths } = useAppShell();
   const { mode } = useTheme();
   const [searchParams] = useSearchParams();
-  const redirectUrl = getAuthRedirectUrl(searchParams, paths.home);
+  const redirectUrl = getAuthRedirectUrl(searchParams, fallbackPath ?? paths.home);
 
   if (!clerkEnabled) {
     return <Navigate to={paths.home} replace />;

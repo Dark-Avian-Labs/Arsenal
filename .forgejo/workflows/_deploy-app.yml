@@ -59,7 +59,7 @@ jobs:
           test -f /tmp/deploy/ecosystem.config.cjs
           test -d /tmp/deploy/dist/client
           test -d /tmp/deploy/server
-          test -d /tmp/deploy/node_modules/@dark-avian-labs/server-kit/dist
+          test -f /tmp/deploy/node_modules/@dark-avian-labs/server-kit/src/index.ts
           ls -la /tmp/deploy
           tar -C /tmp/deploy -czf "/tmp/${APP}-${VERSION}.tgz" .
 

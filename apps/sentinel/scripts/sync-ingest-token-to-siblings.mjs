@@ -35,8 +35,7 @@ function resolveDotenvxCli(appRoot) {
 
 function setEnv(appRoot, file, key, value) {
   const cli = resolveDotenvxCli(appRoot);
-  // dotenvx set treats an inherited process.env value as "already set" and skips
-  // writing the encrypted file — scrub Sentinel keys so the child must write.
+  // dotenvx set skips a key that is already in the environment, so the child must not inherit these.
   const env = { ...process.env };
   delete env.SENTINEL_INGEST_TOKEN;
   delete env.SENTINEL_INGEST_URL;

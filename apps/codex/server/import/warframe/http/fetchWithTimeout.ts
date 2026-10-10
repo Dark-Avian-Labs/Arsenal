@@ -72,9 +72,7 @@ export async function readResponseWithByteLimit(
     if (Number.isFinite(len) && len > maxBytes) {
       try {
         await response.body?.cancel();
-      } catch {
-        // ignore
-      }
+      } catch {}
       throw new Error(`Response Content-Length ${len} exceeds limit of ${maxBytes} bytes`);
     }
   }
@@ -119,9 +117,7 @@ export async function fetchBounded(
   if (!response.ok) {
     try {
       await response.body?.cancel();
-    } catch {
-      // ignore
-    }
+    } catch {}
     return { response, body: Buffer.alloc(0) };
   }
   if (options?.requireImageMime) {
