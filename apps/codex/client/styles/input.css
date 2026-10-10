@@ -108,7 +108,7 @@
 
   --color-accent-weak: color-mix(in oklab, var(--color-accent) 10%, transparent);
   --color-accent-weak-2: color-mix(in oklab, var(--color-accent) 20%, transparent);
-  --font-cascadia-mono: 'Cascadia Mono Variable', 'Cascadia Mono', ui-monospace, monospace;
+  --font-cascadia-mono: 'Cascadia Mono Variable', ui-monospace, monospace;
   --bg-art-font-size: 11px;
   --bg-art-line-height: 13px;
   --ascii-opacity: 0.05;

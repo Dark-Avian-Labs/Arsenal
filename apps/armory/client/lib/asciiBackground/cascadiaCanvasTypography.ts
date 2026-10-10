@@ -1,4 +1,4 @@
-export const CASCADIA_FONT_STACK = '"Cascadia Mono Variable", "Cascadia Mono", monospace';
+export const CASCADIA_FONT_STACK = '"Cascadia Mono Variable", ui-monospace, monospace';
 
 export type FontStretchOption =
   | 'normal'

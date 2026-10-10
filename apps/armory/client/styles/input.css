@@ -129,7 +129,7 @@
     'Geist Variable', Geist, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
   --theme-mode: dark;
   --ascii-opacity: 0.05;
-  --font-cascadia-mono: 'Cascadia Mono Variable', 'Cascadia Mono', ui-monospace, monospace;
+  --font-cascadia-mono: 'Cascadia Mono Variable', ui-monospace, monospace;
   --bg-art-font-size: 11px;
   --bg-art-line-height: 13px;
   --ascii-canvas-fg: color-mix(
