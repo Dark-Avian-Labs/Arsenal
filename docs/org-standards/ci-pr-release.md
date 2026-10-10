@@ -40,7 +40,7 @@ There is one tag per app release, named `<app>-vX.Y.Z`, for example `armory-v1.7
 
 `scripts/ci/changes.mjs` decides which apps ship. A change under `apps/<app>/` deploys that app. A change under `packages/`, the lockfile, the workspace file, `scripts/ci/`, or the two deploy workflows deploys every app. Dependency updates always deploy: devDependencies include Vite and Tailwind, which change the client bundle, and a lockfile-only diff can be a transitive production bump.
 
-`@dark-avian-labs/ui`, `server-kit`, `sentinel-agent`, `warframe-catalog`, and `wor-assets` export TypeScript source and have no build script. `pr.yml` runs `pnpm --filter "@dark-avian-labs/*" --filter dal-template run --if-present build`, so those packages are skipped. Each deployed app is then built with `scripts/ci/build-app.sh`. Deploy checks `packages/server-kit/src/index.ts`. Do not put a `dist` build back.
+`ui` and `wor-assets` export TypeScript and have no build script. Vite bundles them. `server-kit`, `sentinel-agent`, and `warframe-catalog` emit `dist` JavaScript, because Node will not strip types for a file under `node_modules` and `pnpm deploy` copies those packages there. `pr.yml` runs `pnpm --filter "@dark-avian-labs/*" --filter dal-template run --if-present build`, which builds the three packages that have a build script and skips the rest. Each deployed app is then built with `scripts/ci/build-app.sh`. Deploy checks `node_modules/@dark-avian-labs/server-kit/dist/index.js` and the sentinel-agent dist entry.
 
 ## Secrets
 
