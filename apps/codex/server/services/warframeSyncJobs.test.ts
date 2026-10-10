@@ -3,8 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const sessionDbRef = vi.hoisted(() => ({ current: null as Database.Database | null }));
 
-vi.mock('@codex/core', async () => {
-  const actual = await vi.importActual<typeof import('@codex/core')>('@codex/core');
+vi.mock('../db/sessionDb.js', async () => {
+  const actual = await vi.importActual<typeof import('../db/sessionDb.js')>('../db/sessionDb.js');
   return {
     ...actual,
     getSessionDb: () => {

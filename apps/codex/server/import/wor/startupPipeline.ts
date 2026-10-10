@@ -1,14 +1,14 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { log } from '@codex/core';
+import { log } from '@dark-avian-labs/server-kit';
 import {
   ensureWorCatalogDbTables,
   ensureWorCoreTables,
   getWorCatalogDb,
   getWorDb,
   worQueries,
-} from '@codex/game-wor';
+} from '../../games/wor/index.js';
 import type Database from 'better-sqlite3';
 
 import { WOR_IMAGES_DIR, PROJECT_ROOT } from '../../config.js';

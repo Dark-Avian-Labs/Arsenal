@@ -1,24 +1,17 @@
-import fs from 'fs';
 import path from 'path';
 
-import {
-  clerkMiddleware,
-  createAppHelmet,
-  getClerkAuthState,
-  getSessionDb,
-  log,
-} from '@codex/core';
+import { createApp as createKitApp, getClerkAuthState } from '@dark-avian-labs/server-kit';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import { csrfSync } from 'csrf-sync';
 import express, { type Request, type RequestHandler, type Response } from 'express';
-import { rateLimit } from 'express-rate-limit';
 import session from 'express-session';
 
 import {
+  APP_ID,
+  APP_NAME,
   APP_PUBLIC_BASE_URL,
   APP_VERSION,
-  sessionCookieDomain,
   LEGAL_PAGE_URL,
   NODE_ENV,
   PROJECT_ROOT,
@@ -27,13 +20,13 @@ import {
   SESSION_SECRET,
   TRUST_PROXY,
   WOR_IMAGES_DIR,
+  sessionCookieDomain,
 } from './config.js';
+import { getSessionDb } from './db/sessionDb.js';
 import { SqliteSessionStore } from './db/sqliteSessionStore.js';
-import { handleDalAppNavProxy } from './http/dalAppNavProxy.js';
-import { getRequestId, requestIdMiddleware } from './http/requestId.js';
 import { timingSafeEqualString } from './http/timingSafeEqual.js';
 import { contentTypeForImagePath, isAllowedImageExtension } from './import/wor/images.js';
-import { healthzHandler, readyzHandler } from './probes.js';
+import { assertCodexReady } from './probes.js';
 import { apiRouter } from './routes/api.js';
 import { authRouter, issueCsrfToken } from './routes/auth.js';
 import { bindClerkUserSessionMiddleware } from './session/bindClerkUserSession.js';
@@ -48,427 +41,235 @@ export interface AppBundle {
   sessionStore: SqliteSessionStore;
 }
 
+const CSRF_IGNORED_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
+const CSRF_PROTECTED_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+
 export function createApp(options: CreateAppOptions = {}): AppBundle {
   const sessionDb = options.sessionDb ?? getSessionDb();
-
-  const app = express();
-  if (TRUST_PROXY) app.set('trust proxy', 1);
-  if (NODE_ENV === 'production' && SECURE_COOKIES && !TRUST_PROXY) {
-    throw new Error(
-      'TRUST_PROXY must be enabled in production with secure cookies so Express trusts X-Forwarded-* headers behind your TLS terminator. Set TRUST_PROXY=1 (or enable trust proxy in config) when deploying behind a reverse proxy.',
-    );
-  }
-
-  if (options.metricsMiddleware) {
-    app.use(options.metricsMiddleware);
-  }
-
-  app.use(createAppHelmet());
-  app.use(requestIdMiddleware);
-  app.use(compression());
-  app.use(express.json({ limit: '1mb' }));
-  app.use(express.urlencoded({ extended: true }));
-  app.use(cookieParser());
-
-  const RATE_LIMIT_SKIP_PATHS = new Set([
-    '/healthz',
-    '/readyz',
-    '/api/version',
-    '/favicon.ico',
-    '/favicon.png',
-    '/favicon.svg',
-    '/login',
-    '/legal',
-    '/logout',
-    '/admin',
-    '/warframe/admin',
-    '/epic7/admin',
-    '/wor/admin',
-    '/warframe',
-    '/epic7',
-    '/wor',
-    '/',
-    '/auth/login',
-    '/auth/profile',
-    '/auth/legal',
-  ]);
-  const RATE_LIMIT_SKIP_PATTERNS = [
-    /^\/assets\/.+\.(?:css|js|png|jpe?g|gif|webp|svg|ico|woff2?)$/i,
-  ];
-
-  const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
-  const BASELINE_RATE_LIMIT_MAX = 1200;
-  const STATIC_ASSET_RATE_LIMIT_MAX = 5000;
-
-  function createRateLimiter(
-    max: number,
-    options?: { skip?: (req: Request) => boolean },
-  ): ReturnType<typeof rateLimit> {
-    return rateLimit({
-      windowMs: RATE_LIMIT_WINDOW_MS,
-      max,
-      standardHeaders: true,
-      legacyHeaders: false,
-      ...(options?.skip ? { skip: options.skip } : {}),
-    });
-  }
-
-  const probeLimiter = createRateLimiter(BASELINE_RATE_LIMIT_MAX);
-  app.get('/healthz', healthzHandler);
-  app.get('/readyz', probeLimiter, readyzHandler);
-
-  app.use(clerkMiddleware());
-
-  const baselineLimiter = createRateLimiter(BASELINE_RATE_LIMIT_MAX, {
-    skip: (req) =>
-      RATE_LIMIT_SKIP_PATHS.has(req.path) ||
-      RATE_LIMIT_SKIP_PATTERNS.some((pattern) => pattern.test(req.path)),
-  });
-  app.use(baselineLimiter);
-
   const sessionStore = new SqliteSessionStore({
     db: sessionDb,
     cleanupIntervalMs: 15 * 60 * 1000,
   });
 
-  const cookieOptions: express.CookieOptions = {
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-    httpOnly: true,
-    secure: SECURE_COOKIES,
-    sameSite: 'lax',
-  };
-  const cookieDomain = sessionCookieDomain();
-  if (cookieDomain) cookieOptions.domain = cookieDomain;
-
-  app.use(
-    session({
-      name: SESSION_COOKIE_NAME,
-      store: sessionStore,
-      secret: SESSION_SECRET,
-      resave: false,
-      saveUninitialized: false,
-      cookie: cookieOptions,
-    }),
-  );
-
-  const { generateToken, getTokenFromRequest, getTokenFromState, invalidCsrfTokenError } = csrfSync(
-    {
-      getTokenFromRequest: (req: Request) => {
-        if (req.body?._csrf) return req.body._csrf as string;
-        const header = req.headers['x-csrf-token'] || req.headers['x-xsrf-token'];
-        return (Array.isArray(header) ? header[0] : header) ?? null;
-      },
-      getTokenFromState: (req) => {
-        const sessionData = req.session;
-        if (!sessionData) return null;
-        return sessionData.csrfToken ?? null;
-      },
-      storeTokenInState: (req, token) => {
-        if (req.session) {
-          req.session.csrfToken = token as string;
-        }
-      },
+  const bundle = createKitApp({
+    appName: APP_NAME,
+    appId: APP_ID,
+    appVersion: APP_VERSION,
+    projectRoot: PROJECT_ROOT,
+    nodeEnv: NODE_ENV,
+    trustProxy: TRUST_PROXY,
+    secureCookies: SECURE_COOKIES,
+    legalPageUrl: LEGAL_PAGE_URL,
+    jsonLimit: '1mb',
+    metricsMiddleware: options.metricsMiddleware,
+    readiness: async () => {
+      await assertCodexReady();
+      return true;
     },
-  );
-
-  const CSRF_IGNORED_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
-  app.use((req, res, next) => {
-    (req as Request & { csrfToken?: (overwrite?: boolean) => string }).csrfToken = (overwrite) =>
-      generateToken(req, overwrite);
-    if (CSRF_IGNORED_METHODS.has(req.method.toUpperCase())) {
-      next();
-      return;
-    }
-    const received = getTokenFromRequest(req);
-    const stored = getTokenFromState(req);
-    if (
-      typeof received === 'string' &&
-      typeof stored === 'string' &&
-      timingSafeEqualString(received, stored)
-    ) {
-      next();
-      return;
-    }
-    next(invalidCsrfTokenError);
-  });
-
-  const IS_DEV_ENV = NODE_ENV !== 'production';
-  const defaultDevOrigins = IS_DEV_ENV
-    ? [
-        'http://localhost',
-        'http://127.0.0.1',
-        'http://localhost:3000',
-        'http://127.0.0.1:3000',
-        'http://localhost:4173',
-        'http://127.0.0.1:4173',
-        'http://localhost:5173',
-        'http://127.0.0.1:5173',
-        'http://localhost:8080',
-        'http://127.0.0.1:8080',
-      ]
-    : [];
-  const configuredOrigins = [process.env.ALLOWED_APP_ORIGINS]
-    .filter((value): value is string => typeof value === 'string' && value.length > 0)
-    .join(',');
-  const originCandidates = configuredOrigins
-    .split(',')
-    .map((value) => value.trim())
-    .filter(Boolean);
-  const excludedOrigins: string[] = [];
-  const ALLOWED_APP_ORIGINS = [...new Set([...originCandidates, ...defaultDevOrigins])].filter(
-    (value) => {
-      const isHttps = value.startsWith('https://');
-      const isDevHttp = IS_DEV_ENV && value.startsWith('http://');
-      const allowed = isHttps || isDevHttp;
-      if (!allowed) excludedOrigins.push(value);
-      return allowed;
+    mountBeforeApi(app) {
+      app.use(compression());
+      app.use(cookieParser());
     },
-  );
-  if (excludedOrigins.length > 0) {
-    console.warn('[CORS] Excluded app origins from ALLOWED_APP_ORIGINS:', excludedOrigins);
-  }
+    installSession(app) {
+      const cookieOptions: express.CookieOptions = {
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+        httpOnly: true,
+        secure: SECURE_COOKIES,
+        sameSite: 'lax',
+      };
+      const cookieDomain = sessionCookieDomain();
+      if (cookieDomain) cookieOptions.domain = cookieDomain;
 
-  const CSRF_PROTECTED_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
-  app.use((req: Request, res: Response, next) => {
-    if (!CSRF_PROTECTED_METHODS.has(req.method.toUpperCase())) {
-      next();
-      return;
-    }
+      app.use(
+        session({
+          name: SESSION_COOKIE_NAME,
+          store: sessionStore,
+          secret: SESSION_SECRET,
+          resave: false,
+          saveUninitialized: false,
+          cookie: cookieOptions,
+        }),
+      );
 
-    const secFetchSiteHeader = req.headers['sec-fetch-site'];
-    const secFetchSite = Array.isArray(secFetchSiteHeader)
-      ? secFetchSiteHeader[0]
-      : secFetchSiteHeader;
-    if (typeof secFetchSite === 'string' && secFetchSite.toLowerCase() === 'cross-site') {
-      res.status(403).json({ error: 'Cross-site request blocked', code: 'CSRF_ORIGIN_INVALID' });
-      return;
-    }
+      const { generateToken, getTokenFromRequest, getTokenFromState, invalidCsrfTokenError } =
+        csrfSync({
+          getTokenFromRequest: (req: Request) => {
+            if (req.body?._csrf) return req.body._csrf as string;
+            const header = req.headers['x-csrf-token'] || req.headers['x-xsrf-token'];
+            return (Array.isArray(header) ? header[0] : header) ?? null;
+          },
+          getTokenFromState: (req) => {
+            const sessionData = req.session;
+            if (!sessionData) return null;
+            return sessionData.csrfToken ?? null;
+          },
+          storeTokenInState: (req, token) => {
+            if (req.session) {
+              req.session.csrfToken = token as string;
+            }
+          },
+        });
 
-    const originHeader = req.headers.origin;
-    const origin = Array.isArray(originHeader) ? originHeader[0] : originHeader;
-    if (typeof origin === 'string' && origin.length > 0) {
-      const allowedOrigins = new Set<string>([APP_PUBLIC_BASE_URL, ...ALLOWED_APP_ORIGINS]);
-      if (!allowedOrigins.has(origin)) {
-        res.status(403).json({ error: 'Origin not allowed', code: 'CSRF_ORIGIN_INVALID' });
-        return;
-      }
-    }
-
-    next();
-  });
-
-  app.use((req: Request, res: Response, next) => {
-    const origin = req.headers.origin;
-    if (typeof origin === 'string' && ALLOWED_APP_ORIGINS.includes(origin)) {
-      res.setHeader('Access-Control-Allow-Origin', origin);
-      res.setHeader('Vary', 'Origin');
-      res.setHeader('Access-Control-Allow-Credentials', 'true');
-      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-CSRF-Token, X-XSRF-Token');
-      res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PATCH,PUT,DELETE,OPTIONS');
-    }
-    if (req.method === 'OPTIONS') {
-      res.status(204).end();
-      return;
-    }
-    next();
-  });
-
-  app.use('/api', (_req, res, next) => {
-    res.setHeader('Cache-Control', 'no-store');
-    next();
-  });
-
-  app.use(
-    '/api',
-    bindClerkUserSessionMiddleware(
-      (req) => getClerkAuthState(req).userId,
-      (req) => {
-        (req as Request & { csrfToken?: (overwrite?: boolean) => string }).csrfToken?.(true);
-      },
-    ),
-  );
-
-  app.use('/api/auth', authRouter);
-  app.get('/api/csrf', issueCsrfToken);
-
-  app.get('/api/version', (_req, res) => {
-    res.json({ version: APP_VERSION });
-  });
-
-  app.get('/api/dal-app-nav', (req, res) => {
-    void handleDalAppNavProxy(req, res);
-  });
-
-  app.use('/api', apiRouter);
-  app.use('/api', (_req, res) => {
-    res.status(404).json({ error: 'Not found' });
-  });
-
-  const publicPageLimiter = createRateLimiter(BASELINE_RATE_LIMIT_MAX);
-  const staticAssetLimiter = createRateLimiter(STATIC_ASSET_RATE_LIMIT_MAX);
-
-  const clientDir =
-    NODE_ENV !== 'production' && process.env.E2E_CLIENT_DIR?.trim()
-      ? path.resolve(process.env.E2E_CLIENT_DIR.trim())
-      : path.join(PROJECT_ROOT, 'dist', 'client');
-  const clientIndexPath = path.join(clientDir, 'index.html');
-
-  app.use(
-    '/wor-images',
-    staticAssetLimiter,
-    (req, res, next) => {
-      const ext = path.extname(req.path).toLowerCase();
-      if (!isAllowedImageExtension(ext)) {
-        res.status(404).end();
-        return;
-      }
-      next();
-    },
-    express.static(WOR_IMAGES_DIR, {
-      maxAge: '7d',
-      setHeaders(res, filePath) {
-        const contentType = contentTypeForImagePath(filePath);
-        if (contentType) {
-          res.setHeader('Content-Type', contentType);
-        } else {
-          res.setHeader('Content-Type', 'application/octet-stream');
-          res.setHeader('Content-Disposition', 'attachment');
+      app.use((req, res, next) => {
+        (req as Request & { csrfToken?: (overwrite?: boolean) => string }).csrfToken = (
+          overwrite,
+        ) => generateToken(req, overwrite);
+        if (CSRF_IGNORED_METHODS.has(req.method.toUpperCase())) {
+          next();
+          return;
         }
-        if (filePath.toLowerCase().endsWith('.svg')) {
-          res.setHeader('Content-Security-Policy', "sandbox; script-src 'none'");
+        const received = getTokenFromRequest(req);
+        const stored = getTokenFromState(req);
+        if (
+          typeof received === 'string' &&
+          typeof stored === 'string' &&
+          timingSafeEqualString(received, stored)
+        ) {
+          next();
+          return;
         }
-        res.setHeader('X-Content-Type-Options', 'nosniff');
-      },
-    }),
-  );
-  if (NODE_ENV !== 'development') {
-    app.use(
-      '/assets',
-      staticAssetLimiter,
-      express.static(path.join(clientDir, 'assets'), {
-        maxAge: '1y',
-        immutable: true,
-      }),
-    );
-    app.use(
-      publicPageLimiter,
-      express.static(clientDir, {
-        index: false,
-        maxAge: '1h',
-        setHeaders(res, filePath) {
-          if (filePath.endsWith('.html')) {
-            res.setHeader('Cache-Control', 'no-cache');
-          }
+        next(invalidCsrfTokenError);
+      });
+
+      const isDevEnv = NODE_ENV !== 'production';
+      const defaultDevOrigins = isDevEnv
+        ? [
+            'http://localhost',
+            'http://127.0.0.1',
+            'http://localhost:3000',
+            'http://127.0.0.1:3000',
+            'http://localhost:4173',
+            'http://127.0.0.1:4173',
+            'http://localhost:5173',
+            'http://127.0.0.1:5173',
+            'http://localhost:8080',
+            'http://127.0.0.1:8080',
+          ]
+        : [];
+      const configuredOrigins = [process.env.ALLOWED_APP_ORIGINS]
+        .filter((value): value is string => typeof value === 'string' && value.length > 0)
+        .join(',');
+      const originCandidates = configuredOrigins
+        .split(',')
+        .map((value) => value.trim())
+        .filter(Boolean);
+      const excludedOrigins: string[] = [];
+      const allowedAppOrigins = [...new Set([...originCandidates, ...defaultDevOrigins])].filter(
+        (value) => {
+          const isHttps = value.startsWith('https://');
+          const isDevHttp = isDevEnv && value.startsWith('http://');
+          const allowed = isHttps || isDevHttp;
+          if (!allowed) excludedOrigins.push(value);
+          return allowed;
         },
-      }),
-    );
-  }
+      );
+      if (excludedOrigins.length > 0) {
+        console.warn('[CORS] Excluded app origins from ALLOWED_APP_ORIGINS:', excludedOrigins);
+      }
 
-  function sendSpaIndex(res: Response): void {
-    if (!fs.existsSync(clientIndexPath)) {
-      res.status(503).json({ error: 'Client build missing. Run `pnpm run build` first.' });
-      return;
-    }
-    res.setHeader('Cache-Control', 'no-cache');
-    res.sendFile(clientIndexPath);
-  }
+      app.use((req: Request, res: Response, next) => {
+        if (!CSRF_PROTECTED_METHODS.has(req.method.toUpperCase())) {
+          next();
+          return;
+        }
 
-  const faviconPng = path.join(PROJECT_ROOT, 'public', 'favicon.png');
-  app.get('/favicon.png', publicPageLimiter, (_req, res) => {
-    res.sendFile(faviconPng);
-  });
-  app.get('/favicon.ico', publicPageLimiter, (_req, res) => {
-    res.sendFile(faviconPng);
-  });
+        const secFetchSiteHeader = req.headers['sec-fetch-site'];
+        const secFetchSite = Array.isArray(secFetchSiteHeader)
+          ? secFetchSiteHeader[0]
+          : secFetchSiteHeader;
+        if (typeof secFetchSite === 'string' && secFetchSite.toLowerCase() === 'cross-site') {
+          res
+            .status(403)
+            .json({ error: 'Cross-site request blocked', code: 'CSRF_ORIGIN_INVALID' });
+          return;
+        }
 
-  app.get('/login', publicPageLimiter, (_req, res) => {
-    res.redirect('/sign-in');
-  });
-  app.get('/legal', publicPageLimiter, (_req, res) => {
-    res.redirect(LEGAL_PAGE_URL);
-  });
+        const originHeader = req.headers.origin;
+        const origin = Array.isArray(originHeader) ? originHeader[0] : originHeader;
+        if (typeof origin === 'string' && origin.length > 0) {
+          const allowedOrigins = new Set<string>([APP_PUBLIC_BASE_URL, ...allowedAppOrigins]);
+          if (!allowedOrigins.has(origin)) {
+            res.status(403).json({ error: 'Origin not allowed', code: 'CSRF_ORIGIN_INVALID' });
+            return;
+          }
+        }
 
-  if (NODE_ENV !== 'development') {
-    app.get('/admin', publicPageLimiter, (_req, res) => {
-      sendSpaIndex(res);
-    });
-    app.get('/warframe/admin', publicPageLimiter, (_req, res) => {
-      sendSpaIndex(res);
-    });
-    app.get('/epic7/admin', publicPageLimiter, (_req, res) => {
-      sendSpaIndex(res);
-    });
-    app.get('/wor/admin', publicPageLimiter, (_req, res) => {
-      sendSpaIndex(res);
-    });
-    app.get('/sign-in', publicPageLimiter, (_req, res) => {
-      sendSpaIndex(res);
-    });
-    app.get(/^\/sign-in\/.*$/, publicPageLimiter, (_req, res) => {
-      sendSpaIndex(res);
-    });
-    app.get('/sign-up', publicPageLimiter, (_req, res) => {
-      sendSpaIndex(res);
-    });
-    app.get(/^\/sign-up\/.*$/, publicPageLimiter, (_req, res) => {
-      sendSpaIndex(res);
-    });
-    app.get('/warframe', publicPageLimiter, (_req, res) => {
-      sendSpaIndex(res);
-    });
-    app.get('/epic7', publicPageLimiter, (_req, res) => {
-      sendSpaIndex(res);
-    });
-    app.get('/wor', publicPageLimiter, (_req, res) => {
-      sendSpaIndex(res);
-    });
-    app.get('/', publicPageLimiter, (_req, res) => {
-      sendSpaIndex(res);
-    });
-  }
+        next();
+      });
 
-  app.get('/auth/login', publicPageLimiter, (_req, res) => {
-    res.redirect('/sign-in');
-  });
-  app.get('/auth/legal', publicPageLimiter, (_req, res) => {
-    res.redirect(LEGAL_PAGE_URL);
-  });
+      app.use((req: Request, res: Response, next) => {
+        const origin = req.headers.origin;
+        if (typeof origin === 'string' && allowedAppOrigins.includes(origin)) {
+          res.setHeader('Access-Control-Allow-Origin', origin);
+          res.setHeader('Vary', 'Origin');
+          res.setHeader('Access-Control-Allow-Credentials', 'true');
+          res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-CSRF-Token, X-XSRF-Token');
+          res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PATCH,PUT,DELETE,OPTIONS');
+        }
+        if (req.method === 'OPTIONS') {
+          res.status(204).end();
+          return;
+        }
+        next();
+      });
 
-  app.use((err: unknown, req: Request, res: Response, _next: express.NextFunction) => {
-    const error = err as Partial<Error> & {
-      status?: number;
-      statusCode?: number;
-      code?: string;
-      expose?: unknown;
-    };
-    if (error.code === 'EBADCSRFTOKEN') {
-      res.setHeader('X-CSRF-Error', '1');
-      res.status(403).json({ error: 'Invalid CSRF token', code: 'CSRF_INVALID' });
-      return;
-    }
-    const statusFromError =
-      typeof error.status === 'number'
-        ? error.status
-        : typeof error.statusCode === 'number'
-          ? error.statusCode
-          : undefined;
-    const status =
-      statusFromError && statusFromError >= 400 && statusFromError < 600 ? statusFromError : 500;
-    log('error', 'Unhandled request error', {
-      requestId: getRequestId(res),
-      method: req.method,
-      path: req.originalUrl,
-      status,
-      err: error.stack ?? error.message,
-    });
-    const expose = error.expose === true && err instanceof Error && status < 500;
-    const message = expose
-      ? err.message
-      : status === 500
-        ? 'Internal server error'
-        : 'Request failed';
-    res.status(status).json({ error: message });
+      app.use('/api', (_req, res, next) => {
+        res.setHeader('Cache-Control', 'no-store');
+        next();
+      });
+
+      app.use(
+        '/api',
+        bindClerkUserSessionMiddleware(
+          (req) => getClerkAuthState(req).userId,
+          (req) => {
+            (req as Request & { csrfToken?: (overwrite?: boolean) => string }).csrfToken?.(true);
+          },
+        ),
+      );
+
+      app.use(
+        '/wor-images',
+        (req, res, next) => {
+          const ext = path.extname(req.path).toLowerCase();
+          if (!isAllowedImageExtension(ext)) {
+            res.status(404).end();
+            return;
+          }
+          next();
+        },
+        express.static(WOR_IMAGES_DIR, {
+          maxAge: '7d',
+          setHeaders(res, filePath) {
+            const contentType = contentTypeForImagePath(filePath);
+            if (contentType) {
+              res.setHeader('Content-Type', contentType);
+            } else {
+              res.setHeader('Content-Type', 'application/octet-stream');
+              res.setHeader('Content-Disposition', 'attachment');
+            }
+            if (filePath.toLowerCase().endsWith('.svg')) {
+              res.setHeader('Content-Security-Policy', "sandbox; script-src 'none'");
+            }
+            res.setHeader('X-Content-Type-Options', 'nosniff');
+          },
+        }),
+      );
+
+      app.get('/login', (_req, res) => {
+        res.redirect('/sign-in');
+      });
+      app.get('/auth/login', (_req, res) => {
+        res.redirect('/sign-in');
+      });
+      app.get('/auth/legal', (_req, res) => {
+        res.redirect(LEGAL_PAGE_URL);
+      });
+    },
   });
 
-  return { app, sessionStore };
+  bundle.apiRouter.use('/auth', authRouter);
+  bundle.apiRouter.get('/csrf', issueCsrfToken);
+  bundle.apiRouter.use(apiRouter);
+  return { app: bundle.app, sessionStore };
 }

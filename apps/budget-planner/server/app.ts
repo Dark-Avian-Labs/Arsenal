@@ -1,16 +1,12 @@
-import fs from 'fs';
-import path from 'path';
-
-import { getAuth } from '@clerk/express';
+import { createApp as createKitApp, getClerkAuthState } from '@dark-avian-labs/server-kit';
 import type Database from 'better-sqlite3';
 import cookieParser from 'cookie-parser';
 import { csrfSync } from 'csrf-sync';
-import express, { type RequestHandler } from 'express';
-import { rateLimit } from 'express-rate-limit';
+import express from 'express';
 import session from 'express-session';
 
-import { clerkMiddleware } from './auth/middleware.js';
 import {
+  APP_ID,
   APP_NAME,
   APP_VERSION,
   CLERK_CONFIGURED,
@@ -28,11 +24,6 @@ import { createAppSchema } from './db/appSchema.js';
 import { getAppDb, getSessionDb } from './db/connection.js';
 import { createSessionSchema } from './db/sessionSchema.js';
 import { SqliteSessionStore } from './db/sqliteSessionStore.js';
-import { handleDalAppNavProxy } from './http/dalAppNavProxy.js';
-import { errorHandler } from './http/errorHandler.js';
-import { createAppHelmet } from './http/helmetCsp.js';
-import { getRequestId, requestIdMiddleware } from './http/requestId.js';
-import { log } from './logger.js';
 import { apiRouter } from './routes/api.js';
 import { bindClerkUserSessionMiddleware } from './session/bindClerkUserSession.js';
 
@@ -47,7 +38,7 @@ export interface CreateAppOptions {
   sessionDb?: Database.Database;
   appDb?: Database.Database;
   sessionCleanupIntervalMs?: number;
-  metricsMiddleware?: RequestHandler;
+  metricsMiddleware?: express.RequestHandler;
 }
 
 export function createApp(options: CreateAppOptions = {}): AppBundle {
@@ -58,233 +49,93 @@ export function createApp(options: CreateAppOptions = {}): AppBundle {
   createSessionSchema(sessionDb);
   createAppSchema(appDb);
 
-  const app = express();
-
-  if (TRUST_PROXY) app.set('trust proxy', 1);
-  if (NODE_ENV === 'production' && SECURE_COOKIES && !TRUST_PROXY) {
-    throw new Error('TRUST_PROXY must be enabled in production when SECURE_COOKIES is enabled.');
-  }
-
-  app.use(createAppHelmet({ hsts: NODE_ENV === 'production' }));
-  app.use(requestIdMiddleware);
-  if (options.metricsMiddleware) {
-    app.use(options.metricsMiddleware);
-  }
-
-  app.use(express.json({ limit: '64kb' }));
-  app.use(express.urlencoded({ extended: true, limit: '64kb' }));
-  app.use(cookieParser());
-
-  app.get('/healthz', (_req, res) => {
-    res.json({ status: 'ok', app: APP_NAME });
-  });
-
-  app.get('/readyz', (_req, res) => {
-    try {
-      sessionDb.prepare('SELECT 1').get();
-      appDb.prepare('SELECT 1').get();
-      res.json({ status: 'ready', app: APP_NAME });
-    } catch {
-      res.status(503).json({ status: 'not_ready', app: APP_NAME });
-    }
-  });
-
-  app.use(clerkMiddleware());
-  if (CLERK_CONFIGURED) {
-    console.log(`[${APP_NAME}] Clerk auth enabled`);
-  } else {
-    console.warn(`[${APP_NAME}] Clerk keys missing — auth routes will return 503`);
-  }
-
-  const baselineLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 1200,
-    standardHeaders: true,
-    legacyHeaders: false,
-    skip: (req) =>
-      req.path === '/healthz' ||
-      req.path === '/readyz' ||
-      req.path === '/api/version' ||
-      req.path === '/favicon.ico' ||
-      req.path === '/favicon.png' ||
-      req.path === '/favicon.svg' ||
-      /^\/assets\/.+\.(?:css|js|png|jpe?g|gif|webp|svg|ico|woff2?)$/i.test(req.path),
-  });
-  app.use(baselineLimiter);
-
   const sessionStore = new SqliteSessionStore({
     db: sessionDb,
     cleanupIntervalMs:
       options.sessionCleanupIntervalMs ?? (NODE_ENV === 'test' ? 0 : 15 * 60 * 1000),
   });
 
-  const cookieOptions: express.CookieOptions = {
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-    httpOnly: true,
-    secure: SECURE_COOKIES,
-    sameSite: 'lax',
-  };
-  if (COOKIE_DOMAIN) cookieOptions.domain = COOKIE_DOMAIN;
-
-  app.use(
-    session({
-      name: SESSION_COOKIE_NAME,
-      store: sessionStore,
-      secret: SESSION_SECRET,
-      resave: false,
-      saveUninitialized: false,
-      cookie: cookieOptions,
-    }),
-  );
-
-  const { csrfSynchronisedProtection, generateToken } = csrfSync({
-    getTokenFromRequest: (req: express.Request) => {
-      if (req.body?._csrf) return req.body._csrf as string;
-      const header = req.headers['x-csrf-token'] || req.headers['x-xsrf-token'];
-      return (Array.isArray(header) ? header[0] : header) ?? null;
-    },
-    getTokenFromState: (req) => {
-      const s = req.session;
-      if (!s) return null;
-      return (s as { csrfToken?: string }).csrfToken ?? null;
-    },
-    storeTokenInState: (req, token) => {
-      if (req.session) {
-        req.session.csrfToken = token as string;
-      }
-    },
-  });
-
-  app.use(csrfSynchronisedProtection);
-  app.locals.generateCsrfToken = generateToken;
-  app.use('/api', (req, res, next) => {
-    const startedAt = Date.now();
-    res.on('finish', () => {
-      const status = res.statusCode;
-      if (status < 400) return;
-      log(status >= 500 ? 'error' : 'warn', 'api_request', {
-        requestId: getRequestId(res),
-        method: req.method,
-        path: req.originalUrl,
-        status,
-        durationMs: Date.now() - startedAt,
-      });
-    });
-    next();
-  });
-
-  app.use(
-    '/api',
-    bindClerkUserSessionMiddleware(
-      (req) => {
-        if (!CLERK_CONFIGURED) return null;
-        return getAuth(req).userId ?? null;
-      },
-      (req) => {
-        const generate = req.app.locals.generateCsrfToken as
-          | ((request: express.Request, overwrite?: boolean) => string)
-          | undefined;
-        generate?.(req, true);
-      },
-    ),
-  );
-
-  const appApiLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 600,
-    standardHeaders: true,
-    legacyHeaders: false,
-  });
-
-  const publicPageLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 1200,
-    standardHeaders: true,
-    legacyHeaders: false,
-  });
-
-  const staticAssetLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 5000,
-    standardHeaders: true,
-    legacyHeaders: false,
-  });
-
-  app.get('/api/version', (_req, res) => {
-    res.setHeader('Cache-Control', 'no-store');
-    res.json({ version: APP_VERSION });
-  });
-
-  app.get('/api/dal-app-nav', (req, res) => {
-    void handleDalAppNavProxy(req, res);
-  });
-
-  app.use('/api', appApiLimiter, apiRouter);
-
-  const faviconPng = path.join(PROJECT_ROOT, 'public', 'favicon.png');
-  app.get('/favicon.png', publicPageLimiter, (_req, res) => {
-    res.sendFile(faviconPng);
-  });
-  app.get('/favicon.ico', publicPageLimiter, (_req, res) => {
-    res.sendFile(faviconPng);
-  });
-
-  app.use('/api', (_req, res) => {
-    res.status(404).json({ error: 'Not found' });
-  });
-
-  app.get('/legal', publicPageLimiter, (_req, res) => {
-    res.redirect(LEGAL_PAGE_URL);
-  });
-
-  if (NODE_ENV !== 'development') {
-    const clientDir =
-      NODE_ENV !== 'production' && process.env.E2E_CLIENT_DIR?.trim()
-        ? path.resolve(process.env.E2E_CLIENT_DIR.trim())
-        : path.join(PROJECT_ROOT, 'dist', 'client');
-    const clientIndexPath = path.join(clientDir, 'index.html');
-
-    function sendSpaIndex(res: express.Response): boolean {
-      if (!fs.existsSync(clientIndexPath)) {
-        return false;
-      }
-      res.setHeader('Cache-Control', 'no-cache');
-      res.sendFile(clientIndexPath);
-      return true;
-    }
-
-    app.use(
-      '/assets',
-      staticAssetLimiter,
-      express.static(path.join(clientDir, 'assets'), {
-        maxAge: '1y',
-        immutable: true,
-      }),
-    );
-    app.use(
-      publicPageLimiter,
-      express.static(clientDir, {
-        index: false,
-        maxAge: '1h',
-        setHeaders(res, filePath) {
-          if (filePath.endsWith('.html')) {
-            res.setHeader('Cache-Control', 'no-cache');
-          }
-        },
-      }),
-    );
-    app.use(publicPageLimiter, (req, res, next) => {
-      if (req.method !== 'GET' && req.method !== 'HEAD') {
-        next();
-        return;
-      }
-      if (!sendSpaIndex(res)) {
-        res.status(503).json({ error: 'Client build missing. Run `pnpm run build` first.' });
-      }
-    });
+  if (CLERK_CONFIGURED) {
+    console.log(`[${APP_NAME}] Clerk auth enabled`);
+  } else {
+    console.warn(`[${APP_NAME}] Clerk keys missing — auth routes will return 503`);
   }
 
-  app.use(errorHandler);
+  const bundle = createKitApp({
+    appName: APP_NAME,
+    appId: APP_ID,
+    appVersion: APP_VERSION,
+    projectRoot: PROJECT_ROOT,
+    nodeEnv: NODE_ENV,
+    trustProxy: TRUST_PROXY,
+    secureCookies: SECURE_COOKIES,
+    legalPageUrl: LEGAL_PAGE_URL,
+    jsonLimit: '64kb',
+    metricsMiddleware: options.metricsMiddleware,
+    helmet: { hsts: NODE_ENV === 'production' },
+    readiness: () => {
+      sessionDb.prepare('SELECT 1').get();
+      appDb.prepare('SELECT 1').get();
+      return true;
+    },
+    mountBeforeApi(app) {
+      app.use(cookieParser());
+    },
+    installSession(app) {
+      const cookieOptions: express.CookieOptions = {
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+        httpOnly: true,
+        secure: SECURE_COOKIES,
+        sameSite: 'lax',
+      };
+      if (COOKIE_DOMAIN) cookieOptions.domain = COOKIE_DOMAIN;
 
-  return { app, sessionDb, appDb, sessionStore };
+      app.use(
+        session({
+          name: SESSION_COOKIE_NAME,
+          store: sessionStore,
+          secret: SESSION_SECRET,
+          resave: false,
+          saveUninitialized: false,
+          cookie: cookieOptions,
+        }),
+      );
+
+      const { csrfSynchronisedProtection, generateToken } = csrfSync({
+        getTokenFromRequest: (req: express.Request) => {
+          if (req.body?._csrf) return req.body._csrf as string;
+          const header = req.headers['x-csrf-token'] || req.headers['x-xsrf-token'];
+          return (Array.isArray(header) ? header[0] : header) ?? null;
+        },
+        getTokenFromState: (req) => {
+          const s = req.session;
+          if (!s) return null;
+          return (s as { csrfToken?: string }).csrfToken ?? null;
+        },
+        storeTokenInState: (req, token) => {
+          if (req.session) {
+            req.session.csrfToken = token as string;
+          }
+        },
+      });
+
+      app.use(csrfSynchronisedProtection);
+      app.locals.generateCsrfToken = generateToken;
+      app.use(
+        '/api',
+        bindClerkUserSessionMiddleware(
+          (req) => getClerkAuthState(req).userId,
+          (req) => {
+            const generate = req.app.locals.generateCsrfToken as
+              | ((request: express.Request, overwrite?: boolean) => string)
+              | undefined;
+            generate?.(req, true);
+          },
+        ),
+      );
+    },
+  });
+
+  bundle.apiRouter.use(apiRouter);
+  return { app: bundle.app, sessionDb, appDb, sessionStore };
 }

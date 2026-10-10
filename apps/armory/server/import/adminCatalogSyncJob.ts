@@ -1,6 +1,7 @@
+import { log } from '@dark-avian-labs/server-kit';
+
 import { bustCatalogResponseCache } from '../cache/catalogResponseCache.js';
 import { bustModListCache } from '../cache/modListCache.js';
-import { log } from '../logger.js';
 import { syncCodexWarframeCatalog, type CatalogSyncSummary } from './codexCatalog.js';
 
 export interface SyncLogLine {

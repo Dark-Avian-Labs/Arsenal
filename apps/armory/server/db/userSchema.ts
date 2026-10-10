@@ -1,6 +1,6 @@
+import { log } from '@dark-avian-labs/server-kit';
 import type Database from 'better-sqlite3';
 
-import { log } from '../logger.js';
 import { getUserDb } from './connection.js';
 
 const USER_SCHEMA_SQL = `

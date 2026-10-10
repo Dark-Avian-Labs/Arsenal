@@ -1,4 +1,4 @@
-import '../packages/core/src/input.css';
+import './styles/input.css';
 
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';

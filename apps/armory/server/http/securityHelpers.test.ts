@@ -1,8 +1,8 @@
+import { sanitizeRequestId } from '@dark-avian-labs/server-kit';
 import { describe, expect, it } from 'vitest';
 
 import { assertAllowedImageMime, isAllowedEquipmentImage } from './allowedFetchHosts.js';
 import { readResponseWithByteLimit } from './fetchWithTimeout.js';
-import { sanitizeRequestId } from './requestId.js';
 
 describe('sanitizeRequestId', () => {
   it('accepts valid ids and rejects invalid ones', () => {

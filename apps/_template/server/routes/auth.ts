@@ -1,6 +1,5 @@
+import { getClerkAuthState, requireAuthApi } from '@dark-avian-labs/server-kit';
 import { Router, type Request, type Response } from 'express';
-
-import { getClerkAuthState, requireAuthApi } from '../auth/middleware.js';
 
 export const authRouter = Router();
 

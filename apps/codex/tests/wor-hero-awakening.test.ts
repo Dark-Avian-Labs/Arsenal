@@ -1,9 +1,9 @@
 import Database from 'better-sqlite3';
 import { afterEach, beforeEach, expect, it } from 'vitest';
 
-import { heroHasAwakening } from '../packages/games/wor/src/constants.js';
-import * as q from '../packages/games/wor/src/db/queries.js';
-import { createSchema as createWorSchema } from '../packages/games/wor/src/db/schema.js';
+import { heroHasAwakening } from '../server/games/wor/constants.js';
+import * as q from '../server/games/wor/db/queries.js';
+import { createSchema as createWorSchema } from '../server/games/wor/db/schema.js';
 import { describeWithSqlite } from './helpers/describeWithSqlite.js';
 
 describeWithSqlite('WoR 3-star hero awakening', () => {

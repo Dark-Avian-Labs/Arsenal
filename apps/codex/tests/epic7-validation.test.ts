@@ -18,7 +18,7 @@ import {
   updateArtifactSchema,
   updateHeroDetailsSchema,
   updateHeroSchema,
-} from '../packages/games/epic7/src/routes/validation.js';
+} from '../server/games/epic7/routes/validation.js';
 
 describe('Epic7 validation schemas', () => {
   describe('updateHeroSchema', () => {

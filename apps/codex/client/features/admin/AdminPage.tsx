@@ -1,12 +1,12 @@
+import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
+
 import {
   ARTIFACT_CLASSES,
   CLASS_DISPLAY_NAMES,
   ELEMENT_DISPLAY_NAMES,
   ELEMENTS,
   HERO_CLASSES,
-} from '@codex/game-epic7/constants';
-import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
-
+} from '../../../server/games/epic7/constants';
 import { FilterIconButton } from '../../components/ui/FilterIconButton';
 import { MaterialSymbol } from '../../components/ui/MaterialSymbol';
 import {
@@ -33,7 +33,7 @@ type BaseArtifact = {
   star_rating: number;
 };
 
-const ICON_MODULES = import.meta.glob('../../../packages/games/epic7/assets/*.png', {
+const ICON_MODULES = import.meta.glob('../../assets/games/epic7/*.png', {
   eager: true,
   import: 'default',
 }) as Record<string, string>;

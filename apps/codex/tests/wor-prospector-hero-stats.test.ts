@@ -1,7 +1,7 @@
 import Database from 'better-sqlite3';
 import { afterEach, beforeEach, expect, it } from 'vitest';
 
-import { createSchema as createWorSchema } from '../packages/games/wor/src/db/schema.js';
+import { createSchema as createWorSchema } from '../server/games/wor/db/schema.js';
 import { fillMissingHeroStatsFromProspector, type ProspectorSnapshot } from '../server/import/wor/prospectorCatalog.js';
 import { describeWithSqlite } from './helpers/describeWithSqlite.js';
 import { createTempDbDir, removeTempDbDir } from './helpers/sqliteTestHarness.js';

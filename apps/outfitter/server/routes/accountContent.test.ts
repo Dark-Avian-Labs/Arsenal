@@ -14,8 +14,8 @@ const dbState = vi.hoisted(() => ({
   db: null as Database.Database | null,
 }));
 
-vi.mock('../auth/middleware.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../auth/middleware.js')>();
+vi.mock('@dark-avian-labs/server-kit', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@dark-avian-labs/server-kit')>();
   return {
     ...actual,
     getClerkAuthState: () => ({

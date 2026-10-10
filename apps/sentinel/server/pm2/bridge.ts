@@ -1,7 +1,8 @@
 import { spawn } from 'node:child_process';
 import os from 'node:os';
 
-import { log } from '../logger.js';
+import { log } from '@dark-avian-labs/server-kit';
+
 import { getMetricsDb } from '../metrics/db.js';
 import { writeExitEvent, writeHostSample, writeProcessSample } from '../metrics/writer.js';
 

@@ -1,5 +1,8 @@
-import { log } from '@codex/core';
-import { positiveInt, validateBody } from '@codex/core/validation';
+import { log } from '@dark-avian-labs/server-kit';
+import { positiveInt, validateBody } from '@dark-avian-labs/server-kit';
+import { Router, type Request, type Response } from 'express';
+
+import { requireClerkUserId } from '../auth/clerkUser.js';
 import {
   ARTIFACT_PROMOTION_MAX,
   getWorDb,
@@ -13,10 +16,7 @@ import {
   worUpdateDemonGaugeSchema,
   worUpdateHeroGaugeSchema,
   worUpdateOwnedSchema,
-} from '@codex/game-wor';
-import { Router, type Request, type Response } from 'express';
-
-import { requireClerkUserId } from '../auth/clerkUser.js';
+} from '../games/wor/index.js';
 import {
   clearWorSessionFields,
   ensureWorSessionBoundToClerkUser,

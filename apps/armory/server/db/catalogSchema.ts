@@ -1,5 +1,6 @@
+import { log } from '@dark-avian-labs/server-kit';
+
 import { ensureCodexModularWeaponsPopulated } from '../codexModularWeapons.js';
-import { log } from '../logger.js';
 import { backfillArchonBuffArmoryKeys, backfillHelminthArmoryKeys } from './catalogKeys.js';
 import { ensureCatalogKeyColumns } from './catalogMigrations.js';
 import { getCatalogDb } from './connection.js';

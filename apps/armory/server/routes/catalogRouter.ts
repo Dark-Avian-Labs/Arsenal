@@ -1,3 +1,4 @@
+import { log } from '@dark-avian-labs/server-kit';
 import { Router, type Request, type Response } from 'express';
 
 import { ARTIFACT_SLOT_STORAGE_VALUES } from '../../shared/artifactSlotState.js';
@@ -20,7 +21,6 @@ import {
   startAdminCatalogSyncJob,
   subscribeAdminCatalogSyncSnapshot,
 } from '../import/adminCatalogSyncJob.js';
-import { log } from '../logger.js';
 import { buildAbilitiesListQuery } from './abilitiesListQuery.js';
 import {
   WEAPON_CATEGORY_TO_TYPE,

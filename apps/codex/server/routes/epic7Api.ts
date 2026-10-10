@@ -1,6 +1,10 @@
-import { requireCodexAdmin } from '@codex/core';
-import { log } from '@codex/core';
-import { validateBody } from '@codex/core/validation';
+import { log } from '@dark-avian-labs/server-kit';
+import { validateBody } from '@dark-avian-labs/server-kit';
+import { Router, type Request, type Response } from 'express';
+
+import { requireClerkUserId } from '../auth/clerkUser.js';
+import { requireCodexAdmin } from '../core.js';
+import { ensureEpic7DbAvailable } from '../epic7DbState.js';
 import {
   ARTIFACT_GAUGE_MAX,
   epic7AddAccountSchema,
@@ -21,11 +25,7 @@ import {
   epic7UpdateHeroDetailsSchema,
   epic7UpdateHeroSchema,
   getEpic7Db,
-} from '@codex/game-epic7';
-import { Router, type Request, type Response } from 'express';
-
-import { requireClerkUserId } from '../auth/clerkUser.js';
-import { ensureEpic7DbAvailable } from '../epic7DbState.js';
+} from '../games/epic7/index.js';
 import {
   clearEpic7SessionFields,
   ensureSessionBoundToClerkUser,

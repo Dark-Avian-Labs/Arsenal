@@ -1,0 +1,56 @@
+import type { ReactNode } from 'react';
+import { Link, useLocation } from 'react-router';
+
+import { useAppShell } from '../shell/appShell';
+import { AccountRequired } from './AccountRequired';
+import { useAuth } from './AuthContext';
+import { safeAuthRedirectPath } from './authRedirect';
+
+interface ProtectedRouteProps {
+  children: ReactNode;
+  requireAdmin?: boolean;
+}
+
+export function ProtectedRoute({ children, requireAdmin = false }: ProtectedRouteProps) {
+  const { paths } = useAppShell();
+  const { auth, refresh } = useAuth();
+  const location = useLocation();
+  const returnTo =
+    safeAuthRedirectPath(`${location.pathname}${location.search}${location.hash}`) ?? paths.home;
+
+  if (auth.status === 'loading') {
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center">
+        <p className="text-muted text-sm">Checking session...</p>
+      </div>
+    );
+  }
+  if (auth.status === 'error') {
+    return (
+      <div className="glass-panel mx-auto mt-16 max-w-md p-8 text-center" role="alert">
+        <h1 className="text-lg font-semibold">Could not verify your session</h1>
+        <p className="text-muted mt-2 text-sm">
+          The server did not answer. Retry, or sign in again if this keeps happening.
+        </p>
+        <button type="button" className="btn btn-accent mt-4" onClick={() => void refresh()}>
+          Retry
+        </button>
+      </div>
+    );
+  }
+  if (auth.status !== 'authenticated') {
+    return <AccountRequired returnTo={returnTo} />;
+  }
+  if (requireAdmin && auth.isAdmin !== true) {
+    return (
+      <div className="glass-panel mx-auto mt-16 max-w-md p-8 text-center" role="alert">
+        <h1 className="text-lg font-semibold">Admin access required</h1>
+        <p className="text-muted mt-2 text-sm">Your account cannot open this page.</p>
+        <Link to={paths.home} className="btn btn-secondary mt-4 inline-flex">
+          Go home
+        </Link>
+      </div>
+    );
+  }
+  return <>{children}</>;
+}

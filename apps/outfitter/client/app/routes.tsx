@@ -1,11 +1,15 @@
+import {
+  ErrorBoundary,
+  Layout,
+  NotFoundPage,
+  ProtectedRoute,
+  SignInPage,
+  SignUpPage,
+} from '@dark-avian-labs/ui';
 import { lazy } from 'react';
 import { createBrowserRouter, createRoutesFromElements, Route } from 'react-router';
 
 import { App } from '../App';
-import { Layout } from '../components/Layout/Layout';
-import { ErrorBoundary } from '../components/ui/ErrorBoundary';
-import { ProtectedRoute } from '../features/auth/ProtectedRoute';
-import { NotFoundPage } from '../features/not-found/NotFoundPage';
 import { APP_PATHS } from './paths';
 
 const OutfitterPage = lazy(() =>
@@ -18,16 +22,6 @@ const AdminPage = lazy(() =>
     default: mod.AdminPage,
   })),
 );
-const SignInPage = lazy(() =>
-  import('../features/auth/SignInPage').then((mod) => ({
-    default: mod.SignInPage,
-  })),
-);
-const SignUpPage = lazy(() =>
-  import('../features/auth/SignUpPage').then((mod) => ({
-    default: mod.SignUpPage,
-  })),
-);
 
 export const router = createBrowserRouter(
   createRoutesFromElements(
@@ -38,7 +32,7 @@ export const router = createBrowserRouter(
         </ErrorBoundary>
       }
     >
-      <Route element={<Layout />}>
+      <Route element={<Layout showSearch={false} adminPath={APP_PATHS.admin} />}>
         <Route
           path={APP_PATHS.home}
           element={
@@ -55,7 +49,10 @@ export const router = createBrowserRouter(
             </ProtectedRoute>
           }
         />
-        <Route path={`${APP_PATHS.signIn}/*`} element={<SignInPage />} />
+        <Route
+          path={`${APP_PATHS.signIn}/*`}
+          element={<SignInPage subtitle="Use your Dark Avian Labs account." />}
+        />
         <Route path={`${APP_PATHS.signUp}/*`} element={<SignUpPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>

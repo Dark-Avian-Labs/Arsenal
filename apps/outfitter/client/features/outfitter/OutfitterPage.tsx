@@ -1,6 +1,6 @@
+import { apiFetch } from '@dark-avian-labs/ui';
 import { useCallback, useEffect, useState } from 'react';
 
-import { apiFetch } from '../../utils/api';
 import { AccountBar } from './AccountBar';
 import { ArtifactFormModal, type ArtifactDraft } from './ArtifactFormModal';
 import { ArtifactsTab } from './ArtifactsTab';

@@ -292,8 +292,10 @@ export class AtragraphHoloRenderer {
   private targetTilt: Vec2 = { x: 0, y: 0 };
   private tiltVelocity: Vec2 = { x: 0, y: 0 };
   private prevTilt: Vec2 = { x: 0, y: 0 };
+  private readonly canvas: HTMLCanvasElement;
 
-  constructor(private readonly canvas: HTMLCanvasElement) {
+  constructor(canvas: HTMLCanvasElement) {
+    this.canvas = canvas;
     const gl = canvas.getContext('webgl2', {
       alpha: true,
       antialias: true,

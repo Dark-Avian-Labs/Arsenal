@@ -1,11 +1,9 @@
+import { apiFetch, Button, Modal } from '@dark-avian-labs/ui';
 import { gearSetBadgeSrc } from '@shared/catalog';
 import { SCORE_STAT_KEYS, SCORE_STAT_LABELS, type ScoreStatKey } from '@shared/optimizer';
 import { LEFT_SETS, RIGHT_SETS, setsSortedByTier } from '@shared/sets';
 import { useEffect, useRef, useState } from 'react';
 
-import { Button } from '../../components/ui/Button';
-import { Modal } from '../../components/ui/Modal';
-import { apiFetch } from '../../utils/api';
 import { FieldSelect } from './FieldSelect';
 import { GearTile, type GearView } from './GearTile';
 import { OutfitStatsList, readOutfitCalculate } from './tabShared';

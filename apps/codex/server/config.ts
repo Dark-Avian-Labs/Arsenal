@@ -7,9 +7,10 @@ import {
   isEncryptedEnvValue,
   normalizeClerkEnv,
   requireAbsoluteSqlitePath,
-  resolveEnvFilePath,
-} from '@codex/core';
+} from '@dark-avian-labs/server-kit';
 import dotenvx from '@dotenvx/dotenvx';
+
+import { resolveEnvFilePath } from './core.js';
 
 const { config: loadEnv } = dotenvx;
 

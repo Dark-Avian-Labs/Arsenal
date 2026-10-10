@@ -1,3 +1,5 @@
+import { memo, type ReactNode } from 'react';
+
 import {
   ARTIFACT_GAUGE_EMPTY,
   ARTIFACT_GAUGE_FILLED,
@@ -9,10 +11,8 @@ import {
   HERO_CLASSES,
   heroHasAwakening,
   DEMON_LEVEL_MIN,
-} from '@codex/game-wor/constants';
-import type { FactionKey, HeroClassKey } from '@codex/game-wor/constants';
-import { memo, type ReactNode } from 'react';
-
+} from '../../../server/games/wor/constants';
+import type { FactionKey, HeroClassKey } from '../../../server/games/wor/constants';
 import { MaterialSymbol } from '../../components/ui/MaterialSymbol';
 
 export type WorTab = 'heroes' | 'artifacts' | 'demons';
@@ -79,21 +79,21 @@ function assetStemMap(modules: Record<string, string>): Record<string, string> {
 }
 
 export const ICONS = assetStemMap(
-  import.meta.glob('../../../packages/games/wor/assets/ranks/*.png', {
+  import.meta.glob('../../assets/games/wor/ranks/*.png', {
     eager: true,
     import: 'default',
   }) as Record<string, string>,
 );
 
 const CLASS_ICONS = assetStemMap(
-  import.meta.glob('../../../packages/games/wor/assets/classes/*.svg', {
+  import.meta.glob('../../assets/games/wor/classes/*.svg', {
     eager: true,
     import: 'default',
   }) as Record<string, string>,
 );
 
 const FACTION_ICONS = assetStemMap(
-  import.meta.glob('../../../packages/games/wor/assets/factions/*.png', {
+  import.meta.glob('../../assets/games/wor/factions/*.png', {
     eager: true,
     import: 'default',
   }) as Record<string, string>,

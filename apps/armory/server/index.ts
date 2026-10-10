@@ -1,6 +1,9 @@
+import { createAppSentinelAgent, log, startServer } from '@dark-avian-labs/server-kit';
+
 import { createApp } from './app.js';
 import { stopModListCacheCleanup } from './cache/modListCache.js';
 import {
+  APP_ID,
   APP_NAME,
   CODEX_WARFRAME_CATALOG_DB_PATH,
   HOST,
@@ -23,8 +26,6 @@ import {
   codexCatalogDbExists,
   syncCodexWarframeCatalog,
 } from './import/codexCatalog.js';
-import { log } from './logger.js';
-import { createAppSentinelAgent } from './sentinelAgent.js';
 
 ensureDataDirs();
 createAppSchema();
@@ -49,8 +50,9 @@ try {
     source: CODEX_WARFRAME_CATALOG_DB_PATH,
   });
 }
+
 const sentinelAgent = createAppSentinelAgent({
-  appId: 'armory',
+  appId: APP_ID,
   displayName: APP_NAME,
   nodeEnv: NODE_ENV,
 });
@@ -60,39 +62,40 @@ const { app, sessionStore } = createApp({
 });
 log('info', 'Session DB ready', { path: SESSION_DB_PATH });
 
-sentinelAgent?.start();
-
-const server = app.listen(PORT, HOST, () => {
-  log('info', `${APP_NAME} server listening`, { host: HOST, port: PORT, nodeEnv: NODE_ENV });
-  if (USING_INSECURE_DEV_SESSION_SECRET) {
-    const hostIsLoopback =
-      HOST === '127.0.0.1' || HOST === 'localhost' || HOST === '::1' || HOST === '[::1]';
-    if (!hostIsLoopback) {
-      log(
-        'warn',
-        'INSECURE DEV SESSION_SECRET is active while HOST is non-loopback. Set SESSION_SECRET or bind to 127.0.0.1.',
-        { host: HOST },
-      );
-    } else {
-      log(
-        'warn',
-        'Using insecure DEV SESSION_SECRET (ALLOW_INSECURE_DEV=1). Do not use in production.',
-      );
-    }
+if (USING_INSECURE_DEV_SESSION_SECRET) {
+  const hostIsLoopback =
+    HOST === '127.0.0.1' || HOST === 'localhost' || HOST === '::1' || HOST === '[::1]';
+  if (!hostIsLoopback) {
+    log(
+      'warn',
+      'INSECURE DEV SESSION_SECRET is active while HOST is non-loopback. Set SESSION_SECRET or bind to 127.0.0.1.',
+      { host: HOST },
+    );
+  } else {
+    log(
+      'warn',
+      'Using insecure DEV SESSION_SECRET (ALLOW_INSECURE_DEV=1). Do not use in production.',
+    );
   }
-});
-server.headersTimeout = 65_000;
-server.requestTimeout = 120_000;
+}
 
-function shutdown(baseExitCode = 0, signal?: string): void {
-  if (baseExitCode === 0) sentinelAgent?.noteGracefulExit(signal);
-  else sentinelAgent?.noteCrash(new Error(`shutdown exit ${baseExitCode}`));
-  sentinelAgent?.stop();
-
-  let done = false;
-  function closeAndExit(exitCode: number): void {
-    if (done) return;
-    done = true;
+const server = startServer({
+  app,
+  appName: APP_NAME,
+  host: HOST,
+  port: PORT,
+  shutdownTimeoutMs: SHUTDOWN_TIMEOUT_MS,
+  sentinelAgent,
+  beforeClose: async () => {
+    if (!isAdminCatalogSyncRunning()) return;
+    log('info', 'Waiting for admin catalog sync before shutdown');
+    const syncWaitMs = Math.max(SHUTDOWN_TIMEOUT_MS - 2000, 1000);
+    const finished = await waitForAdminCatalogSyncIdle(syncWaitMs);
+    if (!finished) {
+      log('warn', 'Admin catalog sync still running; proceeding with shutdown');
+    }
+  },
+  onClose: () => {
     stopModListCacheCleanup();
     sessionStore.dispose();
     try {
@@ -101,62 +104,11 @@ function shutdown(baseExitCode = 0, signal?: string): void {
       log('error', 'Failed to close DB connections during shutdown', {
         err: err instanceof Error ? err.message : String(err),
       });
-      exitCode = 1;
+      process.exit(1);
     }
-    process.exit(exitCode); // eslint-disable-line n/no-process-exit -- required for graceful shutdown
-  }
-
-  const hardTimeout = setTimeout(() => {
-    log('warn', 'Shutdown timeout reached; forcing exit', { timeoutMs: SHUTDOWN_TIMEOUT_MS });
-    closeAndExit(1);
-  }, SHUTDOWN_TIMEOUT_MS);
-
-  void (async () => {
-    if (isAdminCatalogSyncRunning()) {
-      log('info', 'Waiting for admin catalog sync before shutdown');
-      const syncWaitMs = Math.max(SHUTDOWN_TIMEOUT_MS - 2000, 1000);
-      const finished = await waitForAdminCatalogSyncIdle(syncWaitMs);
-      if (!finished) {
-        log('warn', 'Admin catalog sync still running; proceeding with shutdown');
-      }
-    }
-
-    server.close((err) => {
-      clearTimeout(hardTimeout);
-      if (err) {
-        log('error', 'HTTP server close failed', {
-          err: err instanceof Error ? err.message : String(err),
-        });
-        closeAndExit(1);
-        return;
-      }
-      closeAndExit(baseExitCode);
-    });
-    server.closeIdleConnections();
-    const forceCloseMs = Math.max(0, SHUTDOWN_TIMEOUT_MS - 500);
-    setTimeout(() => {
-      server.closeAllConnections();
-    }, forceCloseMs);
-  })();
-}
-
-process.on('SIGINT', () => shutdown(0, 'SIGINT'));
-process.on('SIGTERM', () => shutdown(0, 'SIGTERM'));
-
-process.on('unhandledRejection', (reason) => {
-  log('error', 'Unhandled promise rejection; shutting down', {
-    err: reason instanceof Error ? (reason.stack ?? reason.message) : String(reason),
-  });
-  sentinelAgent?.noteCrash(reason);
-  shutdown(1);
+  },
 });
-
-process.on('uncaughtException', (err) => {
-  log('error', 'Uncaught exception; shutting down', {
-    err: err.stack ?? err.message,
-  });
-  sentinelAgent?.noteCrash(err);
-  shutdown(1);
-});
+server.headersTimeout = 65_000;
+server.requestTimeout = 120_000;
 
 export default app;

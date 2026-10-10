@@ -2,13 +2,13 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
+import { createDbSingleton } from '@dark-avian-labs/server-kit';
 import type Database from 'better-sqlite3';
 
-import { createDbSingleton } from '../../packages/core/src/db/singleton.js';
 import {
   createSchema,
   ensureWarframeAdvancedProgressTable,
-} from '../../packages/games/warframe/src/db/schema.js';
+} from '../../server/games/warframe/db/schema.js';
 
 export type WarframeTestDb = {
   db: Database.Database;

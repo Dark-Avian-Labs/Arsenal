@@ -1,6 +1,5 @@
+import { sanitizeRequestId } from '@dark-avian-labs/server-kit';
 import { describe, expect, it } from 'vitest';
-
-import { sanitizeRequestId } from './requestId.js';
 
 describe('sanitizeRequestId', () => {
   it('accepts valid ids', () => {

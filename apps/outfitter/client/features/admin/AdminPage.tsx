@@ -1,7 +1,5 @@
+import { apiFetch, Button } from '@dark-avian-labs/ui';
 import { useCallback, useEffect, useState } from 'react';
-
-import { Button } from '../../components/ui/Button';
-import { apiFetch } from '../../utils/api';
 
 type CatalogStatus = {
   heroes: number;

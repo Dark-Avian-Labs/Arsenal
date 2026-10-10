@@ -1,3 +1,4 @@
+// Copy of packages/ui/public/theme-init.js. Edit there, then copy.
 (function () {
   try {
     var root = document.documentElement;

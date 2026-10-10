@@ -1,4 +1,4 @@
-import { getWorCatalogDb } from '@codex/game-wor';
+import { getWorCatalogDb } from '../../games/wor/index.js';
 import type Database from 'better-sqlite3';
 
 import {

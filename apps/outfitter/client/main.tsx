@@ -1,14 +1,19 @@
 import './styles/input.css';
-import '@/clerk/clerk-auth.css';
+import '@dark-avian-labs/ui/clerk-auth.css';
 
+import { ThemeProvider } from '@dark-avian-labs/ui';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { RouterProvider } from 'react-router';
 
 import { router } from './app/routes';
-import { ThemeProvider } from './context/ThemeContext';
 
-createRoot(document.getElementById('root')!).render(
+const root = document.getElementById('root');
+if (!root) {
+  throw new Error('Root element #root is missing');
+}
+
+createRoot(root).render(
   <StrictMode>
     <ThemeProvider>
       <RouterProvider router={router} />

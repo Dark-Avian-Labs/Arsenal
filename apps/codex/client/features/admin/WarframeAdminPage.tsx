@@ -1,6 +1,6 @@
-import { isHelminthNonSubsumableItemName } from '@codex/game-warframe/helminth-exceptions';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { isHelminthNonSubsumableItemName } from '../../../server/games/warframe/helminthExceptions';
 import type {
   WarframeColumn as Column,
   WarframeRow as Row,

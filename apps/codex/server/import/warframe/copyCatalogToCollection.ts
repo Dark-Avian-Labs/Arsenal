@@ -1,5 +1,5 @@
-import { log } from '@codex/core';
-import { getWarframeDb } from '@codex/game-warframe';
+import { log } from '@dark-avian-labs/server-kit';
+import { getWarframeDb } from '../../games/warframe/index.js';
 import Database from 'better-sqlite3';
 
 import { WARFRAME_CATALOG_DB_PATH } from '../../config.js';

@@ -7,8 +7,8 @@ const authState = vi.hoisted(() => ({
   isCodexAdmin: false,
 }));
 
-vi.mock('@codex/core', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@codex/core')>();
+vi.mock('../server/core.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../server/core.js')>();
   return {
     ...actual,
     getClerkAuthState: () => ({

@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { HERO_RARITIES, type FactionKey } from '@codex/game-wor';
+import { HERO_RARITIES, type FactionKey } from '../../games/wor/index.js';
 import type Database from 'better-sqlite3';
 
 import { fetchWithTimeout, FETCH_TIMEOUT_MS } from '../../http/fetchWithTimeout.js';

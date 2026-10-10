@@ -5,7 +5,7 @@ import {
   ensureWarframeCatalogActiveColumn,
   ensureWarframeCatalogMasterTable,
   ensureWarframeCatalogMaxLevelColumn,
-} from '../packages/games/warframe/src/db/schema.js';
+} from '../server/games/warframe/db/schema.js';
 import { runWarframeSync } from '../server/services/warframeSync.js';
 import { describeWithSqlite } from './helpers/describeWithSqlite.js';
 import { createTempDbDir, createWarframeTestDb, removeTempDbDir } from './helpers/sqliteTestHarness.js';

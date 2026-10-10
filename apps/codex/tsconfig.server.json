@@ -1,17 +1,14 @@
 {
-  "extends": "./tsconfig.base.json",
+  "extends": "@dark-avian-labs/config/tsconfig.server.json",
   "compilerOptions": {
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+    "noEmit": false,
+    "allowImportingTsExtensions": false,
+    "rewriteRelativeImportExtensions": false,
     "outDir": "dist",
     "rootDir": ".",
     "sourceMap": true,
     "typeRoots": ["./node_modules/@types"]
   },
-  "include": [
-    "server/**/*",
-    "shared/warframeImport/**/*",
-    "packages/core/src/types/express-session.d.ts"
-  ],
+  "include": ["server/**/*", "shared/warframeImport/**/*"],
   "exclude": ["node_modules", "dist", "**/*.test.ts"]
 }

@@ -1,3 +1,4 @@
+import { requireAuthApi } from '@dark-avian-labs/server-kit';
 import { Router } from 'express';
 
 import {
@@ -8,7 +9,6 @@ import {
   maxLevelForPromotion,
   type ArtifactSecondaryStat,
 } from '../../shared/catalog.js';
-import { requireAuthApi } from '../auth/middleware.js';
 import { getAppDb } from '../db/appDb.js';
 import * as q from '../db/queries.js';
 import { asyncHandler, json, sendError } from '../http/handlers.js';

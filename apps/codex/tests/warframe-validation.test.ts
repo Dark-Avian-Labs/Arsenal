@@ -10,7 +10,7 @@ import {
   patchSettingsSchema,
   updateAdvancedProgressSchema,
   updateSchema,
-} from '../packages/games/warframe/src/routes/validation.js';
+} from '../server/games/warframe/routes/validation.js';
 
 describe('Warframe validation schemas', () => {
   describe('updateSchema', () => {

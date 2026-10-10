@@ -10,7 +10,7 @@ const { config: loadEnv } = dotenvx;
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const sentinelRoot = path.resolve(__dirname, '..');
-const armoryRoot = path.resolve(sentinelRoot, '../Armory');
+const armoryRoot = path.resolve(sentinelRoot, '../armory');
 
 function decryptIntoEnv(root, file) {
   const keys = path.join(root, '.env.keys');

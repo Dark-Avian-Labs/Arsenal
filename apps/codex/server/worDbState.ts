@@ -1,7 +1,7 @@
 import { accessSync } from 'fs';
 import fs from 'fs/promises';
 
-import { WOR_DB_PATH } from '@codex/game-wor';
+import { WOR_DB_PATH } from './games/wor/index.js';
 
 let worDbAvailable = false;
 let refreshWorDbPromise: Promise<void> | null = null;

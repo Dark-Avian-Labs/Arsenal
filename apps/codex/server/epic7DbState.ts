@@ -1,7 +1,7 @@
 import { accessSync } from 'fs';
 import fs from 'fs/promises';
 
-import { EPIC7_DB_PATH } from '@codex/game-epic7';
+import { EPIC7_DB_PATH } from './games/epic7/index.js';
 
 let epic7DbAvailable = false;
 let refreshEpic7DbPromise: Promise<void> | null = null;

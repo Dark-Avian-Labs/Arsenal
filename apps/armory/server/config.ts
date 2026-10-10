@@ -1,90 +1,20 @@
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
 
-import dotenvx from '@dotenvx/dotenvx';
+import {
+  isEncryptedEnvValue,
+  loadAppEnv,
+  parseBooleanEnv,
+  parseIntEnv,
+  readPackageVersion,
+  readReleaseVersion,
+  resolveProjectRoot,
+} from '@dark-avian-labs/server-kit';
 
-import { isEncryptedEnvValue, normalizeClerkEnv } from './clerkEnv.js';
+export const PROJECT_ROOT = resolveProjectRoot(import.meta.url);
+loadAppEnv(PROJECT_ROOT);
 
-const { config: loadEnv } = dotenvx;
-
-function resolveEnvFilePath(projectRoot: string): string | null {
-  const normalizedNodeEnv = (process.env.NODE_ENV ?? '').trim().toLowerCase();
-
-  if (normalizedNodeEnv === 'test') {
-    const testPath = path.join(projectRoot, '.env.test');
-    return fs.existsSync(testPath) ? testPath : null;
-  }
-
-  if (
-    normalizedNodeEnv &&
-    normalizedNodeEnv !== 'production' &&
-    normalizedNodeEnv !== 'development'
-  ) {
-    throw new Error(
-      `[FATAL] Unsupported NODE_ENV "${process.env.NODE_ENV}". Use production, development, or test.`,
-    );
-  }
-
-  const isProduction = normalizedNodeEnv === 'production';
-  const fileName = isProduction ? '.env.production' : '.env.development';
-  const candidatePath = path.join(projectRoot, fileName);
-  if (fs.existsSync(candidatePath)) {
-    return candidatePath;
-  }
-  if (isProduction) {
-    throw new Error(
-      `[FATAL] Missing ${fileName}. Refusing to start production without the matching env file.`,
-    );
-  }
-  return null;
-}
-
-const projectRoot = process.cwd();
-const envKeysPath = path.join(projectRoot, '.env.keys');
-if (fs.existsSync(envKeysPath)) {
-  try {
-    loadEnv({ path: envKeysPath, quiet: true });
-  } catch (error) {
-    console.error(`[Config] Failed to load environment keys from "${envKeysPath}".`, error);
-    throw error;
-  }
-}
-
-const envPath = resolveEnvFilePath(projectRoot);
-if (envPath) {
-  try {
-    loadEnv({ path: envPath, quiet: true });
-  } catch (error) {
-    console.error(`[Config] Failed to load environment via loadEnv from "${envPath}".`, error);
-    throw error;
-  }
-} else {
-  console.debug(
-    `[Config] No env file resolved (envPath is null); skipping loadEnv for cwd "${projectRoot}".`,
-  );
-}
-
-normalizeClerkEnv();
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-const parentName = path.basename(path.resolve(__dirname, '..'));
-export const PROJECT_ROOT = path.resolve(__dirname, parentName === 'dist' ? '../..' : '..');
-
-function readPackageVersion(projectRoot: string): string {
-  try {
-    const pkgPath = path.join(projectRoot, 'package.json');
-    const raw = fs.readFileSync(pkgPath, 'utf-8');
-    const pkg = JSON.parse(raw) as { version?: string };
-    const v = pkg.version?.trim();
-    return v && v.length > 0 ? v : '0.0.0';
-  } catch {
-    return '0.0.0';
-  }
-}
-
-export const APP_VERSION = readPackageVersion(PROJECT_ROOT);
+export const APP_VERSION = readReleaseVersion(PROJECT_ROOT, readPackageVersion(PROJECT_ROOT));
 
 export const DATA_DIR = path.join(PROJECT_ROOT, 'data');
 export const EXPORTS_DIR = path.join(DATA_DIR, 'exports');
@@ -123,11 +53,8 @@ export const CODEX_WARFRAME_IMAGES_DIR = resolveProjectPath(
   path.join('..', 'Codex', 'data', 'warframe-images'),
 );
 
-const _port = parseInt(process.env.PORT || '3002', 10);
-export const PORT = Number.isFinite(_port) && _port > 0 ? _port : 3002;
-const _shutdownTimeoutMs = parseInt(process.env.SHUTDOWN_TIMEOUT_MS || '10000', 10);
-export const SHUTDOWN_TIMEOUT_MS =
-  Number.isFinite(_shutdownTimeoutMs) && _shutdownTimeoutMs > 0 ? _shutdownTimeoutMs : 10_000;
+export const PORT = parseIntEnv(process.env.PORT, 3002);
+export const SHUTDOWN_TIMEOUT_MS = parseIntEnv(process.env.SHUTDOWN_TIMEOUT_MS, 10_000);
 export const HOST = process.env.HOST || '127.0.0.1';
 export const NODE_ENV = process.env.NODE_ENV || 'development';
 
@@ -169,6 +96,7 @@ export const SESSION_SECRET = rawSessionSecret;
 export const USING_INSECURE_DEV_SESSION_SECRET = usingInsecureDevSessionSecret;
 
 export const APP_NAME = 'Armory';
+export const APP_ID = 'armory';
 
 export const MANIFEST_URL = 'https://origin.warframe.com/PublicExport/index_en.txt.lzma';
 export const CONTENT_BASE_URL = 'https://content.warframe.com/PublicExport/Manifest/';
@@ -192,14 +120,6 @@ export const REQUIRED_EXPORTS = [
   'ExportWarframes',
   'ExportWeapons',
 ] as const;
-
-function parseBooleanEnv(value: string | undefined): boolean | undefined {
-  if (value == null) return undefined;
-  const normalized = value.trim().toLowerCase();
-  if (normalized === 'true' || normalized === '1') return true;
-  if (normalized === 'false' || normalized === '0') return false;
-  return undefined;
-}
 
 export const TRUST_PROXY = parseBooleanEnv(process.env.TRUST_PROXY) ?? false;
 export const SECURE_COOKIES =

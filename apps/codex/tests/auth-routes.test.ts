@@ -35,8 +35,8 @@ vi.mock('../server/config.js', async (importOriginal) => {
   };
 });
 
-vi.mock('@codex/core', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@codex/core')>();
+vi.mock('../server/db/sessionDb.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../server/db/sessionDb.js')>();
   return {
     ...actual,
     getSessionDb: () => ({
@@ -50,7 +50,7 @@ vi.mock('@codex/core', async (importOriginal) => {
   };
 });
 
-vi.mock('@codex/game-warframe', () => ({
+vi.mock('../server/games/warframe/index.js', () => ({
   getWarframeDb: () => ({
     prepare: () => ({
       get: () => {
@@ -61,7 +61,7 @@ vi.mock('@codex/game-warframe', () => ({
   }),
 }));
 
-vi.mock('@codex/game-epic7', () => ({
+vi.mock('../server/games/epic7/index.js', () => ({
   getEpic7Db: () => ({
     prepare: () => ({
       get: () => {
@@ -72,7 +72,7 @@ vi.mock('@codex/game-epic7', () => ({
   }),
 }));
 
-vi.mock('@codex/game-wor', () => ({
+vi.mock('../server/games/wor/index.js', () => ({
   getWorDb: () => ({
     prepare: () => ({
       get: () => {

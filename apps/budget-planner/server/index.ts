@@ -1,3 +1,5 @@
+import { createAppSentinelAgent, log, startServer } from '@dark-avian-labs/server-kit';
+
 import { createApp } from './app.js';
 import {
   APP_DB_PATH,
@@ -11,7 +13,6 @@ import {
   ensureDataDirs,
 } from './config.js';
 import { closeAppDb, closeSessionDb } from './db/connection.js';
-import { createAppSentinelAgent } from './sentinelAgent.js';
 
 ensureDataDirs();
 
@@ -24,74 +25,33 @@ const sentinelAgent = createAppSentinelAgent({
 const { app, sessionStore } = createApp({
   metricsMiddleware: sentinelAgent?.middleware,
 });
-console.log(`[${APP_NAME}] Session store ready (${SESSION_DB_PATH})`);
-console.log(`[${APP_NAME}] App database ready (${APP_DB_PATH})`);
+log('info', 'Session store ready', { app: APP_NAME, path: SESSION_DB_PATH });
+log('info', 'App database ready', { app: APP_NAME, path: APP_DB_PATH });
 
-sentinelAgent?.start();
-
-const server = app.listen(PORT, HOST, () => {
-  console.log(`[${APP_NAME}] Server running on http://${HOST}:${PORT} (${NODE_ENV})`);
-});
-
-function shutdown(baseExitCode = 0, signal?: string): void {
-  if (baseExitCode === 0) sentinelAgent?.noteGracefulExit(signal);
-  else sentinelAgent?.noteCrash(new Error(`shutdown exit ${baseExitCode}`));
-  sentinelAgent?.stop();
-
-  let done = false;
-  function closeAndExit(exitCode: number): void {
-    if (done) return;
-    done = true;
+void startServer({
+  app,
+  appName: APP_NAME,
+  host: HOST,
+  port: PORT,
+  shutdownTimeoutMs: SHUTDOWN_TIMEOUT_MS,
+  sentinelAgent,
+  onClose: () => {
     sessionStore.dispose();
+    let failed = false;
     try {
       closeSessionDb();
     } catch (err) {
-      console.error('[Shutdown] Failed to close session DB:', err);
-      exitCode = 1;
+      failed = true;
+      log('error', 'Failed to close session DB during shutdown', { error: String(err) });
     }
     try {
       closeAppDb();
     } catch (err) {
-      console.error('[Shutdown] Failed to close app DB:', err);
-      exitCode = 1;
+      failed = true;
+      log('error', 'Failed to close app DB during shutdown', { error: String(err) });
     }
-    process.exit(exitCode);
-  }
-  const timeout = setTimeout(() => closeAndExit(1), SHUTDOWN_TIMEOUT_MS);
-  server.close((err) => {
-    clearTimeout(timeout);
-    if (err) {
-      console.error('[Shutdown] HTTP server close failed:', err);
-      closeAndExit(1);
-      return;
-    }
-    closeAndExit(baseExitCode);
-  });
-  server.closeIdleConnections();
-  setTimeout(
-    () => {
-      server.closeAllConnections();
-    },
-    Math.max(0, SHUTDOWN_TIMEOUT_MS - 500),
-  );
-}
-
-process.on('SIGINT', () => shutdown(0, 'SIGINT'));
-process.on('SIGTERM', () => shutdown(0, 'SIGTERM'));
-
-process.on('unhandledRejection', (reason) => {
-  console.error(
-    '[Crash] Unhandled promise rejection; shutting down',
-    reason instanceof Error ? (reason.stack ?? reason.message) : String(reason),
-  );
-  sentinelAgent?.noteCrash(reason);
-  shutdown(1);
-});
-
-process.on('uncaughtException', (err) => {
-  console.error('[Crash] Uncaught exception; shutting down', err.stack ?? err.message);
-  sentinelAgent?.noteCrash(err);
-  shutdown(1);
+    if (failed) process.exit(1);
+  },
 });
 
 export default app;

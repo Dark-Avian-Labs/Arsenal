@@ -1,8 +1,8 @@
 import { createHash, randomUUID } from 'node:crypto';
 
-import { getSessionDb } from '@codex/core';
 import type Database from 'better-sqlite3';
 
+import { getSessionDb } from '../db/sessionDb.js';
 import type { WarframeSyncResult } from './warframeSync.js';
 
 export type WarframeSyncRunStatus = 'pending' | 'running' | 'succeeded' | 'failed';

@@ -29,6 +29,8 @@
     "@clerk/express": "catalog:",
     "@clerk/react": "catalog:",
     "@dark-avian-labs/sentinel-agent": "workspace:*",
+    "@dark-avian-labs/server-kit": "workspace:*",
+    "@dark-avian-labs/ui": "workspace:*",
     "@dotenvx/dotenvx": "catalog:",
     "@fontsource-variable/cascadia-mono": "catalog:",
     "@fontsource-variable/geist": "catalog:",
@@ -48,6 +50,7 @@
   },
   "devDependencies": {
     "@clerk/testing": "catalog:",
+    "@dark-avian-labs/config": "workspace:*",
     "@playwright/test": "catalog:",
     "@tailwindcss/vite": "catalog:",
     "@types/better-sqlite3": "catalog:",

@@ -1,6 +1,5 @@
+import { handleDalAppNavProxy } from '@dark-avian-labs/server-kit';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-
-import { handleDalAppNavProxy } from './dalAppNavProxy.js';
 
 function mockRes() {
   const res = {

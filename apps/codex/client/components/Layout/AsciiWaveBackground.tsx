@@ -1,8 +1,8 @@
 import { useMemo, useRef } from 'react';
 
-import bgArt from '../../../packages/core/assets/background.txt?raw';
-import bgArt2 from '../../../packages/core/assets/background2.txt?raw';
-import bgArt3 from '../../../packages/core/assets/background3.txt?raw';
+import bgArt from '../../assets/background.txt?raw';
+import bgArt2 from '../../assets/background2.txt?raw';
+import bgArt3 from '../../assets/background3.txt?raw';
 import { normalizeAsciiPair } from '../../lib/asciiBackground/normalizeAsciiPair';
 import { prepareAsciiMask } from '../../lib/asciiBackground/prepareAsciiMask';
 import { useAsciiBackgroundCanvas } from '../../lib/asciiBackground/useAsciiBackgroundCanvas';

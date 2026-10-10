@@ -4,12 +4,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const TEST_CLERK_ID = 'user_test123';
 
 const mocks = vi.hoisted(() => ({
-  getWorksheets: vi.fn<typeof import('@codex/game-warframe').warframeQueries.getWorksheets>(),
+  getWorksheets: vi.fn<typeof import('../games/warframe/index.js').warframeQueries.getWorksheets>(),
   provisionUserFromCatalogMaster: vi.fn<(db: Database.Database, clerkUserId: string) => boolean>(),
   ensureWarframeWorksheetsForUser: vi.fn(),
 }));
 
-vi.mock('@codex/game-warframe', () => ({
+vi.mock('../games/warframe/index.js', () => ({
   warframeQueries: { getWorksheets: mocks.getWorksheets },
 }));
 

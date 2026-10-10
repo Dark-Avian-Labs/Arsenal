@@ -1,6 +1,6 @@
-import { warframeQueries } from '@codex/game-warframe';
 import { afterEach, beforeEach, expect, it } from 'vitest';
 
+import { warframeQueries } from '../server/games/warframe/index.js';
 import { describeWithSqlite } from './helpers/describeWithSqlite.js';
 import {
   createTempDbDir,

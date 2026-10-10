@@ -11,10 +11,6 @@ import {
 } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router';
 
-import feathers from '../../../packages/core/assets/feathers.svg';
-import epic7Favicon from '../../../packages/games/epic7/favicon.ico';
-import warframeFavicon from '../../../packages/games/warframe/favicon.ico';
-import worFavicon from '../../../packages/games/wor/favicon.ico';
 import {
   APP_DISPLAY_NAME,
   APP_ID,
@@ -23,6 +19,10 @@ import {
   LEGAL_PAGE_URL,
 } from '../../app/config';
 import { APP_PATHS } from '../../app/paths';
+import feathers from '../../assets/feathers.svg';
+import epic7Favicon from '../../assets/games/epic7/favicon.ico';
+import warframeFavicon from '../../assets/games/warframe/favicon.ico';
+import worFavicon from '../../assets/games/wor/favicon.ico';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../features/auth/AuthContext';
 import { rememberLastGamePath } from '../../features/auth/authRedirect';
@@ -241,7 +241,7 @@ export function Layout() {
       <header className="relative z-30 h-[100px] shrink-0 px-6">
         <div className="mx-auto grid h-full w-full max-w-[2000px] grid-cols-[1fr_auto_1fr] items-center gap-4">
           <div className="flex w-fit max-w-full min-w-0 flex-col gap-0.5 justify-self-start">
-            <Link to={APP_PATHS.home} className="brand-lockup w-fit">
+            <Link to={APP_PATHS.selector} className="brand-lockup w-fit">
               <img
                 src={feathers}
                 alt="Dark Avian Labs feather mark"

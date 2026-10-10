@@ -1,3 +1,4 @@
+import { apiFetch, Button, MaterialSymbol, Modal } from '@dark-avian-labs/ui';
 import {
   FACTION_DISPLAY_NAMES,
   FACTIONS,
@@ -19,10 +20,6 @@ import { applyOcrStats } from '@shared/gearOcr';
 import { setsForSlot } from '@shared/sets';
 import { useEffect, useRef, useState } from 'react';
 
-import { Button } from '../../components/ui/Button';
-import { MaterialSymbol } from '../../components/ui/MaterialSymbol';
-import { Modal } from '../../components/ui/Modal';
-import { apiFetch } from '../../utils/api';
 import { FieldSelect } from './FieldSelect';
 import type { GearView } from './GearTile';
 import type { HeroRow } from './types';

@@ -1,6 +1,6 @@
+import { createDbSingleton } from '@dark-avian-labs/server-kit';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
-import { createDbSingleton } from '../packages/core/src/db/singleton.js';
 import { describeWithSqlite } from './helpers/describeWithSqlite.js';
 import { createTempDbDir, removeTempDbDir } from './helpers/sqliteTestHarness.js';
 

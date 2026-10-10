@@ -1,10 +1,10 @@
-import { worQueries as q } from '@codex/game-wor';
 import Database from 'better-sqlite3';
 import express from 'express';
 import session from 'express-session';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
-import { createSchema as createWorSchema } from '../packages/games/wor/src/db/schema.js';
+import { createSchema as createWorSchema } from '../server/games/wor/db/schema.js';
+import { worQueries as q } from '../server/games/wor/index.js';
 import { describeWithSqlite } from './helpers/describeWithSqlite.js';
 import { createSessionAgent } from './helpers/testExpress.js';
 
@@ -26,8 +26,8 @@ vi.mock('../server/worDbState.js', () => ({
   ensureWorDbAvailable: () => true,
 }));
 
-vi.mock('@codex/game-wor', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@codex/game-wor')>();
+vi.mock('../server/games/wor/index.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../server/games/wor/index.js')>();
   return {
     ...actual,
     getWorDb: () => {

@@ -1,7 +1,7 @@
 import { useAuth, useClerk } from '@clerk/react';
 import { Suspense, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, Outlet } from 'react-router';
+import { Link, Outlet, useLocation } from 'react-router';
 
 import feathers from '../../../assets/feathers.svg';
 import {
@@ -105,6 +105,7 @@ function ClerkSessionMenu({ onClose }: { onClose: () => void }) {
 }
 
 export function Layout() {
+  const location = useLocation();
   const { t } = useTranslation();
   const { mode, toggleMode } = useTheme();
   const currentYear = new Date().getFullYear();
@@ -125,7 +126,24 @@ export function Layout() {
       <header className="no-print relative z-30 px-4 pt-4 pb-2 sm:px-6">
         <div className="mx-auto flex h-14 w-full max-w-3xl items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-2">
-            <Link to={APP_PATHS.home} className="brand-lockup w-fit min-w-0">
+            <Link
+              to={APP_PATHS.home}
+              className="brand-lockup w-fit min-w-0"
+              onClick={(event) => {
+                if (
+                  event.metaKey ||
+                  event.ctrlKey ||
+                  event.shiftKey ||
+                  event.altKey ||
+                  event.button !== 0 ||
+                  location.pathname !== APP_PATHS.home
+                ) {
+                  return;
+                }
+                event.preventDefault();
+                window.location.reload();
+              }}
+            >
               <img
                 src={feathers}
                 alt="Dark Avian Labs feather mark"

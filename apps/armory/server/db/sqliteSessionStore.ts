@@ -1,8 +1,8 @@
+import { log } from '@dark-avian-labs/server-kit';
 import type Database from 'better-sqlite3';
 import { Store } from 'express-session';
 import type { SessionData } from 'express-session';
 
-import { log } from '../logger.js';
 import { createSessionSchema } from './sessionSchema.js';
 
 const DEFAULT_CLEANUP_INTERVAL_MS = 15 * 60 * 1000;

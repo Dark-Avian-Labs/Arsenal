@@ -1,7 +1,8 @@
-import { createSessionSchema } from '@codex/core';
 import type Database from 'better-sqlite3';
 import { Store } from 'express-session';
 import type { SessionData } from 'express-session';
+
+import { createSessionSchema } from './sessionDb.js';
 
 const DEFAULT_CLEANUP_INTERVAL_MS = 15 * 60 * 1000;
 const DEFAULT_TTL_MS = 24 * 60 * 60 * 1000;

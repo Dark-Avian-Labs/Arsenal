@@ -1,11 +1,15 @@
+import {
+  ErrorBoundary,
+  Layout,
+  NotFoundPage,
+  ProtectedRoute,
+  SignInPage,
+  SignUpPage,
+} from '@dark-avian-labs/ui';
 import { lazy } from 'react';
 import { createBrowserRouter, createRoutesFromElements, Route } from 'react-router';
 
 import { App } from '../App';
-import { Layout } from '../components/Layout/Layout';
-import { ErrorBoundary } from '../components/ui/ErrorBoundary';
-import { ProtectedRoute } from '../features/auth/ProtectedRoute';
-import { NotFoundPage } from '../features/not-found/NotFoundPage';
 import { APP_PATHS } from './paths';
 
 const HomePage = lazy(() =>
@@ -16,16 +20,6 @@ const HomePage = lazy(() =>
 const AppDetailPage = lazy(() =>
   import('../features/fleet/AppDetailPage').then((mod) => ({
     default: mod.AppDetailPage,
-  })),
-);
-const SignInPage = lazy(() =>
-  import('../features/auth/SignInPage').then((mod) => ({
-    default: mod.SignInPage,
-  })),
-);
-const SignUpPage = lazy(() =>
-  import('../features/auth/SignUpPage').then((mod) => ({
-    default: mod.SignUpPage,
   })),
 );
 

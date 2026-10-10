@@ -44,7 +44,7 @@ export const router = createBrowserRouter(
         <Route path={`${APP_PATHS.signUp}/*`} element={<SignUpPage />} />
         <Route path={APP_PATHS.home} element={<CodexLandingPage />} />
         <Route
-          path="/home"
+          path={APP_PATHS.selector}
           element={
             <RequireAuth>
               <HomePage />

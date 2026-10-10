@@ -1,3 +1,5 @@
+import { useCallback, useEffect, useMemo, useRef } from 'react';
+
 import {
   ARTIFACT_CLASSES,
   ARTIFACT_GAUGE_MAX as GAUGE_MAX,
@@ -6,9 +8,7 @@ import {
   ELEMENTS,
   HERO_CLASSES,
   HERO_RATINGS,
-} from '@codex/game-epic7/constants';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
-
+} from '../../../server/games/epic7/constants';
 import { CollectionSubheader } from '../../components/Layout/CollectionSubheader';
 import { HeaderSearch } from '../../components/Layout/HeaderSearch';
 import { useLayoutSlots } from '../../components/Layout/useLayoutSlots';

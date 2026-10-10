@@ -1,9 +1,6 @@
 packages:
   - apps/*
   - packages/*
-  # Codex packages stay members until Stage 2 folds them into the app.
-  - apps/codex/packages/*
-  - apps/codex/packages/games/*
 
 allowBuilds:
   '@clerk/shared': true

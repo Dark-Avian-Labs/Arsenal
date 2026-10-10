@@ -1,5 +1,6 @@
+import { log } from '@dark-avian-labs/server-kit';
+
 import { hasMeaningfulArtifactSlotOverrides } from '../../shared/artifactSlotState.js';
-import { log } from '../logger.js';
 import { getCatalogDb } from './connection.js';
 
 function parseArtifactSlots(raw: string | null): string[] {

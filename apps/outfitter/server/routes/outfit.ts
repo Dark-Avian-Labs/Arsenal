@@ -1,3 +1,4 @@
+import { requireAuthApi } from '@dark-avian-labs/server-kit';
 import { Router } from 'express';
 
 import {
@@ -6,7 +7,6 @@ import {
   type ScoreStatKey,
 } from '../../shared/optimizer.js';
 import type { GearPieceInput } from '../../shared/pieceStats.js';
-import { requireAuthApi } from '../auth/middleware.js';
 import { getAppDb } from '../db/appDb.js';
 import * as q from '../db/queries.js';
 import { asyncHandler, json, sendError } from '../http/handlers.js';

@@ -1,8 +1,8 @@
 import Database from 'better-sqlite3';
 import { afterEach, beforeEach, expect, it } from 'vitest';
 
-import { createSchema as createWorSchema } from '../packages/games/wor/src/db/schema.js';
-import { ensureWorImportTables } from '../packages/games/wor/src/db/schema.js';
+import { createSchema as createWorSchema } from '../server/games/wor/db/schema.js';
+import { ensureWorImportTables } from '../server/games/wor/db/schema.js';
 import {
   requireWorImportLease,
   tryAcquireWorImportLease,

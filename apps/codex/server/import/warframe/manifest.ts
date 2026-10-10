@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
-import { log } from '@codex/core';
+import { log } from '@dark-avian-labs/server-kit';
 import { LzmaDecompressor } from '@napi-rs/lzma';
 
 import { MANIFEST_URL, EXPORTS_DIR } from '../../config.js';

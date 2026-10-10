@@ -79,29 +79,29 @@ Each app keeps its own `.env.development`, `.env.production`, `.env.example`, `.
 
 ### 1.3 Package names
 
-| Directory | package.json name |
-| --- | --- |
-| `packages/server-kit` | `@dark-avian-labs/server-kit` |
-| `packages/ui` | `@dark-avian-labs/ui` |
-| `packages/config` | `@dark-avian-labs/config` |
+| Directory                 | package.json name                 |
+| ------------------------- | --------------------------------- |
+| `packages/server-kit`     | `@dark-avian-labs/server-kit`     |
+| `packages/ui`             | `@dark-avian-labs/ui`             |
+| `packages/config`         | `@dark-avian-labs/config`         |
 | `packages/sentinel-agent` | `@dark-avian-labs/sentinel-agent` |
-| `apps/armory` | `armory` |
-| `apps/budget-planner` | `budget-planner` |
-| `apps/codex` | `codex` |
-| `apps/sentinel` | `sentinel` |
-| `apps/outfitter` | `outfitter` |
-| `apps/_template` | `dal-template` |
+| `apps/armory`             | `armory`                          |
+| `apps/budget-planner`     | `budget-planner`                  |
+| `apps/codex`              | `codex`                           |
+| `apps/sentinel`           | `sentinel`                        |
+| `apps/outfitter`          | `outfitter`                       |
+| `apps/_template`          | `dal-template`                    |
 
 ### 1.4 Ports (unchanged)
 
-| App | Dev server | Signed-out e2e | Signed-in e2e | PM2 name |
-| --- | --- | --- | --- | --- |
-| _template | 3000 | 3100 | 4100 | (not deployed) |
-| codex | 3001 | 3101 | 4101 | Codex |
-| armory | 3002 | 3102 | 4102 | Armory |
-| budget-planner | 3003 | 3103 | 4103 | BudgetPlanner |
-| outfitter | 3004 | 3104 | 4104 | Outfitter |
-| sentinel | 3005 | 3105 | (none) | Sentinel |
+| App            | Dev server | Signed-out e2e | Signed-in e2e | PM2 name       |
+| -------------- | ---------- | -------------- | ------------- | -------------- |
+| _template      | 3000       | 3100           | 4100          | (not deployed) |
+| codex          | 3001       | 3101           | 4101          | Codex          |
+| armory         | 3002       | 3102           | 4102          | Armory         |
+| budget-planner | 3003       | 3103           | 4103          | BudgetPlanner  |
+| outfitter      | 3004       | 3104           | 4104          | Outfitter      |
+| sentinel       | 3005       | 3105           | (none)        | Sentinel       |
 
 Sentinel's signed-out e2e port moves from 3100 to 3105 so all suites can run in one job.
 
@@ -132,12 +132,12 @@ Gone: `CI_PAT` (no bot pushes to main any more).
 
 ### 1.7 Runner images (DAL-CI-04 answer)
 
-| Label | Image | Verdict |
-| --- | --- | --- |
-| `build-node26` | `docker.io/library/node:26-bookworm` | Keep. Official, has git, curl, openssh-client. Do not switch to `-slim` (no git, breaks checkout). |
-| `light-node26` | `docker.io/library/node:26-alpine3.23` | Keep. Needs `apk add git` before checkout (already done). |
-| `light` | `docker.io/library/alpine:3.23` | Keep for the `security` gate job. |
-| `build`, `build-docker` | ubuntu / catthehacker | Not used by these apps. Leave alone. |
+| Label                   | Image                                  | Verdict                                                                                            |
+| ----------------------- | -------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `build-node26`          | `docker.io/library/node:26-bookworm`   | Keep. Official, has git, curl, openssh-client. Do not switch to `-slim` (no git, breaks checkout). |
+| `light-node26`          | `docker.io/library/node:26-alpine3.23` | Keep. Needs `apk add git` before checkout (already done).                                          |
+| `light`                 | `docker.io/library/alpine:3.23`        | Keep for the `security` gate job.                                                                  |
+| `build`, `build-docker` | ubuntu / catthehacker                  | Not used by these apps. Leave alone.                                                               |
 
 There is no public image with Node 26 plus pnpm plus Chromium system libraries; the Microsoft Playwright images ship Node 22, which fails `engines.node >= 26`. So: keep `node:26-bookworm` and make the slow parts persistent through runner volumes instead of a custom image. Add to the runner's `config.yml`:
 
@@ -270,6 +270,7 @@ No `overrides` (DAL-SRV-06). Take the newest caret range seen in any old `packag
 Rewrite every `apps/*/package.json` and `packages/*/package.json` so each dependency listed above uses `"catalog:"`. App-specific dependencies (`cheerio`, `cuimp`, `tesseract.js`, `i18next`, `html-to-image`, `@napi-rs/lzma`, `undici`, `clsx`, `tailwind-merge`, `happy-dom`, `@testing-library/*`, `domhandler`, `supertest`) stay as plain ranges in the app that uses them.
 
 Remove from every app `package.json` (only things whose code is already gone or that nothing imports; `cookie-parser`, `compression`, `express-session`, `csrf-sync` and `tsx` are removed in the stage that deletes their code, otherwise the Stage 1 typecheck gate fails):
+
 - `semantic-release`, `@semantic-release/*` (DAL-DEP-01)
 - `@dark-avian-labs/sentinel-agent` URL dependency; replace with `"@dark-avian-labs/sentinel-agent": "workspace:*"` (DAL-ARCH-02)
 - `globals` (Codex)
@@ -375,6 +376,7 @@ This is the heart of DAL-ARCH-01. The rule for every file: **compare the copies,
 ### 4.1 `packages/config`
 
 Files:
+
 - `tsconfig.base.json`: from `apps/_template/tsconfig.base.json`, plus `"verbatimModuleSyntax": true`, `"erasableSyntaxOnly": true`, `"module": "NodeNext"`, `"moduleResolution": "NodeNext"`.
 - `tsconfig.server.json`: extends base; `"noEmit": true`, `"allowImportingTsExtensions": true`, `"rewriteRelativeImportExtensions": true`, `"types": ["node"]`, `"lib": ["ES2022"]`.
 - `tsconfig.client.json`: extends base; `"jsx": "react-jsx"`, `"lib": ["ES2022", "DOM", "DOM.Iterable"]`, `"noEmit": true`, `"moduleResolution": "Bundler"`, `"module": "ESNext"`, `"allowImportingTsExtensions": true`.
@@ -427,18 +429,18 @@ Each app's `tsconfig.json` becomes `{ "extends": "@dark-avian-labs/config/tsconf
 
 Move these from `apps/_template/server/` into `packages/server-kit/src/` with `git mv`, keeping their tests:
 
-| From (`apps/_template/server/`) | To (`packages/server-kit/src/`) |
-| --- | --- |
-| `logger.ts` | `logger.ts` |
-| `clerkEnv.ts` | `env/clerkEnv.ts` |
-| `config.ts` | `env/loadEnv.ts` (split, see below) |
-| `auth/clerk.ts`, `auth/clerkAuthorizedParties.ts` (+tests), `auth/middleware.ts` (+test) | `auth/` |
-| `http/requestId.ts`, `http/helmetCsp.ts` (+test), `http/dalAppNavProxy.ts` (+test) | `http/` |
-| `db/connection.ts` | `db/sqlite.ts` (generic `openSqlite(path, pragmas)`) |
-| `sentinelAgent.ts` | `sentinelAgent.ts` |
-| `app.ts` | `createApp.ts` (parameterised, see below) |
-| `index.ts` | `startServer.ts` (the listen + graceful shutdown part) |
-| `signedInClerk.ts` (+test) | `testing/signedInClerk.ts` |
+| From (`apps/_template/server/`)                                                          | To (`packages/server-kit/src/`)                        |
+| ---------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| `logger.ts`                                                                              | `logger.ts`                                            |
+| `clerkEnv.ts`                                                                            | `env/clerkEnv.ts`                                      |
+| `config.ts`                                                                              | `env/loadEnv.ts` (split, see below)                    |
+| `auth/clerk.ts`, `auth/clerkAuthorizedParties.ts` (+tests), `auth/middleware.ts` (+test) | `auth/`                                                |
+| `http/requestId.ts`, `http/helmetCsp.ts` (+test), `http/dalAppNavProxy.ts` (+test)       | `http/`                                                |
+| `db/connection.ts`                                                                       | `db/sqlite.ts` (generic `openSqlite(path, pragmas)`)   |
+| `sentinelAgent.ts`                                                                       | `sentinelAgent.ts`                                     |
+| `app.ts`                                                                                 | `createApp.ts` (parameterised, see below)              |
+| `index.ts`                                                                               | `startServer.ts` (the listen + graceful shutdown part) |
+| `signedInClerk.ts` (+test)                                                               | `testing/signedInClerk.ts`                             |
 
 Also fold in from `apps/codex/packages/core/src/`: `db/sqlitePath.ts` (+test), `db/sqlitePragmas.ts`, `db/singleton.ts`, `validation.ts` (+test), `middleware/appPublicBaseUrl.ts`, `testing/mockResponse.ts`. Where Codex core and AppBase have the same module (auth, helmet, clerkEnv, logger), diff them and keep the union of behaviour; Codex-only functions like `requireCodexAdmin` and `getCodexAppId` go to `apps/codex/server/core.ts`, not into the kit.
 
@@ -475,13 +477,16 @@ export interface CreateAppOptions {
   trustProxy: boolean;
   secureCookies: boolean;
   legalPageUrl: string;
-  jsonLimit?: string;                 // default '100kb'; Armory and Codex pass '1mb'
+  jsonLimit?: string; // default '100kb'; Armory and Codex pass '1mb'
   metricsMiddleware?: RequestHandler;
-  readiness?: () => boolean;          // default () => true; apps pass a DB ping
+  readiness?: () => boolean; // default () => true; apps pass a DB ping
   rateLimits?: { api?: number; write?: number; page?: number; asset?: number };
-  mountBeforeApi?: (app: express.Express) => void;   // Armory uses this for the raw-body Clerk webhook route
+  mountBeforeApi?: (app: express.Express) => void; // Armory uses this for the raw-body Clerk webhook route
 }
-export interface AppBundle { app: express.Express; apiRouter: express.Router; }
+export interface AppBundle {
+  app: express.Express;
+  apiRouter: express.Router;
+}
 export function createApp(options: CreateAppOptions): AppBundle;
 ```
 
@@ -494,8 +499,9 @@ Inside: helmet, requestId, metrics, json/urlencoded, baseline limiter, `/healthz
 **`testing/index.ts`** exports `signedInClerk`, `mockResponse`, and a new `withServer`:
 
 ```ts
-import type { Express } from 'express';
 import http from 'node:http';
+
+import type { Express } from 'express';
 
 export async function withServer<T>(app: Express, fn: (baseUrl: string) => Promise<T>): Promise<T> {
   const server = http.createServer(app);
@@ -529,7 +535,12 @@ Not compiled; Vite consumes the TypeScript source. `package.json`:
     "./icons": "./src/icons/index.tsx"
   },
   "scripts": { "typecheck": "tsc -p tsconfig.json --noEmit", "test": "vitest run" },
-  "peerDependencies": { "react": "catalog:", "react-dom": "catalog:", "react-router": "catalog:", "@clerk/react": "catalog:" },
+  "peerDependencies": {
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "react-router": "catalog:",
+    "@clerk/react": "catalog:"
+  },
   "dependencies": {
     "@fontsource-variable/cascadia-mono": "catalog:",
     "@fontsource-variable/geist": "catalog:",
@@ -549,19 +560,19 @@ Note: no `@fontsource-variable/material-symbols-rounded` (Stage 4 replaces it).
 
 Move from `apps/_template/client/` into `packages/ui/src/` (keep tests next to the files):
 
-| From | To |
-| --- | --- |
-| `components/Layout/*` (AsciiWaveBackground, DalAppNav, DalAppNavRail, dalAppNavRailGeometry, HexSideBackground, Layout, SearchBar, StaleClientUpdateBanner) | `layout/` |
-| `components/ui/*` | `components/` |
-| `context/ThemeContext.tsx` | `theme/ThemeContext.tsx` |
-| `clerk/*` (ClerkAuthShell, clerkAppearance, clerk-auth.css, index.ts) | `clerk/` and `styles/clerk-auth.css` |
-| `features/auth/{AuthContext,authRedirect,ProtectedRoute,AccountRequired,SignInPage,SignUpPage}.tsx` | `auth/` |
-| `features/not-found/NotFoundPage.tsx` | `pages/NotFoundPage.tsx` |
-| `hooks/useStaleBundlePrompt.ts` | `hooks/` |
-| `lib/dalAppNav.ts` (+test), `lib/asciiBackground/*`, `lib/scaffoldSearch.ts` (+test) | `lib/` |
-| `utils/api.ts` (+test) | `api/apiFetch.ts` |
-| `styles/input.css`, `styles/acrylic-noise.svg` | `styles/` |
-| `public/theme-init.js` | `public/theme-init.js` (canonical copy). Each app keeps its own `public/theme-init.js`; add a first-line comment `// Copy of packages/ui/public/theme-init.js. Edit there, then copy.` It is 65 lines and must stay a plain static file because it runs before React. |
+| From                                                                                                                                                        | To                                                                                                                                                                                                                                                                    |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `components/Layout/*` (AsciiWaveBackground, DalAppNav, DalAppNavRail, dalAppNavRailGeometry, HexSideBackground, Layout, SearchBar, StaleClientUpdateBanner) | `layout/`                                                                                                                                                                                                                                                             |
+| `components/ui/*`                                                                                                                                           | `components/`                                                                                                                                                                                                                                                         |
+| `context/ThemeContext.tsx`                                                                                                                                  | `theme/ThemeContext.tsx`                                                                                                                                                                                                                                              |
+| `clerk/*` (ClerkAuthShell, clerkAppearance, clerk-auth.css, index.ts)                                                                                       | `clerk/` and `styles/clerk-auth.css`                                                                                                                                                                                                                                  |
+| `features/auth/{AuthContext,authRedirect,ProtectedRoute,AccountRequired,SignInPage,SignUpPage}.tsx`                                                         | `auth/`                                                                                                                                                                                                                                                               |
+| `features/not-found/NotFoundPage.tsx`                                                                                                                       | `pages/NotFoundPage.tsx`                                                                                                                                                                                                                                              |
+| `hooks/useStaleBundlePrompt.ts`                                                                                                                             | `hooks/`                                                                                                                                                                                                                                                              |
+| `lib/dalAppNav.ts` (+test), `lib/asciiBackground/*`, `lib/scaffoldSearch.ts` (+test)                                                                        | `lib/`                                                                                                                                                                                                                                                                |
+| `utils/api.ts` (+test)                                                                                                                                      | `api/apiFetch.ts`                                                                                                                                                                                                                                                     |
+| `styles/input.css`, `styles/acrylic-noise.svg`                                                                                                              | `styles/`                                                                                                                                                                                                                                                             |
+| `public/theme-init.js`                                                                                                                                      | `public/theme-init.js` (canonical copy). Each app keeps its own `public/theme-init.js`; add a first-line comment `// Copy of packages/ui/public/theme-init.js. Edit there, then copy.` It is 65 lines and must stay a plain static file because it runs before React. |
 
 `src/index.ts` re-exports everything public.
 
@@ -589,6 +600,7 @@ Without the `@source` line Tailwind will not see the classes used inside `packag
 ### 4.4 Wire the apps to the packages
 
 Per app:
+
 - `package.json`: add `"@dark-avian-labs/server-kit": "workspace:*"`, `"@dark-avian-labs/ui": "workspace:*"`, `"@dark-avian-labs/config": "workspace:*"` (dev).
 - Delete the moved files from `apps/<app>/server/` and `apps/<app>/client/` (they are now imports). Use `git rm`.
 - Rewrite imports: `'../components/ui/Modal.js'` → `'@dark-avian-labs/ui'`; `'./auth/middleware.js'` → `'@dark-avian-labs/server-kit'`. Do this with the editor's search and replace per app; verify with `pnpm --filter <app> typecheck`.
@@ -665,7 +677,7 @@ In `packages/ui/src/api/apiFetch.ts` remove `getCsrfToken`, `clearCsrfToken`, `i
 
 - **Outfitter**: `server/session/account.ts` and `server/routes/accounts.ts` read `req.session.account_id`. Replace with a query `SELECT id FROM accounts WHERE clerk_user_id = ? AND is_active = 1` (the column exists). The "set active" route already updates `is_active`; make it the only source of truth. Delete `server/session/`.
 - **Codex**: `server/session/worSessionBinding.ts` and `epic7SessionBinding.ts` store the selected game account. Add `active_wor_account_id INTEGER` and `active_epic7_account_id INTEGER` columns to the user table (migration in the schema file, `ALTER TABLE ... ADD COLUMN` guarded by a `PRAGMA table_info` check), read and write them in the routes that used the session, delete both files and `tests/auth-session.test.ts` / `tests/epic7SessionBinding.test.ts`; rewrite `tests/epic7-session-api.test.ts` against the column.
-- **Armory, BudgetPlanner, Sentinel, _template**: nothing beyond the CSRF token. Verify with `grep -rn "req.session" apps/<app>/server`.
+- **Armory, BudgetPlanner, Sentinel, \_template**: nothing beyond the CSRF token. Verify with `grep -rn "req.session" apps/<app>/server`.
 
 ### 5.4 Gate
 
@@ -722,7 +734,9 @@ for (const name of sorted) {
   const base = path.join(pkgDir, 'rounded', `${name}.svg`);
   const fill = path.join(pkgDir, 'rounded', `${name}-fill.svg`);
   try {
-    lines.push(`  ${JSON.stringify(name)}: { d: ${JSON.stringify(pathData(base))}, fill: ${JSON.stringify(pathData(fill))} },`);
+    lines.push(
+      `  ${JSON.stringify(name)}: { d: ${JSON.stringify(pathData(base))}, fill: ${JSON.stringify(pathData(fill))} },`,
+    );
   } catch {
     missing.push(name);
   }
@@ -744,6 +758,7 @@ console.log(`${sorted.length} icons written`);
 
 ```tsx
 import type { SVGAttributes } from 'react';
+
 import { ICONS, type IconName } from './icons.generated.ts';
 
 export type { IconName };
@@ -789,13 +804,13 @@ Replace the three `.ico` imports with the owner's `favicon.svg` per game. Confir
 
 Replace `@dnd-kit/core`, `@dnd-kit/sortable`, `@dnd-kit/utilities` with `@dnd-kit/react` and `@dnd-kit/helpers`. Mapping, from the official migration guide:
 
-| Old | New |
-| --- | --- |
-| `DndContext` + `SortableContext` | `DragDropProvider` from `@dnd-kit/react` (no `SortableContext`) |
-| `useSortable({ id })` from `@dnd-kit/sortable` | `useSortable({ id, index })` from `@dnd-kit/react/sortable`; returns `{ ref, isDragging, handleRef }` |
-| `setNodeRef`, `attributes`, `listeners`, `transform`, `transition`, `CSS.Transform.toString` | gone; pass `ref={sortable.ref}`; transforms are automatic |
-| `arrayMove(items, from, to)` in `onDragEnd` | `setItems((items) => move(items, event))` with `move` from `@dnd-kit/helpers` |
-| sorting strategies | removed |
+| Old                                                                                          | New                                                                                                   |
+| -------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `DndContext` + `SortableContext`                                                             | `DragDropProvider` from `@dnd-kit/react` (no `SortableContext`)                                       |
+| `useSortable({ id })` from `@dnd-kit/sortable`                                               | `useSortable({ id, index })` from `@dnd-kit/react/sortable`; returns `{ ref, isDragging, handleRef }` |
+| `setNodeRef`, `attributes`, `listeners`, `transform`, `transition`, `CSS.Transform.toString` | gone; pass `ref={sortable.ref}`; transforms are automatic                                             |
+| `arrayMove(items, from, to)` in `onDragEnd`                                                  | `setItems((items) => move(items, event))` with `move` from `@dnd-kit/helpers`                         |
+| sorting strategies                                                                           | removed                                                                                               |
 
 `grep -rn "@dnd-kit" apps/budget-planner/client` lists the files. Keep the keyboard accessibility that existed (the new package handles keyboard sorting by default). Verify by dragging an entry in `pnpm --filter budget-planner dev`.
 
@@ -856,10 +871,10 @@ const path = require('node:path');
 module.exports = {
   apps: [
     {
-      name: 'Armory',                       // PM2 name from table 1.4
+      name: 'Armory', // PM2 name from table 1.4
       script: 'server/index.ts',
-      interpreter: 'node',                  // explicit; PM2 would otherwise look for ts-node on a .ts script
-      cwd: path.join(__dirname, '..', '..', 'current'),  // <SERVER_PATH>/current, survives release switches
+      interpreter: 'node', // explicit; PM2 would otherwise look for ts-node on a .ts script
+      cwd: path.join(__dirname, '..', '..', 'current'), // <SERVER_PATH>/current, survives release switches
       exec_mode: 'fork',
       instances: 1,
       kill_timeout: 12000,
@@ -889,10 +904,10 @@ Gate: `pnpm run validate && pnpm run build && pnpm run test:e2e` and `pnpm --fil
 `scripts/ci/release.mjs`:
 
 ```js
+import { spawnSync } from 'node:child_process';
 // Usage: node scripts/ci/release.mjs <app-dir-name>
 // Writes GITHUB_OUTPUT: version, previous, release (true|false), tag. Writes notes to $RUNNER_TEMP/notes-<app>.md.
 import { appendFileSync, writeFileSync } from 'node:fs';
-import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 
 const app = process.argv[2];
@@ -907,7 +922,9 @@ function git(args) {
 
 let previous = null;
 try {
-  previous = git(['describe', '--tags', '--abbrev=0', '--match', `${prefix}*`]).slice(prefix.length);
+  previous = git(['describe', '--tags', '--abbrev=0', '--match', `${prefix}*`]).slice(
+    prefix.length,
+  );
 } catch {
   // first release of this app in this repo
 }
@@ -922,7 +939,12 @@ const commits = raw
   .map((c) => {
     const [sha, subject, body] = c.split('\x1f');
     const pr = /^Merge pull request '(.+)' \(#(\d+)\)/.exec(subject);
-    return { sha: sha.slice(0, 7), subject: pr ? pr[1] : subject, pr: pr ? pr[2] : null, body: body ?? '' };
+    return {
+      sha: sha.slice(0, 7),
+      subject: pr ? pr[1] : subject,
+      pr: pr ? pr[2] : null,
+      body: body ?? '',
+    };
   });
 
 function bumpOf({ subject, body }) {
@@ -935,16 +957,33 @@ function bumpOf({ subject, body }) {
 let version = previous ?? '0.0.0';
 let release = commits.length > 0;
 if (release) {
-  const level = commits.map(bumpOf).includes('major') ? 'major' : commits.map(bumpOf).includes('minor') ? 'minor' : 'patch';
+  const level = commits.map(bumpOf).includes('major')
+    ? 'major'
+    : commits.map(bumpOf).includes('minor')
+      ? 'minor'
+      : 'patch';
   const [ma, mi, pa] = version.split('.').map(Number);
-  version = level === 'major' ? `${ma + 1}.0.0` : level === 'minor' ? `${ma}.${mi + 1}.0` : `${ma}.${mi}.${pa + 1}`;
+  version =
+    level === 'major'
+      ? `${ma + 1}.0.0`
+      : level === 'minor'
+        ? `${ma}.${mi + 1}.0`
+        : `${ma}.${mi}.${pa + 1}`;
 }
 
-const notes = commits.map((c) => `- ${c.subject}${c.pr ? ` (#${c.pr})` : ''} ${c.sha}`).join('\n') || '- Redeploy, no new commits for this app.';
+const notes =
+  commits.map((c) => `- ${c.subject}${c.pr ? ` (#${c.pr})` : ''} ${c.sha}`).join('\n') ||
+  '- Redeploy, no new commits for this app.';
 const notesPath = path.join(process.env.RUNNER_TEMP ?? '.', `notes-${app}.md`);
 writeFileSync(notesPath, notes + '\n');
 
-const out = [`version=${version}`, `previous=${previous ?? ''}`, `release=${release}`, `tag=${prefix}${version}`, `notes_path=${notesPath}`];
+const out = [
+  `version=${version}`,
+  `previous=${previous ?? ''}`,
+  `release=${release}`,
+  `tag=${prefix}${version}`,
+  `notes_path=${notesPath}`,
+];
 if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, out.join('\n') + '\n');
 console.log(out.join('\n'));
 console.log(notes);
@@ -1387,12 +1426,12 @@ Notes for the executing model: `/api/version` returns exactly `{"version":"x.y.z
 ### 10.5 `scripts/ci/changes.mjs`
 
 ```js
+import { spawnSync } from 'node:child_process';
 // Decides which apps to deploy. Outputs <app>=true|false for each app to GITHUB_OUTPUT.
 // Rules: FORCE lists apps or "all"; otherwise diff BEFORE..AFTER. packages/, lockfile, workspace
 // file, scripts/ci and the deploy workflows affect every app; apps/<x>/ affects x. A change that
 // only touches dependency files and does not change any production dependency deploys nothing.
 import { appendFileSync, readFileSync } from 'node:fs';
-import { spawnSync } from 'node:child_process';
 
 const APPS = ['armory', 'budget-planner', 'codex', 'sentinel', 'outfitter'];
 const { BEFORE = '', AFTER = 'HEAD', FORCE = '' } = process.env;
@@ -1422,26 +1461,40 @@ if (!BEFORE || /^0+$/.test(BEFORE) || git(['cat-file', '-e', `${BEFORE}^{commit}
 const files = (git(['diff', '--name-only', BEFORE, AFTER]) ?? '').split('\n').filter(Boolean);
 console.log('Changed files:\n' + files.join('\n'));
 
-const isDepFile = (f) => /(^|\/)package\.json$/.test(f) || f === 'pnpm-lock.yaml' || f === 'pnpm-workspace.yaml';
+const isDepFile = (f) =>
+  /(^|\/)package\.json$/.test(f) || f === 'pnpm-lock.yaml' || f === 'pnpm-workspace.yaml';
 if (files.length > 0 && files.every(isDepFile)) {
   const prodSubset = (json) => {
     const p = JSON.parse(json || '{}');
-    return JSON.stringify({ d: p.dependencies ?? {}, o: p.optionalDependencies ?? {}, p: p.peerDependencies ?? {} });
+    return JSON.stringify({
+      d: p.dependencies ?? {},
+      o: p.optionalDependencies ?? {},
+      p: p.peerDependencies ?? {},
+    });
   };
   let prodChanged = false;
   for (const f of files.filter((f) => /(^|\/)package\.json$/.test(f))) {
-    if (prodSubset(git(['show', `${BEFORE}:${f}`])) !== prodSubset(git(['show', `${AFTER}:${f}`]))) prodChanged = true;
+    if (prodSubset(git(['show', `${BEFORE}:${f}`])) !== prodSubset(git(['show', `${AFTER}:${f}`])))
+      prodChanged = true;
   }
   if (files.includes('pnpm-workspace.yaml')) {
     // A catalog entry changed. It is a production change if any package.json lists that name in a prod section.
     const before = git(['show', `${BEFORE}:pnpm-workspace.yaml`]) ?? '';
     const after = git(['show', `${AFTER}:pnpm-workspace.yaml`]) ?? '';
     const catalogLines = (t) => new Set(t.split('\n').filter((l) => /^\s{2}['"]?[@a-z]/.test(l)));
-    const changedNames = [...catalogLines(after)].filter((l) => !catalogLines(before).has(l)).map((l) => l.trim().split(':')[0].replace(/['"]/g, ''));
-    const manifests = (git(['ls-files', '--', '**/package.json', 'package.json']) ?? '').split('\n').filter(Boolean);
+    const changedNames = [...catalogLines(after)]
+      .filter((l) => !catalogLines(before).has(l))
+      .map((l) => l.trim().split(':')[0].replace(/['"]/g, ''));
+    const manifests = (git(['ls-files', '--', '**/package.json', 'package.json']) ?? '')
+      .split('\n')
+      .filter(Boolean);
     for (const m of manifests) {
       const p = JSON.parse(readFileSync(m, 'utf8'));
-      const prodNames = Object.keys({ ...p.dependencies, ...p.optionalDependencies, ...p.peerDependencies });
+      const prodNames = Object.keys({
+        ...p.dependencies,
+        ...p.optionalDependencies,
+        ...p.peerDependencies,
+      });
       if (changedNames.some((n) => prodNames.includes(n))) prodChanged = true;
     }
   }
@@ -1453,9 +1506,16 @@ if (files.length > 0 && files.every(isDepFile)) {
 }
 
 const global = files.some(
-  (f) => f.startsWith('packages/') || f === 'pnpm-lock.yaml' || f === 'pnpm-workspace.yaml' || f.startsWith('scripts/ci/') || f.startsWith('.forgejo/workflows/'),
+  (f) =>
+    f.startsWith('packages/') ||
+    f === 'pnpm-lock.yaml' ||
+    f === 'pnpm-workspace.yaml' ||
+    f.startsWith('scripts/ci/') ||
+    f.startsWith('.forgejo/workflows/'),
 );
-emit(Object.fromEntries(APPS.map((a) => [a, global || files.some((f) => f.startsWith(`apps/${a}/`))])));
+emit(
+  Object.fromEntries(APPS.map((a) => [a, global || files.some((f) => f.startsWith(`apps/${a}/`))])),
+);
 ```
 
 ### 10.6 `dependencies.yml`
@@ -1521,6 +1581,7 @@ Work top to bottom. Items marked **[runner]** and **[server]** need SSH; **[forg
   ```
 
   If `pm2 logs` shows `Cannot find module 'ts-node'`, PM2 ignored `interpreter: node` on this version; edit `ecosystem.config.cjs` on the host to `script: 'node', args: 'server/index.ts', interpreter: 'none'`, re-run the three pm2 commands, and tell the executing model to make the same change in the repo.
+
 - [ ] **[forgejo]** Run the Deploy workflow again with `apps: all`. All five must be green, including verify. Each creates a Forgejo release `<app>-v<version>`.
 - [ ] **[browser]** Open every app, sign in, perform one write (save a build, add an entry, etc.). Check Sentinel shows all five processes with the new versions.
 
@@ -1558,42 +1619,42 @@ Work top to bottom. Items marked **[runner]** and **[server]** need SSH; **[forg
 
 ## Appendix A: audit ID to stage
 
-| ID | Stage |
-| --- | --- |
-| DAL-ARCH-01 | 1, 2 |
-| DAL-ARCH-02 | 1 (`workspace:*`), 12.5 |
-| DAL-ARCH-03 | 9 |
-| DAL-SRV-01 | 3 |
-| DAL-SRV-02 | 1, 5 |
-| DAL-SRV-03 | 1, 5, 12.3 |
-| DAL-SRV-04 | 6 |
-| DAL-SRV-05 | 5 |
-| DAL-SRV-06 | 1 |
-| DAL-SRV-07 | 5 |
-| DAL-CLI-01 | 4 |
-| DAL-CLI-02 | 4 |
-| DAL-CLI-03 | 4 |
-| DAL-CLI-04 | 1 |
-| DAL-DEP-01 | 1, 7 |
-| DAL-DEP-02 | 1 |
-| DAL-DEP-03 | 1, 5 |
-| DAL-DEP-04 | 2, 3 |
-| DAL-DEP-05 | 4 |
-| DAL-CI-01 | 8 |
-| DAL-CI-02 | 8 (`cancel-in-progress: false` on deploy) |
-| DAL-CI-03 | 8 (`pnpm deploy`, release dirs, verify, rollback) |
-| DAL-CI-04 | 1.7, 12.1 |
-| DAL-CI-05 | 8 (shim deleted), 12.1 (reboot) |
-| DAL-CI-06 | 8 (main: build + deploy + verify only; e2e on PR) |
-| DAL-CI-07 | 8 (`light` kept; explicit `GITHUB_TOKEN`) |
-| DAL-CI-08 | 8 (production key only in the Deploy step) |
-| DAL-CI-09 | 8 |
-| DAL-CI-10 | 1 (release.yml removed) |
-| DAL-SEC-01 | 7, 12.1, 12.5 |
-| DAL-OPS-01 | rejected by owner; PM2 stays |
-| DAL-HYG-01 | 5 |
-| DAL-HYG-02 | 5 |
-| DAL-HYG-03 | 1 |
+| ID          | Stage                                             |
+| ----------- | ------------------------------------------------- |
+| DAL-ARCH-01 | 1, 2                                              |
+| DAL-ARCH-02 | 1 (`workspace:*`), 12.5                           |
+| DAL-ARCH-03 | 9                                                 |
+| DAL-SRV-01  | 3                                                 |
+| DAL-SRV-02  | 1, 5                                              |
+| DAL-SRV-03  | 1, 5, 12.3                                        |
+| DAL-SRV-04  | 6                                                 |
+| DAL-SRV-05  | 5                                                 |
+| DAL-SRV-06  | 1                                                 |
+| DAL-SRV-07  | 5                                                 |
+| DAL-CLI-01  | 4                                                 |
+| DAL-CLI-02  | 4                                                 |
+| DAL-CLI-03  | 4                                                 |
+| DAL-CLI-04  | 1                                                 |
+| DAL-DEP-01  | 1, 7                                              |
+| DAL-DEP-02  | 1                                                 |
+| DAL-DEP-03  | 1, 5                                              |
+| DAL-DEP-04  | 2, 3                                              |
+| DAL-DEP-05  | 4                                                 |
+| DAL-CI-01   | 8                                                 |
+| DAL-CI-02   | 8 (`cancel-in-progress: false` on deploy)         |
+| DAL-CI-03   | 8 (`pnpm deploy`, release dirs, verify, rollback) |
+| DAL-CI-04   | 1.7, 12.1                                         |
+| DAL-CI-05   | 8 (shim deleted), 12.1 (reboot)                   |
+| DAL-CI-06   | 8 (main: build + deploy + verify only; e2e on PR) |
+| DAL-CI-07   | 8 (`light` kept; explicit `GITHUB_TOKEN`)         |
+| DAL-CI-08   | 8 (production key only in the Deploy step)        |
+| DAL-CI-09   | 8                                                 |
+| DAL-CI-10   | 1 (release.yml removed)                           |
+| DAL-SEC-01  | 7, 12.1, 12.5                                     |
+| DAL-OPS-01  | rejected by owner; PM2 stays                      |
+| DAL-HYG-01  | 5                                                 |
+| DAL-HYG-02  | 5                                                 |
+| DAL-HYG-03  | 1                                                 |
 
 ## Appendix B: things that look wrong but are not
 

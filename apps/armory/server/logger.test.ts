@@ -1,6 +1,5 @@
+import { log } from '@dark-avian-labs/server-kit';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-
-import { log } from './logger.js';
 
 describe('log', () => {
   afterEach(() => {

@@ -1,9 +1,6 @@
+import { apiFetch, Button, Menu, Modal } from '@dark-avian-labs/ui';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-import { Button } from '../../components/ui/Button';
-import { Menu } from '../../components/ui/Menu';
-import { Modal } from '../../components/ui/Modal';
-import { apiFetch } from '../../utils/api';
 import type { GameAccount } from './types';
 
 export function AccountBar({

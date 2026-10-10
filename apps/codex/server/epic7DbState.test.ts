@@ -6,7 +6,7 @@ import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
 const dbPath = path.join(os.tmpdir(), `codex-epic7-test-${process.pid}.db`);
 
-vi.mock('@codex/game-epic7', () => ({
+vi.mock('./games/epic7/index.js', () => ({
   EPIC7_DB_PATH: dbPath,
 }));
 

@@ -1,5 +1,4 @@
-import { isHelminthNonSubsumableItemName } from '@codex/game-warframe/helminth-exceptions';
-
+import { isHelminthNonSubsumableItemName } from '../../../server/games/warframe/helminthExceptions';
 import type { WarframeColumn, WarframeRow } from '../../../shared/warframeTypes.js';
 import { HELMINTH_CYCLE, STATUS_CYCLE } from './warframeConstants.js';
 

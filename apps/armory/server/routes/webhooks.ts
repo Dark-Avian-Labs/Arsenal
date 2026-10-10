@@ -1,9 +1,9 @@
 import { verifyWebhook, type WebhookEvent } from '@clerk/express/webhooks';
+import { log } from '@dark-avian-labs/server-kit';
 import { Router, type Request, type Response } from 'express';
 
 import { markArmoryUserDeleted, upsertArmoryUser } from '../auth/armoryUsers.js';
 import { CLERK_WEBHOOK_SIGNING_SECRET } from '../config.js';
-import { log } from '../logger.js';
 
 export const clerkWebhookRouter = Router();
 

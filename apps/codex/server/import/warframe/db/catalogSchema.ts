@@ -1,4 +1,4 @@
-import { log } from '@codex/core';
+import { log } from '@dark-avian-labs/server-kit';
 import type Database from 'better-sqlite3';
 
 import { ensureCodexModularWeaponsPopulated } from '../codexModularWeapons.js';

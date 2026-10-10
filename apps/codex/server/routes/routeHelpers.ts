@@ -1,8 +1,9 @@
 import fs from 'fs';
 
-import { log } from '@codex/core';
-import { WARFRAME_DB_PATH, getWarframeDb } from '@codex/game-warframe';
+import { log } from '@dark-avian-labs/server-kit';
 import type { Response } from 'express';
+
+import { WARFRAME_DB_PATH, getWarframeDb } from '../games/warframe/index.js';
 
 export type WarframeDatabase = ReturnType<typeof getWarframeDb>;
 

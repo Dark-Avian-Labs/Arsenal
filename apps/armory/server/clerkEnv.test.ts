@@ -1,6 +1,5 @@
+import { isEncryptedEnvValue, normalizeClerkEnv } from '@dark-avian-labs/server-kit';
 import { afterEach, describe, expect, it } from 'vitest';
-
-import { isEncryptedEnvValue, normalizeClerkEnv } from './clerkEnv.js';
 
 const ENV_KEYS = ['CLERK_PUBLISHABLE_KEY', 'VITE_CLERK_PUBLISHABLE_KEY', 'CLERK_SECRET_KEY', 'NODE_ENV'] as const;
 

@@ -1,17 +1,13 @@
 {
+  "extends": "@dark-avian-labs/config/tsconfig.server.json",
   "compilerOptions": {
-    "target": "ES2024",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true,
+    "noEmit": false,
+    "allowImportingTsExtensions": false,
+    "rewriteRelativeImportExtensions": false,
     "outDir": "dist",
     "rootDir": ".",
-    "declaration": true,
     "sourceMap": true,
+    "declaration": true,
     "typeRoots": ["./node_modules/@types", "./server/types"]
   },
   "include": ["server/**/*", "shared/**/*"],

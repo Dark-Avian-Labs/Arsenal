@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
-import { log } from '@codex/core';
+import { log } from '@dark-avian-labs/server-kit';
 
 import { IMAGE_BASE_URL, EXPORTS_DIR } from '../../config.js';
 import { getCatalogDb } from './db/connection.js';

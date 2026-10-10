@@ -1,8 +1,8 @@
-import { requireCodexAdmin } from '@codex/core';
-import { validateBody } from '@codex/core/validation';
-import { getWorCatalogDb, worAdminImportRunSchema } from '@codex/game-wor';
+import { validateBody } from '@dark-avian-labs/server-kit';
 import { Router, type Response } from 'express';
 
+import { requireCodexAdmin } from '../core.js';
+import { getWorCatalogDb, worAdminImportRunSchema } from '../games/wor/index.js';
 import {
   getWorAdminImportSnapshot,
   isWorImportRunning,

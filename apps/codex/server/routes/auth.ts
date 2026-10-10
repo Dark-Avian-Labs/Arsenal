@@ -1,7 +1,7 @@
-import { getClerkAuthState, getCodexAppId, requireAuthApi } from '@codex/core';
 import { Router, type Request, type Response } from 'express';
 
 import { SECURE_COOKIES, SESSION_COOKIE_NAME, sessionCookieDomain } from '../config.js';
+import { getClerkAuthState, getCodexAppId, requireAuthApi } from '../core.js';
 import {
   CODEX_GAMES as REGISTRY_CODEX_GAMES,
   getGameMetadata,

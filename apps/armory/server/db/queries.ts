@@ -1,6 +1,8 @@
 import fs from 'fs';
 import path from 'path';
 
+import { log } from '@dark-avian-labs/server-kit';
+
 import { helminthEntryByDePath } from '../../shared/helminthRegistry.js';
 import {
   isUnreleasedArcane,
@@ -10,7 +12,6 @@ import {
 import { classifyArcaneCompatTags } from '../arcaneCompat.js';
 import { syncCodexModularWeaponsTable } from '../codexModularWeapons.js';
 import { EXPORTS_DIR } from '../config.js';
-import { log } from '../logger.js';
 import { getCatalogDb } from './connection.js';
 
 function saveModAtragraphPaths(): Map<

@@ -21,7 +21,7 @@ export async function fetchWarframeMarketSlugSet(): Promise<ReadonlySet<string>>
     const result = await fetchBounded(
       ITEMS_URL,
       {
-        headers: FETCH_HEADERS as unknown as HeadersInit,
+        headers: { ...FETCH_HEADERS },
       },
       FETCH_TIMEOUT_MS.warframeMarketItems,
       FETCH_BYTE_LIMITS.manifest,

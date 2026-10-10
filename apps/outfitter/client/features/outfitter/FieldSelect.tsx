@@ -1,4 +1,4 @@
-import { SelectDropdown, type SelectDropdownOption } from '../../components/ui/SelectDropdown';
+import { SelectDropdown, type SelectDropdownOption } from '@dark-avian-labs/ui';
 
 export function FieldSelect({
   value,

@@ -1,16 +1,16 @@
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+
+import {
+  ensureWarframeCatalogMasterTable,
+  ensureWarframeCatalogMaxLevelColumn,
+} from '../server/games/warframe/db/schema.js';
 import {
   VALENCE_COMPLETE_THRESHOLD,
   VALENCE_PERCENT_MAX_STORED,
   VALENCE_PERCENT_MIN,
   resolveCanonicalKey,
   warframeQueries,
-} from '@codex/game-warframe';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-
-import {
-  ensureWarframeCatalogMasterTable,
-  ensureWarframeCatalogMaxLevelColumn,
-} from '../packages/games/warframe/src/db/schema.js';
+} from '../server/games/warframe/index.js';
 import { describeWithSqlite } from './helpers/describeWithSqlite.js';
 import {
   createTempDbDir,

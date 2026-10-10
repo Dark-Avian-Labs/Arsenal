@@ -41,7 +41,7 @@ async function withEnvOverrides<T>(
       }
     }
     await vi.resetModules();
-    const { getAppPublicBaseUrl } = await import('../packages/core/src/middleware/appPublicBaseUrl.js');
+    const { getAppPublicBaseUrl } = await import('@dark-avian-labs/server-kit');
     return await fn(getAppPublicBaseUrl);
   } finally {
     for (const key of ENV_KEYS) {

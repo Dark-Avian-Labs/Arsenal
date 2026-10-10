@@ -1,0 +1,118 @@
+import { optionalPositiveInt, positiveInt, z, zodEnum } from '@dark-avian-labs/server-kit';
+
+import {
+  ARTIFACT_CLASSES,
+  ARTIFACT_GAUGE_MAX,
+  ELEMENTS,
+  HERO_CLASSES,
+  HERO_RATINGS,
+} from '../config.js';
+
+export const MAX_EPIC7_NAME_LENGTH = 255;
+export const MAX_EPIC7_ACCOUNT_NAME_LENGTH = 128;
+
+const epic7Name = z
+  .string()
+  .trim()
+  .min(1, 'Name is required.')
+  .max(MAX_EPIC7_NAME_LENGTH, `Name must be at most ${MAX_EPIC7_NAME_LENGTH} characters.`);
+const epic7AccountName = z
+  .string()
+  .trim()
+  .min(1, 'Account name is required.')
+  .max(
+    MAX_EPIC7_ACCOUNT_NAME_LENGTH,
+    `Account name must be at most ${MAX_EPIC7_ACCOUNT_NAME_LENGTH} characters.`,
+  );
+
+const heroClass = zodEnum(HERO_CLASSES);
+const artifactClass = zodEnum(ARTIFACT_CLASSES);
+const element = zodEnum(ELEMENTS);
+const heroRating = zodEnum(HERO_RATINGS);
+const starRating = z.coerce.number().int().min(3).max(5).default(5);
+
+export const updateHeroSchema = z.object({
+  hero_id: positiveInt,
+  rating: heroRating,
+});
+
+export const updateArtifactSchema = z.object({
+  artifact_id: positiveInt,
+  gauge_level: z.coerce.number().int().min(0).max(ARTIFACT_GAUGE_MAX),
+});
+
+export const addHeroSchema = z.object({
+  name: epic7Name,
+  class: heroClass,
+  element,
+  star_rating: starRating,
+  base_hero_id: optionalPositiveInt.optional(),
+});
+
+export const addArtifactSchema = z.object({
+  name: epic7Name,
+  class: artifactClass,
+  star_rating: starRating,
+  base_artifact_id: optionalPositiveInt.optional(),
+});
+
+export const deleteHeroSchema = z.object({
+  hero_id: positiveInt,
+});
+
+export const deleteArtifactSchema = z.object({
+  artifact_id: positiveInt,
+});
+
+export const updateHeroDetailsSchema = z.object({
+  hero_id: positiveInt,
+  name: epic7Name,
+  class: heroClass,
+  element,
+  star_rating: starRating,
+});
+
+export const updateArtifactDetailsSchema = z.object({
+  artifact_id: positiveInt,
+  name: epic7Name,
+  class: artifactClass,
+  star_rating: starRating,
+});
+
+export const switchAccountSchema = z.object({
+  account_id: positiveInt,
+});
+
+export const addAccountSchema = z.object({
+  account_name: epic7AccountName,
+});
+
+export const updateAccountSchema = z.object({
+  account_id: positiveInt,
+  account_name: epic7AccountName,
+});
+
+export const deleteAccountSchema = z.object({
+  account_id: positiveInt,
+});
+
+export const adminAddBaseHeroSchema = z.object({
+  name: epic7Name,
+  class: heroClass,
+  element,
+  star_rating: starRating,
+});
+
+export const adminAddBaseArtifactSchema = z.object({
+  name: epic7Name,
+  class: artifactClass,
+  star_rating: starRating,
+});
+
+export const adminDeleteBaseHeroSchema = z.object({
+  hero_id: positiveInt,
+});
+
+export const adminDeleteBaseArtifactSchema = z.object({
+  artifact_id: positiveInt,
+});

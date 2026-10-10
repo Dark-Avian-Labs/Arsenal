@@ -1,4 +1,4 @@
-import { rarityToStarRating } from '@codex/game-wor';
+import { rarityToStarRating } from '../../games/wor/index.js';
 import type Database from 'better-sqlite3';
 
 export type CatalogHeroRow = {

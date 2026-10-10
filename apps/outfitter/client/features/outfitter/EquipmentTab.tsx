@@ -1,3 +1,4 @@
+import { apiFetch, Button, Modal } from '@dark-avian-labs/ui';
 import {
   CLASS_DISPLAY_NAMES,
   FACTION_DISPLAY_NAMES,
@@ -12,16 +13,13 @@ import { computeFinalStats, type FinalStats } from '@shared/formulas';
 import { loadoutStatBag } from '@shared/pieceStats';
 import { useMemo, useState } from 'react';
 
-import { Button } from '../../components/ui/Button';
 import { FilterIconButton } from '../../components/ui/FilterIconButton';
-import { Modal } from '../../components/ui/Modal';
 import {
   cycleTriFilter,
   matchesTriFilter,
   triFilterState,
   type TriFilterMap,
 } from '../../lib/triFilter';
-import { apiFetch } from '../../utils/api';
 import { FieldSelect } from './FieldSelect';
 import { EmptySlotTile, GearTile, type GearView } from './GearTile';
 import {

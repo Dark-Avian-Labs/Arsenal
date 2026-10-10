@@ -1,6 +1,6 @@
+import { requireAdmin } from '@dark-avian-labs/server-kit';
 import { Router, type Request, type Response } from 'express';
 
-import { requireAdmin } from '../auth/middleware.js';
 import { getMetricsDb } from './db.js';
 import {
   getAppMeta,

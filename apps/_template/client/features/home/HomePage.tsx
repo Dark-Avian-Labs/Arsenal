@@ -1,12 +1,7 @@
+import { Button, GlassCard, Input, Modal, SelectDropdown, Toast } from '@dark-avian-labs/ui';
 import { useState } from 'react';
 
 import { APP_DISPLAY_NAME } from '../../app/config';
-import { Button } from '../../components/ui/Button';
-import { GlassCard } from '../../components/ui/GlassCard';
-import { Input } from '../../components/ui/Input';
-import { Modal } from '../../components/ui/Modal';
-import { SelectDropdown } from '../../components/ui/SelectDropdown';
-import { Toast } from '../../components/ui/Toast';
 
 const SAMPLE_OPTIONS = [
   { value: 'prism', label: 'Prism' },

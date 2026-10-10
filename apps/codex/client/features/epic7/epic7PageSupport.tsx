@@ -1,3 +1,5 @@
+import { memo, useCallback, useEffect, useReducer, useRef, useState } from 'react';
+
 import {
   ARTIFACT_CLASSES,
   ARTIFACT_GAUGE_EMPTY as GAUGE_EMPTY,
@@ -9,10 +11,8 @@ import {
   GAUGE_COLORS,
   HERO_CLASSES,
   RATING_COLORS,
-} from '@codex/game-epic7/constants';
-import type { ClassKey, ElementKey } from '@codex/game-epic7/constants';
-import { memo, useCallback, useEffect, useReducer, useRef, useState } from 'react';
-
+} from '../../../server/games/epic7/constants';
+import type { ClassKey, ElementKey } from '../../../server/games/epic7/constants';
 import { MaterialSymbol } from '../../components/ui/MaterialSymbol';
 import { useAutoDismissMessage } from '../../hooks/useAutoDismissMessage';
 import type { TriFilterMap } from '../../lib/triFilter';
@@ -94,7 +94,7 @@ export type Epic7ModalAction =
 
 export type ActiveFilters = { class: TriFilterMap; element: TriFilterMap };
 
-const ICON_MODULES = import.meta.glob('../../../packages/games/epic7/assets/*.png', {
+const ICON_MODULES = import.meta.glob('../../assets/games/epic7/*.png', {
   eager: true,
   import: 'default',
 }) as Record<string, string>;

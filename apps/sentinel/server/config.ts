@@ -1,72 +1,18 @@
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
 
-import dotenvx from '@dotenvx/dotenvx';
+import {
+  isEncryptedEnvValue,
+  loadAppEnv,
+  parseBooleanEnv,
+  parseIntEnv,
+  readPackageVersion,
+  readReleaseVersion,
+  resolveProjectRoot,
+} from '@dark-avian-labs/server-kit';
 
-const { config: loadEnv } = dotenvx;
-
-import { isEncryptedEnvValue, normalizeClerkEnv } from './clerkEnv.js';
-
-function resolveEnvFilePath(projectRoot: string): string | null {
-  const normalizedNodeEnv = (process.env.NODE_ENV ?? '').trim().toLowerCase();
-
-  if (normalizedNodeEnv === 'test') {
-    const testPath = path.join(projectRoot, '.env.test');
-    return fs.existsSync(testPath) ? testPath : null;
-  }
-
-  if (
-    normalizedNodeEnv &&
-    normalizedNodeEnv !== 'production' &&
-    normalizedNodeEnv !== 'development'
-  ) {
-    throw new Error(
-      `[FATAL] Unsupported NODE_ENV "${process.env.NODE_ENV}". Use production, development, or test.`,
-    );
-  }
-
-  const isProduction = normalizedNodeEnv === 'production';
-  const fileName = isProduction ? '.env.production' : '.env.development';
-  const candidatePath = path.join(projectRoot, fileName);
-  if (fs.existsSync(candidatePath)) {
-    return candidatePath;
-  }
-  if (isProduction) {
-    throw new Error(
-      `[FATAL] Missing ${fileName}. Refusing to start production without the matching env file.`,
-    );
-  }
-  return null;
-}
-
-const projectRoot = process.cwd();
-const envKeysPath = path.join(projectRoot, '.env.keys');
-if (fs.existsSync(envKeysPath)) {
-  try {
-    loadEnv({ path: envKeysPath, quiet: true });
-  } catch (error) {
-    console.error(`[Config] Failed to load environment keys from "${envKeysPath}".`, error);
-    throw error;
-  }
-}
-
-const envFilePath = resolveEnvFilePath(projectRoot);
-if (envFilePath) {
-  try {
-    loadEnv({ path: envFilePath, quiet: true });
-  } catch (error) {
-    console.error(`[Config] Failed to load environment from "${envFilePath}".`, error);
-    throw error;
-  }
-}
-
-normalizeClerkEnv();
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-const parentName = path.basename(path.resolve(__dirname, '..'));
-export const PROJECT_ROOT = path.resolve(__dirname, parentName === 'dist' ? '../..' : '..');
+export const PROJECT_ROOT = resolveProjectRoot(import.meta.url);
+loadAppEnv(PROJECT_ROOT);
 export const DATA_DIR = path.join(PROJECT_ROOT, 'data');
 
 function resolveSessionDbPath(): string {
@@ -77,39 +23,26 @@ function resolveSessionDbPath(): string {
   return path.join(DATA_DIR, 'sessions.db');
 }
 
-export const SESSION_DB_PATH = resolveSessionDbPath();
+function resolveMetricsDbPath(): string {
+  const configured = process.env.METRICS_DB_PATH?.trim();
+  if (configured) {
+    return path.isAbsolute(configured) ? configured : path.resolve(PROJECT_ROOT, configured);
+  }
+  return path.join(DATA_DIR, 'metrics.db');
+}
 
-const _port = parseInt(process.env.PORT || '3005', 10);
-export const PORT = Number.isFinite(_port) && _port > 0 ? _port : 3005;
-const _shutdownTimeoutMs = parseInt(process.env.SHUTDOWN_TIMEOUT_MS || '10000', 10);
-export const SHUTDOWN_TIMEOUT_MS =
-  Number.isFinite(_shutdownTimeoutMs) && _shutdownTimeoutMs > 0 ? _shutdownTimeoutMs : 10_000;
+export const SESSION_DB_PATH = resolveSessionDbPath();
+export const METRICS_DB_PATH = resolveMetricsDbPath();
+export const SENTINEL_INGEST_TOKEN = process.env.SENTINEL_INGEST_TOKEN?.trim() || '';
+
+export const PORT = parseIntEnv(process.env.PORT, 3005);
+export const SHUTDOWN_TIMEOUT_MS = parseIntEnv(process.env.SHUTDOWN_TIMEOUT_MS, 10_000);
 export const HOST = process.env.HOST || '127.0.0.1';
 export const NODE_ENV = process.env.NODE_ENV || 'development';
 
 export const APP_NAME = process.env.APP_NAME?.trim() || 'Sentinel';
 export const APP_ID = process.env.APP_ID?.trim() || 'sentinel';
-
-function readPackageVersion(projectRoot: string): string {
-  try {
-    const pkgPath = path.join(projectRoot, 'package.json');
-    const raw = fs.readFileSync(pkgPath, 'utf-8');
-    const pkg: unknown = JSON.parse(raw);
-    if (!pkg || typeof pkg !== 'object' || !('version' in pkg)) {
-      return '0.0.0';
-    }
-    const version = pkg.version;
-    if (typeof version !== 'string') {
-      return '0.0.0';
-    }
-    const v = version.trim();
-    return v.length > 0 ? v : '0.0.0';
-  } catch {
-    return '0.0.0';
-  }
-}
-
-export const APP_VERSION = readPackageVersion(PROJECT_ROOT);
+export const APP_VERSION = readReleaseVersion(PROJECT_ROOT, readPackageVersion(PROJECT_ROOT));
 
 const DEFAULT_SESSION_SECRET = 'sentinel-dev-only-secret-change-me-32ch';
 const envSessionSecret = process.env.SESSION_SECRET?.trim() || '';
@@ -123,14 +56,6 @@ if (NODE_ENV === 'production' && envSessionSecret.length < 32) {
 }
 export const SESSION_SECRET = envSessionSecret || DEFAULT_SESSION_SECRET;
 
-function parseBooleanEnv(value: string | undefined): boolean | undefined {
-  if (value == null) return undefined;
-  const normalized = value.trim().toLowerCase();
-  if (normalized === 'true' || normalized === '1') return true;
-  if (normalized === 'false' || normalized === '0') return false;
-  return undefined;
-}
-
 export const TRUST_PROXY = parseBooleanEnv(process.env.TRUST_PROXY) ?? false;
 export const SECURE_COOKIES =
   parseBooleanEnv(process.env.SECURE_COOKIES) ?? NODE_ENV === 'production';
@@ -141,17 +66,6 @@ export const LEGAL_PAGE_URL =
   process.env.LEGAL_PAGE_URL?.trim() ||
   process.env.VITE_LEGAL_PAGE_URL?.trim() ||
   'https://darkavianlabs.com/legal';
-
-function resolveMetricsDbPath(): string {
-  const configured = process.env.METRICS_DB_PATH?.trim();
-  if (configured) {
-    return path.isAbsolute(configured) ? configured : path.resolve(PROJECT_ROOT, configured);
-  }
-  return path.join(DATA_DIR, 'metrics.db');
-}
-
-export const METRICS_DB_PATH = resolveMetricsDbPath();
-export const SENTINEL_INGEST_TOKEN = process.env.SENTINEL_INGEST_TOKEN?.trim() || '';
 
 export function ensureDataDirs(): void {
   for (const dir of [DATA_DIR, path.dirname(SESSION_DB_PATH), path.dirname(METRICS_DB_PATH)]) {

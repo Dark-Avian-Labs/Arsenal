@@ -22,8 +22,8 @@ vi.mock('@clerk/express', () => ({
   clerkMiddleware: () => (_req: unknown, _res: unknown, next: () => void) => next(),
 }));
 
-vi.mock('@codex/game-warframe', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@codex/game-warframe')>();
+vi.mock('../server/games/warframe/index.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../server/games/warframe/index.js')>();
   return {
     ...actual,
     getWarframeDb: () => {

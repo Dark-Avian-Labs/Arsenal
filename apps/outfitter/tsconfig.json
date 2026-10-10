@@ -1,12 +1,6 @@
 {
-  "extends": "./tsconfig.base.json",
+  "extends": "@dark-avian-labs/config/tsconfig.client.json",
   "compilerOptions": {
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "jsx": "react-jsx",
-    "isolatedModules": true,
-    "noEmit": true,
     "paths": {
       "@/*": ["./client/*"],
       "@shared/*": ["./shared/*"]

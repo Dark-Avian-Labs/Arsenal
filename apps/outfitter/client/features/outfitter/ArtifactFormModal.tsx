@@ -1,3 +1,4 @@
+import { apiFetch, Button, Modal } from '@dark-avian-labs/ui';
 import {
   artifactIdentityKey,
   findDuplicateArtifact,
@@ -15,9 +16,6 @@ import {
 } from '@shared/catalog';
 import { useEffect, useState } from 'react';
 
-import { Button } from '../../components/ui/Button';
-import { Modal } from '../../components/ui/Modal';
-import { apiFetch } from '../../utils/api';
 import { FieldSelect } from './FieldSelect';
 import type { ArtifactView, CatalogArtifact } from './types';
 

@@ -1,8 +1,8 @@
 import Database from 'better-sqlite3';
 import { describe, expect, it, vi } from 'vitest';
 
-vi.mock('@codex/core', async () => {
-  const actual = await vi.importActual<typeof import('@codex/core')>('@codex/core');
+vi.mock('../db/sessionDb.js', async () => {
+  const actual = await vi.importActual<typeof import('../db/sessionDb.js')>('../db/sessionDb.js');
   let sessionDb: Database.Database | null = null;
   return {
     ...actual,

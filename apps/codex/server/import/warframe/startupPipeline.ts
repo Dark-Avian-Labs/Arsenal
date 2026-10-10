@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
-import { log as writeLog } from '@codex/core';
+import { log as writeLog } from '@dark-avian-labs/server-kit';
 
 import type { PipelineStepKey } from '../../../shared/warframeImport/pipelineSteps.js';
 import { EXPORTS_DIR, PROJECT_ROOT, REQUIRED_EXPORTS } from '../../config.js';

@@ -23,8 +23,6 @@ export default defineConfig({
     include: [
       'tests/**/*.test.ts',
       'server/**/*.test.ts',
-      'packages/core/src/**/*.test.ts',
-      'packages/games/**/src/**/*.test.ts',
       'client/**/*.test.ts',
       'scripts/**/*.test.ts',
     ],

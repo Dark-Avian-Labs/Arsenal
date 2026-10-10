@@ -5,7 +5,7 @@ import path from 'node:path';
 import Database from 'better-sqlite3';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { createCatalogSchema, createSchema } from '../packages/games/wor/src/db/schema.js';
+import { createCatalogSchema, createSchema } from '../server/games/wor/db/schema.js';
 
 describe('WoR schema bootstrap', () => {
   const tmpDirs: string[] = [];

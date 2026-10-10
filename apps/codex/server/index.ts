@@ -1,9 +1,6 @@
 import './config.js';
 
-import { closeSessionDb, getSessionDb, log } from '@codex/core';
-import { closeEpic7Db, getEpic7Db } from '@codex/game-epic7';
-import { closeWarframeDb, getWarframeDb } from '@codex/game-warframe';
-import { closeWorCatalogDb, closeWorDb, getWorCatalogDb, getWorDb } from '@codex/game-wor';
+import { createAppSentinelAgent, log, startServer } from '@dark-avian-labs/server-kit';
 
 import { createApp } from './app.js';
 import {
@@ -15,8 +12,12 @@ import {
   PORT,
   SHUTDOWN_TIMEOUT_MS,
 } from './config.js';
+import { closeSessionDb, getSessionDb } from './db/sessionDb.js';
 import { ensureSessionSchema } from './db/sessionSchema.js';
 import { refreshEpic7DbAvailability } from './epic7DbState.js';
+import { closeEpic7Db, getEpic7Db } from './games/epic7/index.js';
+import { closeWarframeDb, getWarframeDb } from './games/warframe/index.js';
+import { closeWorCatalogDb, closeWorDb, getWorCatalogDb, getWorDb } from './games/wor/index.js';
 import { startAdminImportJob as startWarframeAdminImportJob } from './import/warframe/adminImportJob.js';
 import { recoverImportLeaseOnStartup as recoverWarframeImportLeaseOnStartup } from './import/warframe/importRuns.js';
 import { catalogNeedsImport as warframeCatalogNeedsImport } from './import/warframe/startupPipeline.js';
@@ -26,7 +27,6 @@ import {
   ensureWorCatalogSeededFromCollection,
   runWorStartupPipeline,
 } from './import/wor/startupPipeline.js';
-import { createAppSentinelAgent } from './sentinelAgent.js';
 import { waitForWarframeSyncIdle } from './services/warframeSyncState.js';
 import { refreshWorDbAvailability } from './worDbState.js';
 
@@ -114,21 +114,20 @@ const { app, sessionStore } = createApp({
   metricsMiddleware: sentinelAgent?.middleware,
 });
 
-sentinelAgent?.start();
-
-const server = app.listen(PORT, HOST, () => {
-  log('info', `${APP_NAME} server listening`, { host: HOST, port: PORT, nodeEnv: NODE_ENV });
-});
-
-let shutdownStarted = false;
-function shutdown(baseExitCode = 0, signal?: string): void {
-  if (shutdownStarted) return;
-  shutdownStarted = true;
-  if (baseExitCode === 0) sentinelAgent?.noteGracefulExit(signal);
-  else sentinelAgent?.noteCrash(new Error(`shutdown exit ${baseExitCode}`));
-  sentinelAgent?.stop();
-
-  function closeAndExit(exitCode: number): void {
+startServer({
+  app,
+  appName: APP_NAME,
+  host: HOST,
+  port: PORT,
+  shutdownTimeoutMs: SHUTDOWN_TIMEOUT_MS,
+  sentinelAgent,
+  beforeClose: async () => {
+    const syncFinished = await waitForWarframeSyncIdle(Math.max(SHUTDOWN_TIMEOUT_MS - 2000, 1000));
+    if (!syncFinished) {
+      log('warn', 'Warframe sync still running; proceeding with shutdown');
+    }
+  },
+  onClose: () => {
     sessionStore.dispose();
     try {
       closeSessionDb();
@@ -140,70 +139,9 @@ function shutdown(baseExitCode = 0, signal?: string): void {
       log('error', 'Failed to close DB connections during shutdown', {
         err: err instanceof Error ? err.message : String(err),
       });
-      exitCode = 1;
+      process.exit(1);
     }
-    // eslint-disable-next-line n/no-process-exit -- explicit process exit required for shutdown lifecycle
-    process.exit(exitCode);
-  }
-
-  const hardTimeout = setTimeout(() => {
-    log('warn', 'Shutdown timeout reached; forcing exit', { timeoutMs: SHUTDOWN_TIMEOUT_MS });
-    closeAndExit(1);
-  }, SHUTDOWN_TIMEOUT_MS);
-
-  void (async () => {
-    try {
-      const syncFinished = await waitForWarframeSyncIdle(
-        Math.max(SHUTDOWN_TIMEOUT_MS - 2000, 1000),
-      );
-      if (!syncFinished) {
-        log('warn', 'Warframe sync still running; proceeding with shutdown');
-      }
-
-      server.close((err) => {
-        clearTimeout(hardTimeout);
-        if (err) {
-          log('error', 'HTTP server close failed', {
-            err: err instanceof Error ? err.message : String(err),
-          });
-          closeAndExit(1);
-          return;
-        }
-        closeAndExit(baseExitCode);
-      });
-      server.closeIdleConnections();
-      setTimeout(
-        () => {
-          server.closeAllConnections();
-        },
-        Math.max(0, SHUTDOWN_TIMEOUT_MS - 500),
-      );
-    } catch (err) {
-      log('error', 'Unexpected shutdown error', {
-        err: err instanceof Error ? (err.stack ?? err.message) : String(err),
-      });
-      clearTimeout(hardTimeout);
-      closeAndExit(1);
-    }
-  })();
-}
-process.on('SIGINT', () => shutdown(0, 'SIGINT'));
-process.on('SIGTERM', () => shutdown(0, 'SIGTERM'));
-
-process.on('unhandledRejection', (reason) => {
-  log('error', 'Unhandled promise rejection; shutting down', {
-    err: reason instanceof Error ? (reason.stack ?? reason.message) : String(reason),
-  });
-  sentinelAgent?.noteCrash(reason);
-  shutdown(1);
-});
-
-process.on('uncaughtException', (err) => {
-  log('error', 'Uncaught exception; shutting down', {
-    err: err.stack ?? err.message,
-  });
-  sentinelAgent?.noteCrash(err);
-  shutdown(1);
+  },
 });
 
 export default app;

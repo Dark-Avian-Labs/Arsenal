@@ -1,6 +1,5 @@
+import { getClerkAuthState } from '@dark-avian-labs/server-kit';
 import type { NextFunction, Request, Response } from 'express';
-
-import { getClerkAuthState } from '../auth/middleware.js';
 
 export function requireClerkUserId(req: Request): string {
   const state = getClerkAuthState(req);

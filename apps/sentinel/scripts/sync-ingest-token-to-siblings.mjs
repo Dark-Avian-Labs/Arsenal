@@ -50,11 +50,12 @@ function setEnv(appRoot, file, key, value) {
   }
 }
 
-const labsSiblings = ['Outfitter', 'Armory', 'BudgetPlanner', 'Codex', 'TC-Bot'];
+const labsSiblings = ['outfitter', 'armory', 'budget-planner', 'codex'];
 const externalSiblings = [
-  path.resolve(labsRoot, '..', 'eMail Sort'),
-  path.resolve(labsRoot, '..', 'Discord Profile'),
-  path.resolve(labsRoot, '..', 'WoR Code Reminder'),
+  path.resolve(labsRoot, '..', '..', 'TC-Bot'),
+  path.resolve(labsRoot, '..', '..', 'eMail Sort'),
+  path.resolve(labsRoot, '..', '..', 'Discord Profile'),
+  path.resolve(labsRoot, '..', '..', 'WoR Code Reminder'),
 ];
 const pairs = [
   ['.env.development', 'http://127.0.0.1:3005/api/ingest'],

@@ -1,3 +1,5 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+
 import {
   ARTIFACT_FILTER_STAR_RATINGS,
   ARTIFACT_PROMOTION_MAX,
@@ -10,9 +12,7 @@ import {
   HERO_AWAKENING_MAX,
   HERO_CLASSES,
   heroHasAwakening,
-} from '@codex/game-wor/constants';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-
+} from '../../../server/games/wor/constants';
 import { CollectionSubheader } from '../../components/Layout/CollectionSubheader';
 import { HeaderSearch } from '../../components/Layout/HeaderSearch';
 import { useLayoutSlots } from '../../components/Layout/useLayoutSlots';

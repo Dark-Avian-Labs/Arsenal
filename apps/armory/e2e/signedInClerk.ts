@@ -1,6 +1,8 @@
+import {
+  clerkFrontendApiOrigin,
+  isSignedInClerkConfigured,
+} from '@dark-avian-labs/server-kit/testing';
 import { config as loadEnv } from '@dotenvx/dotenvx';
-
-import { clerkFrontendApiOrigin, isSignedInClerkConfigured } from '../server/signedInClerk.js';
 
 export { clerkFrontendApiOrigin };
 

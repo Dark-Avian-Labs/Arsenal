@@ -1,4 +1,4 @@
-import { log } from '@codex/core';
+import { log } from '@dark-avian-labs/server-kit';
 
 import type { PipelineStepKey } from '../../../shared/warframeImport/pipelineSteps.js';
 import { bustCatalogResponseCache } from './cacheStubs.js';

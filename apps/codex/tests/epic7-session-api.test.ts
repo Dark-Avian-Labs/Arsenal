@@ -1,10 +1,10 @@
-import { epic7Queries as q } from '@codex/game-epic7';
 import Database from 'better-sqlite3';
 import express from 'express';
 import session from 'express-session';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
-import { createSchema as createEpic7Schema } from '../packages/games/epic7/src/db/schema.js';
+import { createSchema as createEpic7Schema } from '../server/games/epic7/db/schema.js';
+import { epic7Queries as q } from '../server/games/epic7/index.js';
 import { describeWithSqlite } from './helpers/describeWithSqlite.js';
 import { createSessionAgent, testSessionOptions } from './helpers/testExpress.js';
 
@@ -26,8 +26,8 @@ vi.mock('../server/epic7DbState.js', () => ({
   ensureEpic7DbAvailable: () => true,
 }));
 
-vi.mock('@codex/game-epic7', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@codex/game-epic7')>();
+vi.mock('../server/games/epic7/index.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../server/games/epic7/index.js')>();
   return {
     ...actual,
     getEpic7Db: () => {

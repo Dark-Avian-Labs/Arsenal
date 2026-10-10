@@ -1,8 +1,8 @@
 import Database from 'better-sqlite3';
 import { afterEach, beforeEach, expect, it } from 'vitest';
 
-import * as q from '../packages/games/wor/src/db/queries.js';
-import { createSchema as createWorSchema, ensureWorSchemaMigrations } from '../packages/games/wor/src/db/schema.js';
+import * as q from '../server/games/wor/db/queries.js';
+import { createSchema as createWorSchema, ensureWorSchemaMigrations } from '../server/games/wor/db/schema.js';
 import { describeWithSqlite } from './helpers/describeWithSqlite.js';
 
 describeWithSqlite('WoR demon owned level', () => {

@@ -1,6 +1,6 @@
-import { requireAuthApi } from '@codex/core';
 import { Router } from 'express';
 
+import { requireAuthApi } from '../core.js';
 import { epic7ApiRouter } from './epic7Api.js';
 import { warframeApiRouter } from './warframeApi.js';
 import { worAdminApiRouter } from './worAdminApi.js';

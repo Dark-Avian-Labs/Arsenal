@@ -1,5 +1,6 @@
-import { arcaneMaxRankFromLevelStats, resolveAdvancedRowRelevance } from '@codex/game-warframe';
 import { describe, expect, it } from 'vitest';
+
+import { arcaneMaxRankFromLevelStats, resolveAdvancedRowRelevance } from '../server/games/warframe/index.js';
 
 describe('arcaneMaxRankFromLevelStats', () => {
   it('returns length - 1 for valid level_stats JSON', () => {

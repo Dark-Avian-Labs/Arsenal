@@ -92,13 +92,12 @@ process.env.EPIC7_DB_PATH = epic7DbPath;
 process.env.WOR_DB_PATH = worDbPath;
 process.env.WOR_CATALOG_DB_PATH = worCatalogDbPath;
 
-const coreDist = path.join(root, 'packages/core/dist/db/sqlitePragmas.js');
-const warframeDist = path.join(root, 'packages/games/warframe/dist/db/schema.js');
-const epic7Dist = path.join(root, 'packages/games/epic7/dist/db/schema.js');
-const worDist = path.join(root, 'packages/games/wor/dist/db/schema.js');
+const warframeDist = path.join(root, 'dist/server/games/warframe/db/schema.js');
+const epic7Dist = path.join(root, 'dist/server/games/epic7/db/schema.js');
+const worDist = path.join(root, 'dist/server/games/wor/db/schema.js');
 const warframeCatalogDist = path.join(root, 'dist/server/import/warframe/db/catalogSchema.js');
 
-for (const file of [coreDist, warframeDist, epic7Dist, worDist, warframeCatalogDist]) {
+for (const file of [warframeDist, epic7Dist, worDist, warframeCatalogDist]) {
   if (!fs.existsSync(file)) {
     console.error(
       `[db:init] Missing ${file}. Run: pnpm run build (or package builds + tsc -p tsconfig.server.json)`,
@@ -107,7 +106,7 @@ for (const file of [coreDist, warframeDist, epic7Dist, worDist, warframeCatalogD
   }
 }
 
-const { DEFAULT_SQLITE_PRAGMAS } = await importBuilt(coreDist);
+const { DEFAULT_SQLITE_PRAGMAS } = await import('@dark-avian-labs/server-kit');
 const warframeSchema = await importBuilt(warframeDist);
 const epic7Schema = await importBuilt(epic7Dist);
 const worSchema = await importBuilt(worDist);

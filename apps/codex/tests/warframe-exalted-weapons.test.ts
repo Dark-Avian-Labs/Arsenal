@@ -1,5 +1,6 @@
-import { isExaltedWeaponItem, shouldAutoCompleteOrokin } from '@codex/game-warframe';
 import { describe, expect, it } from 'vitest';
+
+import { isExaltedWeaponItem, shouldAutoCompleteOrokin } from '../server/games/warframe/index.js';
 
 describe('exalted weapon Orokin rules', () => {
   it('matches Armory exalted melee and primary names', () => {
