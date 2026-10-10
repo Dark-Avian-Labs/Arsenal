@@ -16,7 +16,8 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "pnpm -r --workspace-concurrency=1 run --if-present test:e2e",
     "icons:sync": "node scripts/icons/sync.mjs",
-    "dev": "echo 'use: pnpm --filter <app> dev'"
+    "dev": "echo 'use: pnpm --filter <app> dev'",
+    "postinstall": "pnpm --filter @dark-avian-labs/sentinel-agent --filter @dark-avian-labs/server-kit --filter @dark-avian-labs/warframe-catalog run --if-present build"
   },
   "devDependencies": {
     "@material-symbols/svg-400": "^0.48.0",
