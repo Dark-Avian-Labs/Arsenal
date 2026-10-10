@@ -1,0 +1,146 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/**'
+      - 'packages/**'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'scripts/ci/**'
+      - '.forgejo/workflows/deploy.yml'
+      - '.forgejo/workflows/_deploy-app.yml'
+  workflow_dispatch:
+    inputs:
+      apps:
+        description: Comma-separated app directories to deploy, or "all"
+        required: true
+        default: all
+        type: string
+
+concurrency:
+  group: deploy-main
+  cancel-in-progress: false
+
+jobs:
+  changes:
+    runs-on: light-node26
+    timeout-minutes: 5
+    outputs:
+      armory: ${{ steps.detect.outputs.armory }}
+      budget-planner: ${{ steps.detect.outputs.budget-planner }}
+      codex: ${{ steps.detect.outputs.codex }}
+      sentinel: ${{ steps.detect.outputs.sentinel }}
+      outfitter: ${{ steps.detect.outputs.outfitter }}
+    steps:
+      - run: apk add --no-cache git
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - id: detect
+        env:
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
+          FORCE: ${{ github.event_name == 'workflow_dispatch' && inputs.apps || '' }}
+        run: node scripts/ci/changes.mjs
+
+  armory:
+    needs: changes
+    if: needs.changes.outputs.armory == 'true'
+    uses: ./.forgejo/workflows/_deploy-app.yml
+    with:
+      app: armory
+      pm2_name: Armory
+      port: 3002
+    secrets:
+      DOTENV_PRIVATE_KEY_PRODUCTION: ${{ secrets.DOTENV_PRIVATE_KEY_PRODUCTION_ARMORY }}
+      SERVER_PATH: ${{ secrets.SERVER_PATH_ARMORY }}
+      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      SERVER_KNOWN_HOST: ${{ secrets.SERVER_KNOWN_HOST }}
+      SERVER_HOST: ${{ secrets.SERVER_HOST }}
+      SERVER_USER: ${{ secrets.SERVER_USER }}
+      SERVER_SSH_PORT: ${{ secrets.SERVER_SSH_PORT }}
+
+  budget-planner:
+    needs: changes
+    if: needs.changes.outputs.budget-planner == 'true'
+    uses: ./.forgejo/workflows/_deploy-app.yml
+    with:
+      app: budget-planner
+      pm2_name: BudgetPlanner
+      port: 3003
+    secrets:
+      DOTENV_PRIVATE_KEY_PRODUCTION: ${{ secrets.DOTENV_PRIVATE_KEY_PRODUCTION_BUDGET_PLANNER }}
+      SERVER_PATH: ${{ secrets.SERVER_PATH_BUDGET_PLANNER }}
+      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      SERVER_KNOWN_HOST: ${{ secrets.SERVER_KNOWN_HOST }}
+      SERVER_HOST: ${{ secrets.SERVER_HOST }}
+      SERVER_USER: ${{ secrets.SERVER_USER }}
+      SERVER_SSH_PORT: ${{ secrets.SERVER_SSH_PORT }}
+
+  codex:
+    needs: changes
+    if: needs.changes.outputs.codex == 'true'
+    uses: ./.forgejo/workflows/_deploy-app.yml
+    with:
+      app: codex
+      pm2_name: Codex
+      port: 3001
+    secrets:
+      DOTENV_PRIVATE_KEY_PRODUCTION: ${{ secrets.DOTENV_PRIVATE_KEY_PRODUCTION_CODEX }}
+      SERVER_PATH: ${{ secrets.SERVER_PATH_CODEX }}
+      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      SERVER_KNOWN_HOST: ${{ secrets.SERVER_KNOWN_HOST }}
+      SERVER_HOST: ${{ secrets.SERVER_HOST }}
+      SERVER_USER: ${{ secrets.SERVER_USER }}
+      SERVER_SSH_PORT: ${{ secrets.SERVER_SSH_PORT }}
+
+  sentinel:
+    needs: changes
+    if: needs.changes.outputs.sentinel == 'true'
+    uses: ./.forgejo/workflows/_deploy-app.yml
+    with:
+      app: sentinel
+      pm2_name: Sentinel
+      port: 3005
+    secrets:
+      DOTENV_PRIVATE_KEY_PRODUCTION: ${{ secrets.DOTENV_PRIVATE_KEY_PRODUCTION_SENTINEL }}
+      SERVER_PATH: ${{ secrets.SERVER_PATH_SENTINEL }}
+      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      SERVER_KNOWN_HOST: ${{ secrets.SERVER_KNOWN_HOST }}
+      SERVER_HOST: ${{ secrets.SERVER_HOST }}
+      SERVER_USER: ${{ secrets.SERVER_USER }}
+      SERVER_SSH_PORT: ${{ secrets.SERVER_SSH_PORT }}
+
+  outfitter:
+    needs: changes
+    if: needs.changes.outputs.outfitter == 'true'
+    uses: ./.forgejo/workflows/_deploy-app.yml
+    with:
+      app: outfitter
+      pm2_name: Outfitter
+      port: 3004
+    secrets:
+      DOTENV_PRIVATE_KEY_PRODUCTION: ${{ secrets.DOTENV_PRIVATE_KEY_PRODUCTION_OUTFITTER }}
+      SERVER_PATH: ${{ secrets.SERVER_PATH_OUTFITTER }}
+      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      SERVER_KNOWN_HOST: ${{ secrets.SERVER_KNOWN_HOST }}
+      SERVER_HOST: ${{ secrets.SERVER_HOST }}
+      SERVER_USER: ${{ secrets.SERVER_USER }}
+      SERVER_SSH_PORT: ${{ secrets.SERVER_SSH_PORT }}
+
+  discord-status:
+    runs-on: light-node26
+    timeout-minutes: 5
+    needs: [changes, armory, budget-planner, codex, sentinel, outfitter]
+    if: always()
+    steps:
+      - uses: iShark5060/actions-discord-status@66f6681ff19536b7787feecc4fdc20c506de365b # v1.2.1
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK }}
+          job_results: ${{ join(needs.*.result, ',') }}
+          mention_on: failure
+          content: '<@${{ secrets.DISCORD_USERID }}>'
+          title: ${{ github.workflow }}
+          description: ${{ contains(needs.*.result, 'failure') && 'Deploy failed. Check the logs before redeploying.' || contains(needs.*.result, 'cancelled') && 'Deploy was cancelled.' || 'Deploy finished. Skipped apps had no deployable changes.' }}

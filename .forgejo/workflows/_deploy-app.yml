@@ -1,0 +1,116 @@
+name: Deploy one app
+
+on:
+  workflow_call:
+    inputs:
+      app:
+        required: true
+        type: string
+      pm2_name:
+        required: true
+        type: string
+      port:
+        required: true
+        type: number
+    secrets:
+      DOTENV_PRIVATE_KEY_PRODUCTION:
+        required: true
+      SERVER_PATH:
+        required: true
+      SSH_PRIVATE_KEY:
+        required: true
+      SERVER_KNOWN_HOST:
+        required: true
+      SERVER_HOST:
+        required: true
+      SERVER_USER:
+        required: true
+      SERVER_SSH_PORT:
+        required: true
+
+env:
+  CI: true
+  npm_config_store_dir: /pnpm-store
+  npm_config_cache: /npm-cache
+
+jobs:
+  deploy:
+    runs-on: build-node26
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Enable pnpm
+        run: npm install -g pnpm@$(node -p 'require("./package.json").packageManager.replace(/^pnpm@/, "")')
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Resolve version
+        id: release
+        run: node scripts/ci/release.mjs "${{ inputs.app }}"
+
+      - name: Build
+        env:
+          APP_VERSION: ${{ steps.release.outputs.version }}
+        run: pnpm --filter "${{ inputs.app }}..." run --if-present build
+
+      - name: Assemble release directory
+        env:
+          APP: ${{ inputs.app }}
+          VERSION: ${{ steps.release.outputs.version }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/deploy
+          pnpm --filter "$APP" deploy --prod /tmp/deploy
+          printf '{"version":"%s","sha":"%s","builtAt":"%s"}\n' "$VERSION" "$SHA" "$(date -u +%FT%TZ)" > /tmp/deploy/release.json
+          test -f /tmp/deploy/.env.production || cp "apps/$APP/.env.production" /tmp/deploy/.env.production
+          test -f /tmp/deploy/ecosystem.config.cjs
+          test -d /tmp/deploy/dist/client
+          test -d /tmp/deploy/server
+          test -d /tmp/deploy/node_modules/@dark-avian-labs/server-kit/dist
+          ls -la /tmp/deploy
+          tar -C /tmp/deploy -czf "/tmp/${APP}-${VERSION}.tgz" .
+
+      - name: Deploy
+        env:
+          APP: ${{ inputs.app }}
+          VERSION: ${{ steps.release.outputs.version }}
+          PM2_NAME: ${{ inputs.pm2_name }}
+          PORT: ${{ inputs.port }}
+          DOTENV_PRIVATE_KEY_PRODUCTION: ${{ secrets.DOTENV_PRIVATE_KEY_PRODUCTION }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SERVER_KNOWN_HOST: ${{ secrets.SERVER_KNOWN_HOST }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_PATH: ${{ secrets.SERVER_PATH }}
+          SERVER_SSH_PORT: ${{ secrets.SERVER_SSH_PORT }}
+        run: bash scripts/ci/deploy.sh
+
+      - name: Create Forgejo release
+        if: steps.release.outputs.release == 'true'
+        env:
+          TOKEN: ${{ github.token }}
+          TAG: ${{ steps.release.outputs.tag }}
+          NAME: ${{ inputs.app }} ${{ steps.release.outputs.version }}
+          NOTES_PATH: ${{ steps.release.outputs.notes_path }}
+          SHA: ${{ github.sha }}
+        run: |
+          node --input-type=module -e '
+            import { readFileSync } from "node:fs";
+            const body = readFileSync(process.env.NOTES_PATH, "utf8");
+            const res = await fetch(`${process.env.GITHUB_API_URL}/repos/${process.env.GITHUB_REPOSITORY}/releases`, {
+              method: "POST",
+              headers: { Authorization: `token ${process.env.TOKEN}`, "Content-Type": "application/json" },
+              body: JSON.stringify({ tag_name: process.env.TAG, target_commitish: process.env.SHA, name: process.env.NAME, body }),
+            });
+            if (!res.ok) { console.error(await res.text()); process.exit(1); }
+            console.log(`release ${process.env.TAG} created`);
+          '
+
+      - name: Cleanup SSH key
+        if: always()
+        run: rm -f ~/.ssh/deploy_key
