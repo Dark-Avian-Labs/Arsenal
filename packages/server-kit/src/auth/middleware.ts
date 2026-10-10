@@ -63,28 +63,22 @@ export function getClerkAuthState(req: Request): ClerkAuthState {
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
 /**
- * CSRF replacement. A cross-site form or fetch can carry cookies but cannot set
- * an Authorization header or make Sec-Fetch-Site read same-origin. Writes that
- * arrive with cookie-only Clerk auth are rejected.
+ * CSRF replacement, mounted on /api in createApp so every app gets it. A cross-site
+ * form or fetch can carry cookies but cannot set an Authorization header or make
+ * Sec-Fetch-Site read same-origin. Every write therefore needs a Bearer header:
+ * the Clerk token from the client, or a service token (Sentinel ingest).
  */
 export function rejectCrossSiteWrites(req: Request, res: Response, next: NextFunction): void {
   if (SAFE_METHODS.has(req.method)) return next();
-  const site = req.headers['sec-fetch-site'];
-  if (site === 'cross-site') {
+  if (req.headers['sec-fetch-site'] === 'cross-site') {
     res.status(403).json({ error: 'Cross-site request rejected' });
     return;
   }
-  next();
-}
-
-function rejectCookieOnlyWrite(req: Request, res: Response): boolean {
-  if (SAFE_METHODS.has(req.method)) return false;
-  const header = req.headers?.authorization ?? '';
-  if (!header.startsWith('Bearer ')) {
+  if (!(req.headers.authorization ?? '').startsWith('Bearer ')) {
     res.status(401).json({ error: 'Bearer token required for write requests' });
-    return true;
+    return;
   }
-  return false;
+  next();
 }
 
 export function requireAuthApi(req: Request, res: Response, next: NextFunction): void {
@@ -93,7 +87,6 @@ export function requireAuthApi(req: Request, res: Response, next: NextFunction):
     res.status(401).json({ error: 'Unauthorized' });
     return;
   }
-  if (rejectCookieOnlyWrite(req, res)) return;
   next();
 }
 
@@ -103,7 +96,6 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction): v
     res.status(401).json({ error: 'Unauthorized' });
     return;
   }
-  if (rejectCookieOnlyWrite(req, res)) return;
   if (!state.isAdmin) {
     res.status(403).json({ error: 'Admin access required' });
     return;

@@ -38,7 +38,7 @@ The required check is the `security` job. It stays green when the audit is skipp
 
 There is one tag per app release, named `<app>-vX.Y.Z`, for example `armory-v1.74.5`. `scripts/ci/release.mjs` reads commits since that tag and prints the next version. The deploy writes that version into `release.json`. When the range contains commits, the workflow creates the next Forgejo release and tag. An app deploy leaves the monorepo tag `v1.0.0` where it is.
 
-`scripts/ci/changes.mjs` decides which apps ship. A change under `apps/<app>/` deploys that app. A change under `packages/`, the lockfile, the workspace file, `scripts/ci/`, or `.forgejo/workflows/` deploys every app. A change that only touches development dependencies deploys nothing.
+`scripts/ci/changes.mjs` decides which apps ship. A change under `apps/<app>/` deploys that app. A change under `packages/`, the lockfile, the workspace file, `scripts/ci/`, or the two deploy workflows deploys every app. Dependency updates always deploy: devDependencies include Vite and Tailwind, which change the client bundle, and a lockfile-only diff can be a transitive production bump.
 
 ## Secrets
 

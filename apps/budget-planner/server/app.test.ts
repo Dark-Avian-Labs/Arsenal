@@ -80,7 +80,7 @@ describe('cross-site writes', () => {
   });
 
   it('lets a same-site POST reach routing', async () => {
-    const res = await request(bundle!.app).post('/api/nope').send({});
+    const res = await request(bundle!.app).post('/api/nope').set('Authorization', 'Bearer test-token').send({});
     expect(res.status).toBe(404);
     expect(res.body.error).toBe('Not found');
   });

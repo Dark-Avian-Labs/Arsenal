@@ -76,7 +76,7 @@ describe('cross-site writes', () => {
   });
 
   it('lets a same-site POST reach routing', async () => {
-    const res = await request(bundle.app).post('/api/anything').send({});
+    const res = await request(bundle.app).post('/api/anything').set('Authorization', 'Bearer test-token').send({});
     expect(res.status).toBe(404);
   });
 });
