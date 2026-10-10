@@ -1,6 +1,6 @@
 {
   "name": "outfitter",
-  "version": "0.0.0-dev",
+  "version": "1.28.4",
   "private": true,
   "description": "Watcher of Realms equipment manager and optimizer",
   "license": "MIT",

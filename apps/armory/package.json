@@ -1,6 +1,6 @@
 {
   "name": "armory",
-  "version": "0.0.0-dev",
+  "version": "1.74.5",
   "private": true,
   "description": "Armory - Warframe Mod Builder/Planner",
   "license": "MIT",

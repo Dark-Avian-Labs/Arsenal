@@ -18,7 +18,7 @@ The plan is written for an executing model that has not read the audit. Every st
 
 1. **Forgejo is the source of truth.** Remote `forgejo` = `https://git.darkavianlabs.com/Dark-Avian-Labs/<repo>.git`. GitHub is a push mirror; never push there. Never push to `main`; open pull requests. The `fj` CLI is authenticated: `fj -H git.darkavianlabs.com -C <dir> pr create -r Dark-Avian-Labs/<repo> --base main --head <branch>`.
 2. **Work in the new repo on a branch.** All stages happen in the new `Arsenal` repo (Stage 0) on branch `migration`. The six old repos are not touched until the cutover checklist (Section 12).
-3. **Node 26, pnpm 12.9.1 exactly.** `node -v` must print `v26.*`. `pnpm -v` must print `12.9.1`. If a Cursor shell prepends Node 22, fix the PATH first. After any Node change run `pnpm rebuild better-sqlite3`.
+3. **Node 26, pnpm 12.10.1 exactly.** `node -v` must print `v26.*`. `pnpm -v` must print `12.10.1`. If a Cursor shell prepends Node 22, fix the PATH first. After any Node change run `pnpm rebuild better-sqlite3`.
 4. **One stage, one commit (or a few).** Commit message style is conventional commits: `feat:`, `fix:`, `chore:`, `ci:`, `refactor:`, `docs:`. Scope in parentheses is optional (`refactor(server-kit): ...`).
 5. **Verification gates are mandatory.** Each stage ends with a gate. If the gate fails, fix it before moving on. Do not comment out tests to make a gate pass.
 6. **Stop and ask when:** a file in two apps differs in a way this plan does not explain how to resolve and the difference is not obviously app-specific; a secret value is needed; a server command is needed (you do not have SSH access; the owner runs Section 12); an npm package named here does not exist or has a different API than described.
@@ -309,7 +309,7 @@ Set every app `"version": "0.0.0-dev"` (DAL-DEP-01: versions live in tags).
     "vitest": "catalog:"
   },
   "engines": { "node": ">=26.0.0", "pnpm": ">=12.0.0" },
-  "packageManager": "pnpm@12.9.1"
+  "packageManager": "pnpm@12.10.1"
 }
 ```
 
@@ -1608,7 +1608,7 @@ Work top to bottom. Items marked **[runner]** and **[server]** need SSH; **[forg
 
 ```dockerfile
 FROM docker.io/library/node:26-bookworm
-RUN npm install -g pnpm@12.9.1 \
+RUN npm install -g pnpm@12.10.1 \
  && npx --yes playwright@1.64.0 install-deps chromium \
  && rm -rf /root/.npm
 ```
