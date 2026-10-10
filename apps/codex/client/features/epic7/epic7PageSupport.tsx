@@ -1,3 +1,4 @@
+import { MaterialSymbol } from '@dark-avian-labs/ui';
 import { memo, useCallback, useEffect, useReducer, useRef, useState } from 'react';
 
 import {
@@ -13,7 +14,6 @@ import {
   RATING_COLORS,
 } from '../../../server/games/epic7/constants';
 import type { ClassKey, ElementKey } from '../../../server/games/epic7/constants';
-import { MaterialSymbol } from '../../components/ui/MaterialSymbol';
 import { useAutoDismissMessage } from '../../hooks/useAutoDismissMessage';
 import type { TriFilterMap } from '../../lib/triFilter';
 import { apiFetch } from '../../utils/api';

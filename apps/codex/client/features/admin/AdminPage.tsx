@@ -1,3 +1,4 @@
+import { MaterialSymbol } from '@dark-avian-labs/ui';
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 
 import {
@@ -8,7 +9,6 @@ import {
   HERO_CLASSES,
 } from '../../../server/games/epic7/constants';
 import { FilterIconButton } from '../../components/ui/FilterIconButton';
-import { MaterialSymbol } from '../../components/ui/MaterialSymbol';
 import {
   cycleTriFilter,
   matchesTriFilter,

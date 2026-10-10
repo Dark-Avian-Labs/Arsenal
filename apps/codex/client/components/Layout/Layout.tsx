@@ -1,5 +1,16 @@
 import { useClerk, useUser } from '@clerk/react';
-import { isSentinelAdmin } from '@dark-avian-labs/ui';
+import {
+  AsciiWaveBackground,
+  DalAppNav,
+  HexSideBackground,
+  MaterialSymbol,
+  Menu,
+  StaleClientUpdateBanner,
+  UiStyleSelector,
+  buildClerkProfileAppearance,
+  isSentinelAdmin,
+  useTheme,
+} from '@dark-avian-labs/ui';
 import {
   useEffect,
   useLayoutEffect,
@@ -24,19 +35,10 @@ import feathers from '../../assets/feathers.svg';
 import epic7Favicon from '../../assets/games/epic7/favicon.svg';
 import warframeFavicon from '../../assets/games/warframe/favicon.svg';
 import worFavicon from '../../assets/games/wor/favicon.svg';
-import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../features/auth/AuthContext';
 import { rememberLastGamePath } from '../../features/auth/authRedirect';
-import { buildClerkProfileAppearance } from '../../lib/clerkAppearance';
 import { ChunkErrorBoundary } from '../ui/ChunkErrorBoundary';
 import { LazySuspenseFallback } from '../ui/LazySuspenseFallback';
-import { MaterialSymbol } from '../ui/MaterialSymbol';
-import { Menu } from '../ui/Menu';
-import { UiStyleSelector } from '../ui/UiStyleSelector';
-import { AsciiWaveBackground } from './AsciiWaveBackground';
-import { DalAppNav } from './DalAppNav';
-import { HexSideBackground } from './HexSideBackground';
-import { StaleClientUpdateBanner } from './StaleClientUpdateBanner';
 export type LayoutOutletContext = {
   setHeaderCenter: (node: ReactNode | null) => void;
   setHeaderActions: (node: ReactNode | null) => void;

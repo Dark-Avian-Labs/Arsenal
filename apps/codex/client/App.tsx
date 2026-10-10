@@ -1,8 +1,8 @@
 import { ClerkProvider } from '@clerk/react';
+import { ErrorBoundary } from '@dark-avian-labs/ui';
 import { Outlet } from 'react-router';
 
 import { APP_PATHS } from './app/paths';
-import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { AuthProvider } from './features/auth/AuthContext';
 
 const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY?.trim();
