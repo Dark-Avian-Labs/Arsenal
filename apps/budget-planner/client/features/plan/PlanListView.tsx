@@ -1,18 +1,6 @@
-import {
-  DndContext,
-  PointerSensor,
-  closestCenter,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-} from '@dnd-kit/core';
-import {
-  SortableContext,
-  arrayMove,
-  useSortable,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
+import { move } from '@dnd-kit/helpers';
+import { DragDropProvider, useDroppable, type DragEndEvent } from '@dnd-kit/react';
+import { useSortable } from '@dnd-kit/react/sortable';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -22,22 +10,84 @@ import { MaterialSymbol } from '../../components/ui/MaterialSymbol';
 import { formatDueDay, formatDueMonthDay, formatMoney } from '../../lib/format';
 import type { Account, Category, Entry } from '../../lib/types';
 
+const CATEGORY_GROUP = 'categories';
+
+function entryGroup(categoryId: string): string {
+  return `entries:${categoryId}`;
+}
+
+function catKey(id: string): string {
+  return `cat:${id}`;
+}
+
+function entryKey(id: string): string {
+  return `entry:${id}`;
+}
+
+function rawId(key: string): string {
+  const split = key.indexOf(':');
+  return split === -1 ? key : key.slice(split + 1);
+}
+
+function sortableBoard(categories: Category[], entries: Entry[]) {
+  const sortedCategories = [...categories].sort((a, b) => a.sort_order - b.sort_order);
+  const board: Record<string, string[]> = {
+    [CATEGORY_GROUP]: sortedCategories.map((category) => catKey(category.id)),
+  };
+  for (const category of sortedCategories) {
+    board[entryGroup(category.id)] = entries
+      .filter((entry) => entry.category_id === category.id)
+      .sort((a, b) => a.sort_order - b.sort_order)
+      .map((entry) => entryKey(entry.id));
+  }
+  return { sortedCategories, board };
+}
+
+function listsEqual(left: string[], right: string[]): boolean {
+  return left.length === right.length && left.every((id, index) => id === right[index]);
+}
+
+export function reorderFromBoard(
+  before: Record<string, string[]>,
+  after: Record<string, string[]>,
+  categoryIds: string[],
+): {
+  categories?: Array<{ id: string; sort_order: number }>;
+  entries?: Array<{ id: string; sort_order: number; category_id: string }>;
+} | null {
+  const nextCategories = after[CATEGORY_GROUP] ?? [];
+  if (!listsEqual(before[CATEGORY_GROUP] ?? [], nextCategories)) {
+    return {
+      categories: nextCategories.map((key, index) => ({ id: rawId(key), sort_order: index })),
+    };
+  }
+
+  const entries: Array<{ id: string; sort_order: number; category_id: string }> = [];
+  for (const categoryId of categoryIds) {
+    const group = entryGroup(categoryId);
+    const left = before[group] ?? [];
+    const right = after[group] ?? [];
+    if (listsEqual(left, right)) continue;
+    right.forEach((key, index) => {
+      entries.push({ id: rawId(key), sort_order: index, category_id: categoryId });
+    });
+  }
+  return entries.length > 0 ? { entries } : null;
+}
+
 function SortableHandle({
-  attributes,
-  listeners,
+  handleRef,
   label,
 }: {
-  attributes: ReturnType<typeof useSortable>['attributes'];
-  listeners: ReturnType<typeof useSortable>['listeners'];
+  handleRef: (element: Element | null) => void;
   label: string;
 }) {
   return (
     <button
       type="button"
+      ref={handleRef}
       className="text-muted hover:text-foreground flex h-10 w-8 shrink-0 cursor-grab items-center justify-center active:cursor-grabbing"
       aria-label={label}
-      {...attributes}
-      {...listeners}
     >
       <MaterialSymbol name="drag_indicator" />
     </button>
@@ -46,36 +96,30 @@ function SortableHandle({
 
 function SortableCategory({
   category,
+  index,
   organizeMode,
   children,
 }: {
   category: Category;
+  index: number;
   organizeMode: boolean;
   children: ReactNode;
 }) {
   const { t } = useTranslation();
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: `cat:${category.id}`,
+  const { ref, handleRef, isDragging } = useSortable({
+    id: catKey(category.id),
+    index,
+    group: CATEGORY_GROUP,
+    type: 'category',
+    accept: 'category',
     disabled: !organizeMode,
   });
 
   return (
-    <section
-      ref={setNodeRef}
-      style={{
-        transform: CSS.Transform.toString(transform),
-        transition,
-        ...(isDragging ? { opacity: 0.7 } : null),
-      }}
-      className="flex flex-col gap-2"
-    >
+    <section ref={ref} className={`flex flex-col gap-2${isDragging ? ' opacity-70' : ''}`}>
       <div className="flex items-center gap-1 px-1">
         {organizeMode ? (
-          <SortableHandle
-            attributes={attributes}
-            listeners={listeners}
-            label={t('plan.dragCategory')}
-          />
+          <SortableHandle handleRef={handleRef} label={t('plan.dragCategory')} />
         ) : null}
         <h2 className="text-muted text-xs font-semibold tracking-wide uppercase">
           {category.name}
@@ -86,8 +130,18 @@ function SortableCategory({
   );
 }
 
+function EmptyCategoryDrop({ groupId, label }: { groupId: string; label: string }) {
+  const { ref } = useDroppable({ id: groupId, accept: 'entry' });
+  return (
+    <li ref={ref} className="text-muted px-4 py-3 text-xs">
+      {label}
+    </li>
+  );
+}
+
 function SortableEntryRow({
   entry,
+  index,
   organizeMode,
   due,
   accountName,
@@ -99,6 +153,7 @@ function SortableEntryRow({
   onOpen,
 }: {
   entry: Entry;
+  index: number;
   organizeMode: boolean;
   due: boolean;
   accountName: string | null;
@@ -110,8 +165,12 @@ function SortableEntryRow({
   onOpen: (entry: Entry) => void;
 }) {
   const { t } = useTranslation();
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: `entry:${entry.id}`,
+  const { ref, handleRef, isDragging } = useSortable({
+    id: entryKey(entry.id),
+    index,
+    group: entryGroup(entry.category_id),
+    type: 'entry',
+    accept: 'entry',
     disabled: !organizeMode,
   });
 
@@ -120,23 +179,12 @@ function SortableEntryRow({
 
   return (
     <li
-      ref={setNodeRef}
-      style={{
-        transform: CSS.Transform.toString(transform),
-        transition,
-        ...(isDragging ? { opacity: 0.7 } : null),
-      }}
-      className={due ? 'entry-row' : 'entry-row entry-row--inactive'}
+      ref={ref}
+      className={`${due ? 'entry-row' : 'entry-row entry-row--inactive'}${isDragging ? ' opacity-70' : ''}`}
       {...(accountColor ? { 'data-account-color': accountColor } : null)}
     >
       <div className="flex items-stretch gap-0">
-        {organizeMode ? (
-          <SortableHandle
-            attributes={attributes}
-            listeners={listeners}
-            label={t('plan.dragEntry')}
-          />
-        ) : null}
+        {organizeMode ? <SortableHandle handleRef={handleRef} label={t('plan.dragEntry')} /> : null}
         <button
           type="button"
           className="flex min-w-0 flex-1 flex-col gap-1 px-3 py-3 text-left sm:px-4"
@@ -221,95 +269,18 @@ export function PlanListView({
   }) => Promise<void>;
 }) {
   const { t } = useTranslation();
-  const accountMap = new Map(accounts.map((a) => [a.id, a]));
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
-
-  const sortedCategories = [...categories].sort((a, b) => a.sort_order - b.sort_order);
-  const categoryIds = sortedCategories.map((c) => `cat:${c.id}`);
+  const accountMap = new Map(accounts.map((account) => [account.id, account]));
+  const { sortedCategories, board } = sortableBoard(categories, entries);
 
   async function handleDragEnd(event: DragEndEvent) {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-
-    const activeId = String(active.id);
-    const overId = String(over.id);
-
-    if (activeId.startsWith('cat:') && overId.startsWith('cat:')) {
-      const oldIndex = sortedCategories.findIndex((c) => `cat:${c.id}` === activeId);
-      const newIndex = sortedCategories.findIndex((c) => `cat:${c.id}` === overId);
-      if (oldIndex < 0 || newIndex < 0) return;
-      const moved = arrayMove(sortedCategories, oldIndex, newIndex);
-      await onReorder({
-        categories: moved.map((c, i) => ({ id: c.id, sort_order: i })),
-      });
-      return;
-    }
-
-    if (activeId.startsWith('entry:')) {
-      const entryId = activeId.slice('entry:'.length);
-      const activeEntry = entries.find((e) => e.id === entryId);
-      if (!activeEntry) return;
-
-      let targetCategoryId = activeEntry.category_id;
-      let overEntryId: string | null = null;
-
-      if (overId.startsWith('entry:')) {
-        overEntryId = overId.slice('entry:'.length);
-        const overEntry = entries.find((e) => e.id === overEntryId);
-        if (overEntry) targetCategoryId = overEntry.category_id;
-      } else if (overId.startsWith('cat:')) {
-        targetCategoryId = overId.slice('cat:'.length);
-      } else {
-        return;
-      }
-
-      const sourceList = entries
-        .filter((e) => e.category_id === activeEntry.category_id)
-        .sort((a, b) => a.sort_order - b.sort_order);
-      const destList = entries
-        .filter((e) => e.category_id === targetCategoryId && e.id !== activeEntry.id)
-        .sort((a, b) => a.sort_order - b.sort_order);
-
-      const fromIndex = sourceList.findIndex((e) => e.id === activeEntry.id);
-      let toIndex = destList.length;
-      if (overEntryId) {
-        const idx = destList.findIndex((e) => e.id === overEntryId);
-        if (idx >= 0) toIndex = idx;
-      }
-
-      if (activeEntry.category_id === targetCategoryId) {
-        const sameToIndex = overEntryId
-          ? sourceList.findIndex((e) => e.id === overEntryId)
-          : fromIndex;
-        if (sameToIndex < 0 || sameToIndex === fromIndex) return;
-        const moved = arrayMove(sourceList, fromIndex, sameToIndex);
-        await onReorder({
-          entries: moved.map((e, i) => ({
-            id: e.id,
-            sort_order: i,
-            category_id: targetCategoryId,
-          })),
-        });
-      } else {
-        const nextDest = [...destList];
-        nextDest.splice(toIndex, 0, { ...activeEntry, category_id: targetCategoryId });
-        const nextSource = sourceList.filter((e) => e.id !== activeEntry.id);
-        await onReorder({
-          entries: [
-            ...nextSource.map((e, i) => ({
-              id: e.id,
-              sort_order: i,
-              category_id: activeEntry.category_id,
-            })),
-            ...nextDest.map((e, i) => ({
-              id: e.id,
-              sort_order: i,
-              category_id: targetCategoryId,
-            })),
-          ],
-        });
-      }
-    }
+    if (event.canceled) return;
+    const next = move(board, event);
+    const payload = reorderFromBoard(
+      board,
+      next,
+      sortedCategories.map((category) => category.id),
+    );
+    if (payload) await onReorder(payload);
   }
 
   if (sortedCategories.length === 0) {
@@ -318,53 +289,55 @@ export function PlanListView({
 
   const list = (
     <div className="flex flex-col gap-4">
-      <SortableContext items={categoryIds} strategy={verticalListSortingStrategy}>
-        {sortedCategories.map((category) => {
-          const catEntries = entries
-            .filter((e) => e.category_id === category.id)
-            .sort((a, b) => a.sort_order - b.sort_order);
-          if (catEntries.length === 0 && !organizeMode) return null;
-          const entryIds = catEntries.map((e) => `entry:${e.id}`);
-          return (
-            <SortableCategory key={category.id} category={category} organizeMode={organizeMode}>
-              <ul className="glass-surface divide-glass-divider divide-y overflow-hidden">
-                <SortableContext items={entryIds} strategy={verticalListSortingStrategy}>
-                  {catEntries.map((entry) => (
-                    <SortableEntryRow
-                      key={entry.id}
-                      entry={entry}
-                      organizeMode={organizeMode}
-                      due={isDueInMonth(entry, year, month)}
-                      accountName={
-                        entry.account_id ? (accountMap.get(entry.account_id)?.name ?? null) : null
-                      }
-                      accountColor={
-                        entry.account_id ? (accountMap.get(entry.account_id)?.color ?? null) : null
-                      }
-                      currency={currency}
-                      locale={locale}
-                      year={year}
-                      month={month}
-                      onOpen={onOpenEntry}
-                    />
-                  ))}
-                </SortableContext>
-                {catEntries.length === 0 && organizeMode ? (
-                  <li className="text-muted px-4 py-3 text-xs">{t('plan.emptyCategory')}</li>
-                ) : null}
-              </ul>
-            </SortableCategory>
-          );
-        })}
-      </SortableContext>
+      {sortedCategories.map((category, index) => {
+        const catEntries = entries
+          .filter((entry) => entry.category_id === category.id)
+          .sort((a, b) => a.sort_order - b.sort_order);
+        if (catEntries.length === 0 && !organizeMode) return null;
+        return (
+          <SortableCategory
+            key={category.id}
+            category={category}
+            index={index}
+            organizeMode={organizeMode}
+          >
+            <ul className="glass-surface divide-glass-divider divide-y overflow-hidden">
+              {catEntries.map((entry, entryIndex) => (
+                <SortableEntryRow
+                  key={entry.id}
+                  entry={entry}
+                  index={entryIndex}
+                  organizeMode={organizeMode}
+                  due={isDueInMonth(entry, year, month)}
+                  accountName={
+                    entry.account_id ? (accountMap.get(entry.account_id)?.name ?? null) : null
+                  }
+                  accountColor={
+                    entry.account_id ? (accountMap.get(entry.account_id)?.color ?? null) : null
+                  }
+                  currency={currency}
+                  locale={locale}
+                  year={year}
+                  month={month}
+                  onOpen={onOpenEntry}
+                />
+              ))}
+              {catEntries.length === 0 && organizeMode ? (
+                <EmptyCategoryDrop
+                  groupId={entryGroup(category.id)}
+                  label={t('plan.emptyCategory')}
+                />
+              ) : null}
+            </ul>
+          </SortableCategory>
+        );
+      })}
     </div>
   );
 
   if (!organizeMode) return list;
 
   return (
-    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-      {list}
-    </DndContext>
+    <DragDropProvider onDragEnd={(event) => void handleDragEnd(event)}>{list}</DragDropProvider>
   );
 }

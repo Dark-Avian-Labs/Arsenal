@@ -312,9 +312,9 @@ export function SelectDropdown({
         </span>
         <span aria-hidden className="text-muted inline-flex shrink-0 items-center justify-center">
           {open ? (
-            <MaterialSymbol name="expand_less" style={{ fontSize: 16 }} />
+            <MaterialSymbol name="keyboard_arrow_up" style={{ fontSize: 16 }} />
           ) : (
-            <MaterialSymbol name="expand_more" style={{ fontSize: 16 }} />
+            <MaterialSymbol name="keyboard_arrow_down" style={{ fontSize: 16 }} />
           )}
         </span>
       </button>

@@ -35,7 +35,6 @@
     "@fontsource-variable/cascadia-mono": "catalog:",
     "@fontsource-variable/geist": "catalog:",
     "@fontsource-variable/geist-mono": "catalog:",
-    "@fontsource-variable/material-symbols-rounded": "^5.3.8",
     "better-sqlite3": "catalog:",
     "cookie-parser": "^1.4.7",
     "express": "catalog:",

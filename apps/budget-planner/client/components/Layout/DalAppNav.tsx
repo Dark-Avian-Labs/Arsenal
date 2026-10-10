@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 import { appIdsMatch, loadDalAppNav, type DalAppNavEntry } from '../../lib/dalAppNav';
-import { MaterialSymbol } from '../ui/MaterialSymbol';
+import { isIconName, MaterialSymbol } from '../ui/MaterialSymbol';
 import { DalAppNavRail } from './DalAppNavRail';
 import { CLOSED_RAIL_MIN_HEIGHT } from './dalAppNavRailGeometry';
 
@@ -142,7 +142,7 @@ export function DalAppNav({ currentAppId }: { currentAppId: string }) {
                   className={`dal-app-nav__link header-link${isCurrent ? ' active' : ''}`}
                   aria-current={isCurrent ? 'page' : undefined}
                 >
-                  <MaterialSymbol name={app.icon} />
+                  {isIconName(app.icon) ? <MaterialSymbol name={app.icon} /> : null}
                   <span>{app.name}</span>
                 </a>
               </li>

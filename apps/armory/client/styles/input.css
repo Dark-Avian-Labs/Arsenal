@@ -1,7 +1,5 @@
 @import 'tailwindcss';
 @import './clerk-auth.css';
-@import '@fontsource-variable/material-symbols-rounded';
-
 @font-face {
   font-family: 'Geist Variable';
   font-style: normal;
@@ -755,7 +753,7 @@ html.ui-acrylic:not(.dark) {
     backdrop-filter: var(--dal-nav-link-blur, blur(12px) saturate(1.2));
   }
 
-  .dal-app-nav__link .material-symbol-rounded {
+  .dal-app-nav__link .material-symbol {
     font-size: 20px;
     line-height: 1;
   }
@@ -813,29 +811,13 @@ html.ui-acrylic:not(.dark) {
     background: var(--color-glass-hover);
   }
 
-  .material-symbol-rounded {
-    font-family: 'Material Symbols Rounded Variable';
-    font-weight: 400;
-    font-style: normal;
-    font-size: 1.25rem;
-    line-height: 1;
+  .material-symbol {
     display: inline-block;
-    vertical-align: middle;
-    letter-spacing: normal;
-    text-transform: none;
-    white-space: nowrap;
-    overflow-wrap: normal;
-    direction: ltr;
-    font-feature-settings: 'liga';
-    -webkit-font-smoothing: antialiased;
-    font-variation-settings:
-      'FILL' 0,
-      'wght' 400,
-      'GRAD' 0,
-      'opsz' 24;
+    vertical-align: -0.125em;
+    flex-shrink: 0;
   }
 
-  .icon-toggle-btn .material-symbol-rounded {
+  .icon-toggle-btn .material-symbol {
     font-size: 1.35rem;
   }
 

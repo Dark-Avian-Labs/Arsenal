@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 
-import { MaterialSymbol } from '../components/MaterialSymbol';
+import { MaterialSymbol } from '../icons';
 import { searchScaffoldPages, type SearchItem } from '../lib/scaffoldSearch';
 import { useAppShell } from '../shell/appShell';
 

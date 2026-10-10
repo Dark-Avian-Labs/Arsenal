@@ -20,9 +20,9 @@ import {
 } from '../../app/config';
 import { APP_PATHS } from '../../app/paths';
 import feathers from '../../assets/feathers.svg';
-import epic7Favicon from '../../assets/games/epic7/favicon.ico';
-import warframeFavicon from '../../assets/games/warframe/favicon.ico';
-import worFavicon from '../../assets/games/wor/favicon.ico';
+import epic7Favicon from '../../assets/games/epic7/favicon.svg';
+import warframeFavicon from '../../assets/games/warframe/favicon.svg';
+import worFavicon from '../../assets/games/wor/favicon.svg';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../features/auth/AuthContext';
 import { rememberLastGamePath } from '../../features/auth/authRedirect';
@@ -179,19 +179,15 @@ export function Layout() {
   useEffect(() => {
     const path = location.pathname;
     let faviconHref = '/favicon.svg';
-    let faviconType = 'image/svg+xml';
     if (path.startsWith(APP_PATHS.warframe)) {
       document.title = 'Codex - Warframe';
       faviconHref = warframeFavicon;
-      faviconType = 'image/x-icon';
     } else if (path.startsWith(APP_PATHS.epic7)) {
       document.title = 'Codex - Epic7';
       faviconHref = epic7Favicon;
-      faviconType = 'image/x-icon';
     } else if (path.startsWith(APP_PATHS.wor)) {
       document.title = 'Codex - Watcher of Realms';
       faviconHref = worFavicon;
-      faviconType = 'image/x-icon';
     } else {
       document.title = 'Codex';
     }
@@ -201,7 +197,7 @@ export function Layout() {
       favicon.rel = 'icon';
       document.head.append(favicon);
     }
-    favicon.type = faviconType;
+    favicon.type = 'image/svg+xml';
     favicon.href = faviconHref;
   }, [location.pathname]);
 

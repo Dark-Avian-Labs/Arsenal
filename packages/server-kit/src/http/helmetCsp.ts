@@ -32,6 +32,7 @@ export function createAppHelmet(options?: { hsts?: boolean }) {
         'img-src': [...(defaults['img-src'] ?? ["'self'"]), 'https://img.clerk.com'],
         'frame-src': ["'self'", 'https://challenges.cloudflare.com'],
         'worker-src': ["'self'", 'blob:'],
+        // Only Clerk's injected <style> tags still need this. Drop it if Clerk is ever replaced by a custom integration (DAL-CLI-01).
         'style-src': ["'self'", "'unsafe-inline'"],
       },
     },

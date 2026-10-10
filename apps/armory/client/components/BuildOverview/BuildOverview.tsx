@@ -918,7 +918,7 @@ function LoadoutRow({
       >
         <span className="text-muted/50 flex h-10 w-10 shrink-0 items-center justify-center">
           {expanded ? (
-            <MaterialSymbol name="expand_more" style={{ fontSize: 16 }} />
+            <MaterialSymbol name="keyboard_arrow_down" style={{ fontSize: 16 }} />
           ) : (
             <MaterialSymbol name="chevron_right" style={{ fontSize: 16 }} />
           )}

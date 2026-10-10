@@ -14,7 +14,7 @@ export { FieldError } from './components/FieldError';
 export { GlassCard } from './components/GlassCard';
 export { Input } from './components/Input';
 export { LoadErrorBanner } from './components/LoadErrorBanner';
-export { MaterialSymbol } from './components/MaterialSymbol';
+export { MaterialSymbol, isIconName, type IconName } from './icons';
 export { Menu } from './components/Menu';
 export { Modal } from './components/Modal';
 export { SelectDropdown, type SelectDropdownOption } from './components/SelectDropdown';

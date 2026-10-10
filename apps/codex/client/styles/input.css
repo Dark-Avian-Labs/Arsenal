@@ -1,7 +1,5 @@
 @import 'tailwindcss';
 @import './clerk-auth.css';
-@import '@fontsource-variable/material-symbols-rounded';
-
 @font-face {
   font-family: 'Geist Variable';
   font-style: normal;
@@ -697,29 +695,13 @@ html:not(.dark) .invert-on-light {
     background: var(--color-glass-hover);
   }
 
-  .material-symbol-rounded {
-    font-family: 'Material Symbols Rounded Variable';
-    font-weight: 400;
-    font-style: normal;
-    font-size: 1.25rem;
-    line-height: 1;
+  .material-symbol {
     display: inline-block;
-    vertical-align: middle;
-    letter-spacing: normal;
-    text-transform: none;
-    white-space: nowrap;
-    overflow-wrap: normal;
-    direction: ltr;
-    font-feature-settings: 'liga';
-    -webkit-font-smoothing: antialiased;
-    font-variation-settings:
-      'FILL' 0,
-      'wght' 400,
-      'GRAD' 0,
-      'opsz' 24;
+    vertical-align: -0.125em;
+    flex-shrink: 0;
   }
 
-  .icon-toggle-btn .material-symbol-rounded {
+  .icon-toggle-btn .material-symbol {
     font-size: 1.35rem;
   }
 
@@ -1140,7 +1122,7 @@ html:not(.dark) .invert-on-light {
     backdrop-filter: var(--dal-nav-link-blur, blur(12px) saturate(1.2));
   }
 
-  .dal-app-nav__link .material-symbol-rounded {
+  .dal-app-nav__link .material-symbol {
     font-size: 20px;
     line-height: 1;
   }
@@ -1847,7 +1829,7 @@ html:not(.dark) .invert-on-light {
     display: block;
   }
 
-  .row-actions .btn-icon .material-symbol-rounded {
+  .row-actions .btn-icon .material-symbol {
     font-size: 22px;
   }
 
@@ -2096,7 +2078,7 @@ html:not(.dark) .invert-on-light {
     object-fit: contain;
   }
 
-  .filter-icon .material-symbol-rounded {
+  .filter-icon .material-symbol {
     font-size: 24px;
     line-height: 1;
   }
@@ -2246,7 +2228,7 @@ html:not(.dark) .invert-on-light {
     height: 28px;
   }
 
-  .wor-table .icon-cell .material-symbol-rounded {
+  .wor-table .icon-cell .material-symbol {
     display: block;
     margin-inline: auto;
     line-height: 1;
@@ -2260,7 +2242,7 @@ html:not(.dark) .invert-on-light {
   }
 
   .wor-faction-icons img,
-  .wor-faction-icons .material-symbol-rounded {
+  .wor-faction-icons .material-symbol {
     margin-inline: 0;
   }
 
