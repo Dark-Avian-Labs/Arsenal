@@ -20,11 +20,12 @@ TGZ="/tmp/${APP}-${VERSION}.tgz"
 REL="$SERVER_PATH/releases/$VERSION"
 
 echo "==> upload $TGZ to $REL"
-$SSH "set -e; mkdir -p '$REL' '$SERVER_PATH/data'; tar -xzf - -C '$REL'" < "$TGZ"
+# 007: group-writable for pm2-user, not world-readable. .env.keys is 027 below.
+$SSH "umask 007; set -e; mkdir -p '$REL' '$SERVER_PATH/data'; tar -xzf - -C '$REL'" < "$TGZ"
 
 echo "==> link data and .env.keys into the release"
-printf 'DOTENV_PRIVATE_KEY_PRODUCTION=%s\n' "$DOTENV_PRIVATE_KEY_PRODUCTION" | $SSH "umask 077; cat > '$SERVER_PATH/.env.keys'"
-$SSH "set -e; ln -sfn ../../data '$REL/data'; ln -sfn ../../.env.keys '$REL/.env.keys'; /usr/local/bin/pm2-chown-tree '$SERVER_PATH'"
+printf 'DOTENV_PRIVATE_KEY_PRODUCTION=%s\n' "$DOTENV_PRIVATE_KEY_PRODUCTION" | $SSH "umask 027; cat > '$SERVER_PATH/.env.keys'"
+$SSH "set -e; ln -sfn ../../data '$REL/data'; ln -sfn ../../.env.keys '$REL/.env.keys'"
 
 PREVIOUS=$($SSH "readlink '$SERVER_PATH/current' 2>/dev/null || true")
 echo "==> previous release: ${PREVIOUS:-none}"
@@ -33,7 +34,7 @@ echo "==> switch current -> releases/$VERSION"
 $SSH "set -e; ln -sfn 'releases/$VERSION' '$SERVER_PATH/current.tmp'; mv -Tf '$SERVER_PATH/current.tmp' '$SERVER_PATH/current'"
 
 echo "==> restart $PM2_NAME"
-$SSH "/usr/local/bin/pm2-restart-safe '$PM2_NAME'"
+$SSH "sudo -n -u pm2-user /home/pm2-user/bin/pm2-wrapper restart '$PM2_NAME'"
 
 echo "==> verify"
 ok=false
@@ -46,7 +47,7 @@ if [ "$ok" != true ]; then
   echo "ERROR: $PM2_NAME did not report version $VERSION (last response: ${got:-none})"
   if [ -n "$PREVIOUS" ]; then
     echo "==> rolling back to $PREVIOUS"
-    $SSH "set -e; ln -sfn '$PREVIOUS' '$SERVER_PATH/current.tmp'; mv -Tf '$SERVER_PATH/current.tmp' '$SERVER_PATH/current'; /usr/local/bin/pm2-restart-safe '$PM2_NAME'"
+    $SSH "set -e; ln -sfn '$PREVIOUS' '$SERVER_PATH/current.tmp'; mv -Tf '$SERVER_PATH/current.tmp' '$SERVER_PATH/current'; sudo -n -u pm2-user /home/pm2-user/bin/pm2-wrapper restart '$PM2_NAME'"
   fi
   exit 1
 fi
