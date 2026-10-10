@@ -13,7 +13,11 @@ export function getAppConnectSrc(clerkFapi = getClerkFapiOrigin()): string[] {
   return ["'self'", clerkFapi, 'https://*.protect.clerk.com:*', DAL_HOMEPAGE_ORIGIN];
 }
 
-export function createAppHelmet(options?: { hsts?: boolean }) {
+export function createAppHelmet(options?: {
+  hsts?: boolean;
+  extraScriptSrc?: string[];
+  extraConnectSrc?: string[];
+}) {
   const clerkFapi = getClerkFapiOrigin();
   const defaults = helmet.contentSecurityPolicy.getDefaultDirectives();
 
@@ -27,8 +31,9 @@ export function createAppHelmet(options?: { hsts?: boolean }) {
           clerkFapi,
           'https://challenges.cloudflare.com',
           'https://*.protect.clerk.com',
+          ...(options?.extraScriptSrc ?? []),
         ],
-        'connect-src': getAppConnectSrc(clerkFapi),
+        'connect-src': [...getAppConnectSrc(clerkFapi), ...(options?.extraConnectSrc ?? [])],
         'img-src': [...(defaults['img-src'] ?? ["'self'"]), 'https://img.clerk.com'],
         'frame-src': ["'self'", 'https://challenges.cloudflare.com'],
         'worker-src': ["'self'", 'blob:'],

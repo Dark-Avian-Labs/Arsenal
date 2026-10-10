@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 export type ExitKind = 'graceful' | 'crash';
 
 export type ProcessSample = {
@@ -73,11 +75,89 @@ const METHOD_RE = /^[A-Z]{1,16}$/;
 const ROUTE_RE = /^\/[A-Za-z0-9_.:\-/{}$*]*$/;
 const APP_ID_RE = /^[a-z0-9][a-z0-9_-]{0,63}$/;
 
+const optionalNumber = z.preprocess(
+  (value) => (typeof value === 'number' && Number.isFinite(value) ? value : undefined),
+  z.number().optional(),
+);
+
+const optionalText = z.preprocess(
+  (value) => (typeof value === 'string' ? value.trim() : undefined),
+  z.string().optional(),
+);
+
+const appIdSchema = z.string().trim().regex(APP_ID_RE);
+
+const processSampleSchema = z.object({
+  kind: z.literal('process'),
+  appId: appIdSchema,
+  displayName: optionalText,
+  pm2Name: optionalText,
+  ts: optionalNumber,
+  cpu: optionalNumber,
+  rssMb: optionalNumber,
+  heapMb: optionalNumber,
+  heapTotalMb: optionalNumber,
+  heapExternalMb: optionalNumber,
+  lagP50Ms: optionalNumber,
+  lagP95Ms: optionalNumber,
+  lagMaxMs: optionalNumber,
+  elu: optionalNumber,
+  uptimeSec: optionalNumber,
+  gcP95Ms: optionalNumber,
+  status: optionalText,
+});
+
+const httpSampleSchema = z.object({
+  kind: z.literal('http'),
+  appId: appIdSchema,
+  displayName: optionalText,
+  ts: optionalNumber,
+  method: z.string().trim().regex(METHOD_RE),
+  routePattern: z
+    .string()
+    .trim()
+    .refine((value) => !value.includes('?') && ROUTE_RE.test(value)),
+  statusClass: z.string().trim().regex(STATUS_CLASS_RE),
+  count: z.number().gte(1).lte(1_000_000),
+  latencyP50Ms: optionalNumber,
+  latencyP95Ms: optionalNumber,
+  latencyMaxMs: optionalNumber,
+});
+
+const exitSampleSchema = z.object({
+  kind: z.literal('exit'),
+  appId: appIdSchema,
+  displayName: optionalText,
+  ts: optionalNumber,
+  exitKind: z.enum(['graceful', 'crash']),
+  exitCode: optionalNumber,
+  signal: z.preprocess(
+    (value) => (typeof value === 'string' ? value.trim().slice(0, 32) : undefined),
+    z.string().optional(),
+  ),
+  message: z.preprocess((value) => {
+    if (typeof value !== 'string') return undefined;
+    const trimmed = value.replace(/\s+/g, ' ').trim().slice(0, 200);
+    return trimmed.length > 0 ? trimmed : undefined;
+  }, z.string().optional()),
+  source: optionalText,
+});
+
+const sampleSchema = z.discriminatedUnion('kind', [
+  processSampleSchema,
+  httpSampleSchema,
+  exitSampleSchema,
+]);
+
+export type ParsedIngest = {
+  samples: Array<ProcessSample | HttpSample | ExitEvent>;
+};
+
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-function rejectForbiddenKeys(obj: Record<string, unknown>): string | null {
+function forbiddenField(obj: Record<string, unknown>): string | null {
   for (const key of Object.keys(obj)) {
     if (FORBIDDEN_KEYS.has(key) || FORBIDDEN_KEYS.has(key.toLowerCase())) {
       return `forbidden field: ${key}`;
@@ -86,25 +166,18 @@ function rejectForbiddenKeys(obj: Record<string, unknown>): string | null {
   return null;
 }
 
-function readString(obj: Record<string, unknown>, key: string): string | undefined {
-  const value = obj[key];
-  return typeof value === 'string' ? value.trim() : undefined;
+function sampleError(error: z.ZodError): string {
+  for (const issue of error.issues) {
+    const field = issue.path[0];
+    if (field === 'method') return 'invalid http method';
+    if (field === 'routePattern') return 'invalid routePattern';
+    if (field === 'statusClass') return 'invalid statusClass';
+    if (field === 'count') return 'invalid http count';
+    if (field === 'exitKind') return 'invalid exitKind';
+    if (field === 'appId') return 'invalid appId';
+  }
+  return 'invalid sample kind';
 }
-
-function readNumber(obj: Record<string, unknown>, key: string): number | undefined {
-  const value = obj[key];
-  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
-}
-
-function sanitizeMessage(message: string | undefined): string | undefined {
-  if (!message) return undefined;
-  const trimmed = message.replace(/\s+/g, ' ').trim().slice(0, 200);
-  return trimmed.length > 0 ? trimmed : undefined;
-}
-
-export type ParsedIngest = {
-  samples: Array<ProcessSample | HttpSample | ExitEvent>;
-};
 
 export function parseIngestBody(
   body: unknown,
@@ -112,7 +185,7 @@ export function parseIngestBody(
   if (!isPlainObject(body)) {
     return { ok: false, error: 'body must be an object' };
   }
-  const forbidden = rejectForbiddenKeys(body);
+  const forbidden = forbiddenField(body);
   if (forbidden) return { ok: false, error: forbidden };
 
   const rawSamples = body.samples;
@@ -124,98 +197,19 @@ export function parseIngestBody(
   }
 
   const samples: Array<ProcessSample | HttpSample | ExitEvent> = [];
-
   for (const item of rawSamples) {
     if (!isPlainObject(item)) {
       return { ok: false, error: 'each sample must be an object' };
     }
-    const itemForbidden = rejectForbiddenKeys(item);
+    const itemForbidden = forbiddenField(item);
     if (itemForbidden) return { ok: false, error: itemForbidden };
-
-    const kind = readString(item, 'kind');
-    const appId = readString(item, 'appId');
-    if (!appId || !APP_ID_RE.test(appId)) {
-      return { ok: false, error: 'invalid appId' };
-    }
-    const displayName = readString(item, 'displayName');
-    const ts = readNumber(item, 'ts');
-
-    if (kind === 'process') {
-      samples.push({
-        kind: 'process',
-        appId,
-        displayName,
-        pm2Name: readString(item, 'pm2Name'),
-        ts,
-        cpu: readNumber(item, 'cpu'),
-        rssMb: readNumber(item, 'rssMb'),
-        heapMb: readNumber(item, 'heapMb'),
-        heapTotalMb: readNumber(item, 'heapTotalMb'),
-        heapExternalMb: readNumber(item, 'heapExternalMb'),
-        lagP50Ms: readNumber(item, 'lagP50Ms'),
-        lagP95Ms: readNumber(item, 'lagP95Ms'),
-        lagMaxMs: readNumber(item, 'lagMaxMs'),
-        elu: readNumber(item, 'elu'),
-        uptimeSec: readNumber(item, 'uptimeSec'),
-        gcP95Ms: readNumber(item, 'gcP95Ms'),
-        status: readString(item, 'status'),
-      });
+    const parsed = sampleSchema.safeParse(item);
+    if (!parsed.success) return { ok: false, error: sampleError(parsed.error) };
+    if (parsed.data.kind === 'exit') {
+      samples.push({ ...parsed.data, source: parsed.data.source ?? 'agent' });
       continue;
     }
-
-    if (kind === 'http') {
-      const method = readString(item, 'method');
-      const routePattern = readString(item, 'routePattern');
-      const statusClass = readString(item, 'statusClass');
-      const count = readNumber(item, 'count');
-      if (!method || !METHOD_RE.test(method)) {
-        return { ok: false, error: 'invalid http method' };
-      }
-      if (!routePattern || routePattern.includes('?') || !ROUTE_RE.test(routePattern)) {
-        return { ok: false, error: 'invalid routePattern' };
-      }
-      if (!statusClass || !STATUS_CLASS_RE.test(statusClass)) {
-        return { ok: false, error: 'invalid statusClass' };
-      }
-      if (count == null || count < 1 || count > 1_000_000) {
-        return { ok: false, error: 'invalid http count' };
-      }
-      samples.push({
-        kind: 'http',
-        appId,
-        displayName,
-        ts,
-        method,
-        routePattern,
-        statusClass,
-        count,
-        latencyP50Ms: readNumber(item, 'latencyP50Ms'),
-        latencyP95Ms: readNumber(item, 'latencyP95Ms'),
-        latencyMaxMs: readNumber(item, 'latencyMaxMs'),
-      });
-      continue;
-    }
-
-    if (kind === 'exit') {
-      const exitKind = readString(item, 'exitKind');
-      if (exitKind !== 'graceful' && exitKind !== 'crash') {
-        return { ok: false, error: 'invalid exitKind' };
-      }
-      samples.push({
-        kind: 'exit',
-        appId,
-        displayName,
-        ts,
-        exitKind,
-        exitCode: readNumber(item, 'exitCode'),
-        signal: readString(item, 'signal')?.slice(0, 32),
-        message: sanitizeMessage(readString(item, 'message')),
-        source: readString(item, 'source') ?? 'agent',
-      });
-      continue;
-    }
-
-    return { ok: false, error: 'invalid sample kind' };
+    samples.push(parsed.data);
   }
 
   return { ok: true, value: { samples } };

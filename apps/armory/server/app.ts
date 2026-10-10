@@ -2,8 +2,6 @@ import path from 'path';
 
 import { createApp as createKitApp, log } from '@dark-avian-labs/server-kit';
 import type Database from 'better-sqlite3';
-import compression from 'compression';
-import cookieParser from 'cookie-parser';
 import express from 'express';
 import { rateLimit } from 'express-rate-limit';
 
@@ -84,26 +82,11 @@ export function createApp(options: CreateAppOptions = {}): AppBundle {
     },
     mountBeforeApi(app) {
       app.use(
-        compression({
-          filter: (req, res) => {
-            if (req.path.includes('/stream')) return false;
-            const accept = req.headers.accept;
-            if (typeof accept === 'string' && accept.includes('text/event-stream')) return false;
-            const contentType = res.getHeader('Content-Type');
-            if (typeof contentType === 'string' && contentType.includes('text/event-stream')) {
-              return false;
-            }
-            return compression.filter(req, res);
-          },
-        }),
-      );
-      app.use(
         '/api/webhooks/clerk',
         webhookLimiter,
         express.raw({ type: 'application/json' }),
         clerkWebhookRouter,
       );
-      app.use(cookieParser());
     },
     installSession(app) {
       app.use('/api', (req, res, next) => {

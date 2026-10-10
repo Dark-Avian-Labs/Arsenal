@@ -1,4 +1,4 @@
-import { apiFetch, Button, Modal } from '@dark-avian-labs/ui';
+import { Button, Modal } from '@dark-avian-labs/ui';
 import {
   artifactIdentityKey,
   findDuplicateArtifact,
@@ -17,6 +17,7 @@ import {
 import { useEffect, useState } from 'react';
 
 import { FieldSelect } from './FieldSelect';
+import { decodeGearScreenshot, recognizeArtifactStats } from './ocr/recognize';
 import type { ArtifactView, CatalogArtifact } from './types';
 
 function fileToDataUrl(file: File): Promise<string> {
@@ -118,28 +119,26 @@ export function ArtifactFormModal({
       setOcrStatus('Reading screenshot…');
       try {
         const dataUrl = await fileToDataUrl(file);
-        const response = await apiFetch('/api/artifacts/ocr', {
-          method: 'POST',
-          body: JSON.stringify({ image: dataUrl }),
-        });
-        const body = (await response.json().catch(() => null)) as
-          | (Partial<ArtifactDraft> & { error?: string })
-          | null;
-        if (!response.ok) {
-          setOcrStatus(body?.error ?? 'Could not read that screenshot.');
+        const decoded = decodeGearScreenshot(dataUrl);
+        if (!decoded.startsWith('data:')) {
+          setOcrStatus(decoded);
           return;
         }
+        const result = await recognizeArtifactStats(
+          decoded,
+          catalog.map((row) => ({ slug: row.slug, name: row.name })),
+        );
         setDraft((current) =>
           applyArtifactOcr(current, {
-            catalog_slug: body?.catalog_slug ?? null,
-            level: body?.level ?? null,
-            promotion: body?.promotion ?? null,
-            hp_base: body?.hp_base ?? null,
-            hp_bonus: body?.hp_bonus ?? null,
-            atk_base: body?.atk_base ?? null,
-            atk_bonus: body?.atk_bonus ?? null,
-            secondary_stat: body?.secondary_stat || null,
-            secondary_value: body?.secondary_value ?? null,
+            catalog_slug: result.catalog_slug ?? null,
+            level: result.level ?? null,
+            promotion: result.promotion ?? null,
+            hp_base: result.hp_base ?? null,
+            hp_bonus: result.hp_bonus ?? null,
+            atk_base: result.atk_base ?? null,
+            atk_bonus: result.atk_bonus ?? null,
+            secondary_stat: result.secondary_stat || null,
+            secondary_value: result.secondary_value ?? null,
           }),
         );
         setOcrStatus('Filled stats from screenshot.');
@@ -152,7 +151,7 @@ export function ArtifactFormModal({
 
     window.addEventListener('paste', readClipboardImage);
     return () => window.removeEventListener('paste', readClipboardImage);
-  }, [open]);
+  }, [catalog, open]);
 
   function saveDraft(): void {
     if (duplicate && !duplicateWarned) {

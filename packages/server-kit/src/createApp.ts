@@ -26,7 +26,7 @@ export interface CreateAppOptions {
   mountBeforeApi?: (app: Express) => void;
   /** Stage 2 still mounts session and CSRF from the app. Stage 3 removes this. */
   installSession?: (app: Express) => void;
-  helmet?: { hsts?: boolean };
+  helmet?: { hsts?: boolean; extraScriptSrc?: string[]; extraConnectSrc?: string[] };
 }
 
 export interface AppBundle {

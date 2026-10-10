@@ -1,6 +1,8 @@
+import type { EntryFrequency, EntryKind } from '../../shared/schemas';
+
+export type { EntryFrequency, EntryKind };
+
 export type MemberRole = 'owner' | 'editor' | 'viewer';
-export type EntryKind = 'expense' | 'income' | 'credit';
-export type EntryFrequency = 'monthly' | 'quarterly' | 'halfyearly' | 'yearly' | 'once';
 
 export interface PlanSummary {
   id: string;

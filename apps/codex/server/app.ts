@@ -1,8 +1,6 @@
 import path from 'path';
 
 import { createApp as createKitApp } from '@dark-avian-labs/server-kit';
-import compression from 'compression';
-import cookieParser from 'cookie-parser';
 import express, { type Request, type RequestHandler, type Response } from 'express';
 
 import {
@@ -44,10 +42,6 @@ export function createApp(options: CreateAppOptions = {}): AppBundle {
     readiness: async () => {
       await assertCodexReady();
       return true;
-    },
-    mountBeforeApi(app) {
-      app.use(compression());
-      app.use(cookieParser());
     },
     installSession(app) {
       const isDevEnv = NODE_ENV !== 'production';

@@ -36,14 +36,14 @@
     "@fontsource-variable/geist": "catalog:",
     "@fontsource-variable/geist-mono": "catalog:",
     "better-sqlite3": "catalog:",
-    "cookie-parser": "^1.4.7",
     "express": "catalog:",
     "express-rate-limit": "catalog:",
     "helmet": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
     "react-router": "catalog:",
-    "tesseract.js": "^7.0.0"
+    "tesseract.js": "^7.0.0",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@clerk/testing": "catalog:",
@@ -51,7 +51,6 @@
     "@playwright/test": "catalog:",
     "@tailwindcss/vite": "catalog:",
     "@types/better-sqlite3": "catalog:",
-    "@types/cookie-parser": "^1.4.10",
     "@types/express": "catalog:",
     "@types/node": "catalog:",
     "@types/react": "catalog:",

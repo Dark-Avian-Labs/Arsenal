@@ -1,6 +1,7 @@
 import { requireAdmin, requireAuthApi } from '@dark-avian-labs/server-kit';
 import { Router } from 'express';
 
+import { accountIdSchema, accountNameSchema } from '../../shared/schemas.js';
 import { getAppDb } from '../db/appDb.js';
 import * as q from '../db/queries.js';
 import { asyncHandler, json, requireClerkUserId, sendError } from '../http/handlers.js';
@@ -25,13 +26,13 @@ accountsRouter.post(
   '/',
   asyncHandler((req, res) => {
     const clerkUserId = requireClerkUserId(req);
-    const accountName = String(req.body?.account_name ?? '').trim();
-    if (!accountName || accountName.length > 128) {
+    const name = accountNameSchema.safeParse(req.body?.account_name);
+    if (!name.success) {
       sendError(res, 'Account name is required (max 128 characters).');
       return;
     }
     const db = getAppDb();
-    const account = q.createAccount(db, clerkUserId, accountName);
+    const account = q.createAccount(db, clerkUserId, name.data);
     json(res, { account }, 201);
   }),
 );
@@ -40,13 +41,13 @@ accountsRouter.post(
   '/switch',
   asyncHandler((req, res) => {
     const clerkUserId = requireClerkUserId(req);
-    const accountId = Number(req.body?.account_id);
-    if (!Number.isInteger(accountId) || accountId <= 0) {
+    const accountId = accountIdSchema.safeParse(req.body?.account_id);
+    if (!accountId.success) {
       sendError(res, 'account_id is required.');
       return;
     }
     const db = getAppDb();
-    const account = q.setActiveAccount(db, accountId, clerkUserId);
+    const account = q.setActiveAccount(db, accountId.data, clerkUserId);
     json(res, { account });
   }),
 );
@@ -56,16 +57,16 @@ accountsRouter.patch(
   asyncHandler((req, res) => {
     const clerkUserId = requireClerkUserId(req);
     const accountId = Number(req.params.id);
-    const accountName = String(req.body?.account_name ?? '').trim();
+    const accountName = accountNameSchema.safeParse(req.body?.account_name);
     if (!Number.isInteger(accountId) || accountId <= 0) {
       sendError(res, 'Invalid account id.');
       return;
     }
-    if (!accountName || accountName.length > 128) {
+    if (!accountName.success) {
       sendError(res, 'Account name is required (max 128 characters).');
       return;
     }
-    q.renameAccount(getAppDb(), accountId, clerkUserId, accountName);
+    q.renameAccount(getAppDb(), accountId, clerkUserId, accountName.data);
     json(res, { ok: true });
   }),
 );

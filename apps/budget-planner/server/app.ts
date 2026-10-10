@@ -1,6 +1,5 @@
 import { createApp as createKitApp } from '@dark-avian-labs/server-kit';
 import type Database from 'better-sqlite3';
-import cookieParser from 'cookie-parser';
 import express from 'express';
 
 import {
@@ -56,9 +55,6 @@ export function createApp(options: CreateAppOptions = {}): AppBundle {
     readiness: () => {
       appDb.prepare('SELECT 1').get();
       return true;
-    },
-    mountBeforeApi(app) {
-      app.use(cookieParser());
     },
   });
 

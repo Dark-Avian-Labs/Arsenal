@@ -7,6 +7,7 @@ import {
   type ScoreStatKey,
 } from '../../shared/optimizer.js';
 import type { GearPieceInput } from '../../shared/pieceStats.js';
+import { outfitHeroSchema, outfitPieceIdsSchema } from '../../shared/schemas.js';
 import { getAppDb } from '../db/appDb.js';
 import * as q from '../db/queries.js';
 import { requireAccountId } from '../http/account.js';
@@ -51,7 +52,7 @@ outfitRouter.post(
   asyncHandler(async (req, res) => {
     const accountId = requireAccountId(req, res);
     if (accountId == null) return;
-    const heroSlug = String(req.body?.hero_slug ?? '').trim();
+    const heroSlug = outfitHeroSchema.parse(req.body?.hero_slug);
     const hero = q.getHero(getAppDb(), accountId, heroSlug);
     if (!hero) {
       sendError(res, 'Hero not found.', 404);
@@ -115,19 +116,18 @@ outfitRouter.post(
   asyncHandler((req, res) => {
     const accountId = requireAccountId(req, res);
     if (accountId == null) return;
-    const heroSlug = String(req.body?.hero_slug ?? '').trim();
+    const heroSlug = outfitHeroSchema.parse(req.body?.hero_slug);
     const hero = q.getHero(getAppDb(), accountId, heroSlug);
     if (!hero) {
       sendError(res, 'Hero not found.', 404);
       return;
     }
-    const pieceIds = Array.isArray(req.body?.piece_ids)
-      ? req.body.piece_ids.map((id: unknown) => Number(id))
-      : [];
-    if (pieceIds.length !== 5 || pieceIds.some((id: number) => !Number.isInteger(id) || id <= 0)) {
+    const parsedIds = outfitPieceIdsSchema.safeParse(req.body?.piece_ids);
+    if (!parsedIds.success) {
       sendError(res, 'Exactly five gear piece ids are required.');
       return;
     }
+    const pieceIds = parsedIds.data;
     const db = getAppDb();
     const pieces = pieceIds.map((id: number) => q.getGear(db, accountId, id));
     if (pieces.some((piece: q.GearPieceRow | undefined) => !piece)) {

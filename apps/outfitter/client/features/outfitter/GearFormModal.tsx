@@ -1,4 +1,4 @@
-import { apiFetch, Button, MaterialSymbol, Modal } from '@dark-avian-labs/ui';
+import { Button, MaterialSymbol, Modal } from '@dark-avian-labs/ui';
 import {
   FACTION_DISPLAY_NAMES,
   FACTIONS,
@@ -22,6 +22,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import { FieldSelect } from './FieldSelect';
 import type { GearView } from './GearTile';
+import { decodeGearScreenshot, recognizeGearStats } from './ocr/recognize';
 import type { HeroRow } from './types';
 
 function moveIndex<T>(list: T[], from: number, to: number): T[] {
@@ -169,24 +170,16 @@ export function GearFormModal({
       setOcrStatus('Reading screenshot…');
       try {
         const dataUrl = await fileToDataUrl(file);
-        const response = await apiFetch('/api/gear/ocr', {
-          method: 'POST',
-          body: JSON.stringify({ image: dataUrl }),
-        });
-        const body = (await response.json().catch(() => null)) as {
-          stats?: { stat: GearStatKey; value: number }[];
-          slot?: GearDraft['slot'] | null;
-          set_key?: string | null;
-          prefix?: GearDraft['prefix'] | null;
-          exclusive_hero_slug?: string | null;
-          exclusive_faction?: string | null;
-          error?: string;
-        } | null;
-        if (!response.ok) {
-          setOcrStatus(body?.error ?? 'Could not read that screenshot.');
+        const decoded = decodeGearScreenshot(dataUrl);
+        if (!decoded.startsWith('data:')) {
+          setOcrStatus(decoded);
           return;
         }
-        const stats = body?.stats ?? [];
+        const result = await recognizeGearStats(
+          decoded,
+          heroes.map((hero) => ({ slug: hero.slug, name: hero.name })),
+        );
+        const stats = result.stats ?? [];
         if (stats.length === 0) {
           setOcrStatus('No stats found. Try a tighter crop of the main and sub stats.');
           return;
@@ -194,11 +187,11 @@ export function GearFormModal({
         setDraft((current) =>
           applyOcrStats(current, {
             stats,
-            slot: body?.slot ?? null,
-            set_key: body?.set_key ?? null,
-            prefix: body?.prefix ?? null,
-            exclusive_hero_slug: body?.exclusive_hero_slug ?? null,
-            exclusive_faction: body?.exclusive_faction ?? null,
+            slot: result.slot ?? null,
+            set_key: result.set_key ?? null,
+            prefix: result.prefix ?? null,
+            exclusive_hero_slug: result.exclusive_hero_slug ?? null,
+            exclusive_faction: result.exclusive_faction ?? null,
           }),
         );
         setOcrStatus(
@@ -213,7 +206,7 @@ export function GearFormModal({
 
     window.addEventListener('paste', readClipboardImage);
     return () => window.removeEventListener('paste', readClipboardImage);
-  }, [open]);
+  }, [heroes, open]);
 
   const identity = identityFromGearRow(draft);
   const identityKey = gearIdentityKey(identity);

@@ -14,6 +14,10 @@ const sentinelAgent = createAppSentinelAgent({
 
 const { app } = createApp({
   metricsMiddleware: sentinelAgent?.middleware,
+  helmet: {
+    extraScriptSrc: ["'wasm-unsafe-eval'", 'https://cdn.jsdelivr.net'],
+    extraConnectSrc: ['https://cdn.jsdelivr.net'],
+  },
 });
 
 try {

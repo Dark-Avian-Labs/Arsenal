@@ -5,6 +5,16 @@ import { Router, type Request, type Response } from 'express';
 import { nextAccountColor, remapAccountColor } from '../../shared/accountColors.js';
 import { computeMonthTotals } from '../../shared/dueThisMonth.js';
 import { calendarMonth, clampPlanMonth } from '../../shared/planMonth.js';
+import {
+  entryPatchSchema,
+  entrySchema,
+  fieldErrors,
+  invalidFieldsBody,
+  isNonNegativeInteger,
+  normalizeComment,
+  normalizeName,
+  planSchema,
+} from '../../shared/schemas.js';
 import type { EntryFrequency, EntryKind, MemberRole } from '../db/appSchema.js';
 import { getAppDb } from '../db/connection.js';
 import {
@@ -13,14 +23,6 @@ import {
   syncOnceArchiveState,
   type PlanEntryRow,
 } from '../lib/planEntries.js';
-import {
-  invalidFieldsBody,
-  isNonNegativeInteger,
-  normalizeComment,
-  normalizeCurrency,
-  normalizeName,
-  validateEntryBody,
-} from '../lib/planValidation.js';
 import { requireAuth, requirePlanAccess } from '../middleware/auth.js';
 import {
   createInviteToken,
@@ -167,18 +169,20 @@ plansRouter.get('/', (req: Request, res: Response) => {
 
 plansRouter.post('/', (req: Request, res: Response) => {
   const user = req.appUser!;
-  const rawName =
-    typeof req.body?.name === 'string' && req.body.name.trim() ? req.body.name.trim() : 'Household';
-  const name = normalizeName(rawName);
-  const currency = normalizeCurrency(req.body?.currency, 'EUR');
-  if (!name) {
-    res.status(400).json({ error: 'Invalid plan name' });
+  const rawName = req.body?.name;
+  const rawCurrency = req.body?.currency;
+  const parsed = planSchema.safeParse({
+    name: typeof rawName === 'string' && rawName.trim() ? rawName : 'Household',
+    currency: rawCurrency == null || rawCurrency === '' ? 'EUR' : rawCurrency,
+  });
+  if (!parsed.success) {
+    const fields = fieldErrors(parsed.error);
+    res
+      .status(400)
+      .json({ error: fields.includes('name') ? 'Invalid plan name' : 'Invalid currency' });
     return;
   }
-  if (!currency) {
-    res.status(400).json({ error: 'Invalid currency' });
-    return;
-  }
+  const { name, currency } = parsed.data;
 
   const planId = createPlanForOwner(user, name, currency);
   const plan = getAppDb()
@@ -247,16 +251,19 @@ plansRouter.patch('/:planId', requirePlanAccess('editor'), (req: Request, res: R
     return;
   }
 
-  const name = normalizeName(req.body?.name, plan.name);
-  const currency = normalizeCurrency(req.body?.currency, plan.currency);
-  if (!name) {
-    res.status(400).json({ error: 'Invalid plan name' });
+  const rawCurrency = req.body?.currency;
+  const parsed = planSchema.safeParse({
+    name: req.body?.name === undefined ? plan.name : req.body.name,
+    currency: rawCurrency == null || rawCurrency === '' ? plan.currency : rawCurrency,
+  });
+  if (!parsed.success) {
+    const fields = fieldErrors(parsed.error);
+    res
+      .status(400)
+      .json({ error: fields.includes('name') ? 'Invalid plan name' : 'Invalid currency' });
     return;
   }
-  if (!currency) {
-    res.status(400).json({ error: 'Invalid currency' });
-    return;
-  }
+  const { name, currency } = parsed.data;
 
   db.prepare(
     `UPDATE plans SET name = ?, currency = ?, updated_at = datetime('now') WHERE id = ?`,
@@ -511,9 +518,9 @@ plansRouter.delete(
 plansRouter.post('/:planId/entries', requirePlanAccess('editor'), (req: Request, res: Response) => {
   const planId = routeParam(req.params.planId);
   const body = (req.body ?? {}) as Record<string, unknown>;
-  const errors = validateEntryBody(body);
-  if (errors.length) {
-    res.status(400).json(invalidFieldsBody(errors));
+  const parsedEntry = entrySchema.safeParse(body);
+  if (!parsedEntry.success) {
+    res.status(400).json(invalidFieldsBody(fieldErrors(parsedEntry.error)));
     return;
   }
 
@@ -605,9 +612,9 @@ plansRouter.patch(
     }
 
     const body = (req.body ?? {}) as Record<string, unknown>;
-    const errors = validateEntryBody(body, true);
-    if (errors.length) {
-      res.status(400).json(invalidFieldsBody(errors));
+    const parsedEntry = entryPatchSchema.safeParse(body);
+    if (!parsedEntry.success) {
+      res.status(400).json(invalidFieldsBody(fieldErrors(parsedEntry.error)));
       return;
     }
 

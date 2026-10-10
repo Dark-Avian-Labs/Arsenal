@@ -19,13 +19,8 @@ const testEnvDefaults = {
 export default defineConfig({
   test: {
     environment: 'node',
-    globalSetup: ['tests/globalSetup.sqlite.ts'],
-    include: [
-      'tests/**/*.test.ts',
-      'server/**/*.test.ts',
-      'client/**/*.test.ts',
-      'scripts/**/*.test.ts',
-    ],
+    globalSetup: ['server/testing/globalSetup.sqlite.ts'],
+    include: ['server/**/*.test.ts', 'client/**/*.test.ts', 'scripts/**/*.test.ts'],
     testTimeout: 10_000,
     env: {
       ...testEnvDefaults,

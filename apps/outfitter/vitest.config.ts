@@ -1,4 +1,9 @@
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 import { defaultExclude, defineConfig } from 'vitest/config';
+
+const root = path.dirname(fileURLToPath(import.meta.url));
 
 const testEnv = {
   NODE_ENV: 'test',
@@ -10,6 +15,12 @@ const testEnv = {
 } as const;
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      '@': path.resolve(root, 'client'),
+      '@shared': path.resolve(root, 'shared'),
+    },
+  },
   test: {
     environment: 'node',
     env: testEnv,

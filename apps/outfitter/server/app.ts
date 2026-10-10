@@ -1,5 +1,4 @@
 import { createApp as createKitApp } from '@dark-avian-labs/server-kit';
-import cookieParser from 'cookie-parser';
 import express from 'express';
 
 import {
@@ -23,6 +22,7 @@ export interface AppBundle {
 
 export interface CreateAppOptions {
   metricsMiddleware?: express.RequestHandler;
+  helmet?: { extraScriptSrc?: string[]; extraConnectSrc?: string[] };
 }
 
 export function createApp(options: CreateAppOptions = {}): AppBundle {
@@ -38,14 +38,10 @@ export function createApp(options: CreateAppOptions = {}): AppBundle {
     secureCookies: SECURE_COOKIES,
     legalPageUrl: LEGAL_PAGE_URL,
     metricsMiddleware: options.metricsMiddleware,
+    helmet: options.helmet,
     readiness: () => {
       getAppDb().prepare('SELECT 1').get();
       return true;
-    },
-    mountBeforeApi(app) {
-      app.use('/api/gear/ocr', express.json({ limit: '5mb' }));
-      app.use('/api/artifacts/ocr', express.json({ limit: '5mb' }));
-      app.use(cookieParser());
     },
     installSession(app) {
       app.use('/api', (_req, res, next) => {
