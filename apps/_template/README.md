@@ -18,9 +18,9 @@ It is for the next app, so that app copies a finished shell instead of inheritin
 
 ## Features
 
-**The shell, and nothing else.** Layout, theme, sign-in, session, and the legal link are here. There is no collection, no budget, and no catalog to delete before you begin.
+**The shell, and nothing else.** Layout, theme, sign-in, and the legal link are here. There is no collection, no budget, and no catalog to delete before you begin.
 
-**The same sign-in shape as the hosted apps.** Clerk, a session cookie, and the allowed-origins list match the apps that already share an account. A new app can join that list instead of inventing a second login.
+**The same sign-in shape as the hosted apps.** Clerk and the allowed-origins list match the apps that already share an account. A new app can join that list instead of inventing a second login. Writes send `Authorization: Bearer`.
 
 **A left rail ready for the lab menu.** The nav hook the other apps use is already wired, so a sibling can show up beside this one once it has a public URL.
 

@@ -4,19 +4,7 @@ In-process agent for Sentinel. Collects event-loop lag, HTTP latency by route pa
 
 ## Install
 
-Local iteration:
-
-```json
-"@dark-avian-labs/sentinel-agent": "file:../Sentinel/packages/agent"
-```
-
-Production / pinned: download the packed tarball from a Forgejo release tagged `agent-vX.Y.Z`. The app's own `v*` tags come from semantic-release and do not include this tarball.
-
-```json
-"@dark-avian-labs/sentinel-agent": "https://git.darkavianlabs.com/Dark-Avian-Labs/Sentinel/releases/download/agent-v0.1.0/dark-avian-labs-sentinel-agent-0.1.0.tgz"
-```
-
-Create it with Actions, Agent Release, or publish a Forgejo release whose tag starts with `agent-v`.
+Apps in this repo depend on it with `"@dark-avian-labs/sentinel-agent": "workspace:*"`. The package is compiled to `dist`; apps import that. App releases are tags named `<app>-vX.Y.Z` and do not publish this package on their own.
 
 ## Usage
 

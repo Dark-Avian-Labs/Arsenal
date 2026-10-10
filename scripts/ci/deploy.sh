@@ -3,7 +3,7 @@
 # `current` symlink, restarts PM2 and verifies /api/version. Rolls the symlink back on failure.
 set -euo pipefail
 
-for v in APP VERSION PM2_NAME PORT DOTENV_PRIVATE_KEY_PRODUCTION SSH_PRIVATE_KEY SERVER_KNOWN_HOST SERVER_HOST SERVER_USER SERVER_PATH SERVER_SSH_PORT; do
+for v in APP VERSION SHA PM2_NAME PORT DOTENV_PRIVATE_KEY_PRODUCTION SSH_PRIVATE_KEY SERVER_KNOWN_HOST SERVER_HOST SERVER_USER SERVER_PATH SERVER_SSH_PORT; do
   [ -n "${!v:-}" ] || { echo "ERROR: $v is empty"; exit 1; }
 done
 case "$SERVER_PATH" in
@@ -16,22 +16,40 @@ chmod 600 ~/.ssh/deploy_key
 printf '%s\n' "$SERVER_KNOWN_HOST" >> ~/.ssh/known_hosts
 SSH="ssh -p $SERVER_SSH_PORT -i $HOME/.ssh/deploy_key -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$HOME/.ssh/known_hosts $SERVER_USER@$SERVER_HOST"
 
+SHORT=$(printf '%s' "$SHA" | cut -c1-7)
+case "$SHORT" in
+  *[!0-9a-fA-F]*|"") echo "ERROR: SHA '$SHA' is not hex"; exit 1 ;;
+esac
 TGZ="/tmp/${APP}-${VERSION}.tgz"
-REL="$SERVER_PATH/releases/$VERSION"
+REL="$SERVER_PATH/releases/${VERSION}-${SHORT}"
+STAGE="${REL}.incoming"
 
-echo "==> upload $TGZ to $REL"
+echo "==> upload $TGZ to $STAGE"
 # 007: group-writable for pm2-user, not world-readable. .env.keys is 027 below.
-$SSH "umask 007; set -e; mkdir -p '$REL' '$SERVER_PATH/data'; tar -xzf - -C '$REL'" < "$TGZ"
+# Extract beside the release dir. A same-version redeploy must not untar into the
+# directory PM2 is serving.
+$SSH "umask 007; set -e; rm -rf '$STAGE'; mkdir -p '$STAGE' '$SERVER_PATH/data'; tar -xzf - -C '$STAGE'" < "$TGZ"
 
 echo "==> link data and .env.keys into the release"
 printf 'DOTENV_PRIVATE_KEY_PRODUCTION=%s\n' "$DOTENV_PRIVATE_KEY_PRODUCTION" | $SSH "umask 027; cat > '$SERVER_PATH/.env.keys'"
-$SSH "set -e; ln -sfn ../../data '$REL/data'; ln -sfn ../../.env.keys '$REL/.env.keys'"
+$SSH "set -e; ln -sfn ../../data '$STAGE/data'; ln -sfn ../../.env.keys '$STAGE/.env.keys'"
+$SSH "set -e
+  if [ -d '$REL' ]; then
+    rm -rf '${REL}.previous'
+    mv '$REL' '${REL}.previous'
+  fi
+  if ! mv '$STAGE' '$REL'; then
+    if [ -d '${REL}.previous' ]; then mv '${REL}.previous' '$REL'; fi
+    exit 1
+  fi
+  rm -rf '${REL}.previous'
+"
 
 PREVIOUS=$($SSH "readlink '$SERVER_PATH/current' 2>/dev/null || true")
 echo "==> previous release: ${PREVIOUS:-none}"
 
-echo "==> switch current -> releases/$VERSION"
-$SSH "set -e; ln -sfn 'releases/$VERSION' '$SERVER_PATH/current.tmp'; mv -Tf '$SERVER_PATH/current.tmp' '$SERVER_PATH/current'"
+echo "==> switch current -> releases/${VERSION}-${SHORT}"
+$SSH "set -e; ln -sfn 'releases/${VERSION}-${SHORT}' '$SERVER_PATH/current.tmp'; mv -Tf '$SERVER_PATH/current.tmp' '$SERVER_PATH/current'"
 
 echo "==> restart $PM2_NAME"
 $SSH "sudo -n -u pm2-user /home/pm2-user/bin/pm2-wrapper restart '$PM2_NAME'"

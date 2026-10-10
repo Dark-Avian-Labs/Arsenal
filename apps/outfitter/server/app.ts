@@ -43,7 +43,7 @@ export function createApp(options: CreateAppOptions = {}): AppBundle {
       getAppDb().prepare('SELECT 1').get();
       return true;
     },
-    installSession(app) {
+    mount(app) {
       app.use('/api', (_req, res, next) => {
         res.setHeader('Cache-Control', 'no-store');
         next();

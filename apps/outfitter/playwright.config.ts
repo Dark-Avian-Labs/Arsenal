@@ -30,8 +30,6 @@ const signedOutServer = {
     NODE_ENV: 'test',
     HOST: '127.0.0.1',
     PORT: port,
-    SESSION_SECRET: 'outfitter-dev-only-session-secret-32ch',
-    SESSION_DB_PATH: path.join(e2eRoot, 'session.db'),
     APP_DB_PATH: path.join(e2eRoot, 'app.db'),
     APP_PUBLIC_BASE_URL: baseURL,
     COOKIE_DOMAIN: '',
@@ -64,7 +62,6 @@ export default defineConfig({
           env: {
             ...signedOutServer.env,
             PORT: signedInPort,
-            SESSION_DB_PATH: path.join(signedInRoot, 'session.db'),
             APP_DB_PATH: path.join(signedInRoot, 'app.db'),
             APP_PUBLIC_BASE_URL: signedInURL,
             CLERK_PUBLISHABLE_KEY: clerk.publishable,

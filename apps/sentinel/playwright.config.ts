@@ -1,10 +1,5 @@
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
-
 import { defineConfig, devices } from '@playwright/test';
 
-const e2eRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'sentinel-e2e-'));
 const port = '3105';
 const baseURL = `http://127.0.0.1:${port}`;
 
@@ -28,8 +23,6 @@ export default defineConfig({
       NODE_ENV: 'test',
       HOST: '127.0.0.1',
       PORT: port,
-      SESSION_SECRET: 'sentinel-dev-only-session-secret-32ch',
-      SESSION_DB_PATH: path.join(e2eRoot, 'session.db'),
       APP_PUBLIC_BASE_URL: baseURL,
       CLERK_PUBLISHABLE_KEY: '',
       CLERK_SECRET_KEY: '',

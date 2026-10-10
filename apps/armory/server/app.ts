@@ -88,7 +88,7 @@ export function createApp(options: CreateAppOptions = {}): AppBundle {
         clerkWebhookRouter,
       );
     },
-    installSession(app) {
+    mount(app) {
       app.use('/api', (req, res, next) => {
         const method = req.method.toUpperCase();
         if (method === 'POST' || method === 'PUT' || method === 'PATCH' || method === 'DELETE') {

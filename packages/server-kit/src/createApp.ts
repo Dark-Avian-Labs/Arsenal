@@ -24,8 +24,8 @@ export interface CreateAppOptions {
   readiness?: () => boolean | Promise<boolean>;
   rateLimits?: { api?: number; write?: number; page?: number; asset?: number };
   mountBeforeApi?: (app: Express) => void;
-  /** Stage 2 still mounts session and CSRF from the app. Stage 3 removes this. */
-  installSession?: (app: Express) => void;
+  /** App-specific mounts: rate limits, static files. Does not mount a session. */
+  mount?: (app: Express) => void;
   helmet?: { hsts?: boolean; extraScriptSrc?: string[]; extraConnectSrc?: string[] };
 }
 
@@ -101,7 +101,7 @@ export function createApp(options: CreateAppOptions): AppBundle {
   });
 
   app.use(clerkMiddleware());
-  options.installSession?.(app);
+  options.mount?.(app);
 
   app.use('/api', (req, res, next) => {
     const startedAt = Date.now();

@@ -32,8 +32,6 @@ const signedOutServer = {
     NODE_ENV: 'test',
     HOST: '127.0.0.1',
     PORT: port,
-    SESSION_SECRET: 'codex-dev-only-session-secret-32ch',
-    SESSION_DB_PATH: path.join(e2eRoot, 'session.db'),
     WARFRAME_CATALOG_DB_PATH: catalogDbPath,
     WARFRAME_DB_PATH: path.join(e2eRoot, 'warframe.db'),
     EPIC7_DB_PATH: path.join(e2eRoot, 'epic7.db'),
@@ -70,7 +68,6 @@ export default defineConfig({
           env: {
             ...signedOutServer.env,
             PORT: signedInPort,
-            SESSION_DB_PATH: path.join(signedInRoot, 'session.db'),
             WARFRAME_CATALOG_DB_PATH: signedInCatalog,
             WARFRAME_DB_PATH: path.join(signedInRoot, 'warframe.db'),
             EPIC7_DB_PATH: path.join(signedInRoot, 'epic7.db'),
