@@ -40,6 +40,7 @@ jobs:
       - name: Build
         env:
           APP_VERSION: ${{ steps.release.outputs.version }}
+          DOTENV_PRIVATE_KEY_PRODUCTION: ${{ secrets.DOTENV_PRIVATE_KEY_PRODUCTION }}
         run: pnpm --filter "${{ inputs.app }}..." run --if-present build
 
       - name: Assemble release directory

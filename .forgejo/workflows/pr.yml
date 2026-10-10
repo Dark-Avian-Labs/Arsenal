@@ -30,7 +30,14 @@ jobs:
         run: pnpm run validate
 
       - name: Build
-        run: pnpm run build
+        env:
+          DOTENV_PRIVATE_KEY_PRODUCTION: ${{ secrets.DOTENV_PRIVATE_KEY_PRODUCTION_BUDGET_PLANNER }}
+        run: |
+          if [ -z "$DOTENV_PRIVATE_KEY_PRODUCTION" ]; then
+            echo "ERROR: DOTENV_PRIVATE_KEY_PRODUCTION_BUDGET_PLANNER is missing or empty."
+            exit 1
+          fi
+          pnpm run build
 
       - name: Playwright browser and OS deps
         run: |
