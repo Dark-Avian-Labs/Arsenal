@@ -1,9 +1,9 @@
+import { ErrorBoundary } from '@dark-avian-labs/ui';
 import { createBrowserRouter, Navigate } from 'react-router';
 
 import { App } from '../App';
 import { Layout } from '../components/Layout/Layout';
 import { NotFoundPage } from '../components/NotFoundPage/NotFoundPage';
-import { ErrorBoundary } from '../components/ui/ErrorBoundary';
 import { SignInPage } from '../features/auth/SignInPage';
 import { SignUpPage } from '../features/auth/SignUpPage';
 import { APP_PATHS } from './paths';

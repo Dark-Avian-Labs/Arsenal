@@ -1,5 +1,17 @@
 import { useClerk, useUser } from '@clerk/react';
-import { isSentinelAdmin } from '@dark-avian-labs/ui';
+import {
+  AsciiWaveBackground,
+  DalAppNav,
+  HexSideBackground,
+  MaterialSymbol,
+  Menu,
+  Modal,
+  StaleClientUpdateBanner,
+  UiStyleSelector,
+  buildClerkProfileAppearance,
+  isSentinelAdmin,
+  useTheme,
+} from '@dark-avian-labs/ui';
 import {
   lazy,
   Suspense,
@@ -22,22 +34,12 @@ import { APP_PATHS, buildNewPath } from '../../app/paths';
 import { ChunkErrorBoundary, RouteFallback } from '../../app/routes';
 import feathers from '../../assets/feathers.svg';
 import { useCompare } from '../../context/CompareContext';
-import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../features/auth/AuthContext';
-import { buildClerkProfileAppearance } from '../../lib/clerkAppearance';
 import { API_UNAUTHORIZED_EVENT } from '../../utils/api';
 import { CompareBar } from '../Compare/CompareBar';
 import { AtragraphModsToggle } from '../ui/AtragraphModsToggle';
 import { LazySuspenseFallback } from '../ui/LazySuspenseFallback';
-import { MaterialSymbol } from '../ui/MaterialSymbol';
-import { Menu } from '../ui/Menu';
-import { Modal } from '../ui/Modal';
-import { UiStyleSelector } from '../ui/UiStyleSelector';
-import { AsciiWaveBackground } from './AsciiWaveBackground';
-import { DalAppNav } from './DalAppNav';
-import { HexSideBackground } from './HexSideBackground';
 import { SearchBar } from './SearchBar';
-import { StaleClientUpdateBanner } from './StaleClientUpdateBanner';
 
 const EquipmentGridModal = lazy(() =>
   import('./EquipmentGridModal').then((m) => ({ default: m.EquipmentGridModal })),

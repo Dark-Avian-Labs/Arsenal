@@ -1,3 +1,4 @@
+import { MaterialSymbol } from '@dark-avian-labs/ui';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 
@@ -14,7 +15,6 @@ import { linkifyPlainText } from '../../utils/linkifyText';
 import { loadEquipmentLookup } from '../../utils/loadEquipmentLookup';
 import { parseStoredBuildFromApi } from '../../utils/parseStoredBuildFromApi';
 import { calculateWarframeStats } from '../../utils/warframeCalc';
-import { MaterialSymbol } from '../ui/MaterialSymbol';
 
 type LookupRecord = Record<string, Record<string, unknown>>;
 

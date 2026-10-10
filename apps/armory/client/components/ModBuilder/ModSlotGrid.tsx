@@ -1,3 +1,4 @@
+import { MaterialSymbol } from '@dark-avian-labs/ui';
 import { useState, useEffect, useRef, useMemo } from 'react';
 
 import {
@@ -29,7 +30,6 @@ import {
   applyAtragraphHoloCssVars,
   applyIdleAtragraphHoloCssVars,
 } from '../ModCard/atragraphHolo';
-import { MaterialSymbol } from '../ui/MaterialSymbol';
 import { SlotTypeIcon } from '../ui/SlotTypeIcon';
 
 const POLARITY_CYCLE_FULL: (string | undefined)[] = [

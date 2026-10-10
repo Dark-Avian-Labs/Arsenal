@@ -1,7 +1,8 @@
+import { MaterialSymbol } from '@dark-avian-labs/ui';
+
 import orokinReactorImg from '../../assets/orokin-reactor.png';
 import type { FormaCount } from '../../utils/formaCounter';
 import { GlassTooltip } from '../GlassTooltip';
-import { MaterialSymbol } from '../ui/MaterialSymbol';
 
 interface CapacityBarProps {
   capacity: {

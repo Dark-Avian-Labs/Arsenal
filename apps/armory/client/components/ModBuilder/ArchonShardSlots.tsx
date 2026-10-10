@@ -1,10 +1,11 @@
+import { MaterialSymbol } from '@dark-avian-labs/ui';
+
 import { parseArchonShardKey } from '../../../shared/archonShardRegistry.js';
 import { isShardSlotV2 } from '../../../shared/buildReference.js';
 import { shardSlotTauforged } from '../../utils/buildConfigPersist';
 import { renderDamageTypeWords } from '../../utils/renderDamageTypeWords';
 import { formatShardBuffDescription } from '../../utils/shardBuffFormat';
 import { GlassTooltip } from '../GlassTooltip';
-import { MaterialSymbol } from '../ui/MaterialSymbol';
 
 export interface ShardSlotConfig {
   shard_type_id?: string | number;

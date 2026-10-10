@@ -1,3 +1,4 @@
+import { MaterialSymbol } from '@dark-avian-labs/ui';
 import { useRef } from 'react';
 
 import { getMaxRank, getArcaneDescription } from '../../utils/arcaneUtils';
@@ -5,7 +6,6 @@ import { DamageTypeInlineText } from '../DamageTypeInlineText';
 import { GlassTooltip } from '../GlassTooltip';
 import { ArcaneCardPreview } from '../ModCard/ArcaneCardPreview';
 import { DEFAULT_ARCANE_LAYOUT, normalizeArcaneRarity } from '../ModCard/cardLayout';
-import { MaterialSymbol } from '../ui/MaterialSymbol';
 
 export interface Arcane {
   unique_name: string;

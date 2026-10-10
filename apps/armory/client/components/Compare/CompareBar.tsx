@@ -1,8 +1,8 @@
+import { MaterialSymbol } from '@dark-avian-labs/ui';
 import { lazy, Suspense, useState } from 'react';
 
 import { useCompare } from '../../context/CompareContext';
 import { LazySuspenseFallback } from '../ui/LazySuspenseFallback';
-import { MaterialSymbol } from '../ui/MaterialSymbol';
 
 const CompareModal = lazy(() =>
   import('./CompareModal').then((m) => ({ default: m.CompareModal })),

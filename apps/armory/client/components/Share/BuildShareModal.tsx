@@ -1,3 +1,4 @@
+import { MaterialSymbol, Modal } from '@dark-avian-labs/ui';
 import { toBlob } from 'html-to-image';
 import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react';
@@ -35,8 +36,6 @@ import {
   normalizeArcaneRarity,
 } from '../ModCard/cardLayout';
 import { ModCard } from '../ModCard/ModCard';
-import { MaterialSymbol } from '../ui/MaterialSymbol';
-import { Modal } from '../ui/Modal';
 import { ShareHeroTitle } from './ShareHeroTitle';
 import { ShareRadarChart } from './ShareRadarChart';
 import {

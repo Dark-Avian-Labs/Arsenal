@@ -1,3 +1,4 @@
+import { MaterialSymbol } from '@dark-avian-labs/ui';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 
@@ -9,7 +10,6 @@ import type { FormaCount } from '../../utils/formaCounter';
 import { loadEquipmentLookup, type EquipmentPolaritySource } from '../../utils/loadEquipmentLookup';
 import { resolveEquipmentDisplayName } from '../../utils/resolveEquipmentDisplayName';
 import { FormaMetricChips } from '../shared/FormaMetricChips';
-import { MaterialSymbol } from '../ui/MaterialSymbol';
 
 type BuildListItem = {
   id: number;

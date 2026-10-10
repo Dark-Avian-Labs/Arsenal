@@ -1,4 +1,5 @@
 import { Show, SignInButton } from '@clerk/react';
+import { MaterialSymbol, Modal } from '@dark-avian-labs/ui';
 import { lazy, Suspense, useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   Link,
@@ -91,8 +92,6 @@ import {
 } from '../../utils/specialItems';
 import { weaponSupportsValenceBonus } from '../../utils/weaponValence';
 import { LazySuspenseFallback } from '../ui/LazySuspenseFallback';
-import { MaterialSymbol } from '../ui/MaterialSymbol';
-import { Modal } from '../ui/Modal';
 import { AbilityBar } from './AbilityBar';
 import { ArcaneSlots, type ArcaneSlot, type Arcane } from './ArcaneSlots';
 import { ArchonShardSlots, type ShardSlotConfig, type ShardType } from './ArchonShardSlots';

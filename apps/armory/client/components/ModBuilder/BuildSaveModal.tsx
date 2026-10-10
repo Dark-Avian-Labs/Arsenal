@@ -1,6 +1,5 @@
+import { Modal } from '@dark-avian-labs/ui';
 import { memo } from 'react';
-
-import { Modal } from '../ui/Modal';
 
 type BuildSaveModalProps = {
   open: boolean;

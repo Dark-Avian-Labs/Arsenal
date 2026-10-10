@@ -1,6 +1,7 @@
+import { MaterialSymbol } from '@dark-avian-labs/ui';
+
 import type { IncarnonData, IncarnonPerkOption } from '../../types/incarnon';
 import { DamageTypeInlineText } from '../DamageTypeInlineText';
-import { MaterialSymbol } from '../ui/MaterialSymbol';
 
 interface IncarnonPickerPanelProps {
   tier: number;
