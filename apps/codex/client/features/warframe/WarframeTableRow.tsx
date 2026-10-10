@@ -1,10 +1,10 @@
+import { MaterialSymbol } from '@dark-avian-labs/ui';
 import { memo } from 'react';
 
 import type {
   WarframeColumn as Column,
   WarframeRow as Row,
 } from '../../../shared/warframeTypes.js';
-import { MaterialSymbol } from '../../components/ui/MaterialSymbol';
 import type { ExitRowPhase } from './warframeConstants.js';
 import {
   advancedToggleClass,

@@ -1,3 +1,4 @@
+import { MaterialSymbol } from '@dark-avian-labs/ui';
 import { memo, type ReactNode } from 'react';
 
 import {
@@ -13,7 +14,6 @@ import {
   DEMON_LEVEL_MIN,
 } from '../../../server/games/wor/constants';
 import type { FactionKey, HeroClassKey } from '../../../server/games/wor/constants';
-import { MaterialSymbol } from '../../components/ui/MaterialSymbol';
 
 export type WorTab = 'heroes' | 'artifacts' | 'demons';
 

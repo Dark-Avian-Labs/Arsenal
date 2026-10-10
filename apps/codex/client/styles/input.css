@@ -1,5 +1,5 @@
 @import 'tailwindcss';
-@import './clerk-auth.css';
+@import '@dark-avian-labs/ui/clerk-auth.css';
 @font-face {
   font-family: 'Geist Variable';
   font-style: normal;
@@ -26,6 +26,7 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+@source '../../../../packages/ui/src';
 @source '../../../src/**/*.{js,ts,jsx,tsx}';
 @source '../../../client/**/*.{js,ts,jsx,tsx}';
 @source '../../games/warframe/src/**/*.{js,ts,jsx,tsx}';

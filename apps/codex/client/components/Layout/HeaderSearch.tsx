@@ -1,6 +1,5 @@
+import { MaterialSymbol } from '@dark-avian-labs/ui';
 import { memo, useEffect, useRef, useState } from 'react';
-
-import { MaterialSymbol } from '../ui/MaterialSymbol';
 
 interface HeaderSearchProps {
   inputId: string;

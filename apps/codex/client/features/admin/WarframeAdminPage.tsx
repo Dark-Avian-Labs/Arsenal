@@ -1,3 +1,4 @@
+import { MaterialSymbol, Modal } from '@dark-avian-labs/ui';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { isHelminthNonSubsumableItemName } from '../../../server/games/warframe/helminthExceptions';
@@ -10,8 +11,6 @@ import type {
   WarframeWorksheetSyncResult as WorksheetSyncResult,
 } from '../../../shared/warframeTypes.js';
 import { useLayoutSlots } from '../../components/Layout/useLayoutSlots';
-import { MaterialSymbol } from '../../components/ui/MaterialSymbol';
-import { Modal } from '../../components/ui/Modal';
 import { useTableScrollStyle } from '../../hooks/useTableScrollStyle';
 import { apiFetch } from '../../utils/api';
 import { useAuth } from '../auth/AuthContext';
