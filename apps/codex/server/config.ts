@@ -80,6 +80,19 @@ export const EPIC7_DB_PATH = resolveGameDbEnvPath('EPIC7_DB_PATH', 'epic7.db');
 export const WOR_DB_PATH = resolveGameDbEnvPath('WOR_DB_PATH', 'wor.db');
 export const WOR_CATALOG_DB_PATH = resolveGameDbEnvPath('WOR_CATALOG_DB_PATH', 'wor-catalog.db');
 
+function canonicalPath(target: string): string {
+  const resolved = path.resolve(target);
+  const pending: string[] = [];
+  let current = resolved;
+  while (!fs.existsSync(current)) {
+    const parent = path.dirname(current);
+    if (parent === current) return resolved;
+    pending.push(path.basename(current));
+    current = parent;
+  }
+  return path.join(fs.realpathSync(current), ...pending.reverse());
+}
+
 function resolveImagesDirUnderData(
   envKey: 'WOR_IMAGES_DIR' | 'WARFRAME_IMAGES_DIR',
   defaultDirName: string,
@@ -90,8 +103,7 @@ function resolveImagesDirUnderData(
       ? raw
       : path.resolve(PROJECT_ROOT, raw)
     : path.join(DATA_DIR, defaultDirName);
-  const dataDirResolved = path.resolve(DATA_DIR);
-  const relative = path.relative(dataDirResolved, path.resolve(resolved));
+  const relative = path.relative(canonicalPath(DATA_DIR), canonicalPath(resolved));
   if (relative.startsWith('..') || path.isAbsolute(relative)) {
     throw new Error(`${envKey} must resolve inside DATA_DIR.`);
   }
