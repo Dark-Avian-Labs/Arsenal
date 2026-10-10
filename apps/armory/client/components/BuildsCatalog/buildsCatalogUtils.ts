@@ -1,13 +1,14 @@
+import { apiFetch } from '@dark-avian-labs/ui';
 import {
   isPlayableWarframeCatalogItem,
   prepareSiriusOrionWarframePickerItems,
-} from '../../../shared/siriusOrionRegistry.js';
+} from '@dark-avian-labs/warframe-catalog';
+
 import {
   EQUIPMENT_TYPE_LABELS,
   EQUIPMENT_TYPE_ORDER,
   type EquipmentType,
 } from '../../types/warframe';
-import { apiFetch } from '../../utils/api';
 import { getCompanionWeaponSelectionType } from '../../utils/companionWeapons';
 import {
   getSpecialItemSelectionType as getSpecialItemSelectionTypeByName,

@@ -21,9 +21,7 @@ export function useStaleBundlePrompt(bundleVersion: string): boolean {
         if (serverVersion.length > 0 && serverVersion !== bundleVersion) {
           setStale(true);
         }
-      } catch {
-        // ignore
-      }
+      } catch {}
     }
 
     void check();

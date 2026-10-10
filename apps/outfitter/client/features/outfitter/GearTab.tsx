@@ -1,4 +1,10 @@
 import {
+  cycleTriFilter,
+  matchesTriFilter,
+  triFilterState,
+  type TriFilterMap,
+} from '@dark-avian-labs/wor-assets/triFilter';
+import {
   GEAR_SLOTS,
   GEAR_STAT_LABELS,
   SLOT_LABELS,
@@ -13,12 +19,6 @@ import { ALL_SETS, SET_BY_KEY, setsSortedByTier } from '@shared/sets';
 import { useMemo, useState } from 'react';
 
 import { FilterIconButton } from '../../components/ui/FilterIconButton';
-import {
-  cycleTriFilter,
-  matchesTriFilter,
-  triFilterState,
-  type TriFilterMap,
-} from '../../lib/triFilter';
 import { FieldSelect } from './FieldSelect';
 import { GearMainStat, GearTile, StatGauge, gearSubstats, type GearView } from './GearTile';
 

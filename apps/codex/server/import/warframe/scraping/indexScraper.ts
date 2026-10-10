@@ -1,6 +1,6 @@
 import * as cheerio from 'cheerio';
 
-import { resolveSiriusOrionUniqueNameFromScrapeName } from '../../../../shared/warframeImport/siriusOrionRegistry.ts';
+import { resolveSiriusOrionUniqueNameFromScrapeName } from '@dark-avian-labs/warframe-catalog';
 import { getCatalogDb } from '../db/connection.ts';
 import { fetchOverframeHtml } from '../http/fetchOverframe.ts';
 import { FETCH_TIMEOUT_MS, isAbortError } from '../http/fetchWithTimeout.ts';

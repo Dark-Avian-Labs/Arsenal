@@ -530,9 +530,7 @@ export async function fetchOverframePageJson<T>(
     if (pageProps && typeof pageProps === 'object') {
       return { pageProps } as T;
     }
-  } catch {
-    // ignore
-  }
+  } catch {}
 
   throw jsonError;
 }

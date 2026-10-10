@@ -1,3 +1,4 @@
+import type { EquipmentSlotConfigKey } from '@dark-avian-labs/warframe-catalog';
 import type Database from 'better-sqlite3';
 
 import {
@@ -7,7 +8,6 @@ import {
   type CatalogPolarityDefaults,
 } from '../../shared/buildSlotLayout.ts';
 import { isCompanionWeapon } from '../../shared/companionWeapons.ts';
-import type { EquipmentSlotConfigKey } from '../../shared/equipmentSlotConfig.ts';
 import { parseBuildConfig } from '../routes/apiShared.ts';
 
 type CatalogEquipmentRow = {

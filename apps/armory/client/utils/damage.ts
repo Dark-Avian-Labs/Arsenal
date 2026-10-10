@@ -1,4 +1,5 @@
-import { damagePerShotFromFireBehaviors } from '../../shared/damageFromFireBehaviors.js';
+import { damagePerShotFromFireBehaviors } from '@dark-avian-labs/warframe-catalog';
+
 import {
   DAMAGE_TYPES,
   PRIMARY_ELEMENTS,
@@ -21,9 +22,7 @@ export function parseDamageArray(weapon: Weapon): number[] {
     try {
       const arr = JSON.parse(weapon.damage_per_shot);
       if (Array.isArray(arr)) return arr;
-    } catch {
-      // ignore
-    }
+    } catch {}
   }
 
   const fromBehaviors = damagePerShotFromFireBehaviors(weapon.fire_behaviors);

@@ -1,7 +1,7 @@
+import { apiFetch } from '@dark-avian-labs/ui';
 import { useEffect, useRef, useState } from 'react';
 
 import type { Mod } from '../../types/warframe';
-import { apiFetch } from '../../utils/api';
 import { ModHoverPreview } from '../ModCard/ModCard';
 
 const LINK_CLASS =
@@ -66,7 +66,6 @@ export function DescriptionModLink({ name }: DescriptionModLinkProps) {
     if (!trimmed) return;
     const requestedName = name;
     void lookupModByName(trimmed).then((result) => {
-      // ignore
       if (aliveRef.current && nameRef.current === requestedName) {
         setMod(result);
       }

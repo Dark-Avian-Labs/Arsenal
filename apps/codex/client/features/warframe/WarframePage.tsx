@@ -1,4 +1,5 @@
 import { LoadErrorBanner, MaterialSymbol, Toast } from '@dark-avian-labs/ui';
+import { apiFetch } from '@dark-avian-labs/ui';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type {
@@ -9,7 +10,6 @@ import { CollectionSubheader } from '../../components/Layout/CollectionSubheader
 import { HeaderSearch } from '../../components/Layout/HeaderSearch';
 import { useLayoutSlots } from '../../components/Layout/useLayoutSlots';
 import { useAutoDismissMessage } from '../../hooks/useAutoDismissMessage';
-import { apiFetch } from '../../utils/api';
 import {
   useWarframeWorksheetData,
   type WarframeInitialSettings,

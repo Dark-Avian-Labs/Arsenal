@@ -5,12 +5,13 @@ import {
   isWarframeSecondAuraSlotActive,
   normalizeWarframeArtifactSlotsForLoad,
   warframeExilusArtifactIndex,
-} from './artifactSlotState.ts';
+} from '@dark-avian-labs/warframe-catalog';
 import {
   EQUIPMENT_SLOT_CONFIGS,
   equipmentExilusArtifactIndex,
   type EquipmentSlotConfigKey,
-} from './equipmentSlotConfig.ts';
+} from '@dark-avian-labs/warframe-catalog';
+
 import { POLARITIES, type PolarityKey } from './polarities.ts';
 import { equipmentHasStanceSlot, weaponOmitsExilusSlot } from './specialEquipmentSlots.ts';
 

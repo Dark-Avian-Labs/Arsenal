@@ -1,10 +1,10 @@
 import { MaterialSymbol, Modal } from '@dark-avian-labs/ui';
+import feathers from '@dark-avian-labs/ui/feathers.svg';
 import { toBlob } from 'html-to-image';
 import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react';
 
 import { helminthReplacedAbilityIndex } from '../../../shared/buildReference.js';
-import feathers from '../../assets/feathers.svg';
 import orokinReactorImg from '../../assets/orokin-reactor.png';
 import type { IncarnonSelection } from '../../types/incarnon';
 import type {
@@ -1020,9 +1020,7 @@ export function BuildShareModal({
     bgPanDragRef.current = null;
     try {
       e.currentTarget.releasePointerCapture(e.pointerId);
-    } catch {
-      // ignore
-    }
+    } catch {}
   }
 
   async function handleExport(): Promise<void> {

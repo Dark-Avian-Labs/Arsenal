@@ -5,16 +5,13 @@ import path from 'path';
 
 import { DATA_DIR, PROJECT_ROOT } from '../../config.ts';
 
-const SOURCE_PATH = path.join(PROJECT_ROOT, 'scripts/data/warframe-rank-exceptions.json');
-const OUT_PATH = path.join(
-  PROJECT_ROOT,
-  'shared/warframeImport/warframeRankExceptions.generated.ts',
+const CATALOG_ROOT = path.join(PROJECT_ROOT, '../../packages/warframe-catalog');
+const SOURCE_PATH = path.join(CATALOG_ROOT, 'scripts/warframe-rank-exceptions.json');
+export const WARFRAME_RANK_EXCEPTIONS_OUT_PATH = path.join(
+  CATALOG_ROOT,
+  'src/warframeRankExceptions.generated.ts',
 );
-const COMPILED_OUT_PATH = path.join(
-  PROJECT_ROOT,
-  'dist/shared/warframeImport/warframeRankExceptions.generated.js',
-);
-const GENERATOR_SCRIPT = path.join(PROJECT_ROOT, 'scripts/generate-warframe-rank-exceptions.mjs');
+const GENERATOR_SCRIPT = path.join(CATALOG_ROOT, 'scripts/generate-warframe-rank-exceptions.mjs');
 const PROCESSED_SOURCE_HASH_FILE = path.join(
   DATA_DIR,
   '.processed-warframe-rank-exceptions-source.hash',
@@ -85,14 +82,14 @@ export function isWarframeRankExceptionsSourceAvailable(): boolean {
 }
 
 export function isWarframeRankExceptionsRegistryAvailable(): boolean {
-  return fs.existsSync(OUT_PATH) || fs.existsSync(COMPILED_OUT_PATH);
+  return fs.existsSync(WARFRAME_RANK_EXCEPTIONS_OUT_PATH);
 }
 
 export function warframeRankExceptionsSourceChanged(): boolean {
   if (!isWarframeRankExceptionsSourceAvailable()) {
     return false;
   }
-  if (!fs.existsSync(OUT_PATH)) return true;
+  if (!fs.existsSync(WARFRAME_RANK_EXCEPTIONS_OUT_PATH)) return true;
   const currentHash = hashWarframeRankExceptionsSource();
   const previousHash = readProcessedSourceHash();
   return previousHash === null || previousHash !== currentHash;

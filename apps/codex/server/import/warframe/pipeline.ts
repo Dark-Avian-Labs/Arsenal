@@ -142,9 +142,7 @@ export async function runImportPipeline(
         try {
           const content = JSON.parse(fs.readFileSync(localPath, 'utf-8'));
           itemCount = getItemCount(content);
-        } catch {
-          // ignore
-        }
+        } catch {}
 
         results.push({
           category: entry.category,
@@ -279,9 +277,7 @@ export function listExportFiles(): ExportFileInfo[] {
     try {
       const content = JSON.parse(fs.readFileSync(localPath, 'utf-8'));
       itemCount = getItemCount(content);
-    } catch {
-      // ignore
-    }
+    } catch {}
 
     results.push({
       category,

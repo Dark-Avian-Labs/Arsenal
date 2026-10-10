@@ -1,6 +1,6 @@
+import { AP_DISABLED } from '@dark-avian-labs/warframe-catalog';
 import { describe, expect, it } from 'vitest';
 
-import { AP_DISABLED } from '../../shared/artifactSlotState.js';
 import { artifactSlotsFromEditorRows, buildArtifactSlotEditorRows } from './artifactSlotLayout.js';
 
 describe('artifactSlotLayout', () => {

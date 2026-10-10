@@ -1,5 +1,23 @@
 import { Show, SignInButton } from '@clerk/react';
 import { MaterialSymbol, Modal } from '@dark-avian-labs/ui';
+import { useAuth } from '@dark-avian-labs/ui';
+import { apiFetch } from '@dark-avian-labs/ui';
+import {
+  isArtifactSlotDisabled,
+  isArtifactSlotVisible,
+  isWarframeSecondAuraSlotActive,
+  hasMeaningfulArtifactSlotOverrides,
+  normalizeWarframeArtifactSlotsForLoad,
+  warframeExilusArtifactIndex,
+} from '@dark-avian-labs/warframe-catalog';
+import {
+  equipmentExilusArtifactIndex,
+  type EquipmentSlotConfigKey,
+} from '@dark-avian-labs/warframe-catalog';
+import {
+  formatSiriusOrionWarframeHeading,
+  siriusOrionEquipmentSaveName,
+} from '@dark-avian-labs/warframe-catalog';
 import { lazy, Suspense, useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   Link,
@@ -11,28 +29,11 @@ import {
 } from 'react-router';
 
 import {
-  isArtifactSlotDisabled,
-  isArtifactSlotVisible,
-  isWarframeSecondAuraSlotActive,
-  hasMeaningfulArtifactSlotOverrides,
-  normalizeWarframeArtifactSlotsForLoad,
-  warframeExilusArtifactIndex,
-} from '../../../shared/artifactSlotState.js';
-import {
   buildModSlotsAreEquivalent,
   reconcileStoredBuildModSlots,
   type BuildModSlot,
 } from '../../../shared/buildSlotLayout.js';
-import {
-  equipmentExilusArtifactIndex,
-  type EquipmentSlotConfigKey,
-} from '../../../shared/equipmentSlotConfig.js';
-import {
-  formatSiriusOrionWarframeHeading,
-  siriusOrionEquipmentSaveName,
-} from '../../../shared/siriusOrionRegistry.js';
 import { buildEditPath, userBuildsPath } from '../../app/paths';
-import { useAuth } from '../../features/auth/AuthContext';
 import { useApi } from '../../hooks/useApi';
 import { useBuildFavorites } from '../../hooks/useBuildFavorites';
 import { useBuildStorage } from '../../hooks/useBuildStorage';
@@ -54,7 +55,6 @@ import {
   type RivenConfig,
   type RivenWeaponType,
 } from '../../types/warframe';
-import { apiFetch } from '../../utils/api';
 import { getMaxRank } from '../../utils/arcaneUtils';
 import {
   buildArmoryShardKeyFromPicker,

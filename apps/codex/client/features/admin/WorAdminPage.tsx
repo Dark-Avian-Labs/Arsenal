@@ -1,4 +1,5 @@
-import { useAuth } from '../auth/AuthContext';
+import { useAuth } from '@dark-avian-labs/ui';
+
 import { WorImportAdminTool } from './WorImportAdminTool';
 
 export function WorAdminPage() {

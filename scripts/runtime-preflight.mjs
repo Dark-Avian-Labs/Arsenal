@@ -32,9 +32,7 @@ try {
       fail(`pnpm ${MIN_PNPM_MAJOR}+ required per packageManager (${manager}).`);
     }
   }
-} catch {
-  // ignore
-}
+} catch {}
 
 try {
   const mod = require('better-sqlite3');

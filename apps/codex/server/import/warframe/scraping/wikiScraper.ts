@@ -1,7 +1,7 @@
 import * as cheerio from 'cheerio';
 import type { Element } from 'domhandler';
 
-import { catalogArmoryKeyForArchonBuff } from '../db/catalogKeys.ts';
+import { catalogArmoryKeyForArchonBuff } from '@dark-avian-labs/warframe-catalog/server';
 import { getCatalogDb } from '../db/connection.ts';
 import { FETCH_BYTE_LIMITS, FETCH_TIMEOUT_MS, fetchTextBounded } from '../http/fetchWithTimeout.ts';
 import {

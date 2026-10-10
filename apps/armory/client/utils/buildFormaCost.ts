@@ -5,8 +5,9 @@ import {
   hasMeaningfulArtifactSlotOverrides,
   normalizeWarframeArtifactSlotsForLoad,
   warframeExilusArtifactIndex,
-} from '../../shared/artifactSlotState.js';
-import { equipmentExilusArtifactIndex } from '../../shared/equipmentSlotConfig.js';
+} from '@dark-avian-labs/warframe-catalog';
+import { equipmentExilusArtifactIndex } from '@dark-avian-labs/warframe-catalog';
+
 import {
   EQUIPMENT_SLOT_CONFIGS,
   POLARITIES,

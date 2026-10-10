@@ -1,14 +1,7 @@
 {
+  "extends": "@dark-avian-labs/config/tsconfig.server.json",
   "compilerOptions": {
-    "target": "ES2024",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
-    "declaration": true,
-    "outDir": "dist",
-    "rootDir": "src",
-    "strict": true,
-    "skipLibCheck": true,
-    "types": ["node"]
+    "rootDir": "src"
   },
-  "include": ["src/**/*.ts"]
+  "include": ["src"]
 }

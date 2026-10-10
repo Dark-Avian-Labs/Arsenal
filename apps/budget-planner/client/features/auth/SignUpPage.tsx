@@ -1,23 +1,10 @@
-import { SignUp } from '@clerk/react';
-import {
-  buildAuthPagePath,
-  buildClerkAppearance,
-  ClerkAuthShell,
-  getAuthRedirectUrl,
-  useTheme,
-} from '@dark-avian-labs/ui';
+import { SignUpPage as SharedSignUpPage } from '@dark-avian-labs/ui';
 import { useTranslation } from 'react-i18next';
-import { useSearchParams } from 'react-router';
 
 import { CLERK_PUBLISHABLE_KEY } from '../../app/config';
-import { APP_PATHS } from '../../app/paths';
 
 export function SignUpPage() {
   const { t } = useTranslation();
-  const { mode } = useTheme();
-  const [searchParams] = useSearchParams();
-  const redirectUrl = getAuthRedirectUrl(searchParams, APP_PATHS.home);
-
   if (!CLERK_PUBLISHABLE_KEY) {
     return (
       <div className="glass-surface mx-auto mt-10 max-w-md p-6 text-sm">
@@ -25,16 +12,11 @@ export function SignUpPage() {
       </div>
     );
   }
-
   return (
-    <ClerkAuthShell title={t('auth.signUpTitle')} subtitle={t('auth.signUpSubtitle')}>
-      <SignUp
-        routing="path"
-        path={APP_PATHS.signUp}
-        signInUrl={buildAuthPagePath(APP_PATHS.signIn, redirectUrl)}
-        fallbackRedirectUrl={redirectUrl}
-        appearance={buildClerkAppearance(mode)}
-      />
-    </ClerkAuthShell>
+    <SharedSignUpPage
+      routing="path"
+      title={t('auth.signUpTitle')}
+      subtitle={t('auth.signUpSubtitle')}
+    />
   );
 }

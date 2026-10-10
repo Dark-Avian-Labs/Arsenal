@@ -1,4 +1,5 @@
-import { buildArchonShardKey, parseArchonShardKey } from '../../shared/archonShardRegistry.js';
+import { buildArchonShardKey, parseArchonShardKey } from '@dark-avian-labs/warframe-catalog';
+
 import {
   type WarframeAbilityRef,
   isHelminthConfigV2,

@@ -163,9 +163,7 @@ export function createSentinelAgent(options: SentinelAgentOptions): {
         message,
         source: 'agent',
       },
-    ]).catch(() => {
-      // ignore
-    });
+    ]).catch(() => {});
   };
 
   const middleware: RequestHandler = (req: Request, res: Response, next: NextFunction) => {
@@ -198,9 +196,7 @@ export function createSentinelAgent(options: SentinelAgentOptions): {
     start: () => {
       if (timer || stopped) return;
       timer = setInterval(() => {
-        void flush().catch(() => {
-          // ignore
-        });
+        void flush().catch(() => {});
       }, flushIntervalMs);
     },
     stop: () => {

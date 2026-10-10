@@ -3,10 +3,9 @@ import path from 'path';
 
 import {
   loadAppEnv,
-  parseBooleanEnv,
-  parseIntEnv,
   readPackageVersion,
   readReleaseVersion,
+  readServerEnv,
   resolveProjectRoot,
 } from '@dark-avian-labs/server-kit';
 
@@ -39,25 +38,26 @@ export const USER_DB_PATH = resolveProjectPath(
 
 export const CODEX_WARFRAME_CATALOG_DB_PATH = resolveProjectPath(
   process.env.CODEX_WARFRAME_CATALOG_DB_PATH,
-  path.join('..', 'Codex', 'data', 'warframe-catalog.db'),
+  path.join('..', 'codex', 'data', 'warframe-catalog.db'),
 );
 
 export const CODEX_WARFRAME_IMAGES_DIR = resolveProjectPath(
   process.env.CODEX_WARFRAME_IMAGES_DIR,
-  path.join('..', 'Codex', 'data', 'warframe-images'),
+  path.join('..', 'codex', 'data', 'warframe-images'),
 );
 
-export const PORT = parseIntEnv(process.env.PORT, 3002);
-export const SHUTDOWN_TIMEOUT_MS = parseIntEnv(process.env.SHUTDOWN_TIMEOUT_MS, 10_000);
-export const HOST = process.env.HOST || '127.0.0.1';
-export const NODE_ENV = process.env.NODE_ENV || 'development';
+const serverEnv = readServerEnv({ port: 3002, appName: 'Armory', appId: 'armory' });
+export const PORT = serverEnv.PORT;
+export const SHUTDOWN_TIMEOUT_MS = serverEnv.SHUTDOWN_TIMEOUT_MS;
+export const HOST = serverEnv.HOST;
+export const NODE_ENV = serverEnv.NODE_ENV;
 
 if (NODE_ENV === 'production' && !path.isAbsolute(USER_DB_PATH)) {
   throw new Error('[FATAL] USER_DB_PATH must be an absolute path in production.');
 }
 
-export const APP_NAME = 'Armory';
-export const APP_ID = 'armory';
+export const APP_NAME = serverEnv.APP_NAME;
+export const APP_ID = serverEnv.APP_ID;
 
 export const MANIFEST_URL = 'https://origin.warframe.com/PublicExport/index_en.txt.lzma';
 export const CONTENT_BASE_URL = 'https://content.warframe.com/PublicExport/Manifest/';
@@ -82,13 +82,9 @@ export const REQUIRED_EXPORTS = [
   'ExportWeapons',
 ] as const;
 
-export const TRUST_PROXY = parseBooleanEnv(process.env.TRUST_PROXY) ?? false;
-export const SECURE_COOKIES =
-  parseBooleanEnv(process.env.SECURE_COOKIES) ?? NODE_ENV === 'production';
-export const LEGAL_PAGE_URL =
-  process.env.LEGAL_PAGE_URL?.trim() ||
-  process.env.VITE_LEGAL_PAGE_URL?.trim() ||
-  'https://darkavianlabs.com/legal';
+export const TRUST_PROXY = serverEnv.TRUST_PROXY;
+export const SECURE_COOKIES = serverEnv.SECURE_COOKIES;
+export const LEGAL_PAGE_URL = serverEnv.LEGAL_PAGE_URL;
 export const CLERK_WEBHOOK_SIGNING_SECRET = process.env.CLERK_WEBHOOK_SIGNING_SECRET?.trim() || '';
 if (NODE_ENV === 'production' && !CLERK_WEBHOOK_SIGNING_SECRET) {
   throw new Error('[FATAL] CLERK_WEBHOOK_SIGNING_SECRET must be set in production.');

@@ -1,6 +1,6 @@
 import { MaterialSymbol } from '@dark-avian-labs/ui';
+import { parseArchonShardKey } from '@dark-avian-labs/warframe-catalog';
 
-import { parseArchonShardKey } from '../../../shared/archonShardRegistry.js';
 import { isShardSlotV2 } from '../../../shared/buildReference.js';
 import { shardSlotTauforged } from '../../utils/buildConfigPersist';
 import { renderDamageTypeWords } from '../../utils/renderDamageTypeWords';

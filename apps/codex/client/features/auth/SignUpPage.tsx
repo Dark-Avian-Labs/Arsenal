@@ -1,32 +1,14 @@
-import { APP_PATHS } from '@/app/paths';
-import { SignUp } from '@clerk/react';
-import { ClerkAuthShell, buildClerkAppearance, useTheme } from '@dark-avian-labs/ui';
-import { Navigate, useSearchParams } from 'react-router';
+import { SignUpPage as SharedSignUpPage } from '@dark-avian-labs/ui';
 
-import { getAuthRedirectUrl } from './authRedirect';
-
-const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY?.trim();
+import { getAuthFallbackRedirect } from './authRedirect';
 
 export function SignUpPage() {
-  const { mode } = useTheme();
-  const [searchParams] = useSearchParams();
-  const redirectUrl = getAuthRedirectUrl(searchParams);
-
-  if (!publishableKey) {
-    return <Navigate to={APP_PATHS.home} replace />;
-  }
-
   return (
-    <ClerkAuthShell
+    <SharedSignUpPage
+      routing="hash"
       title="Create your account"
       subtitle="One account for Codex and Armory. We only store your user id in our apps."
-    >
-      <SignUp
-        routing="hash"
-        signInUrl={APP_PATHS.signIn}
-        fallbackRedirectUrl={redirectUrl}
-        appearance={buildClerkAppearance(mode)}
-      />
-    </ClerkAuthShell>
+      fallbackPath={getAuthFallbackRedirect()}
+    />
   );
 }

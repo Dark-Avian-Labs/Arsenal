@@ -1,0 +1,30 @@
+{
+  "name": "@dark-avian-labs/warframe-catalog",
+  "version": "0.0.0",
+  "private": true,
+  "files": [
+    "src",
+    "scripts"
+  ],
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./server": "./src/server.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "rank-exceptions": "node scripts/generate-warframe-rank-exceptions.mjs"
+  },
+  "dependencies": {
+    "@dark-avian-labs/server-kit": "workspace:*",
+    "better-sqlite3": "catalog:"
+  },
+  "devDependencies": {
+    "@dark-avian-labs/config": "workspace:*",
+    "@types/better-sqlite3": "catalog:",
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

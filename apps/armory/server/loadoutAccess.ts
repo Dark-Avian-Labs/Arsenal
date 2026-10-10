@@ -1,4 +1,4 @@
-import { timingSafeEqualString } from './http/timingSafeEqual.ts';
+import { timingSafeEqualString } from '@dark-avian-labs/server-kit';
 
 export type VisibilityRow = {
   clerk_user_id: string;

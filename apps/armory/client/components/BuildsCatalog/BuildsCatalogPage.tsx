@@ -1,9 +1,9 @@
+import { apiFetch } from '@dark-avian-labs/ui';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 
 import { buildEquipmentBuildsListPath } from '../../app/paths';
 import type { EquipmentType } from '../../types/warframe';
-import { apiFetch } from '../../utils/api';
 import { normalizeEquipmentName } from '../../utils/specialItems';
 import {
   catalogKeyForItem,

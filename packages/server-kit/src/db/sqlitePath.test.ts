@@ -2,7 +2,7 @@ import path from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { requireAbsoluteSqlitePath } from './sqlitePath.js';
+import { requireAbsoluteSqlitePath } from './sqlitePath.ts';
 
 describe('requireAbsoluteSqlitePath', () => {
   it('returns trimmed absolute paths', () => {

@@ -1,11 +1,9 @@
-import { ErrorBoundary } from '@dark-avian-labs/ui';
+import { ErrorBoundary, SignInPage, SignUpPage } from '@dark-avian-labs/ui';
 import { createBrowserRouter, Navigate } from 'react-router';
 
 import { App } from '../App';
 import { Layout } from '../components/Layout/Layout';
 import { NotFoundPage } from '../components/NotFoundPage/NotFoundPage';
-import { SignInPage } from '../features/auth/SignInPage';
-import { SignUpPage } from '../features/auth/SignUpPage';
 import { APP_PATHS } from './paths';
 import {
   AdminPage,
@@ -46,8 +44,26 @@ export const router = createBrowserRouter([
           { path: APP_PATHS.buildNew, element: <ModBuilder /> },
           { path: APP_PATHS.buildEdit, element: <ModBuilder /> },
           { path: APP_PATHS.admin, element: <AdminPage /> },
-          { path: `${APP_PATHS.signIn}/*`, element: <SignInPage /> },
-          { path: `${APP_PATHS.signUp}/*`, element: <SignUpPage /> },
+          {
+            path: `${APP_PATHS.signIn}/*`,
+            element: (
+              <SignInPage
+                routing="hash"
+                title="Sign in to Armory"
+                subtitle="Plan and share Warframe builds with your Dark Avian Labs account."
+              />
+            ),
+          },
+          {
+            path: `${APP_PATHS.signUp}/*`,
+            element: (
+              <SignUpPage
+                routing="hash"
+                title="Create your account"
+                subtitle="One account for Codex and Armory. We only store your user id in our apps."
+              />
+            ),
+          },
           { path: APP_PATHS.login, element: <Navigate to={APP_PATHS.signIn} replace /> },
           { path: '*', element: <NotFoundPage /> },
         ],

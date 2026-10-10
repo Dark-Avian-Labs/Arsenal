@@ -111,9 +111,7 @@ function writeCache(document: DalAppNavDocument): void {
   try {
     const payload: CachePayload = { fetchedAt: Date.now(), document };
     sessionStorage.setItem(CACHE_KEY, JSON.stringify(payload));
-  } catch {
-    // ignore
-  }
+  } catch {}
 }
 
 export function getDalAppNavUrl(): string {
@@ -129,9 +127,7 @@ export async function loadDalAppNav(): Promise<DalAppNavDocument | null> {
   const cacheFresh = cached !== null && Date.now() - cached.fetchedAt < CACHE_TTL_MS;
 
   if (cacheFresh) {
-    void refreshDalAppNav().catch(() => {
-      // ignore
-    });
+    void refreshDalAppNav().catch(() => {});
     return cached.document;
   }
 

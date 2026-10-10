@@ -1,6 +1,6 @@
 # Sentinel
 
-Shell, auth, env, and validate are in AppBase `AGENTS.md`. Port 3005. Vite 5176.
+Shell, auth, env, and validate are in the repo `AGENTS.md`. Port 3005. Vite 5176. Signed-out Playwright is 3105. There is no signed-in project.
 
 PM2 monitor for DAL Node apps on one host. Alerts and logs stay with `pm2-discord`. Sentinel does not notify and does not ship logs.
 
@@ -8,4 +8,4 @@ PM2 monitor for DAL Node apps on one host. Alerts and logs stay with `pm2-discor
 
 Ingest and the agent must not send IPs, user ids, emails, cookies, Authorization headers, bodies, full URLs, or query strings. HTTP dimensions are method, route pattern, status class, and latency buckets.
 
-The agent is `packages/sentinel-agent`. Apps depend on it with `workspace:*`. App releases are tags named `<app>-vX.Y.Z`.
+The agent is `@dark-avian-labs/sentinel-agent` and exports `src/index.ts`. Do not add a build or pack script. App releases are tags named `<app>-vX.Y.Z`.

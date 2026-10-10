@@ -1,5 +1,3 @@
-// Reads every icon name used in apps/ and packages/ui, extracts the SVG path data from
-// @material-symbols/svg-400/rounded, and writes packages/ui/src/icons/icons.generated.ts.
 import { readFileSync, writeFileSync, readdirSync, statSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';

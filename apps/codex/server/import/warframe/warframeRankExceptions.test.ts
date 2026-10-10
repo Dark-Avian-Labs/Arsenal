@@ -1,17 +1,14 @@
 import fs from 'fs';
-import path from 'path';
 
 import { describe, expect, it } from 'vitest';
 
-import { PROJECT_ROOT } from '../../config.ts';
 import {
   generateWarframeRankExceptions,
   hashWarframeRankExceptionsSource,
   isWarframeRankExceptionsSourceAvailable,
+  WARFRAME_RANK_EXCEPTIONS_OUT_PATH,
   warframeRankExceptionsSourceChanged,
 } from './warframeRankExceptions.ts';
-
-const OUT_PATH = path.join(PROJECT_ROOT, 'shared/warframeImport/warframeRankExceptions.generated.ts');
 
 describe('warframeRankExceptions', () => {
   it('has a committed source JSON in the repo', () => {
@@ -26,10 +23,10 @@ describe('warframeRankExceptions', () => {
   });
 
   it('regenerates the TypeScript registry from source JSON', () => {
-    const before = fs.readFileSync(OUT_PATH, 'utf8');
+    const before = fs.readFileSync(WARFRAME_RANK_EXCEPTIONS_OUT_PATH, 'utf8');
     const result = generateWarframeRankExceptions();
     expect(result.entryCount).toBeGreaterThan(0);
     expect(warframeRankExceptionsSourceChanged()).toBe(false);
-    expect(fs.readFileSync(OUT_PATH, 'utf8')).toBe(before);
+    expect(fs.readFileSync(WARFRAME_RANK_EXCEPTIONS_OUT_PATH, 'utf8')).toBe(before);
   });
 });

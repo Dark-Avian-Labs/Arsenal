@@ -1,8 +1,8 @@
 # Codex
 
-Shell, auth, env, and validate are in AppBase `AGENTS.md`. Port 3001. Playwright 3101. Signed-in Playwright 4101.
+Shell, auth, env, and validate are in the repo `AGENTS.md`. Port 3001. Playwright 3101. Signed-in Playwright 4101.
 
-Collection tracker for Warframe, Epic Seven, and Watcher of Realms. Each game is its own package under `packages/`. Do not force one table UI across games.
+Collection tracker for Warframe, Epic Seven, and Watcher of Realms. Game screens and game databases stay in this app. Shared Warframe catalog code is `@dark-avian-labs/warframe-catalog`. Watcher of Realms icons and `triFilter` are `@dark-avian-labs/wor-assets`. Do not force one table UI across games.
 
 ## Shell
 
@@ -14,9 +14,7 @@ Leave these in place on a mirror pass.
 
 ## Data
 
-Build the workspace packages before tests, `db:init`, or a server compile. `pnpm run build` does this. `pnpm run validate` does not.
-
-Do not point two SQLite files at the same path, and do not reuse BudgetPlanner SQLite files. Catalog defaults are `data/warframe-catalog.db` and `data/wor-catalog.db`. Armory reads the Warframe catalog. Outfitter reads the WoR catalog.
+Do not point two SQLite files at the same path, and do not reuse Budget Planner SQLite files. Catalog defaults are `data/warframe-catalog.db` and `data/wor-catalog.db`. Armory reads the Warframe catalog. Outfitter reads the WoR catalog. The catalog package does not open either database.
 
 `/readyz` also checks the game DBs and that both catalog files are readable.
 

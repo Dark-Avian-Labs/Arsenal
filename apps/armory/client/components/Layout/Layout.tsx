@@ -12,6 +12,9 @@ import {
   isSentinelAdmin,
   useTheme,
 } from '@dark-avian-labs/ui';
+import { useAuth } from '@dark-avian-labs/ui';
+import { API_UNAUTHORIZED_EVENT } from '@dark-avian-labs/ui';
+import feathers from '@dark-avian-labs/ui/feathers.svg';
 import {
   lazy,
   Suspense,
@@ -32,10 +35,7 @@ import {
 } from '../../app/config';
 import { APP_PATHS, buildNewPath } from '../../app/paths';
 import { ChunkErrorBoundary, RouteFallback } from '../../app/routes';
-import feathers from '../../assets/feathers.svg';
 import { useCompare } from '../../context/CompareContext';
-import { useAuth } from '../../features/auth/AuthContext';
-import { API_UNAUTHORIZED_EVENT } from '../../utils/api';
 import { CompareBar } from '../Compare/CompareBar';
 import { AtragraphModsToggle } from '../ui/AtragraphModsToggle';
 import { LazySuspenseFallback } from '../ui/LazySuspenseFallback';

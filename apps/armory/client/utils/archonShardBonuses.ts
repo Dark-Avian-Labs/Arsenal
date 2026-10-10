@@ -1,4 +1,5 @@
-import { applyArchonSlugToBonuses, parseArchonShardKey } from '../../shared/archonShardRegistry.js';
+import { applyArchonSlugToBonuses, parseArchonShardKey } from '@dark-avian-labs/warframe-catalog';
+
 import { isShardSlotV2, resolveArchonShardKey } from '../../shared/buildReference.js';
 import type { ShardSlotConfig, ShardType } from '../components/ModBuilder/ArchonShardSlots';
 import type { WarframeBonusEffects } from './warframeCalc';

@@ -1,3 +1,4 @@
+import { apiFetch } from '@dark-avian-labs/ui';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type {
@@ -7,7 +8,6 @@ import type {
   WarframeWorksheet as Worksheet,
   WarframeWorksheetData as WorksheetData,
 } from '../../../../shared/warframeTypes.js';
-import { apiFetch } from '../../../utils/api';
 import { TAB_ORDER } from '../warframeConstants.js';
 
 export type WarframeInitialSettings = Pick<

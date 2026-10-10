@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
-import { mockResponse } from './testing/mockResponse.js';
-import { optionalPositiveInt, positiveInt, validateBody } from './validation.js';
+import { mockResponse } from './testing/mockResponse.ts';
+import { optionalPositiveInt, positiveInt, validateBody } from './validation.ts';
 
 describe('validateBody', () => {
   const schema = z.object({

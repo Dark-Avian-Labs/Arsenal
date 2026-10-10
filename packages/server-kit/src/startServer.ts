@@ -2,8 +2,8 @@ import type { Server } from 'node:http';
 
 import type { Express } from 'express';
 
-import { log } from './logger.js';
-import type { createAppSentinelAgent } from './sentinelAgent.js';
+import { log } from './logger.ts';
+import type { createAppSentinelAgent } from './sentinelAgent.ts';
 
 type SentinelAgent = NonNullable<ReturnType<typeof createAppSentinelAgent>>;
 

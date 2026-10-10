@@ -209,9 +209,7 @@ async function loadDemonDetail(
       writeCachedJson(detailPath, page.props.demon);
       await sleep(500);
       return page.props.demon;
-    } catch {
-      // ignore
-    }
+    } catch {}
   }
   if (fs.existsSync(detailPath)) {
     return readCachedJson<FastidiousDemonDetail>(detailPath);

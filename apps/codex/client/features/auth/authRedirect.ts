@@ -1,7 +1,6 @@
 import { APP_PATHS } from '../../app/paths';
 
 export const LAST_GAME_PATH_STORAGE_KEY = 'codex:lastGamePath';
-export const AUTH_REDIRECT_QUERY_PARAM = 'redirect_url';
 
 const GAME_PATHS = [APP_PATHS.warframe, APP_PATHS.epic7] as const;
 
@@ -19,9 +18,7 @@ export function rememberLastGamePath(pathname: string): void {
   if (!gamePath || typeof window === 'undefined') return;
   try {
     window.localStorage.setItem(LAST_GAME_PATH_STORAGE_KEY, gamePath);
-  } catch {
-    // ignore
-  }
+  } catch {}
 }
 
 export function getAuthFallbackRedirect(): string {
@@ -30,30 +27,6 @@ export function getAuthFallbackRedirect(): string {
     const stored = window.localStorage.getItem(LAST_GAME_PATH_STORAGE_KEY);
     const normalized = stored ? normalizeGamePath(stored) : null;
     if (normalized) return normalized;
-  } catch {
-    // ignore
-  }
+  } catch {}
   return APP_PATHS.warframe;
-}
-
-export function safeAuthRedirectPath(path: string): string | null {
-  if (path.startsWith('/') && !path.startsWith('//') && !/^[a-zA-Z][a-zA-Z\d+\-.]*:/.test(path)) {
-    return path;
-  }
-  return null;
-}
-
-export function getAuthRedirectUrl(searchParams: URLSearchParams): string {
-  const fromQuery = searchParams.get(AUTH_REDIRECT_QUERY_PARAM);
-  if (fromQuery) {
-    const safe = safeAuthRedirectPath(fromQuery);
-    if (safe) return safe;
-  }
-  return getAuthFallbackRedirect();
-}
-
-export function buildAuthPagePath(basePath: string, returnTo: string): string {
-  const safe = safeAuthRedirectPath(returnTo);
-  if (!safe) return basePath;
-  return `${basePath}?${AUTH_REDIRECT_QUERY_PARAM}=${encodeURIComponent(safe)}`;
 }

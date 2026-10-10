@@ -1,4 +1,5 @@
-import { scaleWarframeStatsToMaxRank } from '../../shared/equipmentRankStats.js';
+import { scaleWarframeStatsToMaxRank } from '@dark-avian-labs/warframe-catalog';
+
 import type { ModSlot } from '../types/warframe';
 import { aggregateAllMods } from './modStatParser';
 

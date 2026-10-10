@@ -1,10 +1,10 @@
 import { MaterialSymbol } from '@dark-avian-labs/ui';
+import { apiFetch } from '@dark-avian-labs/ui';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 
 import { APP_PATHS, buildReadOnlyPath } from '../../app/paths';
 import type { Warframe, Weapon, ModSlot, EquipmentType, StoredBuild } from '../../types/warframe';
-import { apiFetch } from '../../utils/api';
 import { extractArchonShardBonuses } from '../../utils/archonShardBonuses';
 import {
   type EquipmentLookupRow,

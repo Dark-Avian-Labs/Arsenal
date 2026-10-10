@@ -9,13 +9,14 @@ import {
   warframeSecondAuraArtifactIndex,
   WARFRAME_COMPACT_ARTIFACT_SLOT_COUNT,
   WARFRAME_EXTENDED_ARTIFACT_SLOT_COUNT,
-} from '../../shared/artifactSlotState.js';
+} from '@dark-avian-labs/warframe-catalog';
 import {
   artifactSlotsStorageLength,
   EQUIPMENT_SLOT_CONFIGS,
   equipmentExilusArtifactIndex,
   type EquipmentSlotConfig,
-} from '../../shared/equipmentSlotConfig.js';
+} from '@dark-avian-labs/warframe-catalog';
+
 import { POLARITIES, type PolarityKey } from '../../shared/polarities.js';
 import type { EquipmentType } from '../types/warframe';
 import { weaponOmitsExilusSlot } from './specialItems';

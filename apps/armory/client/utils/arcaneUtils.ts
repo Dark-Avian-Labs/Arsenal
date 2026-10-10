@@ -7,9 +7,7 @@ export function getMaxRank(arcane: Arcane): number {
       const stats = JSON.parse(arcane.level_stats);
       return Array.isArray(stats) && stats.length > 0 ? stats.length - 1 : 5;
     }
-  } catch {
-    // ignore
-  }
+  } catch {}
   return 5;
 }
 
@@ -26,8 +24,6 @@ export function getArcaneDescription(arcane: Arcane, rank?: number): string {
         if (typeof entry === 'string') return sanitizeDisplayTextKeepDamageTokens(entry);
       }
     }
-  } catch {
-    // ignore
-  }
+  } catch {}
   return '';
 }

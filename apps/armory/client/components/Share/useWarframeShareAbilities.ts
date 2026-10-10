@@ -41,10 +41,7 @@ export function useWarframeShareAbilities(
       ? `/api/abilities?warframe=${encodeURIComponent(warframe.unique_name)}${abilityNamesParam}`
       : null;
 
-  const warframeAbilityRefs = useMemo(
-    () => parseWarframeAbilityRefs(warframe),
-    [warframe?.abilities],
-  );
+  const warframeAbilityRefs = useMemo(() => parseWarframeAbilityRefs(warframe), [warframe]);
 
   const { data: warframeAbilities } = useApi<{ items: Ability[] }>(abilitiesUrl);
   const { helminthAbilities, selectedReplacement } = useHelminthReplacement(

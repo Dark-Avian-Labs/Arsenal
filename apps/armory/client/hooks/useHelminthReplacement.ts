@@ -1,3 +1,8 @@
+import {
+  canonicalHelminthReplacementUniqueName,
+  resolveHelminthReplacementAbility,
+} from '@dark-avian-labs/warframe-catalog';
+import { resolveHelminthDePath } from '@dark-avian-labs/warframe-catalog';
 import { useMemo } from 'react';
 
 import {
@@ -6,11 +11,6 @@ import {
   resolveHelminthFromConfig,
 } from '../../shared/buildReference.js';
 import type { WarframeAbilityRef } from '../../shared/buildReference.js';
-import {
-  canonicalHelminthReplacementUniqueName,
-  resolveHelminthReplacementAbility,
-} from '../../shared/helminthAbilityResolve.js';
-import { resolveHelminthDePath } from '../../shared/helminthRegistry.js';
 import type { Ability, BuildConfig } from '../types/warframe';
 import { useApi } from './useApi';
 

@@ -17,50 +17,45 @@
         return '';
       }
     }
-    var theme = readCookie('dal.theme.mode').trim();
-    if (theme !== 'light' && theme !== 'dark') {
+    function readStorage(names) {
       try {
-        theme = (localStorage.getItem('dal.theme.mode') || '').trim();
+        for (var i = 0; i < names.length; i++) {
+          var value = (localStorage.getItem(names[i]) || '').trim();
+          if (value) return value;
+        }
       } catch (e) {
         if (typeof console !== 'undefined' && console && typeof console.warn === 'function') {
           console.warn('Unable to read theme from localStorage; falling back to default.', e);
         }
-        theme = '';
       }
+      return '';
     }
+    var theme = readCookie('dal.theme.mode').trim();
+    if (theme !== 'light' && theme !== 'dark') theme = readCookie('bp.theme.mode').trim();
     if (theme !== 'light' && theme !== 'dark') {
-      try {
-        theme = (localStorage.getItem('appbase.theme.mode') || '').trim();
-      } catch {
-        theme = '';
-      }
+      theme = readStorage([
+        'dal.theme.mode',
+        'bp.theme.mode',
+        'budgetplanner.theme.mode',
+        'appbase.theme.mode',
+      ]);
     }
     if (theme !== 'light' && theme !== 'dark') theme = 'dark';
     root.style.colorScheme = theme === 'dark' ? 'dark' : 'light';
     root.classList.remove('dark');
     if (theme === 'dark') root.classList.add('dark');
 
-    var ui = readCookie('dal.ui.style').trim();
     var uiStyles = ['prism', 'shadow', 'clear', 'acrylic'];
     function isUiStyle(value) {
       return uiStyles.indexOf(value) !== -1;
     }
-    if (!isUiStyle(ui)) {
-      try {
-        ui = (localStorage.getItem('dal.ui.style') || '').trim();
-      } catch (e) {
-        if (typeof console !== 'undefined' && console && typeof console.warn === 'function') {
-          console.warn('Unable to read UI style from localStorage; falling back to default.', e);
-        }
-        ui = '';
-      }
-    }
+    var ui = readCookie('dal.ui.style').trim();
+    if (!isUiStyle(ui)) ui = readCookie('bp.ui.style').trim();
+    if (!isUiStyle(ui)) ui = readStorage(['dal.ui.style', 'bp.ui.style']);
     if (!isUiStyle(ui)) ui = 'prism';
     for (var i = 0; i < uiStyles.length; i++) {
       root.classList.remove('ui-' + uiStyles[i]);
     }
     root.classList.add('ui-' + ui);
-  } catch {
-    // ignore
-  }
+  } catch {}
 })();

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { DAL_HOMEPAGE_ORIGIN, getAppConnectSrc, getClerkFapiOrigin } from './helmetCsp.js';
+import { DAL_HOMEPAGE_ORIGIN, getAppConnectSrc, getClerkFapiOrigin } from './helmetCsp.ts';
 
 describe('getClerkFapiOrigin', () => {
   const previous = {

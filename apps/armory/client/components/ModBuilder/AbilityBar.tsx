@@ -42,9 +42,7 @@ export function AbilityBar({
         const parsed = JSON.parse(warframe.abilities) as Array<Record<string, string>>;
         return parsed.map((a) => a.abilityUniqueName || a.uniqueName).filter(Boolean);
       }
-    } catch {
-      // ignore
-    }
+    } catch {}
     return [] as string[];
   }, [warframe.abilities]);
 
@@ -74,9 +72,7 @@ export function AbilityBar({
           unique_name: a.abilityUniqueName || a.uniqueName,
         }));
       }
-    } catch {
-      // ignore
-    }
+    } catch {}
     return Array.from({ length: 4 }, (_, i) => ({
       name: `Ability ${i + 1}`,
       index: i,

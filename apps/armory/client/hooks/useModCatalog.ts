@@ -1,7 +1,7 @@
+import { apiFetch } from '@dark-avian-labs/ui';
 import { useEffect, useState } from 'react';
 
 import type { Mod } from '../types/warframe';
-import { apiFetch } from '../utils/api';
 
 const TTL_MS = 5 * 60 * 1000;
 const PAGE_LIMIT = 500;

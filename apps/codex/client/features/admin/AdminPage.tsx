@@ -1,4 +1,13 @@
 import { MaterialSymbol } from '@dark-avian-labs/ui';
+import { apiFetch } from '@dark-avian-labs/ui';
+import { useAuth } from '@dark-avian-labs/ui';
+import {
+  cycleTriFilter,
+  matchesTriFilter,
+  pruneTriFilter,
+  triFilterState,
+  type TriFilterMap,
+} from '@dark-avian-labs/wor-assets/triFilter';
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 
 import {
@@ -9,15 +18,6 @@ import {
   HERO_CLASSES,
 } from '../../../server/games/epic7/constants';
 import { FilterIconButton } from '../../components/ui/FilterIconButton';
-import {
-  cycleTriFilter,
-  matchesTriFilter,
-  pruneTriFilter,
-  triFilterState,
-  type TriFilterMap,
-} from '../../lib/triFilter';
-import { apiFetch } from '../../utils/api';
-import { useAuth } from '../auth/AuthContext';
 
 type BaseHero = {
   id: number;

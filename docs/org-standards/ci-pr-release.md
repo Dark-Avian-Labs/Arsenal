@@ -22,7 +22,7 @@ Pin third-party actions to a commit SHA and put the release tag in a trailing co
 
 | File               | Trigger                                                                   | Role                                                                                            |
 | ------------------ | ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| `pr.yml`           | `pull_request`                                                            | Install, `pnpm run validate`, `pnpm run build`, then Playwright per app                         |
+| `pr.yml`           | `pull_request`                                                            | Install, `pnpm run validate`, then each app's production build, then Playwright per app         |
 | `deploy.yml`       | `push` to `main` on app, package, lockfile, and CI paths, or a manual run | Decide which apps changed, then deploy each one                                                 |
 | `_deploy-app.yml`  | called by `deploy.yml`                                                    | Build one app, upload a release directory, switch `current`, restart PM2, verify `/api/version` |
 | `dependencies.yml` | daily, manual, or `@sayori rebase`                                        | Open or rebase dependency pull requests                                                         |
@@ -39,6 +39,8 @@ The required check is the `security` job. It stays green when the audit is skipp
 There is one tag per app release, named `<app>-vX.Y.Z`, for example `armory-v1.74.5`. `scripts/ci/release.mjs` reads commits since that tag and prints the next version. The deploy writes that version into `release.json`. When the range contains commits, the workflow creates the next Forgejo release and tag. An app deploy leaves the monorepo tag `v1.0.0` where it is.
 
 `scripts/ci/changes.mjs` decides which apps ship. A change under `apps/<app>/` deploys that app. A change under `packages/`, the lockfile, the workspace file, `scripts/ci/`, or the two deploy workflows deploys every app. Dependency updates always deploy: devDependencies include Vite and Tailwind, which change the client bundle, and a lockfile-only diff can be a transitive production bump.
+
+`@dark-avian-labs/ui`, `server-kit`, `sentinel-agent`, `warframe-catalog`, and `wor-assets` export TypeScript source and have no build script. `pr.yml` runs `pnpm --filter "@dark-avian-labs/*" --filter dal-template run --if-present build`, so those packages are skipped. Each deployed app is then built with `scripts/ci/build-app.sh`. Deploy checks `packages/server-kit/src/index.ts`. Do not put a `dist` build back.
 
 ## Secrets
 

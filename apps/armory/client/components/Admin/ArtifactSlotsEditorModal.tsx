@@ -1,4 +1,5 @@
 import { Modal } from '@dark-avian-labs/ui';
+import { apiFetch } from '@dark-avian-labs/ui';
 import { useCallback, useEffect, useState } from 'react';
 
 import {
@@ -8,7 +9,6 @@ import {
   type Weapon,
   type Companion,
 } from '../../types/warframe';
-import { apiFetch } from '../../utils/api';
 import {
   artifactSlotsFromEditorRows,
   buildArtifactSlotEditorRows,

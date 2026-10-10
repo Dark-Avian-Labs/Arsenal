@@ -1,5 +1,7 @@
-import type { EquipmentSlotConfigKey } from './equipmentSlotConfig.ts';
-import { EQUIPMENT_SLOT_CONFIGS } from './equipmentSlotConfig.ts';
+import {
+  EQUIPMENT_SLOT_CONFIGS,
+  type EquipmentSlotConfigKey,
+} from '@dark-avian-labs/warframe-catalog';
 
 const MELEE_WEAPON_NAMES_WITHOUT_EXILUS = new Set([
   'Shadow Clones',

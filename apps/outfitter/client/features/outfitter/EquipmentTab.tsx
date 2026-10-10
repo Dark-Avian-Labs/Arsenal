@@ -1,5 +1,11 @@
 import { apiFetch, Button, Modal } from '@dark-avian-labs/ui';
 import {
+  cycleTriFilter,
+  matchesTriFilter,
+  triFilterState,
+  type TriFilterMap,
+} from '@dark-avian-labs/wor-assets/triFilter';
+import {
   CLASS_DISPLAY_NAMES,
   FACTION_DISPLAY_NAMES,
   FACTIONS,
@@ -14,12 +20,6 @@ import { loadoutStatBag } from '@shared/pieceStats';
 import { useMemo, useState } from 'react';
 
 import { FilterIconButton } from '../../components/ui/FilterIconButton';
-import {
-  cycleTriFilter,
-  matchesTriFilter,
-  triFilterState,
-  type TriFilterMap,
-} from '../../lib/triFilter';
 import { FieldSelect } from './FieldSelect';
 import { EmptySlotTile, GearTile, type GearView } from './GearTile';
 import {

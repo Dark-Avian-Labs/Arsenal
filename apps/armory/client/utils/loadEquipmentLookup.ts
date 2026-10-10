@@ -34,7 +34,7 @@ export function loadEquipmentLookup(): Promise<Record<string, EquipmentPolarityS
 }
 
 async function fetchEquipmentLookup(): Promise<Record<string, EquipmentPolaritySource>> {
-  const { apiFetch } = await import('./api');
+  const { apiFetch } = await import('@dark-avian-labs/ui');
 
   const endpoints = [
     '/api/warframes',

@@ -4,23 +4,17 @@
   "private": true,
   "description": "In-process Sentinel metrics agent (HTTP latency, event-loop lag, exit kind)",
   "files": [
-    "dist"
+    "src"
   ],
   "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
   "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    }
+    ".": "./src/index.ts"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "typecheck": "pnpm run build",
-    "pack:release": "pnpm run build && pnpm pack"
+    "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
+    "@dark-avian-labs/config": "workspace:*",
     "@types/express": "catalog:",
     "@types/node": "catalog:",
     "typescript": "catalog:"

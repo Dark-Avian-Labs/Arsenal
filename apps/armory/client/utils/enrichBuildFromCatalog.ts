@@ -1,4 +1,5 @@
-import { siriusOrionEquipmentSaveName } from '../../shared/siriusOrionRegistry.js';
+import { siriusOrionEquipmentSaveName } from '@dark-avian-labs/warframe-catalog';
+
 import type { StoredBuild } from '../types/warframe';
 
 type CatalogRow = {

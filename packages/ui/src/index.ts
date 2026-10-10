@@ -1,4 +1,10 @@
-export { apiFetch, setClerkTokenGetter } from './api/apiFetch';
+export {
+  API_UNAUTHORIZED_EVENT,
+  ApiError,
+  apiFetch,
+  apiJson,
+  setClerkTokenGetter,
+} from './api/apiFetch';
 export { AccountRequired } from './auth/AccountRequired';
 export { AuthProvider, DisabledAuthProvider, useAuth } from './auth/AuthContext';
 export { ProtectedRoute } from './auth/ProtectedRoute';
@@ -24,7 +30,6 @@ export { useRovingMenu } from './components/useRovingMenu';
 export { useStaleBundlePrompt } from './hooks/useStaleBundlePrompt';
 export { isSentinelAdmin, visibleDalAppNavApps } from './lib/dalAppNav';
 export { Layout, type LayoutProps } from './layout/Layout';
-// Layout building blocks, for apps that still compose their own Layout.
 export { AsciiWaveBackground } from './layout/AsciiWaveBackground';
 export { DalAppNav } from './layout/DalAppNav';
 export { HexSideBackground } from './layout/HexSideBackground';
