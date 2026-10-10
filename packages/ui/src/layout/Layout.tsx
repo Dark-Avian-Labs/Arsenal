@@ -1,4 +1,4 @@
-import { useClerk } from '@clerk/react';
+import { useClerk, useUser } from '@clerk/react';
 import { Suspense, useState, type ReactNode } from 'react';
 import { Link, Outlet, useLocation } from 'react-router';
 
@@ -10,6 +10,7 @@ import { Menu } from '../components/Menu';
 import { UiStyleSelector } from '../components/UiStyleSelector';
 import { useRovingMenu } from '../components/useRovingMenu';
 import { MaterialSymbol } from '../icons';
+import { isSentinelAdmin } from '../lib/dalAppNav';
 import { useAppShell } from '../shell/appShell';
 import { useTheme } from '../theme/ThemeContext';
 import { AsciiWaveBackground } from './AsciiWaveBackground';
@@ -99,6 +100,16 @@ function ClerkUserMenuItems({ onClose, adminPath }: { onClose: () => void; admin
   );
 }
 
+function ClerkDalAppNav({ currentAppId }: { currentAppId: string }) {
+  const { isLoaded, user } = useUser();
+  return (
+    <DalAppNav
+      currentAppId={currentAppId}
+      showSentinel={isLoaded && isSentinelAdmin(user?.publicMetadata)}
+    />
+  );
+}
+
 export function Layout({
   navItems,
   headerSlot,
@@ -126,7 +137,7 @@ export function Layout({
       </a>
       <HexSideBackground />
       <AsciiWaveBackground />
-      <DalAppNav currentAppId={appId} />
+      {clerkEnabled ? <ClerkDalAppNav currentAppId={appId} /> : <DalAppNav currentAppId={appId} />}
       <header className="relative z-30 h-[100px] px-6">
         <div
           className={`mx-auto grid h-full w-full ${frame} grid-cols-[1fr_auto_1fr] items-center gap-4`}

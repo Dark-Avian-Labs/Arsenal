@@ -22,6 +22,7 @@ export { Toast } from './components/Toast';
 export { UiStyleSelector } from './components/UiStyleSelector';
 export { useRovingMenu } from './components/useRovingMenu';
 export { useStaleBundlePrompt } from './hooks/useStaleBundlePrompt';
+export { isSentinelAdmin, visibleDalAppNavApps } from './lib/dalAppNav';
 export { Layout, type LayoutProps } from './layout/Layout';
 export { NotFoundPage } from './pages/NotFoundPage';
 export {

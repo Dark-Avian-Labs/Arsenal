@@ -1,4 +1,5 @@
-import { useClerk } from '@clerk/react';
+import { useClerk, useUser } from '@clerk/react';
+import { isSentinelAdmin } from '@dark-avian-labs/ui';
 import {
   lazy,
   Suspense,
@@ -84,6 +85,8 @@ export function Layout() {
   const { mode, toggleMode } = useTheme();
   const { auth, refresh } = useAuth();
   const clerk = useClerk();
+  const { isLoaded: clerkUserLoaded, user: clerkUser } = useUser();
+  const showSentinel = clerkUserLoaded && isSentinelAdmin(clerkUser?.publicMetadata);
   const compareBarVisible = snapshots.length > 0;
   const currentYear = new Date().getFullYear();
   const isLoggedIn = auth.status === 'authenticated';
@@ -237,7 +240,7 @@ export function Layout() {
       </a>
       <HexSideBackground />
       <AsciiWaveBackground />
-      <DalAppNav currentAppId={APP_ID} />
+      <DalAppNav currentAppId={APP_ID} showSentinel={showSentinel} />
       <header className="relative z-30 h-[100px] px-6">
         <div className="mx-auto grid h-full w-full max-w-[2000px] grid-cols-[1fr_auto_1fr] items-center gap-4">
           <div className="flex w-fit max-w-full min-w-0 flex-col gap-0.5 justify-self-start">

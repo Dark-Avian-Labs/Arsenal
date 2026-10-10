@@ -1,4 +1,5 @@
-import { useAuth, useClerk } from '@clerk/react';
+import { useAuth, useClerk, useUser } from '@clerk/react';
+import { isSentinelAdmin } from '@dark-avian-labs/ui';
 import { Suspense, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, Outlet, useLocation } from 'react-router';
@@ -27,6 +28,16 @@ import { DalAppNav } from './DalAppNav';
 import { HexSideBackground } from './HexSideBackground';
 import { PlanSwitcher } from './PlanSwitcher';
 import { StaleClientUpdateBanner } from './StaleClientUpdateBanner';
+
+function ClerkDalAppNav() {
+  const { isLoaded, user } = useUser();
+  return (
+    <DalAppNav
+      currentAppId={APP_ID}
+      showSentinel={isLoaded && isSentinelAdmin(user?.publicMetadata)}
+    />
+  );
+}
 
 function ClerkTokenBridge() {
   const { isLoaded, isSignedIn } = useAuth();
@@ -122,7 +133,7 @@ export function Layout() {
       {clerkEnabled ? <ClerkTokenBridge /> : null}
       <HexSideBackground />
       <AsciiWaveBackground />
-      <DalAppNav currentAppId={APP_ID} />
+      {clerkEnabled ? <ClerkDalAppNav /> : <DalAppNav currentAppId={APP_ID} />}
       <header className="no-print relative z-30 px-4 pt-4 pb-2 sm:px-6">
         <div className="mx-auto flex h-14 w-full max-w-3xl items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-2">

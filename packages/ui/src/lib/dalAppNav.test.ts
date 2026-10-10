@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { appIdsMatch, parseDalAppNavDocument } from './dalAppNav.js';
+import { appIdsMatch, isSentinelAdmin, parseDalAppNavDocument, visibleDalAppNavApps } from './dalAppNav.js';
 
 describe('parseDalAppNavDocument', () => {
   it('accepts a valid catalog', () => {
@@ -49,5 +49,30 @@ describe('appIdsMatch', () => {
     expect(appIdsMatch('budget-planner', 'budgetplanner')).toBe(true);
     expect(appIdsMatch('Codex', 'codex')).toBe(true);
     expect(appIdsMatch('armory', 'codex')).toBe(false);
+  });
+});
+
+describe('visibleDalAppNavApps', () => {
+  const apps = [
+    {
+      id: 'codex',
+      name: 'Codex',
+      icon: 'menu_book',
+      href: 'https://codex.darkavianlabs.com',
+    },
+    {
+      id: 'Sentinel',
+      name: 'Sentinel',
+      icon: 'monitor_heart',
+      href: 'https://sentinel.darkavianlabs.com',
+    },
+  ];
+
+  it('drops Sentinel unless the account is a Sentinel admin', () => {
+    expect(isSentinelAdmin({ apps: { Sentinel: 'admin' } })).toBe(true);
+    expect(isSentinelAdmin({ apps: { codex: 'admin' } })).toBe(false);
+    expect(isSentinelAdmin(undefined)).toBe(false);
+    expect(visibleDalAppNavApps(apps, false).map((app) => app.id)).toEqual(['codex']);
+    expect(visibleDalAppNavApps(apps, true)).toHaveLength(2);
   });
 });

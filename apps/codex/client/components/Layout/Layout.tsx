@@ -1,4 +1,5 @@
-import { useClerk } from '@clerk/react';
+import { useClerk, useUser } from '@clerk/react';
+import { isSentinelAdmin } from '@dark-avian-labs/ui';
 import {
   useEffect,
   useLayoutEffect,
@@ -48,6 +49,8 @@ export function Layout() {
   const location = useLocation();
   const { auth, refresh } = useAuth();
   const clerk = useClerk();
+  const { isLoaded: clerkUserLoaded, user: clerkUser } = useUser();
+  const showSentinel = clerkUserLoaded && isSentinelAdmin(clerkUser?.publicMetadata);
   const isLoggedIn = auth.status === 'authenticated' && auth.userId !== null;
   const isAdmin = auth.status === 'authenticated' && auth.isAdmin;
   const [menuOpen, setMenuOpen] = useState(false);
@@ -233,7 +236,7 @@ export function Layout() {
       </a>
       <HexSideBackground />
       <AsciiWaveBackground />
-      <DalAppNav currentAppId={APP_ID} />
+      <DalAppNav currentAppId={APP_ID} showSentinel={showSentinel} />
       <header className="relative z-30 h-[100px] shrink-0 px-6">
         <div className="mx-auto grid h-full w-full max-w-[2000px] grid-cols-[1fr_auto_1fr] items-center gap-4">
           <div className="flex w-fit max-w-full min-w-0 flex-col gap-0.5 justify-self-start">
