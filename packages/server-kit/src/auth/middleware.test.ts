@@ -65,8 +65,18 @@ describe('write guard', () => {
     server.post('/write', requireAuthApi, (_req, res) => {
       res.json({ ok: true });
     });
+    server.post('/write-unguarded', (_req, res) => {
+      res.json({ ok: true });
+    });
     return server;
   }
+
+  it('rejects a cookie-only POST even when the route has no auth guard', async () => {
+    await withServer(app(), async (baseUrl) => {
+      const res = await fetch(`${baseUrl}/write-unguarded`, { method: 'POST' });
+      expect(res.status).toBe(401);
+    });
+  });
 
   it('allows a signed-in GET without a bearer token', async () => {
     await withServer(app(), async (baseUrl) => {
