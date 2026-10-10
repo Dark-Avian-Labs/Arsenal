@@ -1,3 +1,4 @@
+import { visibleDalAppNavApps } from '@dark-avian-labs/ui';
 import { useEffect, useRef, useState } from 'react';
 
 import { appIdsMatch, loadDalAppNav, type DalAppNavEntry } from '../../lib/dalAppNav';
@@ -27,7 +28,13 @@ function useHoverCapable(): boolean {
   return hoverCapable;
 }
 
-export function DalAppNav({ currentAppId }: { currentAppId: string }) {
+export function DalAppNav({
+  currentAppId,
+  showSentinel = false,
+}: {
+  currentAppId: string;
+  showSentinel?: boolean;
+}) {
   const [apps, setApps] = useState<DalAppNavEntry[] | null>(null);
   const [open, setOpen] = useState(false);
   const hoverCapable = useHoverCapable();
@@ -75,6 +82,8 @@ export function DalAppNav({ currentAppId }: { currentAppId: string }) {
   }, [open, hoverCapable]);
 
   if (!apps) return null;
+  const visibleApps = visibleDalAppNavApps(apps, showSentinel);
+  if (visibleApps.length === 0) return null;
 
   const clearCollapseTimer = () => {
     if (collapseTimerRef.current) {
@@ -133,7 +142,7 @@ export function DalAppNav({ currentAppId }: { currentAppId: string }) {
         hidden={!open}
       >
         <ul className="dal-app-nav__list">
-          {apps.map((app) => {
+          {visibleApps.map((app) => {
             const isCurrent = appIdsMatch(app.id, currentAppId);
             return (
               <li key={app.id}>

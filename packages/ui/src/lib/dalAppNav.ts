@@ -73,6 +73,24 @@ export function appIdsMatch(a: string, b: string): boolean {
   return normalizeAppId(a) === normalizeAppId(b);
 }
 
+export function isSentinelAdmin(publicMetadata: unknown): boolean {
+  if (!publicMetadata || typeof publicMetadata !== 'object') return false;
+  const apps = (publicMetadata as { apps?: unknown }).apps;
+  if (!apps || typeof apps !== 'object') return false;
+  for (const [key, value] of Object.entries(apps)) {
+    if (key.toLowerCase() === 'sentinel' && value === 'admin') return true;
+  }
+  return false;
+}
+
+export function visibleDalAppNavApps(
+  apps: DalAppNavEntry[],
+  showSentinel: boolean,
+): DalAppNavEntry[] {
+  if (showSentinel) return apps;
+  return apps.filter((app) => normalizeAppId(app.id) !== 'sentinel');
+}
+
 function readCache(): CachePayload | null {
   try {
     const raw = sessionStorage.getItem(CACHE_KEY);
