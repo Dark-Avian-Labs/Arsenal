@@ -1,9 +1,9 @@
+import { MaterialSymbol } from '@dark-avian-labs/ui';
 import { useState } from 'react';
 
 import { useApi } from '../../hooks/useApi';
 import type { Ability } from '../../types/warframe';
 import { DamageTypeInlineText } from '../DamageTypeInlineText';
-import { MaterialSymbol } from '../ui/MaterialSymbol';
 
 interface HelminthPickerPanelProps {
   replacingAbilityName: string;

@@ -1,3 +1,4 @@
+import { Modal } from '@dark-avian-labs/ui';
 import { useCallback, useEffect, useState } from 'react';
 
 import {
@@ -17,7 +18,6 @@ import {
 } from '../../utils/artifactSlotLayout';
 import { bustEquipmentLookupCache } from '../../utils/loadEquipmentLookup';
 import { loadEquipmentCatalogRow } from '../BuildsCatalog/buildsCatalogUtils';
-import { Modal } from '../ui/Modal';
 
 const POLARITY_ICONS: Record<string, string> = {
   AP_ATTACK: 'madurai',

@@ -1,5 +1,6 @@
+import { MaterialSymbol } from '@dark-avian-labs/ui';
+
 import { useAtragraphMods } from '../../context/AtragraphModsContext';
-import { MaterialSymbol } from './MaterialSymbol';
 
 export function AtragraphModsToggle() {
   const { atragraphModsEnabled, toggleAtragraphMods } = useAtragraphMods();

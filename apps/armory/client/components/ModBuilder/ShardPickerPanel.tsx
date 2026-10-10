@@ -1,7 +1,7 @@
+import { MaterialSymbol } from '@dark-avian-labs/ui';
 import { useState } from 'react';
 
 import { renderDamageTypeWords } from '../../utils/renderDamageTypeWords';
-import { MaterialSymbol } from '../ui/MaterialSymbol';
 import type { ShardType, ShardSlotConfig } from './ArchonShardSlots';
 
 interface ShardPickerPanelProps {

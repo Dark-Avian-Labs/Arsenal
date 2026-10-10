@@ -1,3 +1,4 @@
+import { MaterialSymbol, Modal, SelectDropdown } from '@dark-avian-labs/ui';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import {
@@ -15,9 +16,6 @@ import {
   resolveRivenConfig,
   validateRivenConfig,
 } from '../../utils/riven';
-import { MaterialSymbol } from '../ui/MaterialSymbol';
-import { Modal } from '../ui/Modal';
-import { SelectDropdown } from '../ui/SelectDropdown';
 
 interface RivenBuilderProps {
   availableStats: string[];

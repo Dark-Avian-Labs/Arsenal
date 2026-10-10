@@ -1,3 +1,4 @@
+import { MaterialSymbol } from '@dark-avian-labs/ui';
 import { memo, useState, useMemo, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
 
 import { useModCatalog } from '../../hooks/useModCatalog';
@@ -12,7 +13,6 @@ import {
 } from '../../utils/specialItems';
 import { countEquippedUmbraSetModsFromModList } from '../../utils/umbraSet';
 import { ModCard, CardPreview, DEFAULT_LAYOUT } from '../ModCard';
-import { MaterialSymbol } from '../ui/MaterialSymbol';
 
 interface FilterPanelProps {
   equipmentType: EquipmentType;

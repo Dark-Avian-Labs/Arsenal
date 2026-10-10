@@ -1,9 +1,10 @@
+import { MaterialSymbol } from '@dark-avian-labs/ui';
+
 import type { IncarnonData, IncarnonEvolutionTier, IncarnonPerkOption } from '../../types/incarnon';
 import type { IncarnonSelection } from '../../types/incarnon';
 import { getSelectedPerk } from '../../utils/incarnonSelections';
 import { DamageTypeInlineText } from '../DamageTypeInlineText';
 import { GlassTooltip } from '../GlassTooltip';
-import { MaterialSymbol } from '../ui/MaterialSymbol';
 
 interface IncarnonUpgradeBarProps {
   incarnonData: IncarnonData;

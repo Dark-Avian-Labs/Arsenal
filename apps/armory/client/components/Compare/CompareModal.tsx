@@ -1,8 +1,8 @@
+import { MaterialSymbol, Modal } from '@dark-avian-labs/ui';
+
 import { useCompare, type CompareSnapshot } from '../../context/CompareContext';
 import { formatPercent } from '../../utils/damage';
 import { getElementColor } from '../../utils/elements';
-import { MaterialSymbol } from '../ui/MaterialSymbol';
-import { Modal } from '../ui/Modal';
 
 interface CompareModalProps {
   onClose: () => void;

@@ -1,3 +1,4 @@
+import { ConfirmModal, LoadErrorBanner, MaterialSymbol, Modal } from '@dark-avian-labs/ui';
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 
@@ -26,10 +27,6 @@ import {
   type EquipmentPickerTab,
 } from '../BuildsCatalog/buildsCatalogUtils';
 import { FormaMetricChips } from '../shared/FormaMetricChips';
-import { ConfirmModal } from '../ui/ConfirmModal';
-import { LoadErrorBanner } from '../ui/LoadErrorBanner';
-import { MaterialSymbol } from '../ui/MaterialSymbol';
-import { Modal } from '../ui/Modal';
 
 interface BuildsByCategory {
   type: EquipmentPickerTab;

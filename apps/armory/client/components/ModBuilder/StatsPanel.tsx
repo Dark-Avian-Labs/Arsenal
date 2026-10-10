@@ -1,3 +1,4 @@
+import { MaterialSymbol } from '@dark-avian-labs/ui';
 import { useEffect, useMemo, useState, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -21,7 +22,6 @@ import {
   type AvatarStatsEntity,
   type WarframeBonusEffects,
 } from '../../utils/warframeCalc';
-import { MaterialSymbol } from '../ui/MaterialSymbol';
 import type { ShardSlotConfig, ShardType } from './ArchonShardSlots';
 
 type AvatarEquipment = Warframe | Companion;

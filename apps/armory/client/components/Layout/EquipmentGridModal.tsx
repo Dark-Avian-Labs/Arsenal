@@ -1,3 +1,4 @@
+import { MaterialSymbol, Modal } from '@dark-avian-labs/ui';
 import { useState, useEffect } from 'react';
 
 import { normalizeEquipmentName } from '../../utils/specialItems';
@@ -14,8 +15,6 @@ import {
   type EquipmentItem,
   type EquipmentPickerTab,
 } from '../BuildsCatalog/buildsCatalogUtils';
-import { MaterialSymbol } from '../ui/MaterialSymbol';
-import { Modal } from '../ui/Modal';
 
 interface EquipmentGridModalProps {
   onSelect: (equipmentType: string, uniqueName: string, displayName: string) => void;
