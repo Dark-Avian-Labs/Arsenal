@@ -5,7 +5,7 @@ import path from 'node:path';
 import { defineConfig, devices } from '@playwright/test';
 
 const e2eRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'sentinel-e2e-'));
-const port = '3100';
+const port = '3105';
 const baseURL = `http://127.0.0.1:${port}`;
 
 export default defineConfig({
