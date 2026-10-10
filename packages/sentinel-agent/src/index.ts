@@ -38,7 +38,8 @@ function routePatternFrom(req: Request): string {
     const base = req.baseUrl || '';
     return `${base}${routePatternNormalize(routePath)}`.replace(/\/{2,}/g, '/') || '/';
   }
-  return 'unmatched';
+  // Ingest routePattern must start with /. Static files and the HTML shell have no Express route.
+  return '/unmatched';
 }
 
 function routePatternNormalize(routePath: string): string {
