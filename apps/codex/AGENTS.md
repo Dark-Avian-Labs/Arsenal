@@ -20,8 +20,6 @@ Do not point the session path and a catalog path at the same file, and do not re
 
 `/readyz` also checks the game DBs and that both catalog files are readable.
 
-Encrypted `.env.production` garbles `VITE_BASE_PATH` during `vite build`. Rebuild the client with `npx vite build --mode devbuild`.
-
 Warframe sync yields between users. Force-release of the sync lease is refused while an in-process sync is still running. Sync preview is `POST /api/warframe/admin/sync-preview`.
 
 Write advanced progress with the advanced-progress route into `row_advanced_progress`. Auto Orokin and auto Arcane force `true` for exalted and warframe auto-arcane, overwriting a stored `false`. Non-subsumable Excalibur Umbra Helminth may only be `Unavailable`.

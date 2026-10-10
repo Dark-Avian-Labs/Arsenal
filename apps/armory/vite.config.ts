@@ -16,6 +16,7 @@ export default defineConfig(({ mode }) => {
     env.APP_ID?.trim() ||
     'armory';
   return {
+    base: '/',
     plugins: [react(), tailwindcss()],
     define: {
       'import.meta.env.VITE_APP_VERSION': JSON.stringify(process.env.APP_VERSION ?? '0.0.0-dev'),

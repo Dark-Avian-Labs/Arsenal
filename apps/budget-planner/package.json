@@ -21,7 +21,7 @@
     "dev": "dotenvx run --strict -f .env.development -- node scripts/dev.mjs",
     "dev:server": "node --watch server/index.ts",
     "dev:client": "dotenvx run --strict -f .env.development -- vite",
-    "build": "pnpm run typecheck && dotenvx run --strict -f .env.production -- vite build",
+    "build": "pnpm run typecheck && vite build",
     "start": "node server/index.ts",
     "lint": "oxlint .",
     "lint:fix": "oxlint --fix .",

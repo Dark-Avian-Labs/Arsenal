@@ -41,7 +41,9 @@ jobs:
         env:
           APP_VERSION: ${{ steps.release.outputs.version }}
           DOTENV_PRIVATE_KEY_PRODUCTION: ${{ secrets.DOTENV_PRIVATE_KEY_PRODUCTION }}
-        run: pnpm --filter "${{ inputs.app }}..." run --if-present build
+        run: |
+          pnpm --filter "${{ inputs.app }}^..." run --if-present build
+          bash scripts/ci/build-app.sh "${{ inputs.app }}"
 
       - name: Assemble release directory
         env:
