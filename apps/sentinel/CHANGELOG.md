@@ -1,0 +1,26 @@
+# Changelog
+
+- **v1.0.0** `chore`: Initial Sentinel monitoring app scaffold.
+- **v1.0.1** `ci(deps)` [#2](https://github.com/Dark-Avian-Labs/Sentinel/pull/2): Bump useblacksmith/checkout in the github-actions group
+- **v1.0.2** `chore` [#3](https://github.com/Dark-Avian-Labs/Sentinel/pull/3): fix/auth fleet token race
+- **v1.1.0** `chore` [#4](https://github.com/Dark-Avian-Labs/Sentinel/pull/4): feat/fleet ui redesign
+- **v1.2.0** `chore` [#5](https://github.com/Dark-Avian-Labs/Sentinel/pull/5): feat/chart hover detail tabs
+- **v1.2.1** `chore` [#6](https://github.com/Dark-Avian-Labs/Sentinel/pull/6): fix/sync ingest token script
+- **v1.2.2** `chore` [#7](https://github.com/Dark-Avian-Labs/Sentinel/pull/7): fix/fleet status agent race
+- **v1.2.3** `chore` [#8](https://github.com/Dark-Avian-Labs/Sentinel/pull/8): fix/sync ingest token env scrub
+- **v1.3.0** `chore` [#9](https://github.com/Dark-Avian-Labs/Sentinel/pull/9): feat/dal app nav
+- **v1.3.1** `chore` [#10](https://github.com/Dark-Avian-Labs/Sentinel/pull/10): fix/dal app nav proxy
+- **v1.3.2** `chore(deps)` [#11](https://github.com/Dark-Avian-Labs/Sentinel/pull/11): Bump @dotenvx/dotenvx in the production-dependencies group
+- **v1.4.0** `chore` [#13](https://github.com/Dark-Avian-Labs/Sentinel/pull/13): feat/fleet pm2 modules
+- **v1.4.1** `chore(deps)` [#16](https://github.com/Dark-Avian-Labs/Sentinel/pull/16): bump @dotenvx/dotenvx to 2.30.0 and fix ESM named import
+- **v1.4.2** `chore(deps)` [#17](https://github.com/Dark-Avian-Labs/Sentinel/pull/17): Bump the production-dependencies group across 1 directory with 2 updates
+- **v1.4.3** `chore` [#21](https://github.com/Dark-Avian-Labs/Sentinel/pull/21): fix/platform audit shell
+- **v1.4.4** `chore(deps)` [#22](https://github.com/Dark-Avian-Labs/Sentinel/pull/22): Bump the production-dependencies group with 2 updates
+- **v1.4.5** `chore` [#23](https://github.com/Dark-Avian-Labs/Sentinel/pull/23): chore/dependency bumps
+- **v1.4.6** `chore`: Merge pull request 'ci: run checks on Forgejo' (#24) from ci/forgejo-workflows into main
+- **v1.5.0** `chore`: Merge pull request 'Replace the header feather and the soft wordmark glow' (#30) from feat/header-mark into main
+- **v1.5.1** `chore`: Merge pull request 'Stop serving a leftover client build in development' (#31) from fix/client-serving into main
+- **v1.5.2** `chore`: Merge pull request 'chore(deps): update dependencies to latest' (#32) from chore/deps-latest into main
+- **v1.5.3** `chore`: Merge pull request 'chore(deps): update production dependencies' (#33) from deps/production into main
+- **v1.5.4** `chore`: Merge pull request 'ci: rebuild dependency pull requests from an @actions rebase comment' (#35) from ci/actions-rebase into main
+- **v1.5.5** `chore`: Merge pull request 'ci: rebase dependency pull requests as Sayori' (#36) from ci/sayori-rebase into main

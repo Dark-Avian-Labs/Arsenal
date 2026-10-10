@@ -1,0 +1,134 @@
+name: Agent Release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Agent semver without prefix (e.g. 0.1.0). Creates tag agent-v0.1.0.
+        required: true
+        type: string
+      prerelease:
+        description: Mark the release as a pre-release
+        required: false
+        type: boolean
+        default: false
+      draft:
+        description: Create the release as a draft
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.release.tag_name || inputs.version || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  pack-and-upload:
+    if: ${{ github.event_name == 'workflow_dispatch' || startsWith(github.event.release.tag_name, 'agent-v') }}
+    runs-on: build-node26
+    timeout-minutes: 15
+
+    steps:
+      - name: Resolve agent version
+        id: meta
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            version="$INPUT_VERSION"
+          else
+            version="${RELEASE_TAG#agent-v}"
+          fi
+          if ! printf '%s' "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$'; then
+            echo "ERROR: Version must be semver (got '$version'). Use tag agent-vX.Y.Z or workflow_dispatch version."
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=agent-v$version" >> "$GITHUB_OUTPUT"
+          echo "asset=dark-avian-labs-sentinel-agent-$version.tgz" >> "$GITHUB_OUTPUT"
+          echo "Resolved agent-v$version"
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event_name == 'release' && github.event.release.tag_name || github.sha }}
+          fetch-depth: 0
+
+      - name: Enable pnpm
+        run: npm install -g pnpm@$(node -p 'require("./package.json").packageManager.replace(/^pnpm@/, "")')
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Set agent package version
+        working-directory: packages/agent
+        env:
+          AGENT_VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          node -e "
+            const fs = require('node:fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            pkg.version = process.env.AGENT_VERSION;
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+          "
+
+      - name: Build and pack agent
+        id: pack
+        run: |
+          set -euo pipefail
+          mkdir -p dist-agent
+          pnpm --filter @dark-avian-labs/sentinel-agent run build
+          cd packages/agent
+          pnpm pack --pack-destination ../../dist-agent
+          src="$(ls -1 ../../dist-agent/*.tgz | head -n1)"
+          dest="../../dist-agent/${{ steps.meta.outputs.asset }}"
+          if [ "$src" != "$dest" ]; then
+            mv "$src" "$dest"
+          fi
+          test -f "$dest"
+          ls -la ../../dist-agent
+
+      - name: Publish release asset
+        uses: iShark5060/actions-gh-release@b06573c56adbc4d16a5e68b694bd58cd3da7149b # v1.2.1
+        with:
+          tag_name: ${{ steps.meta.outputs.tag }}
+          name: sentinel-agent ${{ steps.meta.outputs.version }}
+          draft: ${{ github.event_name == 'workflow_dispatch' && inputs.draft || false }}
+          prerelease: ${{ github.event_name == 'workflow_dispatch' && inputs.prerelease || github.event.release.prerelease || false }}
+          generate_release_notes: true
+          body: |
+            In-process Sentinel metrics agent only (HTTP latency, event-loop lag, exit kind).
+
+            Install in sibling apps:
+
+            ```json
+            "@dark-avian-labs/sentinel-agent": "${{ github.server_url }}/${{ github.repository }}/releases/download/${{ steps.meta.outputs.tag }}/${{ steps.meta.outputs.asset }}"
+            ```
+
+            This release does not include the Sentinel dashboard app.
+          files: dist-agent/${{ steps.meta.outputs.asset }}
+          fail_on_unmatched_files: true
+          upload_checksums: true
+
+  discord-status:
+    runs-on: build-node26
+    timeout-minutes: 10
+    needs: [pack-and-upload]
+    if: ${{ always() && (github.event_name == 'workflow_dispatch' || startsWith(github.event.release.tag_name, 'agent-v')) }}
+
+    steps:
+      - name: Send Discord status
+        uses: iShark5060/actions-discord-status@66f6681ff19536b7787feecc4fdc20c506de365b # v1.2.1
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK }}
+          job_results: ${{ join(needs.*.result, ',') }}
+          mention_on: failure
+          content: '<@${{ secrets.DISCORD_USERID }}>'
+          title: ${{ github.workflow }}
+          description: ${{ contains(needs.*.result, 'failure') && 'Agent release failed.' || contains(needs.*.result, 'cancelled') && 'Agent release was cancelled.' || contains(needs.*.result, 'skipped') && 'Agent release skipped.' || 'Agent tarball published.' }}
