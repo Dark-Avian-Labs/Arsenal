@@ -3,12 +3,12 @@ import path from 'node:path';
 
 import type Database from 'better-sqlite3';
 
-import { FETCH_TIMEOUT_MS, fetchWithTimeout } from '../../http/fetchWithTimeout.js';
-import { getWikiUserAgent } from '../../scraping/wikiUserAgent.js';
-import { sleep } from './fastidiousClient.js';
-import { wikiPageTitleFromName } from './normalize.js';
-import { parseHeroInfobox, type WikiHeroBaseStats } from './parseHeroInfobox.js';
-import { resolveWorImportCacheDir, WOR_FANDOM_API_URL } from './paths.js';
+import { FETCH_TIMEOUT_MS, fetchWithTimeout } from '../../http/fetchWithTimeout.ts';
+import { getWikiUserAgent } from '../../scraping/wikiUserAgent.ts';
+import { sleep } from './fastidiousClient.ts';
+import { wikiPageTitleFromName } from './normalize.ts';
+import { parseHeroInfobox, type WikiHeroBaseStats } from './parseHeroInfobox.ts';
+import { resolveWorImportCacheDir, WOR_FANDOM_API_URL } from './paths.ts';
 
 export type FandomHeroStatsSummary = {
   updated: number;

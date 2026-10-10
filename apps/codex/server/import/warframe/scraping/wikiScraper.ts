@@ -1,14 +1,14 @@
 import * as cheerio from 'cheerio';
 import type { Element } from 'domhandler';
 
-import { catalogArmoryKeyForArchonBuff } from '../db/catalogKeys.js';
-import { getCatalogDb } from '../db/connection.js';
-import { FETCH_BYTE_LIMITS, FETCH_TIMEOUT_MS, fetchTextBounded } from '../http/fetchWithTimeout.js';
+import { catalogArmoryKeyForArchonBuff } from '../db/catalogKeys.ts';
+import { getCatalogDb } from '../db/connection.ts';
+import { FETCH_BYTE_LIMITS, FETCH_TIMEOUT_MS, fetchTextBounded } from '../http/fetchWithTimeout.ts';
 import {
   fetchHelminthWikiHtml,
   HELMINTH_WIKI_URL,
   resolveHelminthAbilityWikiUrls,
-} from './helminthWikiPage.js';
+} from './helminthWikiPage.ts';
 
 const WIKI_BASE = 'https://wiki.warframe.com';
 

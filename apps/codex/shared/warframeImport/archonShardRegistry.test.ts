@@ -9,7 +9,7 @@ import {
   archonVariantFromTauforged,
   buildArchonShardKey,
   parseArchonShardKey,
-} from './archonShardRegistry.js';
+} from './archonShardRegistry.ts';
 
 describe('archonShardRegistry', () => {
   it('has expected buff counts per color (27 total)', () => {

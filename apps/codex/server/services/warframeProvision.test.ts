@@ -4,25 +4,25 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const TEST_CLERK_ID = 'user_test123';
 
 const mocks = vi.hoisted(() => ({
-  getWorksheets: vi.fn<typeof import('../games/warframe/index.js').warframeQueries.getWorksheets>(),
+  getWorksheets: vi.fn<typeof import('../games/warframe/index.ts').warframeQueries.getWorksheets>(),
   provisionUserFromCatalogMaster: vi.fn<(db: Database.Database, clerkUserId: string) => boolean>(),
   ensureWarframeWorksheetsForUser: vi.fn(),
 }));
 
-vi.mock('../games/warframe/index.js', () => ({
+vi.mock('../games/warframe/index.ts', () => ({
   warframeQueries: { getWorksheets: mocks.getWorksheets },
 }));
 
-vi.mock('./warframeSync.js', () => ({
+vi.mock('./warframeSync.ts', () => ({
   provisionUserFromCatalogMaster: mocks.provisionUserFromCatalogMaster,
   ensureWarframeWorksheetsForUser: mocks.ensureWarframeWorksheetsForUser,
 }));
 
-vi.mock('../logger.js', () => ({
+vi.mock('../logger.ts', () => ({
   log: vi.fn(),
 }));
 
-import { provisionWarframeUserIfNeeded } from './warframeProvision.js';
+import { provisionWarframeUserIfNeeded } from './warframeProvision.ts';
 
 const codexDb = {
   transaction(fn: (...args: unknown[]) => unknown) {

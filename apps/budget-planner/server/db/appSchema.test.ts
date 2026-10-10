@@ -1,7 +1,7 @@
 import Database from 'better-sqlite3';
 import { describe, expect, it } from 'vitest';
 
-import { createAppSchema } from './appSchema.js';
+import { createAppSchema } from './appSchema.ts';
 
 describe('createAppSchema', () => {
   it('adds archived_at to an existing entries table', () => {

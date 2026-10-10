@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { getClerkAuthorizedParties, isAllowedMutatingOrigin, isSameHostOrigin } from './mutatingOrigin.js';
+import { getClerkAuthorizedParties, isAllowedMutatingOrigin, isSameHostOrigin } from './mutatingOrigin.ts';
 
 describe('getClerkAuthorizedParties', () => {
   const previousEnv = {

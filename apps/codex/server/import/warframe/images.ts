@@ -3,15 +3,15 @@ import path from 'path';
 
 import { log } from '@dark-avian-labs/server-kit';
 
-import { IMAGE_BASE_URL, EXPORTS_DIR } from '../../config.js';
-import { getCatalogDb } from './db/connection.js';
+import { IMAGE_BASE_URL, EXPORTS_DIR } from '../../config.ts';
+import { getCatalogDb } from './db/connection.ts';
 import {
   FETCH_BYTE_LIMITS,
   FETCH_TIMEOUT_MS,
   fetchBounded,
   isAbortError,
-} from './http/fetchWithTimeout.js';
-import { safeImagePathUnderRoot, sanitizeUniqueNameSegments } from './safeImagePath.js';
+} from './http/fetchWithTimeout.ts';
+import { safeImagePathUnderRoot, sanitizeUniqueNameSegments } from './safeImagePath.ts';
 
 export interface ImageDownloadResult {
   total: number;

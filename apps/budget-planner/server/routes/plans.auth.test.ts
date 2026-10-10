@@ -5,8 +5,8 @@ import Database from 'better-sqlite3';
 import express from 'express';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { createAppSchema } from '../db/appSchema.js';
-import type { AppUser } from '../services/users.js';
+import { createAppSchema } from '../db/appSchema.ts';
+import type { AppUser } from '../services/users.ts';
 
 const authState = vi.hoisted(() => ({
   user: null as AppUser | null,
@@ -16,15 +16,15 @@ const dbState = vi.hoisted(() => ({
   db: null as Database.Database | null,
 }));
 
-vi.mock('../db/connection.js', () => ({
+vi.mock('../db/connection.ts', () => ({
   getAppDb: () => {
     if (!dbState.db) throw new Error('test database is not open');
     return dbState.db;
   },
 }));
 
-vi.mock('../middleware/auth.js', async () => {
-  const actual = await vi.importActual<typeof import('../middleware/auth.js')>('../middleware/auth.js');
+vi.mock('../middleware/auth.ts', async () => {
+  const actual = await vi.importActual<typeof import('../middleware/auth.ts')>('../middleware/auth.ts');
   return {
     ...actual,
     requireAuth(req: express.Request, res: express.Response, next: express.NextFunction): void {
@@ -38,8 +38,8 @@ vi.mock('../middleware/auth.js', async () => {
   };
 });
 
-const { invitesRouter, plansRouter } = await import('./plans.js');
-const { createPlanForOwner } = await import('../services/users.js');
+const { invitesRouter, plansRouter } = await import('./plans.ts');
+const { createPlanForOwner } = await import('../services/users.ts');
 
 function insertUser(id: string, clerkUserId: string, email: string): AppUser {
   const db = dbState.db!;

@@ -14,8 +14,8 @@ import {
   type GearPrefix,
   type GearSlot,
   type GearStatKey,
-} from './catalog.js';
-import { SET_BY_KEY } from './sets.js';
+} from './catalog.ts';
+import { SET_BY_KEY } from './sets.ts';
 
 const optionalText = z.preprocess((value) => {
   if (typeof value !== 'string') return null;

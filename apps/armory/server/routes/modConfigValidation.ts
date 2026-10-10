@@ -1,12 +1,12 @@
 import { z } from 'zod';
 
-import { isAllowedEquipmentImage } from '../http/allowedFetchHosts.js';
+import { isAllowedEquipmentImage } from '../http/allowedFetchHosts.ts';
 import {
   appendModConfigSizeIssues,
   MAX_ARCANE_SLOTS,
   MAX_MOD_CONFIG_SLOTS,
   MAX_SHARD_SLOTS,
-} from './modConfigLimits.js';
+} from './modConfigLimits.ts';
 
 export const MAX_MOD_CONFIG_NAME_LENGTH = 255;
 export const MAX_EQUIPMENT_UNIQUE_NAME_LENGTH = 512;

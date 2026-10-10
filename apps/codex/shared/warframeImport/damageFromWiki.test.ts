@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { damagePerShotFromWikiEntries, parseWikiDamageCellText } from './damageFromWiki.js';
+import { damagePerShotFromWikiEntries, parseWikiDamageCellText } from './damageFromWiki.ts';
 
 describe('damageFromWiki', () => {
   it('parses multiple damage types from wiki cell text', () => {

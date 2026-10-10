@@ -1,8 +1,8 @@
 import Database from 'better-sqlite3';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { createAppSchema } from '../db/appSchema.js';
-import { getUserByClerkId, getUserById, updateUserPreferences, upsertUserFromClerk } from './users.js';
+import { createAppSchema } from '../db/appSchema.ts';
+import { getUserByClerkId, getUserById, updateUserPreferences, upsertUserFromClerk } from './users.ts';
 
 describe('upsertUserFromClerk', () => {
   let db: Database.Database;

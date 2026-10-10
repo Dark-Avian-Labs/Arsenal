@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { artifactStatBag, loadoutStatBag, type GearPieceInput } from './pieceStats.js';
+import { artifactStatBag, loadoutStatBag, type GearPieceInput } from './pieceStats.ts';
 
 function piece(slot: GearPieceInput['slot']): GearPieceInput {
   return {

@@ -10,7 +10,7 @@ import {
   patchSettingsSchema,
   updateAdvancedProgressSchema,
   updateSchema,
-} from './validation.js';
+} from './validation.ts';
 
 describe('Warframe validation schemas', () => {
   describe('updateSchema', () => {

@@ -1,7 +1,7 @@
 import type Database from 'better-sqlite3';
 
-import { ARCANE_PUBLIC_LIST_SQL, bindArcanePublicListParams } from '../arcaneCatalog.js';
-import type { WorksheetCategory } from './resolveHref.js';
+import { ARCANE_PUBLIC_LIST_SQL, bindArcanePublicListParams } from '../arcaneCatalog.ts';
+import type { WorksheetCategory } from './resolveHref.ts';
 
 function loadNames(db: Database.Database, sql: string, args: unknown[] = []): string[] {
   const rows = db.prepare(sql).all(...args) as { name: string | null }[];

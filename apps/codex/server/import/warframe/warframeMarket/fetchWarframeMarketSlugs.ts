@@ -3,7 +3,7 @@ import {
   FETCH_TIMEOUT_MS,
   fetchBounded,
   isAbortError,
-} from '../http/fetchWithTimeout.js';
+} from '../http/fetchWithTimeout.ts';
 
 const ITEMS_URL = 'https://api.warframe.market/v2/items';
 

@@ -1,11 +1,11 @@
 import { requireAuthApi } from '@dark-avian-labs/server-kit';
 import { Router } from 'express';
 
-import { parseArtifactBody } from '../../shared/schemas.js';
-import { getAppDb } from '../db/appDb.js';
-import * as q from '../db/queries.js';
-import { requireAccountId } from '../http/account.js';
-import { asyncHandler, json, sendError } from '../http/handlers.js';
+import { parseArtifactBody } from '../../shared/schemas.ts';
+import { getAppDb } from '../db/appDb.ts';
+import * as q from '../db/queries.ts';
+import { requireAccountId } from '../http/account.ts';
+import { asyncHandler, json, sendError } from '../http/handlers.ts';
 
 export const artifactsRouter = Router();
 artifactsRouter.use(requireAuthApi);

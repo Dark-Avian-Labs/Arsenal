@@ -2,7 +2,7 @@ export {
   HELMINTH_NON_SUBSUMABLE_ITEM_NAMES,
   isHelminthNonSubsumableItemName,
   isValidHelminthCellValue,
-} from './helminthExceptions.js';
+} from './helminthExceptions.ts';
 export {
   HELMINTH_VALUES,
   VALID_STATUSES,
@@ -12,9 +12,9 @@ export {
   WARFRAME_DB_PATH,
   isHelminthValue,
   isValidStatus,
-} from './config.js';
-export { closeDb as closeWarframeDb, getDb as getWarframeDb } from './db/schema.js';
-export * as warframeQueries from './db/queries.js';
+} from './config.ts';
+export { closeDb as closeWarframeDb, getDb as getWarframeDb } from './db/schema.ts';
+export * as warframeQueries from './db/queries.ts';
 export {
   addRowSchema as warframeAddRowSchema,
   adminUpdateSchema as warframeAdminUpdateSchema,
@@ -23,24 +23,24 @@ export {
   patchSettingsSchema as warframePatchSettingsSchema,
   updateAdvancedProgressSchema as warframeUpdateAdvancedProgressSchema,
   updateSchema as warframeUpdateSchema,
-} from './routes/validation.js';
+} from './routes/validation.ts';
 export {
   isPrimeVariantName,
   normalizeDisplayName,
   normalizeNameForKey,
   resolveCanonicalKey,
   stripPrimeSuffix,
-} from './displayName.js';
+} from './displayName.ts';
 export {
   WARFRAME_MARKET_API_DOCS_URL,
   warframeMarketItemSellUrl,
   warframeMarketSellHrefUsesPrimeOnlyItemSlug,
-} from './marketUrls.js';
+} from './marketUrls.ts';
 export {
   type VariantColumns,
   resolveVariantColumns,
   worksheetHasNormalAndPrimeColumns,
-} from './variantColumns.js';
+} from './variantColumns.ts';
 export {
   ABSOLUTE_MAX_ADVANCED_LEVEL,
   type AdvancedRowRelevance,
@@ -52,9 +52,9 @@ export {
   isValenceRelevant,
   maxLevelForRow,
   resolveAdvancedRowRelevance,
-} from './advancedRules.js';
+} from './advancedRules.ts';
 export {
   isExaltedWeaponItem,
   isExaltedWeaponWorksheet,
   shouldAutoCompleteOrokin,
-} from './exaltedWeapons.js';
+} from './exaltedWeapons.ts';

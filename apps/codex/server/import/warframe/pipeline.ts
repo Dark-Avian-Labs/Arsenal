@@ -3,16 +3,16 @@ import path from 'path';
 
 import { log } from '@dark-avian-labs/server-kit';
 
-import type { ImportPipelineStats } from '../../../shared/warframeImport/pipelineSummaryTypes.js';
-import { CONTENT_BASE_URL, EXPORTS_DIR, REQUIRED_EXPORTS } from '../../config.js';
+import type { ImportPipelineStats } from '../../../shared/warframeImport/pipelineSummaryTypes.ts';
+import { CONTENT_BASE_URL, EXPORTS_DIR, REQUIRED_EXPORTS } from '../../config.ts';
 import {
   FETCH_BYTE_LIMITS,
   FETCH_TIMEOUT_MS,
   fetchBounded,
   isAbortError,
-} from './http/fetchWithTimeout.js';
-import { downloadAndParseManifest, type ManifestEntry } from './manifest.js';
-import { sanitizePathSegment } from './safeImagePath.js';
+} from './http/fetchWithTimeout.ts';
+import { downloadAndParseManifest, type ManifestEntry } from './manifest.ts';
+import { sanitizePathSegment } from './safeImagePath.ts';
 
 export type { ImportPipelineStats };
 

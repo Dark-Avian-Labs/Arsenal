@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
-import { MAX_MOD_CONFIG_JSON_BYTES, MAX_MOD_CONFIG_SLOTS } from './modConfigLimits.js';
-import { MAX_MOD_CONFIG_NAME_LENGTH, minimalModConfig, ModConfigSchema, ModSlotSchema } from './modConfigValidation.js';
+import { MAX_MOD_CONFIG_JSON_BYTES, MAX_MOD_CONFIG_SLOTS } from './modConfigLimits.ts';
+import { MAX_MOD_CONFIG_NAME_LENGTH, minimalModConfig, ModConfigSchema, ModSlotSchema } from './modConfigValidation.ts';
 
 describe('ModConfigSchema', () => {
   it('accepts a minimal valid config', () => {

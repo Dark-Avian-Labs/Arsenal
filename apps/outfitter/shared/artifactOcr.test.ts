@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { applyArtifactOcr, parseArtifactOcr } from './artifactOcr.js';
+import { applyArtifactOcr, parseArtifactOcr } from './artifactOcr.ts';
 
 const CATALOG = [
   { slug: 'auditore-blade', name: 'Auditore Blade' },

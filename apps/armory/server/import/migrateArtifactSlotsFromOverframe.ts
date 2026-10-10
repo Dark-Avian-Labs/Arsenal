@@ -3,14 +3,14 @@ import type Database from 'better-sqlite3';
 import {
   WARFRAME_COMPACT_ARTIFACT_SLOT_COUNT,
   WARFRAME_EXTENDED_ARTIFACT_SLOT_COUNT,
-} from '../../shared/artifactSlotState.js';
+} from '../../shared/artifactSlotState.ts';
 import {
   artifactSlotsStorageLength,
   EQUIPMENT_SLOT_CONFIGS,
   equipmentExilusArtifactIndex,
   equipmentHasSpecialSlot,
   type EquipmentSlotConfig,
-} from '../../shared/equipmentSlotConfig.js';
+} from '../../shared/equipmentSlotConfig.ts';
 
 export const JADE_WARFRAME_UNIQUE_NAME = '/Lotus/Powersuits/Choir/Choir';
 

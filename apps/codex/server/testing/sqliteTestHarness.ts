@@ -5,7 +5,7 @@ import path from 'node:path';
 import { createDbSingleton } from '@dark-avian-labs/server-kit';
 import type Database from 'better-sqlite3';
 
-import { createSchema, ensureWarframeAdvancedProgressTable } from '../games/warframe/db/schema.js';
+import { createSchema, ensureWarframeAdvancedProgressTable } from '../games/warframe/db/schema.ts';
 
 export type WarframeTestDb = {
   db: Database.Database;

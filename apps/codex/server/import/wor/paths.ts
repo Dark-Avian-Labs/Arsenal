@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { DATA_DIR, PROJECT_ROOT } from '../../config.js';
+import { DATA_DIR, PROJECT_ROOT } from '../../config.ts';
 
 export const WOR_IMPORT_DIR = path.join(DATA_DIR, 'wor-import');
 export const WOR_IMPORT_CACHE_DIR = path.join(WOR_IMPORT_DIR, 'cache');

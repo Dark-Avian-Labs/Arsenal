@@ -1,7 +1,7 @@
 import Database from 'better-sqlite3';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('../db/connection.js', () => {
+vi.mock('../db/connection.ts', () => {
   let db: Database.Database | null = null;
   return {
     getCatalogDb: () => {
@@ -14,7 +14,7 @@ vi.mock('../db/connection.js', () => {
   };
 });
 
-import { getCatalogDb } from './db/connection.js';
+import { getCatalogDb } from './db/connection.ts';
 import {
   createImportRun,
   ensureImportRunsSchema,
@@ -27,7 +27,7 @@ import {
   tryAcquireImportLease,
   renewImportLease,
   touchLiveImportLease,
-} from './importRuns.js';
+} from './importRuns.ts';
 
 describe('importRuns', () => {
   beforeEach(() => {

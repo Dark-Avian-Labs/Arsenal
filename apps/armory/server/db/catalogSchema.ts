@@ -1,9 +1,9 @@
 import { log } from '@dark-avian-labs/server-kit';
 
-import { ensureCodexModularWeaponsPopulated } from '../codexModularWeapons.js';
-import { backfillArchonBuffArmoryKeys, backfillHelminthArmoryKeys } from './catalogKeys.js';
-import { ensureCatalogKeyColumns } from './catalogMigrations.js';
-import { getCatalogDb } from './connection.js';
+import { ensureCodexModularWeaponsPopulated } from '../codexModularWeapons.ts';
+import { backfillArchonBuffArmoryKeys, backfillHelminthArmoryKeys } from './catalogKeys.ts';
+import { ensureCatalogKeyColumns } from './catalogMigrations.ts';
+import { getCatalogDb } from './connection.ts';
 
 const CATALOG_SCHEMA_SQL = `
     CREATE TABLE IF NOT EXISTS warframes (

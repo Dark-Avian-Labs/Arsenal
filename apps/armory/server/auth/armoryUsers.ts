@@ -1,7 +1,7 @@
 import { clerkClient } from '@clerk/express';
 import { log } from '@dark-avian-labs/server-kit';
 
-import { getCatalogDb } from '../db/connection.js';
+import { getCatalogDb } from '../db/connection.ts';
 
 const DELETED_USER_LABEL = '[Deleted User]';
 let schemaInitialized = false;

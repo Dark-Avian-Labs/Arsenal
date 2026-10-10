@@ -1,4 +1,4 @@
-import type { RankStatBonuses } from './equipmentRankStats.js';
+import type { RankStatBonuses } from './equipmentRankStats.ts';
 
 export interface WarframeRankExceptionEntry {
   uniqueName: string;

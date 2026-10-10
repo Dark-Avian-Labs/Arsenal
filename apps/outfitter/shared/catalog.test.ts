@@ -11,7 +11,7 @@ import {
   outOfRangeArtifactLabels,
   outOfRangeGearLabels,
   promotionFromMaxLevel,
-} from './catalog.js';
+} from './catalog.ts';
 
 const legal = {
   main_stat: 'atkBonus' as const,

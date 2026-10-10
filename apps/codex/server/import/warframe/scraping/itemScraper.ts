@@ -1,6 +1,6 @@
-import { fetchOverframePageJson } from '../http/fetchOverframe.js';
-import { FETCH_TIMEOUT_MS, isAbortError } from '../http/fetchWithTimeout.js';
-import type { OverframeIndexEntry } from './indexScraper.js';
+import { fetchOverframePageJson } from '../http/fetchOverframe.ts';
+import { FETCH_TIMEOUT_MS, isAbortError } from '../http/fetchWithTimeout.ts';
+import type { OverframeIndexEntry } from './indexScraper.ts';
 
 export interface ScrapedAbilityStat {
   label: string;

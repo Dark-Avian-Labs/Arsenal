@@ -1,8 +1,8 @@
 import { createDbSingleton } from '@dark-avian-labs/server-kit';
 import type Database from 'better-sqlite3';
 
-import { WOR_CATALOG_DB_PATH, WOR_DB_PATH } from '../config.js';
-import { DEMON_LEVEL_MIN } from '../constants.js';
+import { WOR_CATALOG_DB_PATH, WOR_DB_PATH } from '../config.ts';
+import { DEMON_LEVEL_MIN } from '../constants.ts';
 
 export function ensureWorCatalogTables(db: Database.Database): void {
   db.exec(`

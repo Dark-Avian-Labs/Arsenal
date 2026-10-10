@@ -1,14 +1,14 @@
 import { afterEach, beforeEach, expect, it } from 'vitest';
 
-import { describeWithSqlite } from '../../testing/describeWithSqlite.js';
+import { describeWithSqlite } from '../../testing/describeWithSqlite.ts';
 import {
   createTempDbDir,
   createWarframeTestDb,
   removeTempDbDir,
   seedMinimalWarframeFixture,
   type WarframeTestDb,
-} from '../../testing/sqliteTestHarness.js';
-import { warframeQueries } from './index.js';
+} from '../../testing/sqliteTestHarness.ts';
+import { warframeQueries } from './index.ts';
 
 const { updateCell, addRow, deleteRow } = warframeQueries;
 

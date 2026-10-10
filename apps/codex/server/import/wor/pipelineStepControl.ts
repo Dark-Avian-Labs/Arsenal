@@ -1,4 +1,4 @@
-import type { WorPipelineStepKey } from './worPipelineSteps.js';
+import type { WorPipelineStepKey } from './worPipelineSteps.ts';
 
 export type WorPipelineStepOptions = {
   forceImport?: boolean;

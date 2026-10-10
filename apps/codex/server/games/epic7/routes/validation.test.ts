@@ -18,7 +18,7 @@ import {
   updateArtifactSchema,
   updateHeroDetailsSchema,
   updateHeroSchema,
-} from './validation.js';
+} from './validation.ts';
 
 describe('Epic7 validation schemas', () => {
   describe('updateHeroSchema', () => {

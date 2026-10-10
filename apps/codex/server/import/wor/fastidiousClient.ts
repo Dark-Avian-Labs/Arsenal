@@ -1,9 +1,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { fetchWithTimeout, FETCH_TIMEOUT_MS } from '../../http/fetchWithTimeout.js';
-import { decodeInertiaPayload } from './htmlEntities.js';
-import { FASTIDIOUS_BASE_URL } from './paths.js';
+import { fetchWithTimeout, FETCH_TIMEOUT_MS } from '../../http/fetchWithTimeout.ts';
+import { decodeInertiaPayload } from './htmlEntities.ts';
+import { FASTIDIOUS_BASE_URL } from './paths.ts';
 
 export type FastidiousInertiaPage<TProps> = {
   component: string;

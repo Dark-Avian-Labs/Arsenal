@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { parseIngestBody } from './ingestSchema.js';
+import { parseIngestBody } from './ingestSchema.ts';
 
 describe('parseIngestBody', () => {
   it('accepts process, http, and exit samples', () => {

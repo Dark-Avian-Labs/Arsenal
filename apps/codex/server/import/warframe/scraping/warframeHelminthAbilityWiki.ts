@@ -1,10 +1,10 @@
 import * as cheerio from 'cheerio';
 
-import { getCatalogDb } from '../db/connection.js';
-import { dedupeHelminthAbilityRows } from '../helminthAbilityDedupe.js';
-import { FETCH_BYTE_LIMITS, FETCH_TIMEOUT_MS, fetchTextBounded } from '../http/fetchWithTimeout.js';
-import { normalizeAbilityName } from './helminthWikiPage.js';
-import { getWikiUserAgent } from './wikiUserAgent.js';
+import { getCatalogDb } from '../db/connection.ts';
+import { dedupeHelminthAbilityRows } from '../helminthAbilityDedupe.ts';
+import { FETCH_BYTE_LIMITS, FETCH_TIMEOUT_MS, fetchTextBounded } from '../http/fetchWithTimeout.ts';
+import { normalizeAbilityName } from './helminthWikiPage.ts';
+import { getWikiUserAgent } from './wikiUserAgent.ts';
 
 const WIKI_BASE = 'https://wiki.warframe.com';
 

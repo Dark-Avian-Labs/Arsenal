@@ -1,4 +1,4 @@
-import type { IncarnonEvolutionTier } from '../../../../shared/warframeImport/incarnonTypes.js';
+import type { IncarnonEvolutionTier } from '../../../../shared/warframeImport/incarnonTypes.ts';
 
 export type {
   IncarnonData,
@@ -6,7 +6,7 @@ export type {
   IncarnonPerkOption,
   IncarnonStatModifier,
   IncarnonStatName,
-} from '../../../../shared/warframeImport/incarnonTypes.js';
+} from '../../../../shared/warframeImport/incarnonTypes.ts';
 
 export interface ParsedGenesisPage {
   compatibleWeaponNames: string[];

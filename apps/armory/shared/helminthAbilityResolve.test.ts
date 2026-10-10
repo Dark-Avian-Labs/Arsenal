@@ -4,7 +4,7 @@ import {
   canonicalHelminthReplacementUniqueName,
   dedupeHelminthAbilityRows,
   resolveHelminthReplacementAbility,
-} from './helminthAbilityResolve.js';
+} from './helminthAbilityResolve.ts';
 
 describe('resolveHelminthReplacementAbility', () => {
   const helminthPool = [

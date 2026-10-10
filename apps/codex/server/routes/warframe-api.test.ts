@@ -22,8 +22,8 @@ vi.mock('@clerk/express', () => ({
   clerkMiddleware: () => (_req: unknown, _res: unknown, next: () => void) => next(),
 }));
 
-vi.mock('../games/warframe/index.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../games/warframe/index.js')>();
+vi.mock('../games/warframe/index.ts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../games/warframe/index.ts')>();
   return {
     ...actual,
     getWarframeDb: () => {
@@ -36,14 +36,14 @@ vi.mock('../games/warframe/index.js', async (importOriginal) => {
   };
 });
 
-import { describeWithSqlite } from '../testing/describeWithSqlite.js';
+import { describeWithSqlite } from '../testing/describeWithSqlite.ts';
 import {
   createTempDbDir,
   createWarframeTestDb,
   removeTempDbDir,
   seedMinimalWarframeFixture,
-} from '../testing/sqliteTestHarness.js';
-import { apiRouter } from './api.js';
+} from '../testing/sqliteTestHarness.ts';
+import { apiRouter } from './api.ts';
 
 function createTestApp() {
   const app = express();

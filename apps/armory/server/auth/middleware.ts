@@ -8,7 +8,7 @@ import {
 } from '@dark-avian-labs/server-kit';
 import type { NextFunction, Request, Response } from 'express';
 
-import { GAME_ID } from '../gameId.js';
+import { GAME_ID } from '../gameId.ts';
 
 export { clerkMiddleware, getAuth, isClerkConfigured, requireAuthApi };
 

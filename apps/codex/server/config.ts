@@ -9,7 +9,7 @@ import {
 } from '@dark-avian-labs/server-kit';
 import dotenvx from '@dotenvx/dotenvx';
 
-import { resolveEnvFilePath } from './core.js';
+import { resolveEnvFilePath } from './core.ts';
 
 const { config: loadEnv } = dotenvx;
 

@@ -1,18 +1,18 @@
-import { getWorCatalogDb } from '../../games/wor/index.js';
+import { getWorCatalogDb } from '../../games/wor/index.ts';
 import type Database from 'better-sqlite3';
 
 import {
   isWorImportLeaseHeld,
   releaseWorImportLease,
   tryAcquireWorImportLease,
-} from './importLease.js';
+} from './importLease.ts';
 import {
   runWorStartupPipeline,
   type WorImportLogLine,
   type WorImportSummary,
-} from './startupPipeline.js';
-import type { WorPipelineStepKey } from './worPipelineSteps.js';
-import { WOR_PIPELINE_STEPS } from './worPipelineSteps.js';
+} from './startupPipeline.ts';
+import type { WorPipelineStepKey } from './worPipelineSteps.ts';
+import { WOR_PIPELINE_STEPS } from './worPipelineSteps.ts';
 
 export type WorAdminImportSnapshot = {
   runId: number;

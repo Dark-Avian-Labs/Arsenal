@@ -1,11 +1,11 @@
 import { log } from '@dark-avian-labs/server-kit';
 import type Database from 'better-sqlite3';
 
-import { ensureCodexModularWeaponsPopulated } from '../codexModularWeapons.js';
-import { ensureImportRunsSchema } from '../importRuns.js';
-import { backfillArchonBuffArmoryKeys, backfillHelminthArmoryKeys } from './catalogKeys.js';
-import { ensureCatalogKeyColumns } from './catalogMigrations.js';
-import { getCatalogDb } from './connection.js';
+import { ensureCodexModularWeaponsPopulated } from '../codexModularWeapons.ts';
+import { ensureImportRunsSchema } from '../importRuns.ts';
+import { backfillArchonBuffArmoryKeys, backfillHelminthArmoryKeys } from './catalogKeys.ts';
+import { ensureCatalogKeyColumns } from './catalogMigrations.ts';
+import { getCatalogDb } from './connection.ts';
 
 const CATALOG_SCHEMA_SQL = `
     CREATE TABLE IF NOT EXISTS warframes (

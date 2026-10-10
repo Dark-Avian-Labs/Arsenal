@@ -1,5 +1,5 @@
-import { getCatalogDb } from '../db/connection.js';
-import type { ScrapedItemData } from './itemScraper.js';
+import { getCatalogDb } from '../db/connection.ts';
+import type { ScrapedItemData } from './itemScraper.ts';
 
 interface AbilityTypeEntry {
   path?: string;

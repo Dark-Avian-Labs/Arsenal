@@ -5,7 +5,7 @@ import path from 'node:path';
 import Database from 'better-sqlite3';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { createCatalogSchema, createSchema } from './schema.js';
+import { createCatalogSchema, createSchema } from './schema.ts';
 
 describe('WoR schema bootstrap', () => {
   const tmpDirs: string[] = [];

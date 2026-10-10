@@ -1,6 +1,6 @@
 import { describe } from 'vitest';
 
-import { getSqliteSkipReason, isSqliteNativeAvailable } from './sqliteNative.js';
+import { getSqliteSkipReason, isSqliteNativeAvailable } from './sqliteNative.ts';
 
 export function describeWithSqlite(name: string, fn: () => void): void {
   const available = isSqliteNativeAvailable();

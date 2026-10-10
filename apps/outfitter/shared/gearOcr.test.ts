@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { applyOcrStats, mergeGearOcr, parseGearOcr, parseGearOcrText } from './gearOcr.js';
+import { applyOcrStats, mergeGearOcr, parseGearOcr, parseGearOcrText } from './gearOcr.ts';
 
 const SCREENSHOT_TEXT = `
 Variant Mythic Gear

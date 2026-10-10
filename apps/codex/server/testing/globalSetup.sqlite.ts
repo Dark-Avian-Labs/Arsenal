@@ -1,4 +1,4 @@
-import { probeSqliteNative } from './sqliteNative.js';
+import { probeSqliteNative } from './sqliteNative.ts';
 
 export default function globalSetup(): void {
   const probe = probeSqliteNative();

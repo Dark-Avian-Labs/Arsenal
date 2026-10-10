@@ -1,7 +1,7 @@
 import type { Request, Response } from 'express';
 
-import { getAppDb } from '../db/appDb.js';
-import { requireClerkUserId, sendError } from './handlers.js';
+import { getAppDb } from '../db/appDb.ts';
+import { requireClerkUserId, sendError } from './handlers.ts';
 
 export function requireAccountId(req: Request, res: Response): number | null {
   const clerkUserId = requireClerkUserId(req);

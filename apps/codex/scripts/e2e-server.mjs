@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const dbInit = path.join(root, 'scripts', 'db-init.mjs');
-const serverPath = path.join(root, 'dist', 'server', 'index.js');
+const serverPath = path.join(root, 'server', 'index.ts');
 
 const init = spawnSync(process.execPath, [dbInit], {
   cwd: root,

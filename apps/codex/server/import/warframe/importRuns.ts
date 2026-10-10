@@ -2,9 +2,9 @@ import { createHash, randomUUID } from 'node:crypto';
 
 import type Database from 'better-sqlite3';
 
-import { normalizeStartupPipelineSummary } from '../../../shared/warframeImport/pipelineSummary.js';
-import { getCatalogDb } from './db/connection.js';
-import type { StartupPipelineSummary } from './pipelineSummary.js';
+import { normalizeStartupPipelineSummary } from '../../../shared/warframeImport/pipelineSummary.ts';
+import { getCatalogDb } from './db/connection.ts';
+import type { StartupPipelineSummary } from './pipelineSummary.ts';
 
 export type ImportRunStatus = 'pending' | 'running' | 'succeeded' | 'failed';
 

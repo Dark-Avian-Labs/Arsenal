@@ -12,9 +12,9 @@ import {
   SECURE_COOKIES,
   TRUST_PROXY,
   ensureDataDirs,
-} from './config.js';
-import { getAppDb } from './db/appDb.js';
-import { apiRouter } from './routes/api.js';
+} from './config.ts';
+import { getAppDb } from './db/appDb.ts';
+import { apiRouter } from './routes/api.ts';
 
 export interface AppBundle {
   app: express.Express;

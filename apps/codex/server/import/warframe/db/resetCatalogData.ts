@@ -1,7 +1,7 @@
 import { log } from '@dark-avian-labs/server-kit';
 import type Database from 'better-sqlite3';
 
-import { getCatalogDb } from './connection.js';
+import { getCatalogDb } from './connection.ts';
 
 export const USER_TABLE_NAMES = [
   'build_favorites',

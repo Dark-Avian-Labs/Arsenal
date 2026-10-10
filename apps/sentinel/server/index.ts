@@ -1,10 +1,10 @@
 import { createAppSentinelAgent, log, startServer } from '@dark-avian-labs/server-kit';
 
-import { createApp } from './app.js';
-import { APP_ID, APP_NAME, HOST, NODE_ENV, PORT, SHUTDOWN_TIMEOUT_MS } from './config.js';
-import { closeMetricsDb, getMetricsDb } from './metrics/db.js';
-import { rollupAndPrune } from './metrics/writer.js';
-import { startPm2Bridge } from './pm2/bridge.js';
+import { createApp } from './app.ts';
+import { APP_ID, APP_NAME, HOST, NODE_ENV, PORT, SHUTDOWN_TIMEOUT_MS } from './config.ts';
+import { closeMetricsDb, getMetricsDb } from './metrics/db.ts';
+import { rollupAndPrune } from './metrics/writer.ts';
+import { startPm2Bridge } from './pm2/bridge.ts';
 
 const sentinelAgent = createAppSentinelAgent({
   appId: APP_ID,

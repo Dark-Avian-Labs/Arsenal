@@ -2,9 +2,9 @@ import { randomUUID } from 'crypto';
 
 import { Router, type Request, type Response } from 'express';
 
-import { nextAccountColor, remapAccountColor } from '../../shared/accountColors.js';
-import { computeMonthTotals } from '../../shared/dueThisMonth.js';
-import { calendarMonth, clampPlanMonth } from '../../shared/planMonth.js';
+import { nextAccountColor, remapAccountColor } from '../../shared/accountColors.ts';
+import { computeMonthTotals } from '../../shared/dueThisMonth.ts';
+import { calendarMonth, clampPlanMonth } from '../../shared/planMonth.ts';
 import {
   entryPatchSchema,
   entrySchema,
@@ -14,22 +14,22 @@ import {
   normalizeComment,
   normalizeName,
   planSchema,
-} from '../../shared/schemas.js';
-import type { EntryFrequency, EntryKind, MemberRole } from '../db/appSchema.js';
-import { getAppDb } from '../db/connection.js';
+} from '../../shared/schemas.ts';
+import type { EntryFrequency, EntryKind, MemberRole } from '../db/appSchema.ts';
+import { getAppDb } from '../db/connection.ts';
 import {
   ENTRY_SELECT,
   listPlanEntries,
   syncOnceArchiveState,
   type PlanEntryRow,
-} from '../lib/planEntries.js';
-import { requireAuth, requirePlanAccess } from '../middleware/auth.js';
+} from '../lib/planEntries.ts';
+import { requireAuth, requirePlanAccess } from '../middleware/auth.ts';
 import {
   createInviteToken,
   createPlanForOwner,
   getMembership,
   updateUserPreferences,
-} from '../services/users.js';
+} from '../services/users.ts';
 
 export const plansRouter = Router();
 

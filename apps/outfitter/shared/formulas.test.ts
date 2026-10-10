@@ -6,7 +6,7 @@ import {
   computeFinalStats,
   healingMultiplier,
   scaledStat,
-} from './formulas.js';
+} from './formulas.ts';
 
 describe('formulas', () => {
   it('applies percent to base, then adds flat', () => {

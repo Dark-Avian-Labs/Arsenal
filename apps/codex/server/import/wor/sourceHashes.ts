@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 
-import { WOR_IMPORT_HASHES_PATH, WOR_OVERRIDES_PATH } from './paths.js';
+import { WOR_IMPORT_HASHES_PATH, WOR_OVERRIDES_PATH } from './paths.ts';
 
 export type WorSourceHashes = {
   fastidious_heroes?: string;

@@ -1,11 +1,11 @@
 import { Router } from 'express';
 
-import { getClerkAuthState, getCodexAppId, requireAuthApi } from '../core.js';
+import { getClerkAuthState, getCodexAppId, requireAuthApi } from '../core.ts';
 import {
   CODEX_GAMES as REGISTRY_CODEX_GAMES,
   getGameMetadata,
   unknownGameMetadata,
-} from '../games/metadataRegistry.js';
+} from '../games/metadataRegistry.ts';
 
 export const authRouter = Router();
 

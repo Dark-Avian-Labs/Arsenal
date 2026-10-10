@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { isFastidiousFallbackPortrait, shouldAttemptPortraitDownload } from './fandomImages.js';
+import { isFastidiousFallbackPortrait, shouldAttemptPortraitDownload } from './fandomImages.ts';
 
 describe('isFastidiousFallbackPortrait', () => {
   it('detects Fastidious card webp paths', () => {

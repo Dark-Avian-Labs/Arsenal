@@ -9,7 +9,7 @@ import {
   extractFileNameFromCell,
   parseGenesisPageWithWeaponValues,
   parseIntrinsicPageHtml,
-} from '../incarnonWikiParse.js';
+} from '../incarnonWikiParse.ts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const fixturesDir = path.join(__dirname, 'fixtures');

@@ -1,5 +1,5 @@
-import type { EquipmentSlotConfigKey } from './equipmentSlotConfig.js';
-import { EQUIPMENT_SLOT_CONFIGS } from './equipmentSlotConfig.js';
+import type { EquipmentSlotConfigKey } from './equipmentSlotConfig.ts';
+import { EQUIPMENT_SLOT_CONFIGS } from './equipmentSlotConfig.ts';
 
 const MELEE_WEAPON_NAMES_WITHOUT_EXILUS = new Set([
   'Shadow Clones',

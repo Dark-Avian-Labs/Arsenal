@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildAbilitiesListQuery } from './abilitiesListQuery.js';
+import { buildAbilitiesListQuery } from './abilitiesListQuery.ts';
 
 describe('buildAbilitiesListQuery', () => {
   it('filters by ability unique names only when both warframe and names are provided', () => {

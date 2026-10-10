@@ -3,8 +3,8 @@ import os from 'node:os';
 
 import { log } from '@dark-avian-labs/server-kit';
 
-import { getMetricsDb } from '../metrics/db.js';
-import { writeExitEvent, writeHostSample, writeProcessSample } from '../metrics/writer.js';
+import { getMetricsDb } from '../metrics/db.ts';
+import { writeExitEvent, writeHostSample, writeProcessSample } from '../metrics/writer.ts';
 
 type Pm2Process = {
   name?: string;

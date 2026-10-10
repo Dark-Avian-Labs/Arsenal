@@ -2,8 +2,8 @@ import { createHash, randomUUID } from 'node:crypto';
 
 import type Database from 'better-sqlite3';
 
-import { getDb as getWarframeDb } from '../games/warframe/db/schema.js';
-import type { WarframeSyncResult } from './warframeSync.js';
+import { getDb as getWarframeDb } from '../games/warframe/db/schema.ts';
+import type { WarframeSyncResult } from './warframeSync.ts';
 
 export type WarframeSyncRunStatus = 'pending' | 'running' | 'succeeded' | 'failed';
 

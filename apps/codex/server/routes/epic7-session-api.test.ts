@@ -2,10 +2,10 @@ import Database from 'better-sqlite3';
 import express from 'express';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
-import { createSchema as createEpic7Schema } from '../games/epic7/db/schema.js';
-import { epic7Queries as q } from '../games/epic7/index.js';
-import { describeWithSqlite } from '../testing/describeWithSqlite.js';
-import { createSessionAgent } from '../testing/testExpress.js';
+import { createSchema as createEpic7Schema } from '../games/epic7/db/schema.ts';
+import { epic7Queries as q } from '../games/epic7/index.ts';
+import { describeWithSqlite } from '../testing/describeWithSqlite.ts';
+import { createSessionAgent } from '../testing/testExpress.ts';
 
 const authState = vi.hoisted(() => ({
   userId: null as string | null,
@@ -20,13 +20,13 @@ vi.mock('@clerk/express', () => ({
   clerkMiddleware: () => (_req: unknown, _res: unknown, next: () => void) => next(),
 }));
 
-vi.mock('../epic7DbState.js', () => ({
+vi.mock('../epic7DbState.ts', () => ({
   isEpic7DbAvailable: () => true,
   ensureEpic7DbAvailable: () => true,
 }));
 
-vi.mock('../games/epic7/index.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../games/epic7/index.js')>();
+vi.mock('../games/epic7/index.ts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../games/epic7/index.ts')>();
   return {
     ...actual,
     getEpic7Db: () => {
@@ -36,7 +36,7 @@ vi.mock('../games/epic7/index.js', async (importOriginal) => {
   };
 });
 
-import { epic7ApiRouter } from './epic7Api.js';
+import { epic7ApiRouter } from './epic7Api.ts';
 
 function createTestApp() {
   const app = express();

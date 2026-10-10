@@ -20,7 +20,7 @@ export default defineConfig({
     trace: 'on-first-retry',
   },
   webServer: {
-    command: 'node dist/server/index.js',
+    command: 'node server/index.ts',
     url: `${baseURL}/healthz`,
     reuseExistingServer: !process.env.CI,
     timeout: 30_000,

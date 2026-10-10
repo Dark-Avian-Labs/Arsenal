@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
-import type { CatalogBundle } from './catalogQueries.js';
+import type { CatalogBundle } from './catalogQueries.ts';
 import {
   mergeProspectorCatalog,
   slimArtifactFromWp,
   slimHeroFromWp,
   statsFromProspectorAcf,
   type ProspectorSnapshot,
-} from './prospectorCatalog.js';
+} from './prospectorCatalog.ts';
 
 function snapshot(partial: Partial<ProspectorSnapshot> = {}): ProspectorSnapshot {
   return {

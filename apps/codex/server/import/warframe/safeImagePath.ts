@@ -1,6 +1,6 @@
 import path from 'path';
 
-import { IMAGES_DIR } from '../../config.js';
+import { IMAGES_DIR } from '../../config.ts';
 
 const FORBIDDEN_SEGMENT_CHARS = new Set(['<', '>', ':', '"', '|', '?', '*']);
 

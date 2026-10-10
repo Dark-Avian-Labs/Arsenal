@@ -1,6 +1,6 @@
 import type Database from 'better-sqlite3';
 
-import type { ExitEvent, HttpSample, ProcessSample } from './ingestSchema.js';
+import type { ExitEvent, HttpSample, ProcessSample } from './ingestSchema.ts';
 
 export type HostSample = {
   ts?: number;

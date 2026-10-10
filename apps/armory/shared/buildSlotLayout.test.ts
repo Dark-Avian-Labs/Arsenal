@@ -5,7 +5,7 @@ import {
   buildModSlotsFromArtifactSlots,
   reconcileBuildModSlots,
   reconcileStoredBuildModSlots,
-} from './buildSlotLayout.js';
+} from './buildSlotLayout.ts';
 
 describe('buildSlotLayout', () => {
   it('adds a missing exilus slot while preserving general mods', () => {

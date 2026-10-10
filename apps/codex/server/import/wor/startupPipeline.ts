@@ -8,10 +8,10 @@ import {
   getWorCatalogDb,
   getWorDb,
   worQueries,
-} from '../../games/wor/index.js';
+} from '../../games/wor/index.ts';
 import type Database from 'better-sqlite3';
 
-import { WOR_IMAGES_DIR, PROJECT_ROOT } from '../../config.js';
+import { WOR_IMAGES_DIR, PROJECT_ROOT } from '../../config.ts';
 import {
   bumpCatalogVersion,
   deactivateStaleCatalogEntries,
@@ -21,35 +21,35 @@ import {
   upsertCatalogDemons,
   upsertCatalogHeroes,
   type CatalogBundle,
-} from './catalogQueries.js';
+} from './catalogQueries.ts';
 import {
   copyWorCatalogToCollection,
   seedWorCatalogFromCollectionIfEmpty,
-} from './copyCatalogToCollection.js';
-import { importFandomHeroStats } from './fandomHeroStats.js';
-import { downloadCatalogPortraits, type WorImageDownloadSummary } from './fandomImages.js';
-import { fetchFastidiousCatalog, type FastidiousImageRef } from './fastidiousCatalog.js';
+} from './copyCatalogToCollection.ts';
+import { importFandomHeroStats } from './fandomHeroStats.ts';
+import { downloadCatalogPortraits, type WorImageDownloadSummary } from './fandomImages.ts';
+import { fetchFastidiousCatalog, type FastidiousImageRef } from './fastidiousCatalog.ts';
 import {
   noteWorImportLeaseHeartbeat,
   releaseWorImportLease,
   requireWorImportLease,
   tryAcquireWorImportLease,
   type WorImportLeaseWatch,
-} from './importLease.js';
-import { applyWorOverrides } from './overrides.js';
+} from './importLease.ts';
+import { applyWorOverrides } from './overrides.ts';
 import {
   ensureWorImportDirs,
   isWorImportLiveEnabled,
   resolveWorImportCacheDir,
   WOR_IMPORT_FIXTURE_CACHE_DIR,
-} from './paths.js';
+} from './paths.ts';
 import {
   shouldFetchFastidiousCatalog,
   shouldFetchProspectorCatalog,
   shouldRunWorStep,
   worImagesOnlyMissing,
   type WorPipelineStepOptions,
-} from './pipelineStepControl.js';
+} from './pipelineStepControl.ts';
 import {
   fillMissingHeroStatsFromProspector,
   loadProspectorCatalog,
@@ -57,17 +57,17 @@ import {
   PROSPECTOR_SLUG_ALIASES,
   type ProspectorPortraitRefs,
   type ProspectorSnapshot,
-} from './prospectorCatalog.js';
+} from './prospectorCatalog.ts';
 import {
   computeCurrentSourceHashes,
   fastidiousSourcesChanged,
   overridesChanged,
   readProcessedSourceHashes,
   writeProcessedSourceHashes,
-} from './sourceHashes.js';
-import { listMissingStarAssets, validateWorCatalogBundle } from './validateCatalog.js';
-import type { WorPipelineStepKey } from './worPipelineSteps.js';
-import { WOR_PIPELINE_STEP_LABELS } from './worPipelineSteps.js';
+} from './sourceHashes.ts';
+import { listMissingStarAssets, validateWorCatalogBundle } from './validateCatalog.ts';
+import type { WorPipelineStepKey } from './worPipelineSteps.ts';
+import { WOR_PIPELINE_STEP_LABELS } from './worPipelineSteps.ts';
 
 export type WorImportLogLine = {
   ts: string;

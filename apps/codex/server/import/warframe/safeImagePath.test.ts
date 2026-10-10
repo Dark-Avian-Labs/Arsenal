@@ -2,8 +2,8 @@ import path from 'path';
 
 import { describe, expect, it } from 'vitest';
 
-import { IMAGES_DIR } from '../../config.js';
-import { assertUnderImagesRoot, safeImagePathUnderRoot, sanitizeUniqueNameSegments } from './safeImagePath.js';
+import { IMAGES_DIR } from '../../config.ts';
+import { assertUnderImagesRoot, safeImagePathUnderRoot, sanitizeUniqueNameSegments } from './safeImagePath.ts';
 
 describe('safeImagePath', () => {
   it('sanitizes uniqueName segments and resolves under images root', () => {

@@ -1,4 +1,4 @@
-import { normalizeDisplayName } from './canonical.js';
+import { normalizeDisplayName } from './canonical.ts';
 
 export function warframeMarketBaseSlug(displayName: string): string {
   const base = normalizeDisplayName(displayName).toLowerCase();

@@ -1,6 +1,6 @@
-import { GEAR_STAT_KEYS, type GearSlot, type GearStatKey } from './catalog.js';
-import { EMPTY_STAT_BAG, addStatBags, type StatBag } from './formulas.js';
-import { SET_BY_KEY, type SetStatBonus } from './sets.js';
+import { GEAR_STAT_KEYS, type GearSlot, type GearStatKey } from './catalog.ts';
+import { EMPTY_STAT_BAG, addStatBags, type StatBag } from './formulas.ts';
+import { SET_BY_KEY, type SetStatBonus } from './sets.ts';
 
 export type GearSubstat = {
   stat: GearStatKey;

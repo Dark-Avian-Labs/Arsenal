@@ -1,7 +1,7 @@
 import { Router, type NextFunction } from 'express';
 
-import { hasActiveArmoryUser, syncArmoryUserFromClerk } from '../auth/armoryUsers.js';
-import { getClerkAuthState, requireAuthApi } from '../auth/middleware.js';
+import { hasActiveArmoryUser, syncArmoryUserFromClerk } from '../auth/armoryUsers.ts';
+import { getClerkAuthState, requireAuthApi } from '../auth/middleware.ts';
 
 export const authRouter: Router = Router();
 

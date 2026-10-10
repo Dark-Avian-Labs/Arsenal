@@ -1,8 +1,8 @@
-import { normalizeStartupPipelineSummary } from '../../../shared/warframeImport/pipelineSummary.js';
+import { normalizeStartupPipelineSummary } from '../../../shared/warframeImport/pipelineSummary.ts';
 import type {
   StartupPipelineSummary,
   SummaryOutcome,
-} from '../../../shared/warframeImport/pipelineSummaryTypes.js';
+} from '../../../shared/warframeImport/pipelineSummaryTypes.ts';
 
 export type { StartupPipelineSummary, SummaryOutcome };
 

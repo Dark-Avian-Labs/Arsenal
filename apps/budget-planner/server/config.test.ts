@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url';
 
 import { describe, expect, it } from 'vitest';
 
-import { APP_VERSION } from './config.js';
+import { APP_VERSION } from './config.ts';
 
 describe('APP_VERSION', () => {
   it('reads the version from package.json', () => {

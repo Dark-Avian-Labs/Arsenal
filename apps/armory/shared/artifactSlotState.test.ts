@@ -9,7 +9,7 @@ import {
   warframeExilusArtifactIndex,
   warframeSecondAuraApFromStorage,
   warframeUsesExtendedArtifactLayout,
-} from './artifactSlotState.js';
+} from './artifactSlotState.ts';
 
 describe('hasMeaningfulArtifactSlotOverrides', () => {
   it('returns false for empty or all-universal placeholder arrays', () => {

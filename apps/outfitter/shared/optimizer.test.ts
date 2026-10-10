@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import { GEAR_SLOTS } from './catalog.js';
-import { optimizeLoadouts, optimizeLoadoutsAsync, type OptimizerRequest } from './optimizer.js';
-import type { GearPieceInput } from './pieceStats.js';
+import { GEAR_SLOTS } from './catalog.ts';
+import { optimizeLoadouts, optimizeLoadoutsAsync, type OptimizerRequest } from './optimizer.ts';
+import type { GearPieceInput } from './pieceStats.ts';
 
 const hero = {
   hp: 10000,

@@ -14,8 +14,8 @@ import {
   type GearPrefix,
   type GearSlot,
   type GearStatKey,
-} from './catalog.js';
-import { ALL_SETS, SET_BY_KEY, setsForSlot } from './sets.js';
+} from './catalog.ts';
+import { ALL_SETS, SET_BY_KEY, setsForSlot } from './sets.ts';
 
 export type DetectedGearStat = {
   stat: GearStatKey;

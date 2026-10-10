@@ -2,4 +2,4 @@ export {
   abilityPathBasename,
   compareHelminthAbilityPaths,
   dedupeHelminthAbilityRows,
-} from '../shared/helminthAbilityResolve.js';
+} from '../shared/helminthAbilityResolve.ts';

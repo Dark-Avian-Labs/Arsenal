@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
-import { DATA_DIR } from '../../config.js';
+import { DATA_DIR } from '../../config.ts';
 
 const REVISION_FILE = path.join(DATA_DIR, '.processed-beast-claws-wiki-revision.txt');
 

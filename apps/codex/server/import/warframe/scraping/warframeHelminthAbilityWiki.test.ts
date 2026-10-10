@@ -5,7 +5,7 @@ import {
   applyHelminthFlagsFromWikiNames,
   parseSubsumableAbilitiesFromWarframeAbilitiesHtml,
   warframeNamesNeedingHelminthWikiScrape,
-} from './warframeHelminthAbilityWiki.js';
+} from './warframeHelminthAbilityWiki.ts';
 
 describe('parseSubsumableAbilitiesFromWarframeAbilitiesHtml', () => {
   it('detects subsumable abilities from ability table rows', () => {

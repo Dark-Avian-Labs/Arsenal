@@ -1,5 +1,5 @@
-import { gaugeRatio, type GearSlot, type GearStatKey } from './catalog.js';
-import { LEFT_SETS, RIGHT_SETS } from './sets.js';
+import { gaugeRatio, type GearSlot, type GearStatKey } from './catalog.ts';
+import { LEFT_SETS, RIGHT_SETS } from './sets.ts';
 
 export const GEAR_RANKS = ['D', 'C', 'B', 'A', 'S', 'SS', 'SSS'] as const;
 export type GearRank = (typeof GEAR_RANKS)[number];

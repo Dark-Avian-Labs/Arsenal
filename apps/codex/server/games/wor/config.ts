@@ -28,5 +28,5 @@ export {
   DEMON_LEVEL_MIN,
   RARITY_STAR_COUNTS,
   rarityToStarRating,
-} from './constants.js';
-export type { FactionKey, FilterStarRating, HeroClassKey } from './constants.js';
+} from './constants.ts';
+export type { FactionKey, FilterStarRating, HeroClassKey } from './constants.ts';

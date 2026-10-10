@@ -5,10 +5,10 @@ import {
   ensureWarframeCatalogActiveColumn,
   ensureWarframeCatalogMasterTable,
   ensureWarframeCatalogMaxLevelColumn,
-} from '../games/warframe/db/schema.js';
-import { describeWithSqlite } from '../testing/describeWithSqlite.js';
-import { createTempDbDir, createWarframeTestDb, removeTempDbDir } from '../testing/sqliteTestHarness.js';
-import { runWarframeSync } from './warframeSync.js';
+} from '../games/warframe/db/schema.ts';
+import { describeWithSqlite } from '../testing/describeWithSqlite.ts';
+import { createTempDbDir, createWarframeTestDb, removeTempDbDir } from '../testing/sqliteTestHarness.ts';
+import { runWarframeSync } from './warframeSync.ts';
 
 function seedArmoryArcanes(armoryPath: string): void {
   const armory = new Database(armoryPath);

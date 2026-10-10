@@ -1,8 +1,8 @@
 import { log } from '@dark-avian-labs/server-kit';
 import type Database from 'better-sqlite3';
 
-import { warframeQueries as q } from '../games/warframe/index.js';
-import { ensureWarframeWorksheetsForUser, provisionUserFromCatalogMaster } from './warframeSync.js';
+import { warframeQueries as q } from '../games/warframe/index.ts';
+import { ensureWarframeWorksheetsForUser, provisionUserFromCatalogMaster } from './warframeSync.ts';
 
 export function provisionWarframeUserIfNeeded(
   codexDb: Database.Database,

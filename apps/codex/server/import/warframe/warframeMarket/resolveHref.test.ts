@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { resolveMarketHref, warframeMarketSellHrefUsesPrimeOnlyItemSlug } from './resolveHref.js';
+import { resolveMarketHref, warframeMarketSellHrefUsesPrimeOnlyItemSlug } from './resolveHref.ts';
 
 function setOf(...slugs: string[]): ReadonlySet<string> {
   return new Set(slugs);

@@ -5,8 +5,8 @@ import {
   ARCHON_COLORS,
   archonSlugForSortOrder,
   buildArchonShardKey,
-} from '../../shared/archonShardRegistry.js';
-import { helminthEntryByDePath } from '../../shared/helminthRegistry.js';
+} from '../../shared/archonShardRegistry.ts';
+import { helminthEntryByDePath } from '../../shared/helminthRegistry.ts';
 
 export function backfillArchonBuffArmoryKeys(db: Database.Database): number {
   const types = db.prepare('SELECT id, name FROM archon_shard_types').all() as Array<{

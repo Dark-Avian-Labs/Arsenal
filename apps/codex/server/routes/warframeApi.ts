@@ -2,8 +2,8 @@ import { log } from '@dark-avian-labs/server-kit';
 import { validateBody } from '@dark-avian-labs/server-kit';
 import { Router } from 'express';
 
-import { requireClerkUserId } from '../auth/clerkUser.js';
-import { requireCodexAdmin } from '../core.js';
+import { requireClerkUserId } from '../auth/clerkUser.ts';
+import { requireCodexAdmin } from '../core.ts';
 import {
   HELMINTH_VALUES,
   VALID_STATUSES,
@@ -18,16 +18,16 @@ import {
   warframeUpdateAdvancedProgressSchema,
   warframeQueries as q,
   warframeUpdateSchema,
-} from '../games/warframe/index.js';
-import { provisionWarframeUserIfNeeded } from '../services/warframeProvision.js';
-import { runWarframeSync } from '../services/warframeSync.js';
+} from '../games/warframe/index.ts';
+import { provisionWarframeUserIfNeeded } from '../services/warframeProvision.ts';
+import { runWarframeSync } from '../services/warframeSync.ts';
 import {
   createWarframeSyncRun,
   getWarframeSyncRunRow,
   maskWarframeSyncResult,
   toWarframeSyncRunResponse,
   updateWarframeSyncRun,
-} from '../services/warframeSyncJobs.js';
+} from '../services/warframeSyncJobs.ts';
 import {
   acquireWarframeSyncSlot,
   forceReleaseWarframeSyncSlot,
@@ -35,9 +35,9 @@ import {
   releaseWarframeSyncSlot,
   runWarframeSyncGuarded,
   SyncAlreadyRunningError,
-} from '../services/warframeSyncState.js';
-import { openWarframeDbOrFail, runWithWarframeDb } from './routeHelpers.js';
-import { warframeAdminImportRouter } from './warframeAdminImportApi.js';
+} from '../services/warframeSyncState.ts';
+import { openWarframeDbOrFail, runWithWarframeDb } from './routeHelpers.ts';
+import { warframeAdminImportRouter } from './warframeAdminImportApi.ts';
 
 export const warframeApiRouter = Router();
 

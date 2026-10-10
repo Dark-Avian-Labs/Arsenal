@@ -5,7 +5,7 @@ import {
   codexDisplayNameForModularWeapon,
   isCodexModularTrackableWeapon,
   syncCodexModularWeaponsTable,
-} from './codexModularWeapons.js';
+} from './codexModularWeapons.ts';
 
 function createDb(): Database.Database {
   const db = new Database(':memory:');

@@ -12,10 +12,10 @@ import {
   SECURE_COOKIES,
   TRUST_PROXY,
   ensureDataDirs,
-} from './config.js';
-import { getMetricsDb } from './metrics/db.js';
-import { ingestRouter } from './metrics/ingestRoute.js';
-import { apiRouter } from './routes/api.js';
+} from './config.ts';
+import { getMetricsDb } from './metrics/db.ts';
+import { ingestRouter } from './metrics/ingestRoute.ts';
+import { apiRouter } from './routes/api.ts';
 
 export interface AppBundle {
   app: express.Express;

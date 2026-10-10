@@ -3,7 +3,7 @@ import express from 'express';
 import request from 'supertest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { __catalogResponseCacheTest } from '../cache/catalogResponseCache.js';
+import { __catalogResponseCacheTest } from '../cache/catalogResponseCache.ts';
 
 const authState = vi.hoisted(() => ({
   userId: null as string | null,
@@ -14,12 +14,12 @@ const dbState = vi.hoisted(() => ({
   db: null as Database.Database | null,
 }));
 
-vi.mock('../auth/clerkUser.js', () => ({
+vi.mock('../auth/clerkUser.ts', () => ({
   getClerkUserId: () => authState.userId,
 }));
 
-vi.mock('../auth/middleware.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../auth/middleware.js')>();
+vi.mock('../auth/middleware.ts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../auth/middleware.ts')>();
   return {
     ...actual,
     getClerkAuthState: () => ({
@@ -45,7 +45,7 @@ vi.mock('../auth/middleware.js', async (importOriginal) => {
   };
 });
 
-vi.mock('../db/connection.js', () => ({
+vi.mock('../db/connection.ts', () => ({
   getCatalogDb: () => {
     if (!dbState.db) throw new Error('Test DB not initialized');
     return dbState.db;
@@ -56,7 +56,7 @@ vi.mock('../db/connection.js', () => ({
   },
 }));
 
-import { apiRouter } from './api.js';
+import { apiRouter } from './api.ts';
 
 const TEST_WF = '/Lotus/Powersuits/Test/TestSuit';
 const UPDATED_SLOTS = [

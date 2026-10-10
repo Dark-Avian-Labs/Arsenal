@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import type { GearPrefix, GearSlot, GearStatKey } from './catalog.js';
-import { rateGear } from './gearRating.js';
-import { suggestReroll, type RerollableGear } from './gearReroll.js';
+import type { GearPrefix, GearSlot, GearStatKey } from './catalog.ts';
+import { rateGear } from './gearRating.ts';
+import { suggestReroll, type RerollableGear } from './gearReroll.ts';
 
 function piece(
   slot: GearSlot,

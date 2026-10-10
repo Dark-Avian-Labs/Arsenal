@@ -1,4 +1,4 @@
-import { timingSafeEqualString } from './http/timingSafeEqual.js';
+import { timingSafeEqualString } from './http/timingSafeEqual.ts';
 
 export type VisibilityRow = {
   clerk_user_id: string;

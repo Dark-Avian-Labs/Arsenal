@@ -2,9 +2,9 @@ import { log } from '@dark-avian-labs/server-kit';
 import { validateBody } from '@dark-avian-labs/server-kit';
 import { Router, type Request, type Response } from 'express';
 
-import { requireClerkUserId } from '../auth/clerkUser.js';
-import { requireCodexAdmin } from '../core.js';
-import { ensureEpic7DbAvailable } from '../epic7DbState.js';
+import { requireClerkUserId } from '../auth/clerkUser.ts';
+import { requireCodexAdmin } from '../core.ts';
+import { ensureEpic7DbAvailable } from '../epic7DbState.ts';
 import {
   ARTIFACT_GAUGE_MAX,
   epic7AddAccountSchema,
@@ -25,7 +25,7 @@ import {
   epic7UpdateHeroDetailsSchema,
   epic7UpdateHeroSchema,
   getEpic7Db,
-} from '../games/epic7/index.js';
+} from '../games/epic7/index.ts';
 export const epic7ApiRouter = Router();
 
 function json(res: Response, data: object, status = 200): void {

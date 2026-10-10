@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { closeMetricsDb, getMetricsDb } from './db.js';
-import { coalesceLatestSampleFields, listFleet } from './query.js';
-import { writeProcessSample } from './writer.js';
+import { closeMetricsDb, getMetricsDb } from './db.ts';
+import { coalesceLatestSampleFields, listFleet } from './query.ts';
+import { writeProcessSample } from './writer.ts';
 
 describe('coalesceLatestSampleFields', () => {
   it('fills status and cpu from an older PM2 row when the newest is agent-only', () => {

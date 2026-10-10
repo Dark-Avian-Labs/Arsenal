@@ -17,7 +17,7 @@ vi.mock('@clerk/express', () => ({
 import { isAppAdmin, isClerkConfigured, requireAuthApi } from '@dark-avian-labs/server-kit';
 import { mockResponse } from '@dark-avian-labs/server-kit/testing';
 
-import { getClerkAuthState, requireCodexAdmin } from './core.js';
+import { getClerkAuthState, requireCodexAdmin } from './core.ts';
 
 function restoreClerkKeys(previousPublishable: string | undefined, previousSecret: string | undefined): void {
   if (previousPublishable === undefined) delete process.env.CLERK_PUBLISHABLE_KEY;

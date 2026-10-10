@@ -93,7 +93,7 @@ export const CLERK_WEBHOOK_SIGNING_SECRET = process.env.CLERK_WEBHOOK_SIGNING_SE
 if (NODE_ENV === 'production' && !CLERK_WEBHOOK_SIGNING_SECRET) {
   throw new Error('[FATAL] CLERK_WEBHOOK_SIGNING_SECRET must be set in production.');
 }
-export { GAME_ID } from './gameId.js';
+export { GAME_ID } from './gameId.ts';
 
 export function ensureDataDirs(): void {
   for (const dir of [DATA_DIR, EXPORTS_DIR, IMAGES_DIR]) {

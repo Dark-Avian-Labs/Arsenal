@@ -1,6 +1,6 @@
-import { ensureDataDirs } from '../config.js';
-import { createAppSchema } from '../db/schema.js';
-import { syncCodexWarframeCatalog } from './codexCatalog.js';
+import { ensureDataDirs } from '../config.ts';
+import { createAppSchema } from '../db/schema.ts';
+import { syncCodexWarframeCatalog } from './codexCatalog.ts';
 
 function main(): void {
   console.log('[CatalogSync] Copying Codex warframe-catalog into ARMORY_DB_PATH.');

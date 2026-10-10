@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { isExaltedWeaponItem, shouldAutoCompleteOrokin } from './index.js';
+import { isExaltedWeaponItem, shouldAutoCompleteOrokin } from './index.ts';
 
 describe('exalted weapon Orokin rules', () => {
   it('matches Armory exalted melee and primary names', () => {

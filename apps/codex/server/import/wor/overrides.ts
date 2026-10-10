@@ -5,8 +5,8 @@ import type {
   CatalogBundle,
   CatalogDemonRow,
   CatalogHeroRow,
-} from './catalogQueries.js';
-import { WOR_OVERRIDES_PATH } from './paths.js';
+} from './catalogQueries.ts';
+import { WOR_OVERRIDES_PATH } from './paths.ts';
 
 type WorOverridesFile = {
   heroes?: Record<string, Partial<CatalogHeroRow>>;

@@ -3,12 +3,12 @@ import fs from 'node:fs';
 import Database from 'better-sqlite3';
 import type { Request, Response } from 'express';
 
-import { APP_NAME, WARFRAME_CATALOG_DB_PATH, WOR_CATALOG_DB_PATH } from './config.js';
-import { isEpic7DbAvailable, refreshEpic7DbAvailability } from './epic7DbState.js';
-import { getEpic7Db } from './games/epic7/index.js';
-import { getWarframeDb } from './games/warframe/index.js';
-import { getWorDb } from './games/wor/index.js';
-import { isWorDbAvailable, refreshWorDbAvailability } from './worDbState.js';
+import { APP_NAME, WARFRAME_CATALOG_DB_PATH, WOR_CATALOG_DB_PATH } from './config.ts';
+import { isEpic7DbAvailable, refreshEpic7DbAvailability } from './epic7DbState.ts';
+import { getEpic7Db } from './games/epic7/index.ts';
+import { getWarframeDb } from './games/warframe/index.ts';
+import { getWorDb } from './games/wor/index.ts';
+import { isWorDbAvailable, refreshWorDbAvailability } from './worDbState.ts';
 
 export function healthzHandler(_req: Request, res: Response): void {
   res.json({ status: 'ok', app: APP_NAME });

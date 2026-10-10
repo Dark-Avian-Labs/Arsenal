@@ -3,7 +3,7 @@ import express from 'express';
 import request from 'supertest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { createAppSchema } from '../db/appDb.js';
+import { createAppSchema } from '../db/appDb.ts';
 
 const authState = vi.hoisted(() => ({
   userId: null as string | null,
@@ -33,8 +33,8 @@ vi.mock('@dark-avian-labs/server-kit', async (importOriginal) => {
   };
 });
 
-vi.mock('../db/appDb.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../db/appDb.js')>();
+vi.mock('../db/appDb.ts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../db/appDb.ts')>();
   return {
     ...actual,
     getAppDb: () => {
@@ -44,9 +44,9 @@ vi.mock('../db/appDb.js', async (importOriginal) => {
   };
 });
 
-const { accountsRouter } = await import('./accounts.js');
-const { artifactsRouter } = await import('./artifacts.js');
-const { gearRouter } = await import('./gear.js');
+const { accountsRouter } = await import('./accounts.ts');
+const { artifactsRouter } = await import('./artifacts.ts');
+const { gearRouter } = await import('./gear.ts');
 
 function memoryDb(): Database.Database {
   const db = new Database(':memory:');

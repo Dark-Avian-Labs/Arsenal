@@ -3,11 +3,11 @@ import type Database from 'better-sqlite3';
 import {
   fetchHelminthWikiHtml,
   parseHelminthExtractableAbilityNames,
-} from './scraping/helminthWikiPage.js';
+} from './scraping/helminthWikiPage.ts';
 import {
   applyHelminthFlagsFromWikiNames,
   collectHelminthAbilityNamesFromWarframeWikiPages,
-} from './scraping/warframeHelminthAbilityWiki.js';
+} from './scraping/warframeHelminthAbilityWiki.ts';
 
 export async function fetchHelminthAbilityNameSet(options?: { html?: string | null }): Promise<{
   names: Set<string>;

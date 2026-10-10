@@ -3,9 +3,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const sessionDbRef = vi.hoisted(() => ({ current: null as Database.Database | null }));
 
-vi.mock('../games/warframe/db/schema.js', async () => {
-  const actual = await vi.importActual<typeof import('../games/warframe/db/schema.js')>(
-    '../games/warframe/db/schema.js',
+vi.mock('../games/warframe/db/schema.ts', async () => {
+  const actual = await vi.importActual<typeof import('../games/warframe/db/schema.ts')>(
+    '../games/warframe/db/schema.ts',
   );
   return {
     ...actual,
@@ -27,7 +27,7 @@ import {
   tryAcquireWarframeSyncLease,
   releaseWarframeSyncLease,
   createWarframeSyncRun,
-} from './warframeSyncJobs.js';
+} from './warframeSyncJobs.ts';
 
 describe('warframeSyncJobs', () => {
   beforeEach(() => {

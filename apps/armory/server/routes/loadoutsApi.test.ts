@@ -3,8 +3,8 @@ import express from 'express';
 import request from 'supertest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { createMemoryUserDb, insertTestBuild, insertTestLoadout, linkLoadoutBuild } from '../testing/memoryUserDb.js';
-import { MAX_LOADOUTS_PER_USER, MAX_NAME_LENGTH } from './apiShared.js';
+import { createMemoryUserDb, insertTestBuild, insertTestLoadout, linkLoadoutBuild } from '../testing/memoryUserDb.ts';
+import { MAX_LOADOUTS_PER_USER, MAX_NAME_LENGTH } from './apiShared.ts';
 
 const authState = vi.hoisted(() => ({
   userId: null as string | null,
@@ -15,12 +15,12 @@ const dbState = vi.hoisted(() => ({
   db: null as Database.Database | null,
 }));
 
-vi.mock('../auth/clerkUser.js', () => ({
+vi.mock('../auth/clerkUser.ts', () => ({
   getClerkUserId: () => authState.userId,
 }));
 
-vi.mock('../auth/middleware.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../auth/middleware.js')>();
+vi.mock('../auth/middleware.ts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../auth/middleware.ts')>();
   return {
     ...actual,
     getClerkAuthState: () => ({
@@ -31,14 +31,14 @@ vi.mock('../auth/middleware.js', async (importOriginal) => {
   };
 });
 
-vi.mock('../db/connection.js', () => ({
+vi.mock('../db/connection.ts', () => ({
   getUserDb: () => {
     if (!dbState.db) throw new Error('Test DB not initialized');
     return dbState.db;
   },
 }));
 
-import { apiRouter } from './api.js';
+import { apiRouter } from './api.ts';
 
 function createTestApp() {
   const app = express();

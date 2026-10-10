@@ -1,4 +1,4 @@
-import type { GearStatKey } from './catalog.js';
+import type { GearStatKey } from './catalog.ts';
 
 export type GearIdentity = {
   slot: string;

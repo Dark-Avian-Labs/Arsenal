@@ -1,20 +1,20 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { describeWithSqlite } from '../../testing/describeWithSqlite.js';
+import { describeWithSqlite } from '../../testing/describeWithSqlite.ts';
 import {
   createTempDbDir,
   createWarframeTestDb,
   removeTempDbDir,
   type WarframeTestDb,
-} from '../../testing/sqliteTestHarness.js';
-import { ensureWarframeCatalogMasterTable, ensureWarframeCatalogMaxLevelColumn } from './db/schema.js';
+} from '../../testing/sqliteTestHarness.ts';
+import { ensureWarframeCatalogMasterTable, ensureWarframeCatalogMaxLevelColumn } from './db/schema.ts';
 import {
   VALENCE_COMPLETE_THRESHOLD,
   VALENCE_PERCENT_MAX_STORED,
   VALENCE_PERCENT_MIN,
   resolveCanonicalKey,
   warframeQueries,
-} from './index.js';
+} from './index.ts';
 
 const { resolveAdvancedProgressState, getRowAdvancedProgress, updateRowAdvancedProgress } = warframeQueries;
 

@@ -1,4 +1,4 @@
-import { normalizeDisplayName, stripPrimeSuffix } from './displayName.js';
+import { normalizeDisplayName, stripPrimeSuffix } from './displayName.ts';
 
 const EXALTED_WEAPON_NAMES = new Set<string>([
   'Artemis Bow',

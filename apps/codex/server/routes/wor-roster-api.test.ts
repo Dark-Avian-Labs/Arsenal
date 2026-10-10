@@ -2,10 +2,10 @@ import Database from 'better-sqlite3';
 import express from 'express';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
-import { createSchema as createWorSchema } from '../games/wor/db/schema.js';
-import { worQueries as q } from '../games/wor/index.js';
-import { describeWithSqlite } from '../testing/describeWithSqlite.js';
-import { createSessionAgent } from '../testing/testExpress.js';
+import { createSchema as createWorSchema } from '../games/wor/db/schema.ts';
+import { worQueries as q } from '../games/wor/index.ts';
+import { describeWithSqlite } from '../testing/describeWithSqlite.ts';
+import { createSessionAgent } from '../testing/testExpress.ts';
 
 const authState = vi.hoisted(() => ({
   userId: null as string | null,
@@ -20,13 +20,13 @@ vi.mock('@clerk/express', () => ({
   clerkMiddleware: () => (_req: unknown, _res: unknown, next: () => void) => next(),
 }));
 
-vi.mock('../worDbState.js', () => ({
+vi.mock('../worDbState.ts', () => ({
   isWorDbAvailable: () => true,
   ensureWorDbAvailable: () => true,
 }));
 
-vi.mock('../games/wor/index.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../games/wor/index.js')>();
+vi.mock('../games/wor/index.ts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../games/wor/index.ts')>();
   return {
     ...actual,
     getWorDb: () => {
@@ -36,7 +36,7 @@ vi.mock('../games/wor/index.js', async (importOriginal) => {
   };
 });
 
-import { worApiRouter } from './worApi.js';
+import { worApiRouter } from './worApi.ts';
 
 function createTestApp() {
   const app = express();

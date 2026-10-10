@@ -1,6 +1,6 @@
 import Database from 'better-sqlite3';
 
-import { ARMORY_DB_PATH, USER_DB_PATH } from '../config.js';
+import { ARMORY_DB_PATH, USER_DB_PATH } from '../config.ts';
 
 let catalogDb: Database.Database | null = null;
 let userDb: Database.Database | null = null;

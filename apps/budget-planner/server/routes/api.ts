@@ -1,8 +1,8 @@
 import { Router, type Request, type Response } from 'express';
 
-import { APP_NAME } from '../config.js';
-import { requireAuth } from '../middleware/auth.js';
-import { invitesRouter, meRouter, plansRouter } from './plans.js';
+import { APP_NAME } from '../config.ts';
+import { requireAuth } from '../middleware/auth.ts';
+import { invitesRouter, meRouter, plansRouter } from './plans.ts';
 
 export const apiRouter = Router();
 

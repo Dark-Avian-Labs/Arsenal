@@ -1,12 +1,12 @@
 import { Router, type Request, type Response } from 'express';
 
-import { APP_NAME } from '../config.js';
-import { accountsRouter, adminRouter } from './accounts.js';
-import { artifactsRouter } from './artifacts.js';
-import { authRouter } from './auth.js';
-import { gearRouter } from './gear.js';
-import { heroesRouter } from './heroes.js';
-import { outfitRouter } from './outfit.js';
+import { APP_NAME } from '../config.ts';
+import { accountsRouter, adminRouter } from './accounts.ts';
+import { artifactsRouter } from './artifacts.ts';
+import { authRouter } from './auth.ts';
+import { gearRouter } from './gear.ts';
+import { heroesRouter } from './heroes.ts';
+import { outfitRouter } from './outfit.ts';
 
 export const apiRouter = Router();
 

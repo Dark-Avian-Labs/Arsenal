@@ -6,7 +6,7 @@ import {
   ELEMENTS,
   HERO_CLASSES,
   HERO_RATINGS,
-} from '../config.js';
+} from '../config.ts';
 
 export const MAX_EPIC7_NAME_LENGTH = 255;
 export const MAX_EPIC7_ACCOUNT_NAME_LENGTH = 128;

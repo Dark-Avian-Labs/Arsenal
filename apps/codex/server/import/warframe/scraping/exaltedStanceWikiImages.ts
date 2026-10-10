@@ -9,9 +9,9 @@ import {
   fetchBounded,
   fetchWithTimeout,
   isAbortError,
-} from '../http/fetchWithTimeout.js';
-import { safeImagePathUnderRoot, sanitizeUniqueNameSegments } from '../safeImagePath.js';
-import { getWikiUserAgent } from './wikiUserAgent.js';
+} from '../http/fetchWithTimeout.ts';
+import { safeImagePathUnderRoot, sanitizeUniqueNameSegments } from '../safeImagePath.ts';
+import { getWikiUserAgent } from './wikiUserAgent.ts';
 
 const WIKI_BASE = 'https://wiki.warframe.com';
 

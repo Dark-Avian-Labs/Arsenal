@@ -1,4 +1,4 @@
-import { shouldAutoCompleteOrokin } from './exaltedWeapons.js';
+import { shouldAutoCompleteOrokin } from './exaltedWeapons.ts';
 
 const NECRAMECH_NAMES = new Set(['Bonewidow', 'Voidrig']);
 const MAX_RANK_40_EXACT_NAMES = new Set(['Paracesis']);

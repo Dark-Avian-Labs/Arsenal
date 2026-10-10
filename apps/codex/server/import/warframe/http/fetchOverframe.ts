@@ -6,7 +6,7 @@ import {
   type CuimpOptions,
 } from 'cuimp';
 
-import { FETCH_BYTE_LIMITS, FETCH_TIMEOUT_MS } from './fetchWithTimeout.js';
+import { FETCH_BYTE_LIMITS, FETCH_TIMEOUT_MS } from './fetchWithTimeout.ts';
 
 const OVERFRAME_BASE_URL = 'https://overframe.gg';
 const BUILD_ID_BOOTSTRAP_PATH = '/build/new/warframes/';

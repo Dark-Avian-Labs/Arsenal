@@ -4,7 +4,7 @@ import {
   gaugeRatio,
   type GearPrefix,
   type GearStatKey,
-} from './catalog.js';
+} from './catalog.ts';
 import {
   HIGH_ROLL,
   KEEP_RULES,
@@ -16,8 +16,8 @@ import {
   type GearRating,
   type KeepRule,
   type RateableGear,
-} from './gearRating.js';
-import { SET_BY_KEY } from './sets.js';
+} from './gearRating.ts';
+import { SET_BY_KEY } from './sets.ts';
 
 export const REROLL_TOOL_IDS = [
   'recasting_hammer',

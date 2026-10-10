@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { getCodexAppId } from './core.js';
+import { getCodexAppId } from './core.ts';
 
 describe('getCodexAppId', () => {
   const originalAppId = process.env.APP_ID;

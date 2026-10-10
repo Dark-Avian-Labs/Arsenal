@@ -1,4 +1,4 @@
-import { abilityPathBasename } from './helminthAbilityResolve.js';
+import { abilityPathBasename } from './helminthAbilityResolve.ts';
 
 const ARMORY_ABILITY_PREFIX = '/Armory/Ability/';
 

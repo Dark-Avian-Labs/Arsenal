@@ -7,8 +7,8 @@ import {
   CODEX_WARFRAME_CATALOG_DB_PATH,
   CODEX_WARFRAME_IMAGES_DIR,
   IMAGES_DIR,
-} from '../config.js';
-import { getCatalogDb } from '../db/connection.js';
+} from '../config.ts';
+import { getCatalogDb } from '../db/connection.ts';
 
 export const CODEX_CATALOG_TABLES = [
   'mod_sets',

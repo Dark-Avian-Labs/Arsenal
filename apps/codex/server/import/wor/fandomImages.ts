@@ -1,15 +1,15 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { WOR_IMAGES_DIR } from '../../config.js';
-import { fetchWithTimeout, FETCH_TIMEOUT_MS } from '../../http/fetchWithTimeout.js';
-import { getWikiUserAgent } from '../../scraping/wikiUserAgent.js';
-import type { CatalogBundle } from './catalogQueries.js';
-import type { FastidiousImageRef } from './fastidiousCatalog.js';
-import { sleep } from './fastidiousClient.js';
-import { buildFastidiousStorageUrl, downloadImageToWorDir, worImageWebPath } from './images.js';
-import { wikiPageTitleFromName } from './normalize.js';
-import { WOR_FANDOM_API_URL } from './paths.js';
+import { WOR_IMAGES_DIR } from '../../config.ts';
+import { fetchWithTimeout, FETCH_TIMEOUT_MS } from '../../http/fetchWithTimeout.ts';
+import { getWikiUserAgent } from '../../scraping/wikiUserAgent.ts';
+import type { CatalogBundle } from './catalogQueries.ts';
+import type { FastidiousImageRef } from './fastidiousCatalog.ts';
+import { sleep } from './fastidiousClient.ts';
+import { buildFastidiousStorageUrl, downloadImageToWorDir, worImageWebPath } from './images.ts';
+import { wikiPageTitleFromName } from './normalize.ts';
+import { WOR_FANDOM_API_URL } from './paths.ts';
 
 export type WorImageDownloadSummary = {
   portraitsDownloaded: number;

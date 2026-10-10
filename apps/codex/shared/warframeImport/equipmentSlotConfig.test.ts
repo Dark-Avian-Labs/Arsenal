@@ -5,7 +5,7 @@ import {
   EQUIPMENT_SLOT_CONFIGS,
   equipmentExilusArtifactIndex,
   MAX_ARTIFACT_SLOTS_STORAGE_LENGTH,
-} from './equipmentSlotConfig.js';
+} from './equipmentSlotConfig.ts';
 
 describe('artifactSlotsStorageLength', () => {
   it('uses 10 slots for warframes with aura and exilus', () => {

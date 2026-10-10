@@ -1,7 +1,7 @@
 import { log } from '@dark-avian-labs/server-kit';
 import type Database from 'better-sqlite3';
 
-import { getCatalogCounts } from './catalogQueries.js';
+import { getCatalogCounts } from './catalogQueries.ts';
 
 const CATALOG_COPY_TABLES = [
   'catalog_heroes',

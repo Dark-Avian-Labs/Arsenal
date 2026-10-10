@@ -1,6 +1,6 @@
 import { optionalPositiveInt, positiveInt, z } from '@dark-avian-labs/server-kit';
 
-import { ARTIFACT_PROMOTION_MAX, DEMON_LEVEL_MIN, HERO_AWAKENING_MAX } from '../config.js';
+import { ARTIFACT_PROMOTION_MAX, DEMON_LEVEL_MIN, HERO_AWAKENING_MAX } from '../config.ts';
 
 export const MAX_WOR_NAME_LENGTH = 255;
 export const MAX_WOR_ACCOUNT_NAME_LENGTH = 128;

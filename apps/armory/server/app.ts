@@ -16,11 +16,11 @@ import {
   SECURE_COOKIES,
   TRUST_PROXY,
   ensureDataDirs,
-} from './config.js';
-import { getCatalogDb, getUserDb } from './db/connection.js';
-import { apiRouter } from './routes/api.js';
-import { authRouter } from './routes/auth.js';
-import { clerkWebhookRouter } from './routes/webhooks.js';
+} from './config.ts';
+import { getCatalogDb, getUserDb } from './db/connection.ts';
+import { apiRouter } from './routes/api.ts';
+import { authRouter } from './routes/auth.ts';
+import { clerkWebhookRouter } from './routes/webhooks.ts';
 
 export interface AppBundle {
   app: express.Express;

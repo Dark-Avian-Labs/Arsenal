@@ -13,11 +13,11 @@ import {
   SECURE_COOKIES,
   TRUST_PROXY,
   WOR_IMAGES_DIR,
-} from './config.js';
-import { contentTypeForImagePath, isAllowedImageExtension } from './import/wor/images.js';
-import { assertCodexReady } from './probes.js';
-import { apiRouter } from './routes/api.js';
-import { authRouter } from './routes/auth.js';
+} from './config.ts';
+import { contentTypeForImagePath, isAllowedImageExtension } from './import/wor/images.ts';
+import { assertCodexReady } from './probes.ts';
+import { apiRouter } from './routes/api.ts';
+import { authRouter } from './routes/auth.ts';
 
 export interface CreateAppOptions {
   metricsMiddleware?: RequestHandler;

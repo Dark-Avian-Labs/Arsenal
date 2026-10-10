@@ -1,7 +1,7 @@
 import Database from 'better-sqlite3';
 
-import { METRICS_DB_PATH, NODE_ENV } from '../config.js';
-import { migrateMetricsSchema } from './schema.js';
+import { METRICS_DB_PATH, NODE_ENV } from '../config.ts';
+import { migrateMetricsSchema } from './schema.ts';
 
 let metricsDb: Database.Database | null = null;
 

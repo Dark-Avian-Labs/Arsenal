@@ -2,7 +2,7 @@ import {
   abilitySlugFromDisplayName,
   buildAbilityKey,
   buildAbilityKeyFromDePath,
-} from './abilitySlugRegistry.js';
+} from './abilitySlugRegistry.ts';
 import {
   ARCHON_COLORS,
   type ArchonColor,
@@ -10,8 +10,8 @@ import {
   archonVariantFromTauforged,
   buildArchonShardKey,
   parseArchonShardKey,
-} from './archonShardRegistry.js';
-import { resolveHelminthArmoryKey, resolveHelminthDePath } from './helminthRegistry.js';
+} from './archonShardRegistry.ts';
+import { resolveHelminthArmoryKey, resolveHelminthDePath } from './helminthRegistry.ts';
 
 export interface HelminthConfigV1 {
   replaced_ability_index: number;

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { compactRosterHero, filterOwnedRows, parseRosterInclude, parseRosterOwnedFilter } from './worRoster.js';
+import { compactRosterHero, filterOwnedRows, parseRosterInclude, parseRosterOwnedFilter } from './worRoster.ts';
 
 describe('parseRosterOwnedFilter', () => {
   it('defaults to owned', () => {

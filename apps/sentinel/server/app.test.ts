@@ -1,8 +1,8 @@
 import request from 'supertest';
 import { beforeAll, describe, expect, it } from 'vitest';
 
-import type { AppBundle } from './app.js';
-import { createApp } from './app.js';
+import type { AppBundle } from './app.ts';
+import { createApp } from './app.ts';
 
 let bundle: AppBundle;
 

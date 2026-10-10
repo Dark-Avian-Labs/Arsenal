@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { CURRENCIES } from './currencies.js';
+import { CURRENCIES } from './currencies.ts';
 import {
   invalidFieldsBody,
   isNonNegativeInteger,
@@ -8,7 +8,7 @@ import {
   normalizeCurrency,
   normalizeName,
   validateEntryBody,
-} from './schemas.js';
+} from './schemas.ts';
 
 describe('normalizeCurrency', () => {
   it('accepts the allowlist and falls back when empty', () => {

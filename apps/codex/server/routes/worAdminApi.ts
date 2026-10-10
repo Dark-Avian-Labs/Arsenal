@@ -1,16 +1,16 @@
 import { validateBody } from '@dark-avian-labs/server-kit';
 import { Router, type Response } from 'express';
 
-import { requireCodexAdmin } from '../core.js';
-import { getWorCatalogDb, worAdminImportRunSchema } from '../games/wor/index.js';
+import { requireCodexAdmin } from '../core.ts';
+import { getWorCatalogDb, worAdminImportRunSchema } from '../games/wor/index.ts';
 import {
   getWorAdminImportSnapshot,
   isWorImportRunning,
   startWorAdminImport,
   subscribeWorAdminImport,
-} from '../import/wor/adminImportJob.js';
-import { catalogNeedsImport } from '../import/wor/startupPipeline.js';
-import { ensureWorDbAvailable } from '../worDbState.js';
+} from '../import/wor/adminImportJob.ts';
+import { catalogNeedsImport } from '../import/wor/startupPipeline.ts';
+import { ensureWorDbAvailable } from '../worDbState.ts';
 
 export const worAdminApiRouter = Router();
 

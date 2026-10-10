@@ -3,13 +3,13 @@ import path from 'path';
 
 import { describe, expect, it } from 'vitest';
 
-import { PROJECT_ROOT } from '../../config.js';
+import { PROJECT_ROOT } from '../../config.ts';
 import {
   generateWarframeRankExceptions,
   hashWarframeRankExceptionsSource,
   isWarframeRankExceptionsSourceAvailable,
   warframeRankExceptionsSourceChanged,
-} from './warframeRankExceptions.js';
+} from './warframeRankExceptions.ts';
 
 const OUT_PATH = path.join(PROJECT_ROOT, 'shared/warframeImport/warframeRankExceptions.generated.ts');
 

@@ -1,7 +1,7 @@
 import { requireAdmin } from '@dark-avian-labs/server-kit';
 import { Router, type Request, type Response } from 'express';
 
-import { getMetricsDb } from './db.js';
+import { getMetricsDb } from './db.ts';
 import {
   getAppMeta,
   getLatestHost,
@@ -12,7 +12,7 @@ import {
   queryHttpSeries,
   querySeries,
   type RangePreset,
-} from './query.js';
+} from './query.ts';
 
 export const fleetRouter = Router();
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import type { GearSlot, GearStatKey } from './catalog.js';
-import { KEEP_RULES, rateGear, type RateableGear } from './gearRating.js';
+import type { GearSlot, GearStatKey } from './catalog.ts';
+import { KEEP_RULES, rateGear, type RateableGear } from './gearRating.ts';
 
 function piece(
   slot: GearSlot,

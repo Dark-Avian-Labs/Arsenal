@@ -7,8 +7,8 @@ import {
   standardWarframeRankBonusesAtRank,
   DEFAULT_WARFRAME_RANK_30_BONUSES,
   WARFRAME_MAX_RANK,
-} from './equipmentRankStats.js';
-import { WARFRAME_RANK_EXCEPTION_ENTRIES } from './warframeRankExceptions.generated.js';
+} from './equipmentRankStats.ts';
+import { WARFRAME_RANK_EXCEPTION_ENTRIES } from './warframeRankExceptions.generated.ts';
 
 describe('standardWarframeRankBonusesAtRank', () => {
   it('matches wiki totals at rank 30', () => {

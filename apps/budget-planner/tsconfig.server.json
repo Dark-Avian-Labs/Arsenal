@@ -1,12 +1,6 @@
 {
   "extends": "@dark-avian-labs/config/tsconfig.server.json",
   "compilerOptions": {
-    "noEmit": false,
-    "allowImportingTsExtensions": false,
-    "rewriteRelativeImportExtensions": false,
-    "outDir": "dist",
-    "rootDir": ".",
-    "sourceMap": true,
     "typeRoots": ["./node_modules/@types", "./server/types"]
   },
   "include": ["server/**/*", "shared/**/*"],

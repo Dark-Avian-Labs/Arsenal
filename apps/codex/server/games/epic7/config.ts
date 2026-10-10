@@ -16,5 +16,5 @@ export {
   HERO_RATINGS,
   RATING_COLORS,
   STAR_RATINGS,
-} from './constants.js';
-export type { ClassKey, ElementKey, HeroClassKey } from './constants.js';
+} from './constants.ts';
+export type { ClassKey, ElementKey, HeroClassKey } from './constants.ts';

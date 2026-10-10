@@ -3,10 +3,10 @@ import express from 'express';
 import request from 'supertest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { __catalogResponseCacheTest } from '../cache/catalogResponseCache.js';
-import { createMemoryUserDb, insertTestBuild } from '../testing/memoryUserDb.js';
-import { MAX_BUILDS_PER_USER, MAX_NAME_LENGTH } from './apiShared.js';
-import { minimalModConfig } from './modConfigValidation.js';
+import { __catalogResponseCacheTest } from '../cache/catalogResponseCache.ts';
+import { createMemoryUserDb, insertTestBuild } from '../testing/memoryUserDb.ts';
+import { MAX_BUILDS_PER_USER, MAX_NAME_LENGTH } from './apiShared.ts';
+import { minimalModConfig } from './modConfigValidation.ts';
 
 const authState = vi.hoisted(() => ({
   userId: null as string | null,
@@ -17,12 +17,12 @@ const dbState = vi.hoisted(() => ({
   db: null as Database.Database | null,
 }));
 
-vi.mock('../auth/clerkUser.js', () => ({
+vi.mock('../auth/clerkUser.ts', () => ({
   getClerkUserId: () => authState.userId,
 }));
 
-vi.mock('../auth/middleware.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../auth/middleware.js')>();
+vi.mock('../auth/middleware.ts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../auth/middleware.ts')>();
   return {
     ...actual,
     getClerkAuthState: () => ({
@@ -33,14 +33,14 @@ vi.mock('../auth/middleware.js', async (importOriginal) => {
   };
 });
 
-vi.mock('../auth/armoryUsers.js', () => ({
+vi.mock('../auth/armoryUsers.ts', () => ({
   DELETED_USER_LABEL: 'Deleted User',
   getOwnerDisplayName: (_id: string, map: Map<string, string>) => map.get(_id) ?? 'User',
   resolveOwnerUsernames: async (ids: string[]) => new Map(ids.map((id) => [id, 'testuser'])),
   resolveClerkUserIdByUsername: () => null,
 }));
 
-vi.mock('../db/connection.js', () => ({
+vi.mock('../db/connection.ts', () => ({
   getCatalogDb: () => {
     if (!dbState.db) throw new Error('Test DB not initialized');
     return dbState.db;
@@ -51,7 +51,7 @@ vi.mock('../db/connection.js', () => ({
   },
 }));
 
-import { apiRouter } from './api.js';
+import { apiRouter } from './api.ts';
 
 function createTestApp() {
   const app = express();

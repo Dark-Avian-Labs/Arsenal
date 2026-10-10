@@ -7,7 +7,7 @@ import {
   monthKey,
   parseMonthKey,
   shiftMonth,
-} from '../../shared/planMonth.js';
+} from '../../shared/planMonth.ts';
 
 describe('shiftMonth', () => {
   it('steps into the next year', () => {

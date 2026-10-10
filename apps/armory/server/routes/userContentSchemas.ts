@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { MAX_NAME_LENGTH } from './apiShared.js';
+import { MAX_NAME_LENGTH } from './apiShared.ts';
 
 export const UserContentNameSchema = z.string().trim().min(1).max(MAX_NAME_LENGTH);
 

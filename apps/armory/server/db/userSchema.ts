@@ -1,7 +1,7 @@
 import { log } from '@dark-avian-labs/server-kit';
 import type Database from 'better-sqlite3';
 
-import { getUserDb } from './connection.js';
+import { getUserDb } from './connection.ts';
 
 const USER_SCHEMA_SQL = `
     CREATE TABLE IF NOT EXISTS loadouts (

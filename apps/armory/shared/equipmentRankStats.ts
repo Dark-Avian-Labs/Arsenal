@@ -1,4 +1,4 @@
-import { WARFRAME_RANK_EXCEPTIONS_BY_UNIQUE_NAME } from './warframeRankExceptions.generated.js';
+import { WARFRAME_RANK_EXCEPTIONS_BY_UNIQUE_NAME } from './warframeRankExceptions.generated.ts';
 
 export const WARFRAME_MAX_RANK = 30;
 export const COMPANION_MAX_RANK = 30;

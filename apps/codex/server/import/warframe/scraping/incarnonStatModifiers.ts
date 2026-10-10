@@ -1,4 +1,4 @@
-import type { IncarnonStatModifier, IncarnonStatName } from './incarnonTypes.js';
+import type { IncarnonStatModifier, IncarnonStatName } from './incarnonTypes.ts';
 
 const STAT_PATTERNS: Array<{
   pattern: RegExp;

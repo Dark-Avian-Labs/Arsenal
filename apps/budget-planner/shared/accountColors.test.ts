@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { ACCOUNT_COLORS, nextAccountColor, remapAccountColor } from './accountColors.js';
+import { ACCOUNT_COLORS, nextAccountColor, remapAccountColor } from './accountColors.ts';
 
 describe('remapAccountColor', () => {
   it('maps legacy picker names to the closest rarity hue', () => {

@@ -12,7 +12,7 @@ import {
   prepareSiriusOrionWarframePickerItems,
   resolveSiriusOrionUniqueNameFromScrapeName,
   siriusOrionEquipmentSaveName,
-} from './siriusOrionRegistry.js';
+} from './siriusOrionRegistry.ts';
 
 describe('siriusOrionRegistry', () => {
   it('identifies both catalog forms', () => {

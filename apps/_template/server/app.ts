@@ -11,8 +11,8 @@ import {
   SECURE_COOKIES,
   TRUST_PROXY,
   ensureDataDirs,
-} from './config.js';
-import { apiRouter } from './routes/api.js';
+} from './config.ts';
+import { apiRouter } from './routes/api.ts';
 
 export interface AppBundle {
   app: express.Express;

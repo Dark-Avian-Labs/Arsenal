@@ -6,7 +6,7 @@ import {
   MAX_MOD_CONFIG_SLOTS,
   appendModConfigSizeIssues,
   modConfigExceedsSizeLimit,
-} from './modConfigLimits.js';
+} from './modConfigLimits.ts';
 
 type CapturedIssue = { code: string; message: string };
 

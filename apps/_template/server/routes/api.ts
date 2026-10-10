@@ -1,7 +1,7 @@
 import { Router, type Request, type Response } from 'express';
 
-import { APP_NAME } from '../config.js';
-import { authRouter } from './auth.js';
+import { APP_NAME } from '../config.ts';
+import { authRouter } from './auth.ts';
 
 export const apiRouter = Router();
 

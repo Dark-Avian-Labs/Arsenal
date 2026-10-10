@@ -1,6 +1,6 @@
 import Database from 'better-sqlite3';
 
-import { APP_DB_PATH } from '../config.js';
+import { APP_DB_PATH } from '../config.ts';
 
 export function createAppSchema(db: Database.Database): void {
   db.pragma('foreign_keys = ON');

@@ -7,8 +7,8 @@ import type {
   GearSlot,
   GearStatKey,
   HeroClassKey,
-} from '../../shared/catalog.js';
-import type { GearSubstat } from '../../shared/pieceStats.js';
+} from '../../shared/catalog.ts';
+import type { GearSubstat } from '../../shared/pieceStats.ts';
 
 export type AccountRow = {
   id: number;

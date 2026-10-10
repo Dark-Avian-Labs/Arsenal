@@ -1,4 +1,4 @@
-import { rarityToStarRating } from '../../games/wor/index.js';
+import { rarityToStarRating } from '../../games/wor/index.ts';
 import type Database from 'better-sqlite3';
 
 export type CatalogHeroRow = {

@@ -8,7 +8,7 @@ import {
   HERO_AWAKENING_MAX,
   HERO_AWAKENING_MIN_STARS,
   HERO_CLASSES,
-} from '../config.js';
+} from '../config.ts';
 
 export interface GameAccount {
   id: number;

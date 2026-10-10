@@ -14,8 +14,8 @@ vi.mock('@clerk/express', () => ({
   clerkMiddleware: () => (_req: Request, _res: Response, next: NextFunction) => next(),
 }));
 
-import { mockResponse } from '../testing/mockResponse.js';
-import { getClerkAuthState, isClerkConfigured, requireArmoryAdmin, requireAuthApi } from './middleware.js';
+import { mockResponse } from '../testing/mockResponse.ts';
+import { getClerkAuthState, isClerkConfigured, requireArmoryAdmin, requireAuthApi } from './middleware.ts';
 
 const previousClerkEnv = {
   CLERK_PUBLISHABLE_KEY: process.env.CLERK_PUBLISHABLE_KEY,

@@ -1,9 +1,9 @@
 import Database from 'better-sqlite3';
 import { describe, expect, it, vi } from 'vitest';
 
-vi.mock('../games/warframe/db/schema.js', async () => {
-  const actual = await vi.importActual<typeof import('../games/warframe/db/schema.js')>(
-    '../games/warframe/db/schema.js',
+vi.mock('../games/warframe/db/schema.ts', async () => {
+  const actual = await vi.importActual<typeof import('../games/warframe/db/schema.ts')>(
+    '../games/warframe/db/schema.ts',
   );
   let sessionDb: Database.Database | null = null;
   return {
@@ -18,13 +18,13 @@ vi.mock('../games/warframe/db/schema.js', async () => {
   };
 });
 
-import { ensureWarframeSyncJobsSchema } from './warframeSyncJobs.js';
+import { ensureWarframeSyncJobsSchema } from './warframeSyncJobs.ts';
 import {
   isWarframeSyncRunning,
   runWarframeSyncGuarded,
   SyncAlreadyRunningError,
   waitForWarframeSyncIdle,
-} from './warframeSyncState.js';
+} from './warframeSyncState.ts';
 
 describe('warframe sync state setup', () => {
   it('initializes job schema', () => {

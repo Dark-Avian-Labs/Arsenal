@@ -1,8 +1,8 @@
 import request from 'supertest';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { createApp } from '../app.js';
-import { closeMetricsDb } from './db.js';
+import { createApp } from '../app.ts';
+import { closeMetricsDb } from './db.ts';
 
 describe('POST /api/ingest', () => {
   afterEach(() => {

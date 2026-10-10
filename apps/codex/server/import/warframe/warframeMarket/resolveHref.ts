@@ -1,5 +1,5 @@
-import { normalizeDisplayName } from './canonical.js';
-import { warframeMarketBaseSlug } from './slug.js';
+import { normalizeDisplayName } from './canonical.ts';
+import { warframeMarketBaseSlug } from './slug.ts';
 
 export type WorksheetCategory =
   | 'Warframes'

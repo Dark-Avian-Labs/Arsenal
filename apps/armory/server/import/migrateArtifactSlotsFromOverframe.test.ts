@@ -1,13 +1,13 @@
 import Database from 'better-sqlite3';
 import { describe, expect, it } from 'vitest';
 
-import { EQUIPMENT_SLOT_CONFIGS } from '../../shared/equipmentSlotConfig.js';
+import { EQUIPMENT_SLOT_CONFIGS } from '../../shared/equipmentSlotConfig.ts';
 import {
   convertEquipmentArtifactSlotsFromOverframe,
   convertWarframeArtifactSlotsFromOverframe,
   migrateArtifactSlotsFromOverframe,
   weaponSlotConfig,
-} from './migrateArtifactSlotsFromOverframe.js';
+} from './migrateArtifactSlotsFromOverframe.ts';
 
 describe('convertWarframeArtifactSlotsFromOverframe', () => {
   it('maps Overframe 12-slot Ash layout to compact 10-slot', () => {

@@ -1,6 +1,6 @@
 import Database from 'better-sqlite3';
 
-import { WARFRAME_CATALOG_DB_PATH } from '../../../config.js';
+import { WARFRAME_CATALOG_DB_PATH } from '../../../config.ts';
 
 let catalogDb: Database.Database | null = null;
 

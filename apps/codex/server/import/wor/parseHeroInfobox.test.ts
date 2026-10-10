@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { parseHeroInfobox } from './parseHeroInfobox.js';
+import { parseHeroInfobox } from './parseHeroInfobox.ts';
 
 const DEIMOS_WIKITEXT = `{{HeroNavigation|Deimos}}
 {{Hero

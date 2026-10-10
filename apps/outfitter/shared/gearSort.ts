@@ -1,5 +1,5 @@
-import { type GearPrefix, type GearSlot } from './catalog.js';
-import { INVENTORY_SET_KEYS } from './sets.js';
+import { type GearPrefix, type GearSlot } from './catalog.ts';
+import { INVENTORY_SET_KEYS } from './sets.ts';
 
 const SET_RANK = new Map<string, number>(INVENTORY_SET_KEYS.map((key, index) => [key, index]));
 

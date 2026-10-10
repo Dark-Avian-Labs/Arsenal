@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { atragraphSetKeyFromModName, parseAtragraphModsWikiHtml } from '../atragraphModsWiki.js';
+import { atragraphSetKeyFromModName, parseAtragraphModsWikiHtml } from '../atragraphModsWiki.ts';
 
 const FIXTURE_HTML = `
 <html><body>

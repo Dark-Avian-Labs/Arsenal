@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 
-import type { CatalogBundle } from './catalogQueries.js';
-import { isValidFactionKey, isValidHeroClassKey } from './normalize.js';
+import type { CatalogBundle } from './catalogQueries.ts';
+import { isValidFactionKey, isValidHeroClassKey } from './normalize.ts';
 
 export type WorValidationIssue = {
   level: 'error' | 'warning';

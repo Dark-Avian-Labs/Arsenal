@@ -11,11 +11,11 @@ export {
   HERO_RATINGS,
   RATING_COLORS,
   STAR_RATINGS,
-} from './constants.js';
-export type { ClassKey, ElementKey, HeroClassKey, HeroRating } from './constants.js';
-export { EPIC7_DB_PATH } from './config.js';
-export { closeDb as closeEpic7Db, getDb as getEpic7Db } from './db/schema.js';
-export * as epic7Queries from './db/queries.js';
+} from './constants.ts';
+export type { ClassKey, ElementKey, HeroClassKey, HeroRating } from './constants.ts';
+export { EPIC7_DB_PATH } from './config.ts';
+export { closeDb as closeEpic7Db, getDb as getEpic7Db } from './db/schema.ts';
+export * as epic7Queries from './db/queries.ts';
 export {
   addAccountSchema as epic7AddAccountSchema,
   addArtifactSchema as epic7AddArtifactSchema,
@@ -33,4 +33,4 @@ export {
   updateArtifactSchema as epic7UpdateArtifactSchema,
   updateHeroDetailsSchema as epic7UpdateHeroDetailsSchema,
   updateHeroSchema as epic7UpdateHeroSchema,
-} from './routes/validation.js';
+} from './routes/validation.ts';

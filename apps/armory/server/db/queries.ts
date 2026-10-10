@@ -3,16 +3,16 @@ import path from 'path';
 
 import { log } from '@dark-avian-labs/server-kit';
 
-import { helminthEntryByDePath } from '../../shared/helminthRegistry.js';
+import { helminthEntryByDePath } from '../../shared/helminthRegistry.ts';
 import {
   isUnreleasedArcane,
   resolveArcaneImportRarity,
   UNRELEASED_ARCANE_UNIQUE_NAMES,
-} from '../arcaneCatalog.js';
-import { classifyArcaneCompatTags } from '../arcaneCompat.js';
-import { syncCodexModularWeaponsTable } from '../codexModularWeapons.js';
-import { EXPORTS_DIR } from '../config.js';
-import { getCatalogDb } from './connection.js';
+} from '../arcaneCatalog.ts';
+import { classifyArcaneCompatTags } from '../arcaneCompat.ts';
+import { syncCodexModularWeaponsTable } from '../codexModularWeapons.ts';
+import { EXPORTS_DIR } from '../config.ts';
+import { getCatalogDb } from './connection.ts';
 
 function saveModAtragraphPaths(): Map<
   string,

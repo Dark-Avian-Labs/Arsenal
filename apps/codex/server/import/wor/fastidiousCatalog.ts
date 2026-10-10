@@ -6,7 +6,7 @@ import type {
   CatalogBundle,
   CatalogDemonRow,
   CatalogHeroRow,
-} from './catalogQueries.js';
+} from './catalogQueries.ts';
 import {
   fetchFastidiousInertiaPage,
   loadOrFetchJsonCache,
@@ -14,8 +14,8 @@ import {
   sanitizeCacheSlug,
   sleep,
   writeCachedJson,
-} from './fastidiousClient.js';
-import { decodeHtmlEntities } from './htmlEntities.js';
+} from './fastidiousClient.ts';
+import { decodeHtmlEntities } from './htmlEntities.ts';
 import {
   normalizeArtifactRarity,
   normalizeDamageType,
@@ -25,8 +25,8 @@ import {
   normalizeHeroRarity,
   resolveHeroFactionKeys,
   slugifyName,
-} from './normalize.js';
-import { ensureWorImportDirs, FASTIDIOUS_BASE_URL, resolveWorImportCacheDir } from './paths.js';
+} from './normalize.ts';
+import { ensureWorImportDirs, FASTIDIOUS_BASE_URL, resolveWorImportCacheDir } from './paths.ts';
 
 type FastidiousRarity = { name: string };
 type FastidiousRole = { name: string; image?: string };

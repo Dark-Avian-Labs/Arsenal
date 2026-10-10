@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { isUnreleasedArcane, resolveArcaneImportRarity, UNRELEASED_ARCANE_UNIQUE_NAMES } from './arcaneCatalog.js';
+import { isUnreleasedArcane, resolveArcaneImportRarity, UNRELEASED_ARCANE_UNIQUE_NAMES } from './arcaneCatalog.ts';
 
 describe('arcaneCatalog', () => {
   it('defaults missing rarity to COMMON', () => {

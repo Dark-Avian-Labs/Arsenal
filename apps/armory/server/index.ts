@@ -1,7 +1,7 @@
 import { createAppSentinelAgent, log, startServer } from '@dark-avian-labs/server-kit';
 
-import { createApp } from './app.js';
-import { stopModListCacheCleanup } from './cache/modListCache.js';
+import { createApp } from './app.ts';
+import { stopModListCacheCleanup } from './cache/modListCache.ts';
 import {
   APP_ID,
   APP_NAME,
@@ -11,19 +11,19 @@ import {
   PORT,
   SHUTDOWN_TIMEOUT_MS,
   ensureDataDirs,
-} from './config.js';
-import { closeAll } from './db/connection.js';
-import { repairPlaceholderArtifactSlots } from './db/repairArtifactSlots.js';
-import { createAppSchema } from './db/schema.js';
+} from './config.ts';
+import { closeAll } from './db/connection.ts';
+import { repairPlaceholderArtifactSlots } from './db/repairArtifactSlots.ts';
+import { createAppSchema } from './db/schema.ts';
 import {
   isAdminCatalogSyncRunning,
   waitForAdminCatalogSyncIdle,
-} from './import/adminCatalogSyncJob.js';
+} from './import/adminCatalogSyncJob.ts';
 import {
   catalogWarframeCount,
   codexCatalogDbExists,
   syncCodexWarframeCatalog,
-} from './import/codexCatalog.js';
+} from './import/codexCatalog.ts';
 
 ensureDataDirs();
 createAppSchema();

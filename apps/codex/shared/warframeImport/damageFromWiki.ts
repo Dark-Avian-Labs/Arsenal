@@ -1,4 +1,4 @@
-import { DAMAGE_PER_SHOT_LENGTH } from './damageFromFireBehaviors.js';
+import { DAMAGE_PER_SHOT_LENGTH } from './damageFromFireBehaviors.ts';
 
 export const WIKI_DAMAGE_TYPE_TO_INDEX: Record<string, number> = {
   Impact: 0,

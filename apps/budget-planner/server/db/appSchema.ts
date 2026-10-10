@@ -4,7 +4,7 @@ import {
   ACCOUNT_COLORS,
   DEFAULT_ACCOUNT_COLOR,
   remapAccountColor,
-} from '../../shared/accountColors.js';
+} from '../../shared/accountColors.ts';
 
 export type MemberRole = 'owner' | 'editor' | 'viewer';
 export type EntryKind = 'expense' | 'income' | 'credit';

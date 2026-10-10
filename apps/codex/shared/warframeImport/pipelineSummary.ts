@@ -1,5 +1,5 @@
-import { PIPELINE_STEPS } from './pipelineSteps.js';
-import type { StartupPipelineSummary, StepSummaryBase } from './pipelineSummaryTypes.js';
+import { PIPELINE_STEPS } from './pipelineSteps.ts';
+import type { StartupPipelineSummary, StepSummaryBase } from './pipelineSummaryTypes.ts';
 
 export type PipelineSummaryStepKey = Exclude<
   keyof StartupPipelineSummary,

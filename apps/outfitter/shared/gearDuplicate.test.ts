@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { findDuplicateGear, gearIdentityKey, identityFromGearRow } from './gearDuplicate.js';
+import { findDuplicateGear, gearIdentityKey, identityFromGearRow } from './gearDuplicate.ts';
 
 const calamityWeapon = {
   slot: 'weapon',

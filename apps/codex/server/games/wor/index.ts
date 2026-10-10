@@ -20,7 +20,7 @@ export {
   HERO_RARITIES,
   RARITY_STAR_COUNTS,
   rarityToStarRating,
-} from './constants.js';
+} from './constants.ts';
 export type {
   ArtifactFilterStarRating,
   ArtifactRarityKey,
@@ -29,8 +29,8 @@ export type {
   FilterStarRating,
   HeroClassKey,
   HeroRarityKey,
-} from './constants.js';
-export { WOR_CATALOG_DB_PATH, WOR_DB_PATH, WOR_IMAGES_DIR } from './config.js';
+} from './constants.ts';
+export { WOR_CATALOG_DB_PATH, WOR_DB_PATH, WOR_IMAGES_DIR } from './config.ts';
 export {
   closeDb as closeWorDb,
   closeCatalogDb as closeWorCatalogDb,
@@ -46,8 +46,8 @@ export {
   ensureWorSchemaMigrations,
   resetWorCatalogSchema,
   resetWorSchema,
-} from './db/schema.js';
-export * as worQueries from './db/queries.js';
+} from './db/schema.ts';
+export * as worQueries from './db/queries.ts';
 export {
   addAccountSchema as worAddAccountSchema,
   addArtifactSchema as worAddArtifactSchema,
@@ -68,4 +68,4 @@ export {
   updateHeroDetailsSchema as worUpdateHeroDetailsSchema,
   updateHeroGaugeSchema as worUpdateHeroGaugeSchema,
   updateOwnedSchema as worUpdateOwnedSchema,
-} from './routes/validation.js';
+} from './routes/validation.ts';

@@ -1,4 +1,4 @@
-import type { PipelineStepKey } from '../../../shared/warframeImport/pipelineSteps.js';
+import type { PipelineStepKey } from '../../../shared/warframeImport/pipelineSteps.ts';
 
 export interface PipelineStepControlOptions {
   forceImport?: boolean;

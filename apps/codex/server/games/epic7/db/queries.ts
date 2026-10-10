@@ -6,7 +6,7 @@ import {
   ELEMENTS,
   HERO_RATINGS,
   ARTIFACT_GAUGE_MAX,
-} from '../config.js';
+} from '../config.ts';
 
 export interface GameAccount {
   id: number;

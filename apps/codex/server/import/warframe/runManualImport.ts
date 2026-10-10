@@ -1,5 +1,5 @@
-import { ensureDataDirs } from '../../config.js';
-import { runStartupPipeline } from './startupPipeline.js';
+import { ensureDataDirs } from '../../config.ts';
+import { runStartupPipeline } from './startupPipeline.ts';
 
 async function main(): Promise<void> {
   console.log('[ManualImport] Full data pipeline (official exports → SQLite → enrichments).');

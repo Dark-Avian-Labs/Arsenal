@@ -4,13 +4,13 @@ import path from 'path';
 import { log } from '@dark-avian-labs/server-kit';
 import { LzmaDecompressor } from '@napi-rs/lzma';
 
-import { MANIFEST_URL, EXPORTS_DIR } from '../../config.js';
+import { MANIFEST_URL, EXPORTS_DIR } from '../../config.ts';
 import {
   FETCH_BYTE_LIMITS,
   FETCH_TIMEOUT_MS,
   fetchBounded,
   isAbortError,
-} from './http/fetchWithTimeout.js';
+} from './http/fetchWithTimeout.ts';
 
 const MAX_MANIFEST_DECOMPRESSED_BYTES = 64 * 1024 * 1024;
 const LZMA_HEADER_SIZE = 13;

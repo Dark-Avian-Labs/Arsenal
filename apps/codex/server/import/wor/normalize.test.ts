@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { parseInertiaHtml } from './fastidiousClient.js';
-import { decodeHtmlEntities } from './htmlEntities.js';
+import { parseInertiaHtml } from './fastidiousClient.ts';
+import { decodeHtmlEntities } from './htmlEntities.ts';
 import {
   normalizeArtifactRarity,
   normalizeDemonRarity,
@@ -11,7 +11,7 @@ import {
   resolveHeroFactionKeys,
   slugifyName,
   wikiPageTitleFromName,
-} from './normalize.js';
+} from './normalize.ts';
 
 describe('wor normalize', () => {
   it('slugifies artifact names', () => {

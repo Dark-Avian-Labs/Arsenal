@@ -1,18 +1,18 @@
 import Database from 'better-sqlite3';
 
-import { resolveAdvancedRowRelevance } from '../advancedRules.js';
+import { resolveAdvancedRowRelevance } from '../advancedRules.ts';
 import {
   VALENCE_COMPLETE_THRESHOLD,
   VALENCE_PERCENT_MAX_STORED,
   VALENCE_PERCENT_MIN,
   isHelminthValue,
   isValidStatus,
-} from '../config.js';
-import { normalizeDisplayName, resolveCanonicalKey } from '../displayName.js';
+} from '../config.ts';
+import { normalizeDisplayName, resolveCanonicalKey } from '../displayName.ts';
 import {
   isHelminthNonSubsumableItemName,
   isValidHelminthCellValue,
-} from '../helminthExceptions.js';
+} from '../helminthExceptions.ts';
 
 export interface Worksheet {
   id: number;

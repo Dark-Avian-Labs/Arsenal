@@ -5,7 +5,7 @@ import {
   detectImageType,
   isAllowedImageHost,
   relativeImagePathWithExtension,
-} from './images.js';
+} from './images.ts';
 
 describe('isAllowedImageHost', () => {
   it('allows Fastidious, Prospector, and Fandom CDN hosts', () => {

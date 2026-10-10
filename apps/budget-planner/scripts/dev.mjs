@@ -78,12 +78,11 @@ function start(label, args) {
 process.on('SIGINT', () => shutdown(0));
 process.on('SIGTERM', () => shutdown(0));
 
-const tsxCli = path.join(projectRoot, 'node_modules', 'tsx', 'dist', 'cli.mjs');
 const viteCli = path.join(projectRoot, 'node_modules', 'vite', 'bin', 'vite.js');
 
 console.log(`[dev] API server target: ${apiTarget}`);
 console.log(`[dev] Vite client: http://127.0.0.1:${vitePort}`);
 console.log('[dev] Press Ctrl+C to stop both processes.\n');
 
-start('server', [tsxCli, 'watch', 'server/index.ts']);
+start('server', ['--watch', 'server/index.ts']);
 start('client', [viteCli, '--port', vitePort]);

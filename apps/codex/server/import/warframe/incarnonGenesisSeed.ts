@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
-import { EXPORTS_DIR } from '../../config.js';
+import { EXPORTS_DIR } from '../../config.ts';
 
 export interface IncarnonGenesisSeed {
   genesisUniqueName: string;

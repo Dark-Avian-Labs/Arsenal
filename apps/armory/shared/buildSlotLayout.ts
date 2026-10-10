@@ -5,14 +5,14 @@ import {
   isWarframeSecondAuraSlotActive,
   normalizeWarframeArtifactSlotsForLoad,
   warframeExilusArtifactIndex,
-} from './artifactSlotState.js';
+} from './artifactSlotState.ts';
 import {
   EQUIPMENT_SLOT_CONFIGS,
   equipmentExilusArtifactIndex,
   type EquipmentSlotConfigKey,
-} from './equipmentSlotConfig.js';
-import { POLARITIES, type PolarityKey } from './polarities.js';
-import { equipmentHasStanceSlot, weaponOmitsExilusSlot } from './specialEquipmentSlots.js';
+} from './equipmentSlotConfig.ts';
+import { POLARITIES, type PolarityKey } from './polarities.ts';
+import { equipmentHasStanceSlot, weaponOmitsExilusSlot } from './specialEquipmentSlots.ts';
 
 export type ModSlotType = 'general' | 'aura' | 'stance' | 'exilus' | 'posture';
 

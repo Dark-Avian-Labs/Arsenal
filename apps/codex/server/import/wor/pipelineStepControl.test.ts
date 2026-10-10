@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { shouldFetchFastidiousCatalog, shouldFetchProspectorCatalog } from './pipelineStepControl.js';
+import { shouldFetchFastidiousCatalog, shouldFetchProspectorCatalog } from './pipelineStepControl.ts';
 
 describe('shouldFetchFastidiousCatalog', () => {
   it('always refreshes when live import is enabled', () => {

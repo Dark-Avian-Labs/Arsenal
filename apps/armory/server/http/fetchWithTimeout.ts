@@ -6,7 +6,7 @@ import {
   assertAllowedFetchUrl,
   assertAllowedImageMime,
   getPinnedAddresses,
-} from './allowedFetchHosts.js';
+} from './allowedFetchHosts.ts';
 
 const pinnedAgent = new Agent({
   connect: {

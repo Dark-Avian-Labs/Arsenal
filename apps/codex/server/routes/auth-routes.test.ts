@@ -7,10 +7,10 @@ import express from 'express';
 import request from 'supertest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { APP_NAME } from '../config.js';
-import { healthzHandler, readyzHandler } from '../probes.js';
-import { testRateLimiter } from '../testing/testExpress.js';
-import { authRouter } from './auth.js';
+import { APP_NAME } from '../config.ts';
+import { healthzHandler, readyzHandler } from '../probes.ts';
+import { testRateLimiter } from '../testing/testExpress.ts';
+import { authRouter } from './auth.ts';
 
 const dbMocks = vi.hoisted(() => ({
   warframeOk: true,
@@ -20,8 +20,8 @@ const dbMocks = vi.hoisted(() => ({
   worCatalogDbPath: '',
 }));
 
-vi.mock('../config.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../config.js')>();
+vi.mock('../config.ts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../config.ts')>();
   return {
     ...actual,
     get WARFRAME_CATALOG_DB_PATH() {
@@ -33,7 +33,7 @@ vi.mock('../config.js', async (importOriginal) => {
   };
 });
 
-vi.mock('../games/warframe/index.js', () => ({
+vi.mock('../games/warframe/index.ts', () => ({
   getWarframeDb: () => ({
     prepare: () => ({
       get: () => {
@@ -44,7 +44,7 @@ vi.mock('../games/warframe/index.js', () => ({
   }),
 }));
 
-vi.mock('../games/epic7/index.js', () => ({
+vi.mock('../games/epic7/index.ts', () => ({
   getEpic7Db: () => ({
     prepare: () => ({
       get: () => {
@@ -55,7 +55,7 @@ vi.mock('../games/epic7/index.js', () => ({
   }),
 }));
 
-vi.mock('../games/wor/index.js', () => ({
+vi.mock('../games/wor/index.ts', () => ({
   getWorDb: () => ({
     prepare: () => ({
       get: () => {
@@ -66,13 +66,13 @@ vi.mock('../games/wor/index.js', () => ({
   }),
 }));
 
-vi.mock('../epic7DbState.js', () => ({
+vi.mock('../epic7DbState.ts', () => ({
   refreshEpic7DbAvailability: async () => {},
   isEpic7DbAvailable: () => dbMocks.epic7Ok,
   ensureEpic7DbAvailable: () => dbMocks.epic7Ok,
 }));
 
-vi.mock('../worDbState.js', () => ({
+vi.mock('../worDbState.ts', () => ({
   refreshWorDbAvailability: async () => {},
   isWorDbAvailable: () => dbMocks.worOk,
   ensureWorDbAvailable: () => dbMocks.worOk,

@@ -1,7 +1,7 @@
 import Database from 'better-sqlite3';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { applyUserSchema } from './userSchema.js';
+import { applyUserSchema } from './userSchema.ts';
 
 describe('user schema', () => {
   let db: Database.Database | null = null;

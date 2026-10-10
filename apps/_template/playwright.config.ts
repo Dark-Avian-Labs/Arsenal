@@ -20,7 +20,7 @@ const signedInRoot = clerk ? fs.mkdtempSync(path.join(os.tmpdir(), 'appbase-e2e-
 const browser = { ...devices['Desktop Chrome'], locale: 'en-US' as const };
 
 const signedOutServer = {
-  command: 'node dist/server/index.js',
+  command: 'node server/index.ts',
   url: `${baseURL}/healthz`,
   reuseExistingServer: !process.env.CI,
   timeout: 30_000,

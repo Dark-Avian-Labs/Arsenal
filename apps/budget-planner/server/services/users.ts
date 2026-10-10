@@ -1,7 +1,7 @@
 import { randomBytes, randomUUID } from 'crypto';
 
-import type { MemberRole } from '../db/appSchema.js';
-import { getAppDb } from '../db/connection.js';
+import type { MemberRole } from '../db/appSchema.ts';
+import { getAppDb } from '../db/connection.ts';
 
 export interface AppUser {
   id: string;

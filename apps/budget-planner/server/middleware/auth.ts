@@ -1,15 +1,15 @@
 import { clerkClient, getAuth } from '@clerk/express';
 import type { NextFunction, Request, Response } from 'express';
 
-import { CLERK_CONFIGURED } from '../config.js';
-import type { MemberRole } from '../db/appSchema.js';
+import { CLERK_CONFIGURED } from '../config.ts';
+import type { MemberRole } from '../db/appSchema.ts';
 import {
   canEdit,
   getMembership,
   getUserByClerkId,
   upsertUserFromClerk,
   type AppUser,
-} from '../services/users.js';
+} from '../services/users.ts';
 
 export type AuthedRequest = Request & { appUser: AppUser };
 

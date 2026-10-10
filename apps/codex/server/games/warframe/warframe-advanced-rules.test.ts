@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { arcaneMaxRankFromLevelStats, resolveAdvancedRowRelevance } from './index.js';
+import { arcaneMaxRankFromLevelStats, resolveAdvancedRowRelevance } from './index.ts';
 
 describe('arcaneMaxRankFromLevelStats', () => {
   it('returns length - 1 for valid level_stats JSON', () => {

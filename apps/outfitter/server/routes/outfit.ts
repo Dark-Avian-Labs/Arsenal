@@ -5,13 +5,13 @@ import {
   SCORE_STAT_KEYS,
   optimizeLoadoutsAsync,
   type ScoreStatKey,
-} from '../../shared/optimizer.js';
-import type { GearPieceInput } from '../../shared/pieceStats.js';
-import { outfitHeroSchema, outfitPieceIdsSchema } from '../../shared/schemas.js';
-import { getAppDb } from '../db/appDb.js';
-import * as q from '../db/queries.js';
-import { requireAccountId } from '../http/account.js';
-import { asyncHandler, json, sendError } from '../http/handlers.js';
+} from '../../shared/optimizer.ts';
+import type { GearPieceInput } from '../../shared/pieceStats.ts';
+import { outfitHeroSchema, outfitPieceIdsSchema } from '../../shared/schemas.ts';
+import { getAppDb } from '../db/appDb.ts';
+import * as q from '../db/queries.ts';
+import { requireAccountId } from '../http/account.ts';
+import { asyncHandler, json, sendError } from '../http/handlers.ts';
 
 export const outfitRouter = Router();
 outfitRouter.use(requireAuthApi);

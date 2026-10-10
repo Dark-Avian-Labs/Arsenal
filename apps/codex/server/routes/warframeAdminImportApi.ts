@@ -2,17 +2,17 @@ import { validateBody } from '@dark-avian-labs/server-kit';
 import { Router, type Response } from 'express';
 import { z } from 'zod';
 
-import { parseForceSteps } from '../../shared/warframeImport/pipelineSteps.js';
-import { getClerkUserId } from '../auth/clerkUser.js';
-import { requireCodexAdmin } from '../core.js';
+import { parseForceSteps } from '../../shared/warframeImport/pipelineSteps.ts';
+import { getClerkUserId } from '../auth/clerkUser.ts';
+import { requireCodexAdmin } from '../core.ts';
 import {
   getAdminImportSnapshot,
   isAdminImportRunning,
   resetAdminImportLock,
   startAdminImportJob,
   subscribeAdminImportSnapshot,
-} from '../import/warframe/adminImportJob.js';
-import { catalogNeedsImport } from '../import/warframe/startupPipeline.js';
+} from '../import/warframe/adminImportJob.ts';
+import { catalogNeedsImport } from '../import/warframe/startupPipeline.ts';
 
 export const warframeAdminImportRouter = Router();
 

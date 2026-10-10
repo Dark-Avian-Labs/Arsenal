@@ -9,7 +9,7 @@ import {
   type FactionKey,
   type HeroClassKey,
   type HeroRarityKey,
-} from '../../games/wor/index.js';
+} from '../../games/wor/index.ts';
 
 const FACTION_NAME_TO_KEY: Record<string, FactionKey> = {
   Watchguard: 'watchguard',

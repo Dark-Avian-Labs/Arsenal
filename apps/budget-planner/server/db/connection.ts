@@ -1,6 +1,6 @@
 import Database from 'better-sqlite3';
 
-import { APP_DB_PATH } from '../config.js';
+import { APP_DB_PATH } from '../config.ts';
 
 let appDb: Database.Database | null = null;
 

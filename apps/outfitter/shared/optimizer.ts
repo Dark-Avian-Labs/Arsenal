@@ -1,11 +1,11 @@
-import { GEAR_SLOTS, type GearSlot } from './catalog.js';
+import { GEAR_SLOTS, type GearSlot } from './catalog.ts';
 import {
   attacksPerSecond,
   computeFinalStats,
   type FinalStats,
   type HeroBaseStats,
-} from './formulas.js';
-import { loadoutStatBag, type GearPieceInput } from './pieceStats.js';
+} from './formulas.ts';
+import { loadoutStatBag, type GearPieceInput } from './pieceStats.ts';
 
 export const SCORE_STAT_KEYS = [
   'atk',

@@ -66,7 +66,7 @@ function readSourceRows() {
 const rows = readSourceRows();
 const byUniqueName = Object.fromEntries(rows.map((row) => [row.uniqueName, row.bonuses]));
 
-const body = `import type { RankStatBonuses } from './equipmentRankStats.js';
+const body = `import type { RankStatBonuses } from './equipmentRankStats.ts';
 
 export interface WarframeRankExceptionEntry {
   uniqueName: string;

@@ -34,5 +34,5 @@ const buildCode = await run(
 );
 if (buildCode !== 0) process.exit(buildCode);
 
-const entry = process.env.E2E_SERVER_ENTRY?.trim() || 'dist/server/index.js';
+const entry = process.env.E2E_SERVER_ENTRY?.trim() || 'server/index.ts';
 process.exit(await run(process.execPath, [entry], false));

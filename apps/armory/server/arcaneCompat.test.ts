@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { classifyArcaneCompatTags, isOperatorOnlyArcane } from './arcaneCompat.js';
+import { classifyArcaneCompatTags, isOperatorOnlyArcane } from './arcaneCompat.ts';
 
 describe('classifyArcaneCompatTags', () => {
   it('tags Longbow Sharpshoot as primary (not generic warframe-only)', () => {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { canReadBuild } from './buildAccess.js';
-import { canReadLoadout } from './loadoutAccess.js';
+import { canReadBuild } from './buildAccess.ts';
+import { canReadLoadout } from './loadoutAccess.ts';
 
 describe('canReadBuild', () => {
   it('allows owners regardless of visibility', () => {

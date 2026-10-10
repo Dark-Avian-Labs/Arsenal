@@ -1,7 +1,7 @@
 import { createDbSingleton } from '@dark-avian-labs/server-kit';
 import type Database from 'better-sqlite3';
 
-import { WARFRAME_DB_PATH } from '../config.js';
+import { WARFRAME_DB_PATH } from '../config.ts';
 
 export function ensureWarframeCoreTables(db: Database.Database): void {
   db.exec(`

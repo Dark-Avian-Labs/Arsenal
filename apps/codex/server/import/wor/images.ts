@@ -2,8 +2,8 @@ import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { WOR_IMAGES_DIR } from '../../config.js';
-import { fetchWithTimeout, FETCH_TIMEOUT_MS } from '../../http/fetchWithTimeout.js';
+import { WOR_IMAGES_DIR } from '../../config.ts';
+import { fetchWithTimeout, FETCH_TIMEOUT_MS } from '../../http/fetchWithTimeout.ts';
 
 export const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 

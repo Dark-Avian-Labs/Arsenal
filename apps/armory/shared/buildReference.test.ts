@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildAbilityKey } from './abilitySlugRegistry.js';
-import { buildArchonShardKey } from './archonShardRegistry.js';
-import { resolveHelminthFromConfig, resolveArchonShardKey } from './buildReference.js';
+import { buildAbilityKey } from './abilitySlugRegistry.ts';
+import { buildArchonShardKey } from './archonShardRegistry.ts';
+import { resolveHelminthFromConfig, resolveArchonShardKey } from './buildReference.ts';
 
 const TITANIA_ABILITIES = [
   { abilityName: 'Spellbind', abilityUniqueName: '/Lotus/Powersuits/Fairy/FairySoulAbility' },

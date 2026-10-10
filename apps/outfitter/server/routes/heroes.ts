@@ -1,16 +1,16 @@
 import { requireAuthApi } from '@dark-avian-labs/server-kit';
 import { Router } from 'express';
 
-import { computeFinalStats } from '../../shared/formulas.js';
+import { computeFinalStats } from '../../shared/formulas.ts';
 import {
   loadoutStatBag,
   type ArtifactStatInput,
   type GearPieceInput,
-} from '../../shared/pieceStats.js';
-import { getAppDb } from '../db/appDb.js';
-import * as q from '../db/queries.js';
-import { requireAccountId } from '../http/account.js';
-import { asyncHandler, json, sendError } from '../http/handlers.js';
+} from '../../shared/pieceStats.ts';
+import { getAppDb } from '../db/appDb.ts';
+import * as q from '../db/queries.ts';
+import { requireAccountId } from '../http/account.ts';
+import { asyncHandler, json, sendError } from '../http/handlers.ts';
 
 export const heroesRouter = Router();
 heroesRouter.use(requireAuthApi);

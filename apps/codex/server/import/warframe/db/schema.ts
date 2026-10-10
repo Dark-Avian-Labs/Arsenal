@@ -1,1 +1,1 @@
-export { createCatalogSchema as createAppSchema, createCatalogSchema } from './catalogSchema.js';
+export { createCatalogSchema as createAppSchema, createCatalogSchema } from './catalogSchema.ts';

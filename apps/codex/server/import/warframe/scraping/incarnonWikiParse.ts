@@ -6,13 +6,13 @@ import {
   extractStatModifiers,
   normalizeWikiText,
   substitutePlaceholders,
-} from './incarnonStatModifiers.js';
+} from './incarnonStatModifiers.ts';
 import type {
   IncarnonEvolutionTier,
   IncarnonPerkOption,
   ParsedGenesisPage,
   ParsedIntrinsicPage,
-} from './incarnonTypes.js';
+} from './incarnonTypes.ts';
 
 const EVO_TIER_RE = /^EVO(\d+)$/i;
 const CHALLENGE_RE = /^Evolution(?:\s+[IVXLCDM]+)?\s+Challenge$/i;

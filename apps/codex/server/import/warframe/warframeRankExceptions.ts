@@ -3,7 +3,7 @@ import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import path from 'path';
 
-import { DATA_DIR, PROJECT_ROOT } from '../../config.js';
+import { DATA_DIR, PROJECT_ROOT } from '../../config.ts';
 
 const SOURCE_PATH = path.join(PROJECT_ROOT, 'scripts/data/warframe-rank-exceptions.json');
 const OUT_PATH = path.join(

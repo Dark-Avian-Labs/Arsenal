@@ -6,17 +6,17 @@ import {
   getOwnerDisplayName,
   resolveOwnerUsernames,
   resolveClerkUserIdByUsername,
-} from '../auth/armoryUsers.js';
-import { getClerkUserId } from '../auth/clerkUser.js';
-import { getClerkAuthState } from '../auth/middleware.js';
-import { canReadBuild } from '../buildAccess.js';
-import { bustCatalogResponseCache, sendCachedCatalogJson } from '../cache/catalogResponseCache.js';
-import { getUserDb } from '../db/connection.js';
+} from '../auth/armoryUsers.ts';
+import { getClerkUserId } from '../auth/clerkUser.ts';
+import { getClerkAuthState } from '../auth/middleware.ts';
+import { canReadBuild } from '../buildAccess.ts';
+import { bustCatalogResponseCache, sendCachedCatalogJson } from '../cache/catalogResponseCache.ts';
+import { getUserDb } from '../db/connection.ts';
 import {
   buildReadAccessContext,
   parseVisibility,
   resolveShareTokenForVisibility,
-} from '../visibilityTokens.js';
+} from '../visibilityTokens.ts';
 import {
   BUILD_SELECT_LIST,
   BUILD_SELECT_LIST_FROM_B,
@@ -33,13 +33,13 @@ import {
   toBuildListItem,
   toBuildResponse,
   type BuildRow,
-} from './apiShared.js';
+} from './apiShared.ts';
 import {
   EquipmentTypeSchema,
   MAX_EQUIPMENT_UNIQUE_NAME_LENGTH,
   ModConfigSchema,
-} from './modConfigValidation.js';
-import { BuildUpdateBodySchema, UserContentNameSchema } from './userContentSchemas.js';
+} from './modConfigValidation.ts';
+import { BuildUpdateBodySchema, UserContentNameSchema } from './userContentSchemas.ts';
 
 const BuildCreateBodySchema = z.object({
   name: UserContentNameSchema,

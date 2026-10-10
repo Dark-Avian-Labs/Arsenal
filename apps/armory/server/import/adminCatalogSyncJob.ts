@@ -1,8 +1,8 @@
 import { log } from '@dark-avian-labs/server-kit';
 
-import { bustCatalogResponseCache } from '../cache/catalogResponseCache.js';
-import { bustModListCache } from '../cache/modListCache.js';
-import { syncCodexWarframeCatalog, type CatalogSyncSummary } from './codexCatalog.js';
+import { bustCatalogResponseCache } from '../cache/catalogResponseCache.ts';
+import { bustModListCache } from '../cache/modListCache.ts';
+import { syncCodexWarframeCatalog, type CatalogSyncSummary } from './codexCatalog.ts';
 
 export interface SyncLogLine {
   ts: string;

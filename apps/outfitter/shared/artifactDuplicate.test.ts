@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { artifactIdentityKey, findDuplicateArtifact, identityFromArtifact } from './artifactDuplicate.js';
+import { artifactIdentityKey, findDuplicateArtifact, identityFromArtifact } from './artifactDuplicate.ts';
 
 const scarab = {
   catalog_slug: 'golden-scarab',

@@ -1,4 +1,4 @@
-import { generateShareToken } from './shareToken.js';
+import { generateShareToken } from './shareToken.ts';
 
 export type VisibilityValue = 'public' | 'private' | 'unlisted';
 

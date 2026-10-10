@@ -1,8 +1,8 @@
 import { Router } from 'express';
 
-import { buildsRouter } from './buildsRouter.js';
-import { catalogRouter } from './catalogRouter.js';
-import { loadoutsRouter } from './loadoutsRouter.js';
+import { buildsRouter } from './buildsRouter.ts';
+import { catalogRouter } from './catalogRouter.ts';
+import { loadoutsRouter } from './loadoutsRouter.ts';
 
 export const apiRouter: Router = Router();
 

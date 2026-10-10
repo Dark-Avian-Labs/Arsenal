@@ -1,8 +1,8 @@
 import Database from 'better-sqlite3';
 import { describe, expect, it } from 'vitest';
 
-import { createAppSchema } from './appDb.js';
-import * as q from './queries.js';
+import { createAppSchema } from './appDb.ts';
+import * as q from './queries.ts';
 
 function memoryDb(): Database.Database {
   const db = new Database(':memory:');

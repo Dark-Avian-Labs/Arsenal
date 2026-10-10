@@ -1,11 +1,11 @@
 import {
   abilityPathBasename,
   resolveHelminthReplacementAbility,
-} from './helminthAbilityResolve.js';
+} from './helminthAbilityResolve.ts';
 import {
   HELMINTH_REGISTRY_ENTRIES,
   type HelminthRegistryEntry,
-} from './helminthRegistry.generated.js';
+} from './helminthRegistry.generated.ts';
 
 export type { HelminthRegistryEntry };
 export { HELMINTH_REGISTRY_ENTRIES };

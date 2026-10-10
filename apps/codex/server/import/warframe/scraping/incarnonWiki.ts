@@ -8,12 +8,12 @@ import {
   FETCH_TIMEOUT_MS,
   fetchBounded,
   isAbortError,
-} from '../http/fetchWithTimeout.js';
-import { collectIncarnonGenesisUnlockers } from '../incarnonGenesisSeed.js';
-import { safeImagePathUnderRoot } from '../safeImagePath.js';
-import type { IncarnonData, IncarnonEvolutionTier, IncarnonPerkOption } from './incarnonTypes.js';
-import { parseGenesisPageWithWeaponValues, parseIntrinsicPageHtml } from './incarnonWikiParse.js';
-import { getWikiUserAgent } from './wikiUserAgent.js';
+} from '../http/fetchWithTimeout.ts';
+import { collectIncarnonGenesisUnlockers } from '../incarnonGenesisSeed.ts';
+import { safeImagePathUnderRoot } from '../safeImagePath.ts';
+import type { IncarnonData, IncarnonEvolutionTier, IncarnonPerkOption } from './incarnonTypes.ts';
+import { parseGenesisPageWithWeaponValues, parseIntrinsicPageHtml } from './incarnonWikiParse.ts';
+import { getWikiUserAgent } from './wikiUserAgent.ts';
 
 const WIKI_BASE = 'https://wiki.warframe.com';
 const INTRINSIC_INCANNON_WEAPONS = [

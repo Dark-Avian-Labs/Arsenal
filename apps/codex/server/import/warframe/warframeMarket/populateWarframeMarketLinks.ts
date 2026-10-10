@@ -1,10 +1,10 @@
 import type Database from 'better-sqlite3';
 
-import { WORKSHEET_ORDER, loadArmoryWorksheetSources } from './armorySources.js';
-import { isPrimeVariantName, resolveCanonicalKey } from './canonical.js';
-import { fetchWarframeMarketSlugSet } from './fetchWarframeMarketSlugs.js';
-import type { MarketLinkKind, WorksheetCategory } from './resolveHref.js';
-import { resolveMarketHref, warframeMarketSellHrefUsesPrimeOnlyItemSlug } from './resolveHref.js';
+import { WORKSHEET_ORDER, loadArmoryWorksheetSources } from './armorySources.ts';
+import { isPrimeVariantName, resolveCanonicalKey } from './canonical.ts';
+import { fetchWarframeMarketSlugSet } from './fetchWarframeMarketSlugs.ts';
+import type { MarketLinkKind, WorksheetCategory } from './resolveHref.ts';
+import { resolveMarketHref, warframeMarketSellHrefUsesPrimeOnlyItemSlug } from './resolveHref.ts';
 
 export interface PopulateWarframeMarketLinksResult {
   rowsUpserted: number;

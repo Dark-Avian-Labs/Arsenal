@@ -5,10 +5,10 @@ import {
   reconcileStoredBuildModSlots,
   type BuildModSlot,
   type CatalogPolarityDefaults,
-} from '../../shared/buildSlotLayout.js';
-import { isCompanionWeapon } from '../../shared/companionWeapons.js';
-import type { EquipmentSlotConfigKey } from '../../shared/equipmentSlotConfig.js';
-import { parseBuildConfig } from '../routes/apiShared.js';
+} from '../../shared/buildSlotLayout.ts';
+import { isCompanionWeapon } from '../../shared/companionWeapons.ts';
+import type { EquipmentSlotConfigKey } from '../../shared/equipmentSlotConfig.ts';
+import { parseBuildConfig } from '../routes/apiShared.ts';
 
 type CatalogEquipmentRow = {
   name?: string | null;

@@ -1,10 +1,10 @@
 import Database from 'better-sqlite3';
 import { afterEach, beforeEach, expect, it } from 'vitest';
 
-import { describeWithSqlite } from '../../testing/describeWithSqlite.js';
-import { heroHasAwakening } from './constants.js';
-import * as q from './db/queries.js';
-import { createSchema as createWorSchema } from './db/schema.js';
+import { describeWithSqlite } from '../../testing/describeWithSqlite.ts';
+import { heroHasAwakening } from './constants.ts';
+import * as q from './db/queries.ts';
+import { createSchema as createWorSchema } from './db/schema.ts';
 
 describeWithSqlite('WoR 3-star hero awakening', () => {
   let db: Database.Database;

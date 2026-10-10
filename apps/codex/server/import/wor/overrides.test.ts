@@ -4,8 +4,8 @@ import path from 'node:path';
 
 import { afterEach, describe, expect, it } from 'vitest';
 
-import type { CatalogBundle } from './catalogQueries.js';
-import { applyWorOverrides } from './overrides.js';
+import type { CatalogBundle } from './catalogQueries.ts';
+import { applyWorOverrides } from './overrides.ts';
 
 const tempFiles: string[] = [];
 

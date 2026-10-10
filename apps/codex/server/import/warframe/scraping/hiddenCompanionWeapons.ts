@@ -1,21 +1,21 @@
 import fs from 'fs';
 import path from 'path';
 
-import { BEAST_CLAW_REGISTRY } from '../../../../shared/warframeImport/beastClawRegistry.js';
-import { PROJECT_ROOT } from '../../../config.js';
+import { BEAST_CLAW_REGISTRY } from '../../../../shared/warframeImport/beastClawRegistry.ts';
+import { PROJECT_ROOT } from '../../../config.ts';
 import {
   beastClawsWikiRevisionChanged,
   writeStoredBeastClawsWikiRevision,
-} from '../beastClawsWikiRevision.js';
-import { getCatalogDb } from '../db/connection.js';
-import { FETCH_BYTE_LIMITS, FETCH_TIMEOUT_MS, fetchBounded } from '../http/fetchWithTimeout.js';
-import { safeImagePathUnderRoot } from '../safeImagePath.js';
+} from '../beastClawsWikiRevision.ts';
+import { getCatalogDb } from '../db/connection.ts';
+import { FETCH_BYTE_LIMITS, FETCH_TIMEOUT_MS, fetchBounded } from '../http/fetchWithTimeout.ts';
+import { safeImagePathUnderRoot } from '../safeImagePath.ts';
 import {
   BEAST_CLAWS_WIKI_PAGE,
   parseBeastClawsFromWikiHtml,
   serializeParsedBeastClawDamagePerShot,
-} from './beastClawsWiki.js';
-import { getWikiUserAgent } from './wikiUserAgent.js';
+} from './beastClawsWiki.ts';
+import { getWikiUserAgent } from './wikiUserAgent.ts';
 
 const WIKI_BASE = 'https://wiki.warframe.com';
 const BEAST_CLAWS_ICON_PATH = '/icons/beast-claws.png';

@@ -1,8 +1,8 @@
 import { createDbSingleton } from '@dark-avian-labs/server-kit';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
-import { describeWithSqlite } from './testing/describeWithSqlite.js';
-import { createTempDbDir, removeTempDbDir } from './testing/sqliteTestHarness.js';
+import { describeWithSqlite } from './testing/describeWithSqlite.ts';
+import { createTempDbDir, removeTempDbDir } from './testing/sqliteTestHarness.ts';
 
 describeWithSqlite('createDbSingleton', () => {
   let tmpDir: string;

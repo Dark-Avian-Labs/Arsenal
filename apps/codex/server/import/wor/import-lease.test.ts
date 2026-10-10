@@ -1,16 +1,16 @@
 import Database from 'better-sqlite3';
 import { afterEach, beforeEach, expect, it } from 'vitest';
 
-import { createSchema as createWorSchema } from '../../games/wor/db/schema.js';
-import { ensureWorImportTables } from '../../games/wor/db/schema.js';
+import { createSchema as createWorSchema } from '../../games/wor/db/schema.ts';
+import { ensureWorImportTables } from '../../games/wor/db/schema.ts';
 import {
   requireWorImportLease,
   tryAcquireWorImportLease,
   WorImportLeaseLostError,
-} from './importLease.js';
-import { applyWorCatalogMutation } from './startupPipeline.js';
-import { describeWithSqlite } from '../../testing/describeWithSqlite.js';
-import { createTempDbDir, removeTempDbDir } from '../../testing/sqliteTestHarness.js';
+} from './importLease.ts';
+import { applyWorCatalogMutation } from './startupPipeline.ts';
+import { describeWithSqlite } from '../../testing/describeWithSqlite.ts';
+import { createTempDbDir, removeTempDbDir } from '../../testing/sqliteTestHarness.ts';
 
 describeWithSqlite('WoR import lease writes', () => {
   let db: Database.Database;

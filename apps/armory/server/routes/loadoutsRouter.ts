@@ -1,16 +1,16 @@
 import { Router, type Request, type Response } from 'express';
 
-import { getClerkUserId } from '../auth/clerkUser.js';
-import { getClerkAuthState } from '../auth/middleware.js';
-import { canReadBuild } from '../buildAccess.js';
-import { getUserDb } from '../db/connection.js';
-import { timingSafeEqualString } from '../http/timingSafeEqual.js';
-import { canReadLoadout } from '../loadoutAccess.js';
+import { getClerkUserId } from '../auth/clerkUser.ts';
+import { getClerkAuthState } from '../auth/middleware.ts';
+import { canReadBuild } from '../buildAccess.ts';
+import { getUserDb } from '../db/connection.ts';
+import { timingSafeEqualString } from '../http/timingSafeEqual.ts';
+import { canReadLoadout } from '../loadoutAccess.ts';
 import {
   buildReadAccessContext,
   parseVisibility,
   resolveShareTokenForVisibility,
-} from '../visibilityTokens.js';
+} from '../visibilityTokens.ts';
 import {
   BUILD_SELECT_LIST,
   COPY_PREFIX,
@@ -27,13 +27,13 @@ import {
   sendInternalError,
   toBuildResponse,
   type BuildRow,
-} from './apiShared.js';
-import { LoadoutSlotTypeSchema } from './modConfigValidation.js';
+} from './apiShared.ts';
+import { LoadoutSlotTypeSchema } from './modConfigValidation.ts';
 import {
   LoadoutCreateBodySchema,
   LoadoutUpdateBodySchema,
   loadoutUpdateErrorMessage,
-} from './userContentSchemas.js';
+} from './userContentSchemas.ts';
 
 export const loadoutsRouter: Router = Router();
 

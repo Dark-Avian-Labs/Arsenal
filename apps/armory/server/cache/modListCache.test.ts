@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { __modListCacheTest, getCachedModList } from './modListCache.js';
+import { __modListCacheTest, getCachedModList } from './modListCache.ts';
 
 describe('modListCache', () => {
   beforeEach(() => {

@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url';
 
 import { describe, expect, it } from 'vitest';
 
-import { parseBeastClawsFromWikiHtml } from '../beastClawsWiki.js';
+import { parseBeastClawsFromWikiHtml } from '../beastClawsWiki.ts';
 
 const fixturePath = path.join(path.dirname(fileURLToPath(import.meta.url)), 'fixtures', 'claws-beast.html');
 

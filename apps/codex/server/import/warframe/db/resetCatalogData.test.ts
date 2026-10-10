@@ -1,7 +1,7 @@
 import Database from 'better-sqlite3';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { resetCatalogData, USER_TABLE_NAMES } from './resetCatalogData.js';
+import { resetCatalogData, USER_TABLE_NAMES } from './resetCatalogData.ts';
 
 describe('resetCatalogData', () => {
   let db: Database.Database | null = null;

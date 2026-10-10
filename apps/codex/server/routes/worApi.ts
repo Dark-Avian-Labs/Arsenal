@@ -2,7 +2,7 @@ import { log } from '@dark-avian-labs/server-kit';
 import { positiveInt, validateBody } from '@dark-avian-labs/server-kit';
 import { Router, type Request, type Response } from 'express';
 
-import { requireClerkUserId } from '../auth/clerkUser.js';
+import { requireClerkUserId } from '../auth/clerkUser.ts';
 import {
   ARTIFACT_PROMOTION_MAX,
   getWorDb,
@@ -16,8 +16,8 @@ import {
   worUpdateDemonGaugeSchema,
   worUpdateHeroGaugeSchema,
   worUpdateOwnedSchema,
-} from '../games/wor/index.js';
-import { ensureWorDbAvailable } from '../worDbState.js';
+} from '../games/wor/index.ts';
+import { ensureWorDbAvailable } from '../worDbState.ts';
 import {
   compactRosterArtifact,
   compactRosterDemon,
@@ -25,7 +25,7 @@ import {
   filterOwnedRows,
   parseRosterInclude,
   parseRosterOwnedFilter,
-} from './worRoster.js';
+} from './worRoster.ts';
 
 export const worApiRouter = Router();
 

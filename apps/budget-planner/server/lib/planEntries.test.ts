@@ -1,8 +1,8 @@
 import Database from 'better-sqlite3';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { createAppSchema } from '../db/appSchema.js';
-import { listPlanEntries, syncOnceArchiveState } from './planEntries.js';
+import { createAppSchema } from '../db/appSchema.ts';
+import { listPlanEntries, syncOnceArchiveState } from './planEntries.ts';
 
 function seedPlan(db: Database.Database): void {
   db.exec(`

@@ -1,11 +1,11 @@
 import { requireAdmin, requireAuthApi } from '@dark-avian-labs/server-kit';
 import { Router } from 'express';
 
-import { accountIdSchema, accountNameSchema } from '../../shared/schemas.js';
-import { getAppDb } from '../db/appDb.js';
-import * as q from '../db/queries.js';
-import { asyncHandler, json, requireClerkUserId, sendError } from '../http/handlers.js';
-import { importCodexCatalog } from '../import/codexCatalog.js';
+import { accountIdSchema, accountNameSchema } from '../../shared/schemas.ts';
+import { getAppDb } from '../db/appDb.ts';
+import * as q from '../db/queries.ts';
+import { asyncHandler, json, requireClerkUserId, sendError } from '../http/handlers.ts';
+import { importCodexCatalog } from '../import/codexCatalog.ts';
 
 export const accountsRouter = Router();
 

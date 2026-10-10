@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { isPrimeVariantName, normalizeDisplayName, resolveCanonicalKey, stripPrimeSuffix } from './index.js';
+import { isPrimeVariantName, normalizeDisplayName, resolveCanonicalKey, stripPrimeSuffix } from './index.ts';
 
 describe('warframe sync canonicalization', () => {
   it('normalizes messy display strings from exports (prefixes, modes, primes)', () => {

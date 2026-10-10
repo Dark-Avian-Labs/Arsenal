@@ -1,12 +1,12 @@
 import fs from 'fs';
 import path from 'path';
 
-import { getCatalogDb } from '../db/connection.js';
-import { fetchOverframeBytes } from '../http/fetchOverframe.js';
-import { FETCH_BYTE_LIMITS, FETCH_TIMEOUT_MS, isAbortError } from '../http/fetchWithTimeout.js';
-import { safeImagePathUnderRoot } from '../safeImagePath.js';
-import { fetchWikiImageForExaltedStanceMod } from './exaltedStanceWikiImages.js';
-import { scrapeItemPageByPath } from './itemScraper.js';
+import { getCatalogDb } from '../db/connection.ts';
+import { fetchOverframeBytes } from '../http/fetchOverframe.ts';
+import { FETCH_BYTE_LIMITS, FETCH_TIMEOUT_MS, isAbortError } from '../http/fetchWithTimeout.ts';
+import { safeImagePathUnderRoot } from '../safeImagePath.ts';
+import { fetchWikiImageForExaltedStanceMod } from './exaltedStanceWikiImages.ts';
+import { scrapeItemPageByPath } from './itemScraper.ts';
 
 const OVERFRAME_MEDIA_BASE_URL = 'https://media.overframe.gg/128x';
 const ARMORY_WIKI_STANCE_IMAGE_SQL_PREFIX = '/ArmoryWiki/StanceMod';

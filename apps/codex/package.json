@@ -4,15 +4,26 @@
   "private": true,
   "description": "Codex - game collection tracker",
   "license": "MIT",
+  "files": [
+    "server",
+    "shared",
+    "dist/client",
+    "public",
+    "icons",
+    "ecosystem.config.cjs",
+    ".env.production",
+    "scripts/data"
+  ],
   "type": "module",
   "scripts": {
     "typecheck": "pnpm run typecheck:server && pnpm run typecheck:client",
     "typecheck:server": "tsc -p tsconfig.server.json --noEmit",
     "typecheck:client": "tsc -p tsconfig.json --noEmit",
-    "build": "pnpm run typecheck && tsc -p tsconfig.server.json && vite build",
+    "build": "pnpm run typecheck && vite build",
     "wor:import": "node scripts/wor-import.mjs",
     "wor:import:cache": "node scripts/generate-wor-import-cache.mjs",
-    "start": "node dist/server/index.js",
+    "start": "node server/index.ts",
+    "dev": "node --watch server/index.ts",
     "dev:client": "dotenvx run --strict -f .env.development -- vite",
     "db:init": "node scripts/db-init.mjs",
     "test": "vitest run",
@@ -24,7 +35,7 @@
     "lint:fix": "oxlint --fix .",
     "format": "oxfmt --write .",
     "check-format": "oxfmt --check .",
-    "warframe:import": "node dist/server/import/warframe/runManualImport.js"
+    "warframe:import": "node server/import/warframe/runManualImport.ts"
   },
   "dependencies": {
     "@clerk/express": "catalog:",

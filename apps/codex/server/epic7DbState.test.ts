@@ -6,7 +6,7 @@ import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
 const dbPath = path.join(os.tmpdir(), `codex-epic7-test-${process.pid}.db`);
 
-vi.mock('./games/epic7/index.js', () => ({
+vi.mock('./games/epic7/index.ts', () => ({
   EPIC7_DB_PATH: dbPath,
 }));
 
@@ -22,19 +22,19 @@ describe('epic7DbState', () => {
 
   it('reports available when database file exists', async () => {
     await fs.writeFile(dbPath, '');
-    const { refreshEpic7DbAvailability, isEpic7DbAvailable } = await import('./epic7DbState.js');
+    const { refreshEpic7DbAvailability, isEpic7DbAvailable } = await import('./epic7DbState.ts');
     await refreshEpic7DbAvailability();
     expect(isEpic7DbAvailable()).toBe(true);
   });
 
   it('reports unavailable when database file is missing', async () => {
-    const { refreshEpic7DbAvailability, isEpic7DbAvailable } = await import('./epic7DbState.js');
+    const { refreshEpic7DbAvailability, isEpic7DbAvailable } = await import('./epic7DbState.ts');
     await refreshEpic7DbAvailability();
     expect(isEpic7DbAvailable()).toBe(false);
   });
 
   it('ensureEpic7DbAvailable picks up a file created after a false cache', async () => {
-    const { ensureEpic7DbAvailable, isEpic7DbAvailable } = await import('./epic7DbState.js');
+    const { ensureEpic7DbAvailable, isEpic7DbAvailable } = await import('./epic7DbState.ts');
     expect(ensureEpic7DbAvailable()).toBe(false);
     expect(isEpic7DbAvailable()).toBe(false);
     await fs.writeFile(dbPath, '');
@@ -45,7 +45,7 @@ describe('epic7DbState', () => {
   it('deduplicates concurrent refresh calls', async () => {
     const accessSpy = vi.spyOn(fs, 'access').mockResolvedValue(undefined);
     await fs.writeFile(dbPath, '');
-    const { refreshEpic7DbAvailability, isEpic7DbAvailable } = await import('./epic7DbState.js');
+    const { refreshEpic7DbAvailability, isEpic7DbAvailable } = await import('./epic7DbState.ts');
 
     await Promise.all([refreshEpic7DbAvailability(), refreshEpic7DbAvailability(), refreshEpic7DbAvailability()]);
 

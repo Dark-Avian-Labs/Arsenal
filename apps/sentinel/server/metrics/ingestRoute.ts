@@ -1,10 +1,10 @@
 import type { NextFunction, Request, Response } from 'express';
 import { Router } from 'express';
 
-import { SENTINEL_INGEST_TOKEN } from '../config.js';
-import { getMetricsDb } from './db.js';
-import { parseIngestBody } from './ingestSchema.js';
-import { writeIngestSamples } from './writer.js';
+import { SENTINEL_INGEST_TOKEN } from '../config.ts';
+import { getMetricsDb } from './db.ts';
+import { parseIngestBody } from './ingestSchema.ts';
+import { writeIngestSamples } from './writer.ts';
 
 export const ingestRouter = Router();
 

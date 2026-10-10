@@ -1,7 +1,7 @@
 import * as cheerio from 'cheerio';
 
-import { FETCH_BYTE_LIMITS, FETCH_TIMEOUT_MS, fetchBounded } from '../http/fetchWithTimeout.js';
-import { getWikiUserAgent } from './wikiUserAgent.js';
+import { FETCH_BYTE_LIMITS, FETCH_TIMEOUT_MS, fetchBounded } from '../http/fetchWithTimeout.ts';
+import { getWikiUserAgent } from './wikiUserAgent.ts';
 
 export const HELMINTH_WIKI_URL = 'https://wiki.warframe.com/w/Helminth';
 const WIKI_BASE = 'https://wiki.warframe.com';

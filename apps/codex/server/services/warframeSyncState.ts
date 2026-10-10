@@ -5,7 +5,7 @@ import {
   isWarframeSyncLeaseHeld,
   releaseWarframeSyncLease,
   tryAcquireWarframeSyncLease,
-} from './warframeSyncJobs.js';
+} from './warframeSyncJobs.ts';
 
 let running = false;
 const syncStateEmitter = new EventEmitter();

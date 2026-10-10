@@ -1,27 +1,27 @@
 import { log } from '@dark-avian-labs/server-kit';
 import { Router, type Request, type Response } from 'express';
 
-import { ARTIFACT_SLOT_STORAGE_VALUES } from '../../shared/artifactSlotState.js';
-import { MAX_ARTIFACT_SLOTS_STORAGE_LENGTH } from '../../shared/equipmentSlotConfig.js';
-import { ARCANE_PUBLIC_LIST_SQL, bindArcanePublicListParams } from '../arcaneCatalog.js';
+import { ARTIFACT_SLOT_STORAGE_VALUES } from '../../shared/artifactSlotState.ts';
+import { MAX_ARTIFACT_SLOTS_STORAGE_LENGTH } from '../../shared/equipmentSlotConfig.ts';
+import { ARCANE_PUBLIC_LIST_SQL, bindArcanePublicListParams } from '../arcaneCatalog.ts';
 import {
   classifyArcaneCompatTags,
   isOperatorOnlyArcane,
   type ArcaneCompatTag,
-} from '../arcaneCompat.js';
-import { getClerkUserId } from '../auth/clerkUser.js';
-import { requireArmoryAdmin } from '../auth/middleware.js';
-import { bustCatalogResponseCache, sendCachedCatalogJson } from '../cache/catalogResponseCache.js';
-import { getCachedModList } from '../cache/modListCache.js';
-import { getCatalogDb, getUserDb } from '../db/connection.js';
-import { reconcileBuildsForArtifactSlotChange } from '../db/reconcileBuildsForArtifactSlots.js';
-import { dedupeHelminthAbilityRows } from '../helminthAbilityDedupe.js';
+} from '../arcaneCompat.ts';
+import { getClerkUserId } from '../auth/clerkUser.ts';
+import { requireArmoryAdmin } from '../auth/middleware.ts';
+import { bustCatalogResponseCache, sendCachedCatalogJson } from '../cache/catalogResponseCache.ts';
+import { getCachedModList } from '../cache/modListCache.ts';
+import { getCatalogDb, getUserDb } from '../db/connection.ts';
+import { reconcileBuildsForArtifactSlotChange } from '../db/reconcileBuildsForArtifactSlots.ts';
+import { dedupeHelminthAbilityRows } from '../helminthAbilityDedupe.ts';
 import {
   getAdminCatalogSyncSnapshot,
   startAdminCatalogSyncJob,
   subscribeAdminCatalogSyncSnapshot,
-} from '../import/adminCatalogSyncJob.js';
-import { buildAbilitiesListQuery } from './abilitiesListQuery.js';
+} from '../import/adminCatalogSyncJob.ts';
+import { buildAbilitiesListQuery } from './abilitiesListQuery.ts';
 import {
   WEAPON_CATEGORY_TO_TYPE,
   WEAPON_JUNK_PREFIXES,
@@ -33,7 +33,7 @@ import {
   normalizeModApiRow,
   parseListPagination,
   sendInternalError,
-} from './apiShared.js';
+} from './apiShared.ts';
 
 export const catalogRouter: Router = Router();
 

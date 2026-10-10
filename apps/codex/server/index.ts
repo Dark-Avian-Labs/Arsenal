@@ -1,8 +1,8 @@
-import './config.js';
+import './config.ts';
 
 import { createAppSentinelAgent, log, startServer } from '@dark-avian-labs/server-kit';
 
-import { createApp } from './app.js';
+import { createApp } from './app.ts';
 import {
   APP_ID,
   APP_NAME,
@@ -11,23 +11,23 @@ import {
   NODE_ENV,
   PORT,
   SHUTDOWN_TIMEOUT_MS,
-} from './config.js';
-import { refreshEpic7DbAvailability } from './epic7DbState.js';
-import { closeEpic7Db, getEpic7Db } from './games/epic7/index.js';
-import { closeWarframeDb, getWarframeDb } from './games/warframe/index.js';
-import { closeWorCatalogDb, closeWorDb, getWorCatalogDb, getWorDb } from './games/wor/index.js';
-import { startAdminImportJob as startWarframeAdminImportJob } from './import/warframe/adminImportJob.js';
-import { recoverImportLeaseOnStartup as recoverWarframeImportLeaseOnStartup } from './import/warframe/importRuns.js';
-import { catalogNeedsImport as warframeCatalogNeedsImport } from './import/warframe/startupPipeline.js';
+} from './config.ts';
+import { refreshEpic7DbAvailability } from './epic7DbState.ts';
+import { closeEpic7Db, getEpic7Db } from './games/epic7/index.ts';
+import { closeWarframeDb, getWarframeDb } from './games/warframe/index.ts';
+import { closeWorCatalogDb, closeWorDb, getWorCatalogDb, getWorDb } from './games/wor/index.ts';
+import { startAdminImportJob as startWarframeAdminImportJob } from './import/warframe/adminImportJob.ts';
+import { recoverImportLeaseOnStartup as recoverWarframeImportLeaseOnStartup } from './import/warframe/importRuns.ts';
+import { catalogNeedsImport as warframeCatalogNeedsImport } from './import/warframe/startupPipeline.ts';
 import {
   catalogNeedsImport,
   copyWorCatalogIntoCollectionIfNeeded,
   ensureWorCatalogSeededFromCollection,
   runWorStartupPipeline,
-} from './import/wor/startupPipeline.js';
-import { ensureWarframeSyncJobsSchema } from './services/warframeSyncJobs.js';
-import { waitForWarframeSyncIdle } from './services/warframeSyncState.js';
-import { refreshWorDbAvailability } from './worDbState.js';
+} from './import/wor/startupPipeline.ts';
+import { ensureWarframeSyncJobsSchema } from './services/warframeSyncJobs.ts';
+import { waitForWarframeSyncIdle } from './services/warframeSyncState.ts';
+import { refreshWorDbAvailability } from './worDbState.ts';
 
 ensureDataDirs();
 ensureWarframeSyncJobsSchema();

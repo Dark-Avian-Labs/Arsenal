@@ -1,7 +1,7 @@
 import { positiveInt, z } from '@dark-avian-labs/server-kit';
 
-import { ABSOLUTE_MAX_ADVANCED_LEVEL } from '../advancedRules.js';
-import { VALENCE_PERCENT_MAX_STORED, VALENCE_PERCENT_MIN } from '../config.js';
+import { ABSOLUTE_MAX_ADVANCED_LEVEL } from '../advancedRules.ts';
+import { VALENCE_PERCENT_MAX_STORED, VALENCE_PERCENT_MIN } from '../config.ts';
 
 export const MAX_WARFRAME_ITEM_NAME_LENGTH = 255;
 export const MAX_WARFRAME_CELL_VALUE_LENGTH = 64;

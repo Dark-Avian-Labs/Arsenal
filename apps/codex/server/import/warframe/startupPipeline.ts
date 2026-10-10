@@ -3,15 +3,15 @@ import path from 'path';
 
 import { log as writeLog } from '@dark-avian-labs/server-kit';
 
-import type { PipelineStepKey } from '../../../shared/warframeImport/pipelineSteps.js';
-import { EXPORTS_DIR, PROJECT_ROOT, REQUIRED_EXPORTS } from '../../config.js';
-import { getCatalogDb } from './db/connection.js';
-import { processExports, backfillModDescriptions } from './db/queries.js';
-import { resetCatalogData } from './db/resetCatalogData.js';
-import { createAppSchema } from './db/schema.js';
-import { syncHelminthFlagsFromWiki } from './helminthWiki.js';
-import { ensureOverframeFetchReady } from './http/fetchOverframe.js';
-import { downloadImages } from './images.js';
+import type { PipelineStepKey } from '../../../shared/warframeImport/pipelineSteps.ts';
+import { EXPORTS_DIR, PROJECT_ROOT, REQUIRED_EXPORTS } from '../../config.ts';
+import { getCatalogDb } from './db/connection.ts';
+import { processExports, backfillModDescriptions } from './db/queries.ts';
+import { resetCatalogData } from './db/resetCatalogData.ts';
+import { createAppSchema } from './db/schema.ts';
+import { syncHelminthFlagsFromWiki } from './helminthWiki.ts';
+import { ensureOverframeFetchReady } from './http/fetchOverframe.ts';
+import { downloadImages } from './images.ts';
 import {
   ImportAlreadyRunningError,
   isImportLeaseHeld,
@@ -20,39 +20,39 @@ import {
   touchLiveImportLease,
   tryAcquireImportLease,
   type ImportLeaseWatch,
-} from './importRuns.js';
-import { runImportPipeline, listExportFiles } from './pipeline.js';
-import { isStepForced, shouldRunStep, usesOnlyMissingMode } from './pipelineStepControl.js';
+} from './importRuns.ts';
+import { runImportPipeline, listExportFiles } from './pipeline.ts';
+import { isStepForced, shouldRunStep, usesOnlyMissingMode } from './pipelineStepControl.ts';
 import {
   printStartupPipelineSummary,
   type StartupPipelineSummary,
   type SummaryOutcome,
-} from './pipelineSummary.js';
+} from './pipelineSummary.ts';
 import {
   countModsMissingAtragraphImages,
   syncAtragraphModsFromWiki,
-} from './scraping/atragraphModsWiki.js';
-import { mergeScrapedData } from './scraping/dataMerger.js';
+} from './scraping/atragraphModsWiki.ts';
+import { mergeScrapedData } from './scraping/dataMerger.ts';
 import {
   countMissingExaltedStanceSeeds,
   syncExaltedStanceModsFromOverframe,
   syncExaltedStanceWikiImagesOnly,
-} from './scraping/exaltedStanceMods.js';
-import { beastClawsNeedSync, syncBeastClawsFromWiki } from './scraping/hiddenCompanionWeapons.js';
-import { syncIncarnonFromWiki } from './scraping/incarnonWiki.js';
-import { countItemsMissingOverframeData, scrapeIndex } from './scraping/indexScraper.js';
-import { scrapeItems } from './scraping/itemScraper.js';
+} from './scraping/exaltedStanceMods.ts';
+import { beastClawsNeedSync, syncBeastClawsFromWiki } from './scraping/hiddenCompanionWeapons.ts';
+import { syncIncarnonFromWiki } from './scraping/incarnonWiki.ts';
+import { countItemsMissingOverframeData, scrapeIndex } from './scraping/indexScraper.ts';
+import { scrapeItems } from './scraping/itemScraper.ts';
 import {
   countWeaponsMissingFireBehaviors,
   syncWeaponFireBehaviorsFromWiki,
-} from './scraping/weaponFireBehaviorsWiki.js';
-import { hasArchonShardDataInDb, runWikiScrape } from './scraping/wikiScraper.js';
-import { populateWarframeMarketLinksTable } from './warframeMarket/populateWarframeMarketLinks.js';
+} from './scraping/weaponFireBehaviorsWiki.ts';
+import { hasArchonShardDataInDb, runWikiScrape } from './scraping/wikiScraper.ts';
+import { populateWarframeMarketLinksTable } from './warframeMarket/populateWarframeMarketLinks.ts';
 import {
   generateWarframeRankExceptions,
   isWarframeRankExceptionsSourceAvailable,
   warframeRankExceptionsSourceChanged,
-} from './warframeRankExceptions.js';
+} from './warframeRankExceptions.ts';
 
 const TAG = '[DataPipeline]';
 const EXPORT_HASH_STATE_FILE = path.join(EXPORTS_DIR, '.processed-export-hashes.json');
@@ -973,7 +973,7 @@ async function runStartupPipelineInner(
   log(`Pipeline complete in ${(summary.durationMs / 1000).toFixed(1)}s.`);
 
   try {
-    const { copyCatalogToCollection } = await import('./copyCatalogToCollection.js');
+    const { copyCatalogToCollection } = await import('./copyCatalogToCollection.ts');
     const copyResult = copyCatalogToCollection();
     log(
       `Copied catalog into collection DB (${copyResult.worksheets} worksheets, ${copyResult.totalNames} names).`,

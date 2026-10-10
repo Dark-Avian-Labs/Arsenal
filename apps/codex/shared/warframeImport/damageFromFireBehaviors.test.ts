@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { damagePerShotFromAttackData, damagePerShotFromFireBehaviors } from './damageFromFireBehaviors.js';
+import { damagePerShotFromAttackData, damagePerShotFromFireBehaviors } from './damageFromFireBehaviors.ts';
 
 describe('damageFromFireBehaviors', () => {
   it('parses Panzer Claws slash + toxin breakdown', () => {

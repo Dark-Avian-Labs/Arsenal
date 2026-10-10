@@ -1,7 +1,7 @@
 import Database from 'better-sqlite3';
 
-import { applyUserSchema } from '../db/userSchema.js';
-import { minimalModConfig } from '../routes/modConfigValidation.js';
+import { applyUserSchema } from '../db/userSchema.ts';
+import { minimalModConfig } from '../routes/modConfigValidation.ts';
 
 export function createMemoryUserDb(): Database.Database {
   const db = new Database(':memory:');

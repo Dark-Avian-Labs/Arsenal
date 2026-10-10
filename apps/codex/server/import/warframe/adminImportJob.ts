@@ -1,8 +1,8 @@
 import { log } from '@dark-avian-labs/server-kit';
 
-import type { PipelineStepKey } from '../../../shared/warframeImport/pipelineSteps.js';
-import { bustCatalogResponseCache } from './cacheStubs.js';
-import { bustModListCache } from './cacheStubs.js';
+import type { PipelineStepKey } from '../../../shared/warframeImport/pipelineSteps.ts';
+import { bustCatalogResponseCache } from './cacheStubs.ts';
+import { bustModListCache } from './cacheStubs.ts';
 import {
   createImportRun,
   getActiveImportRunId,
@@ -19,11 +19,11 @@ import {
   tryAcquireImportLease,
   updateImportRun,
   type ImportLogLine,
-} from './importRuns.js';
-import type { StartupPipelineSummary } from './pipelineSummary.js';
-import { runStartupPipeline } from './startupPipeline.js';
+} from './importRuns.ts';
+import type { StartupPipelineSummary } from './pipelineSummary.ts';
+import { runStartupPipeline } from './startupPipeline.ts';
 
-export type { ImportLogLine } from './importRuns.js';
+export type { ImportLogLine } from './importRuns.ts';
 
 export interface AdminImportSnapshot {
   runId: number;

@@ -1,7 +1,7 @@
 import Database from 'better-sqlite3';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { catalogArmoryKeyForArchonBuff } from './catalogKeys.js';
+import { catalogArmoryKeyForArchonBuff } from './catalogKeys.ts';
 
 describe('catalogKeys', () => {
   it('builds canonical Common archon key from color and sort order', () => {
@@ -18,7 +18,7 @@ describe('backfillArchonBuffArmoryKeys', () => {
   });
 
   it('sets armory_key on buff rows', async () => {
-    const { backfillArchonBuffArmoryKeys } = await import('./catalogKeys.js');
+    const { backfillArchonBuffArmoryKeys } = await import('./catalogKeys.ts');
     db = new Database(':memory:');
     db.exec(`
       CREATE TABLE archon_shard_types (id INTEGER PRIMARY KEY, name TEXT);

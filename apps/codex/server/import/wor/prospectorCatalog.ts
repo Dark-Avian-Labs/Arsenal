@@ -1,18 +1,18 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { HERO_RARITIES, type FactionKey } from '../../games/wor/index.js';
+import { HERO_RARITIES, type FactionKey } from '../../games/wor/index.ts';
 import type Database from 'better-sqlite3';
 
-import { fetchWithTimeout, FETCH_TIMEOUT_MS } from '../../http/fetchWithTimeout.js';
-import type { CatalogArtifactRow, CatalogBundle, CatalogHeroRow } from './catalogQueries.js';
-import { applyHeroBaseStats } from './fandomHeroStats.js';
-import { sleep } from './fastidiousClient.js';
-import { decodeHtmlEntities } from './htmlEntities.js';
-import { assertTrustedImageUrl } from './images.js';
-import { isValidHeroClassKey, slugifyName } from './normalize.js';
-import type { WikiHeroBaseStats } from './parseHeroInfobox.js';
-import { PROSPECTOR_API_BASE, resolveWorImportCacheDir } from './paths.js';
+import { fetchWithTimeout, FETCH_TIMEOUT_MS } from '../../http/fetchWithTimeout.ts';
+import type { CatalogArtifactRow, CatalogBundle, CatalogHeroRow } from './catalogQueries.ts';
+import { applyHeroBaseStats } from './fandomHeroStats.ts';
+import { sleep } from './fastidiousClient.ts';
+import { decodeHtmlEntities } from './htmlEntities.ts';
+import { assertTrustedImageUrl } from './images.ts';
+import { isValidHeroClassKey, slugifyName } from './normalize.ts';
+import type { WikiHeroBaseStats } from './parseHeroInfobox.ts';
+import { PROSPECTOR_API_BASE, resolveWorImportCacheDir } from './paths.ts';
 
 const MIN_HEROES = 200;
 const MIN_ARTIFACTS = 150;

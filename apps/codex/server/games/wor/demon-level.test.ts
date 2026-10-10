@@ -1,9 +1,9 @@
 import Database from 'better-sqlite3';
 import { afterEach, beforeEach, expect, it } from 'vitest';
 
-import { describeWithSqlite } from '../../testing/describeWithSqlite.js';
-import * as q from './db/queries.js';
-import { createSchema as createWorSchema, ensureWorSchemaMigrations } from './db/schema.js';
+import { describeWithSqlite } from '../../testing/describeWithSqlite.ts';
+import * as q from './db/queries.ts';
+import { createSchema as createWorSchema, ensureWorSchemaMigrations } from './db/schema.ts';
 
 describeWithSqlite('WoR demon owned level', () => {
   let db: Database.Database;

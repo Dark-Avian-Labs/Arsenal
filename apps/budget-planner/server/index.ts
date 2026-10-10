@@ -1,6 +1,6 @@
 import { createAppSentinelAgent, log, startServer } from '@dark-avian-labs/server-kit';
 
-import { createApp } from './app.js';
+import { createApp } from './app.ts';
 import {
   APP_DB_PATH,
   APP_ID,
@@ -10,8 +10,8 @@ import {
   PORT,
   SHUTDOWN_TIMEOUT_MS,
   ensureDataDirs,
-} from './config.js';
-import { closeAppDb } from './db/connection.js';
+} from './config.ts';
+import { closeAppDb } from './db/connection.ts';
 
 ensureDataDirs();
 

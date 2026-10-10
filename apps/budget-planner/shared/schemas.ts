@@ -1,9 +1,9 @@
 import { z } from 'zod';
 
-import { CURRENCIES, type AllowedCurrency } from './currencies.js';
-import { parseIsoDate } from './dueThisMonth.js';
-import { MAX_COMMENT_LENGTH, MAX_NAME_LENGTH } from './entryLimits.js';
-import { MAX_PLAN_YEAR, MIN_PLAN_YEAR } from './planMonth.js';
+import { CURRENCIES, type AllowedCurrency } from './currencies.ts';
+import { parseIsoDate } from './dueThisMonth.ts';
+import { MAX_COMMENT_LENGTH, MAX_NAME_LENGTH } from './entryLimits.ts';
+import { MAX_PLAN_YEAR, MIN_PLAN_YEAR } from './planMonth.ts';
 
 export type { AllowedCurrency };
 export { MAX_COMMENT_LENGTH, MAX_NAME_LENGTH };

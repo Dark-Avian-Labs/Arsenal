@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url';
 
 import { describe, expect, it } from 'vitest';
 
-import { parseWeaponFireBehaviorsFromWikiHtml } from './weaponFireBehaviorsWiki.js';
+import { parseWeaponFireBehaviorsFromWikiHtml } from './weaponFireBehaviorsWiki.ts';
 
 const fixtureDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '__tests__', 'fixtures');
 

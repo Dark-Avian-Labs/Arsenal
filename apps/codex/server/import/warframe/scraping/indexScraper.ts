@@ -1,9 +1,9 @@
 import * as cheerio from 'cheerio';
 
-import { resolveSiriusOrionUniqueNameFromScrapeName } from '../../../../shared/warframeImport/siriusOrionRegistry.js';
-import { getCatalogDb } from '../db/connection.js';
-import { fetchOverframeHtml } from '../http/fetchOverframe.js';
-import { FETCH_TIMEOUT_MS, isAbortError } from '../http/fetchWithTimeout.js';
+import { resolveSiriusOrionUniqueNameFromScrapeName } from '../../../../shared/warframeImport/siriusOrionRegistry.ts';
+import { getCatalogDb } from '../db/connection.ts';
+import { fetchOverframeHtml } from '../http/fetchOverframe.ts';
+import { FETCH_TIMEOUT_MS, isAbortError } from '../http/fetchWithTimeout.ts';
 
 const BASE_URL = 'https://overframe.gg';
 

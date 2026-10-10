@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { setsForSlot, setsSortedByTier } from './sets.js';
+import { setsForSlot, setsSortedByTier } from './sets.ts';
 
 describe('setsSortedByTier', () => {
   it('orders all sets by tier, left then right within a tier', () => {

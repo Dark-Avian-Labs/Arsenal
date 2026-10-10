@@ -2,7 +2,7 @@ import {
   canReadSharedResource,
   type ReadAccessContext,
   type VisibilityRow,
-} from './loadoutAccess.js';
+} from './loadoutAccess.ts';
 
 export type BuildVisibilityRow = VisibilityRow;
 

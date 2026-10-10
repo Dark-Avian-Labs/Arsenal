@@ -2,10 +2,10 @@ import Database from 'better-sqlite3';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import type { AppBundle } from './app.js';
-import { createApp } from './app.js';
-import { APP_NAME, APP_VERSION } from './config.js';
-import { createMemoryUserDb } from './testing/memoryUserDb.js';
+import type { AppBundle } from './app.ts';
+import { createApp } from './app.ts';
+import { APP_NAME, APP_VERSION } from './config.ts';
+import { createMemoryUserDb } from './testing/memoryUserDb.ts';
 
 let bundle: AppBundle | undefined;
 let catalogDb: Database.Database | undefined;

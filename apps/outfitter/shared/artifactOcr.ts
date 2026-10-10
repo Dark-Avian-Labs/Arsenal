@@ -4,7 +4,7 @@ import {
   isArtifactSecondaryStat,
   promotionFromMaxLevel,
   type ArtifactSecondaryStat,
-} from './catalog.js';
+} from './catalog.ts';
 
 export type ArtifactCatalogRef = {
   slug: string;

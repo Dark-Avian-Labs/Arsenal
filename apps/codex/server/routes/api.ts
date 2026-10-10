@@ -1,10 +1,10 @@
 import { Router } from 'express';
 
-import { requireAuthApi } from '../core.js';
-import { epic7ApiRouter } from './epic7Api.js';
-import { warframeApiRouter } from './warframeApi.js';
-import { worAdminApiRouter } from './worAdminApi.js';
-import { worApiRouter } from './worApi.js';
+import { requireAuthApi } from '../core.ts';
+import { epic7ApiRouter } from './epic7Api.ts';
+import { warframeApiRouter } from './warframeApi.ts';
+import { worAdminApiRouter } from './worAdminApi.ts';
+import { worApiRouter } from './worApi.ts';
 
 export const apiRouter = Router();
 

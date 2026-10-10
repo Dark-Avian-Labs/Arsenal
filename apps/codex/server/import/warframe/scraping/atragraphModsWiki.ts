@@ -6,16 +6,16 @@ import type Database from 'better-sqlite3';
 import * as cheerio from 'cheerio';
 import type { AnyNode, Element } from 'domhandler';
 
-import { getCatalogDb } from '../db/connection.js';
+import { getCatalogDb } from '../db/connection.ts';
 import {
   FETCH_BYTE_LIMITS,
   FETCH_TIMEOUT_MS,
   fetchBounded,
   fetchWithTimeout,
   isAbortError,
-} from '../http/fetchWithTimeout.js';
-import { safeImagePathUnderRoot, sanitizePathSegment } from '../safeImagePath.js';
-import { getWikiUserAgent } from './wikiUserAgent.js';
+} from '../http/fetchWithTimeout.ts';
+import { safeImagePathUnderRoot, sanitizePathSegment } from '../safeImagePath.ts';
+import { getWikiUserAgent } from './wikiUserAgent.ts';
 
 const WIKI_BASE = 'https://wiki.warframe.com';
 const ATRAGRAPH_WIKI_PAGE_TITLE = 'Atragraph_Mods';

@@ -1,8 +1,8 @@
 import { log } from '@dark-avian-labs/server-kit';
 import Database from 'better-sqlite3';
 
-import { WARFRAME_CATALOG_DB_PATH } from '../config.js';
-import { warframeQueries as q } from '../games/warframe/index.js';
+import { WARFRAME_CATALOG_DB_PATH } from '../config.ts';
+import { warframeQueries as q } from '../games/warframe/index.ts';
 import {
   arcaneMaxRankFromLevelStats,
   isPrimeVariantName,
@@ -13,8 +13,8 @@ import {
   stripPrimeSuffix,
   warframeMarketSellHrefUsesPrimeOnlyItemSlug,
   type VariantColumns,
-} from '../games/warframe/index.js';
-import { renewOrThrowWarframeSyncLease } from './warframeSyncJobs.js';
+} from '../games/warframe/index.ts';
+import { renewOrThrowWarframeSyncLease } from './warframeSyncJobs.ts';
 
 const WORKSHEET_NAMES = [
   'Warframes',

@@ -1,10 +1,10 @@
 import Database from 'better-sqlite3';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
-import { createSchema as createWorSchema } from '../../games/wor/db/schema.js';
-import { ensureWorImportTables } from '../../games/wor/db/schema.js';
-import { describeWithSqlite } from '../../testing/describeWithSqlite.js';
-import { createTempDbDir, removeTempDbDir } from '../../testing/sqliteTestHarness.js';
+import { createSchema as createWorSchema } from '../../games/wor/db/schema.ts';
+import { ensureWorImportTables } from '../../games/wor/db/schema.ts';
+import { describeWithSqlite } from '../../testing/describeWithSqlite.ts';
+import { createTempDbDir, removeTempDbDir } from '../../testing/sqliteTestHarness.ts';
 
 const pipelineControl = vi.hoisted(() => {
   let release: (() => void) | null = null;
@@ -29,8 +29,8 @@ const dbState = vi.hoisted(() => ({
   db: null as Database.Database | null,
 }));
 
-vi.mock('../../games/wor/index.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../games/wor/index.js')>();
+vi.mock('../../games/wor/index.ts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../games/wor/index.ts')>();
   return {
     ...actual,
     getWorDb: () => {
@@ -44,7 +44,7 @@ vi.mock('../../games/wor/index.js', async (importOriginal) => {
   };
 });
 
-vi.mock('./startupPipeline.js', () => ({
+vi.mock('./startupPipeline.ts', () => ({
   runWorStartupPipeline: pipelineControl.run,
 }));
 
@@ -52,8 +52,8 @@ import {
   __resetWorAdminImportForTests,
   getWorAdminImportSnapshot,
   startWorAdminImport,
-} from './adminImportJob.js';
-import { tryAcquireWorImportLease } from './importLease.js';
+} from './adminImportJob.ts';
+import { tryAcquireWorImportLease } from './importLease.ts';
 
 describeWithSqlite('WoR admin import job', () => {
   let tmpDir: string;

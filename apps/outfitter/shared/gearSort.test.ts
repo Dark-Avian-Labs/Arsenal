@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { compareInventoryGear } from './gearSort.js';
-import { ALL_SETS, INVENTORY_SET_KEYS } from './sets.js';
+import { compareInventoryGear } from './gearSort.ts';
+import { ALL_SETS, INVENTORY_SET_KEYS } from './sets.ts';
 
 describe('INVENTORY_SET_KEYS', () => {
   it('lists every set exactly once in in-game bag order', () => {

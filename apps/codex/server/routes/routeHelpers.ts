@@ -3,7 +3,7 @@ import fs from 'fs';
 import { log } from '@dark-avian-labs/server-kit';
 import type { Response } from 'express';
 
-import { WARFRAME_DB_PATH, getWarframeDb } from '../games/warframe/index.js';
+import { WARFRAME_DB_PATH, getWarframeDb } from '../games/warframe/index.ts';
 
 export type WarframeDatabase = ReturnType<typeof getWarframeDb>;
 

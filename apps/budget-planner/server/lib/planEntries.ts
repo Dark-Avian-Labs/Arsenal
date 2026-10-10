@@ -1,6 +1,6 @@
 import type Database from 'better-sqlite3';
 
-import type { EntryFrequency, EntryKind } from '../db/appSchema.js';
+import type { EntryFrequency, EntryKind } from '../db/appSchema.ts';
 
 export const ENTRY_SELECT = `id, plan_id, category_id, account_id, name, amount_cents, kind, frequency,
               due_day, due_month, due_year, comment, end_date, final_amount_cents, archived_at, sort_order`;

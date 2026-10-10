@@ -1,8 +1,8 @@
 import { Router, type Request, type Response } from 'express';
 
-import { APP_NAME } from '../config.js';
-import { fleetRouter } from '../metrics/fleetRoute.js';
-import { authRouter } from './auth.js';
+import { APP_NAME } from '../config.ts';
+import { fleetRouter } from '../metrics/fleetRoute.ts';
+import { authRouter } from './auth.ts';
 
 export const apiRouter = Router();
 
