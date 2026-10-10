@@ -1,0 +1,28 @@
+import request from 'supertest';
+import { afterEach, describe, expect, it } from 'vitest';
+
+import { createApp } from '../app.ts';
+import { closeMetricsDb } from './db.ts';
+
+describe('POST /api/ingest', () => {
+  afterEach(() => {
+    closeMetricsDb();
+  });
+
+  it('rejects missing token', async () => {
+    const { app } = createApp();
+    const res = await request(app)
+      .post('/api/ingest')
+      .send({ samples: [{ kind: 'process', appId: 'codex', cpu: 1 }] });
+    expect(res.status).toBe(401);
+  });
+
+  it('accepts a valid process sample', async () => {
+    const { app } = createApp();
+    const res = await request(app)
+      .post('/api/ingest')
+      .set('Authorization', 'Bearer test-ingest-token')
+      .send({ samples: [{ kind: 'process', appId: 'codex', displayName: 'Codex', cpu: 8 }] });
+    expect(res.status).toBe(204);
+  });
+});

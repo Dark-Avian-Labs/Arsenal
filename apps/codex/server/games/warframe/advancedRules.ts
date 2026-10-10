@@ -1,0 +1,118 @@
+import { shouldAutoCompleteOrokin } from './exaltedWeapons.ts';
+
+const NECRAMECH_NAMES = new Set(['Bonewidow', 'Voidrig']);
+const MAX_RANK_40_EXACT_NAMES = new Set(['Paracesis']);
+const WEAPON_WORKSHEETS = new Set([
+  'Primary Weapons',
+  'Secondary Weapons',
+  'Melee Weapons',
+  'Modular Weapons',
+  'Companion Weapons',
+  'Archwing Weapons',
+]);
+const EXILUS_WORKSHEETS = new Set([
+  'Warframes',
+  'Primary Weapons',
+  'Secondary Weapons',
+  'Melee Weapons',
+  'Modular Weapons',
+  'Archwing Weapons',
+]);
+const ARCANE_EXCLUDED_WORKSHEETS = new Set(['Companions', 'Companion Weapons', 'K-Drives']);
+
+export function isPrimeItem(itemName: string): boolean {
+  return /\bprime\b/i.test(itemName);
+}
+
+export function isPrimeWarframeOrWeapon(worksheetName: string, itemName: string): boolean {
+  if (!isPrimeItem(itemName)) return false;
+  return worksheetName === 'Warframes' || WEAPON_WORKSHEETS.has(worksheetName);
+}
+
+export function isValenceRelevant(itemName: string): boolean {
+  return /^(kuva|tenet|coda)\b/i.test(itemName.trim());
+}
+
+export function isNecramechItem(itemName: string): boolean {
+  return NECRAMECH_NAMES.has(itemName.trim());
+}
+
+export const ABSOLUTE_MAX_ADVANCED_LEVEL = 40;
+
+const DEFAULT_ARCANE_MAX_RANK = 5;
+
+export function arcaneMaxRankFromLevelStats(levelStatsJson: string | null | undefined): number {
+  try {
+    if (levelStatsJson) {
+      const stats = JSON.parse(levelStatsJson) as unknown;
+      if (Array.isArray(stats) && stats.length > 0) {
+        return stats.length - 1;
+      }
+    }
+  } catch {
+    // ignore
+  }
+  return DEFAULT_ARCANE_MAX_RANK;
+}
+
+export function maxLevelForRow(worksheetName: string, itemName: string): number {
+  if (isValenceRelevant(itemName)) return 40;
+  if (MAX_RANK_40_EXACT_NAMES.has(itemName.trim())) return 40;
+  if (worksheetName === 'Accessories' && isNecramechItem(itemName)) return 40;
+  return 30;
+}
+
+export function isArcaneRelevant(worksheetName: string, itemName: string): boolean {
+  if (ARCANE_EXCLUDED_WORKSHEETS.has(worksheetName)) return false;
+  if (isNecramechItem(itemName)) return false;
+  return true;
+}
+
+export function isExilusRelevant(worksheetName: string): boolean {
+  return EXILUS_WORKSHEETS.has(worksheetName);
+}
+
+export type AdvancedRowRelevance = {
+  maxLevel: number;
+  valence: boolean;
+  element: boolean;
+  orokin: boolean;
+  arcane: boolean;
+  exilus: boolean;
+  autoOrokin: boolean;
+  autoArcane: boolean;
+};
+
+export function isElementRelevant(itemName: string): boolean {
+  return isValenceRelevant(itemName);
+}
+
+export function resolveAdvancedRowRelevance(
+  worksheetName: string,
+  itemName: string,
+  options?: { catalogMaxLevel?: number },
+): AdvancedRowRelevance {
+  if (worksheetName === 'Arcanes') {
+    return {
+      maxLevel: options?.catalogMaxLevel ?? DEFAULT_ARCANE_MAX_RANK,
+      valence: false,
+      element: false,
+      orokin: false,
+      arcane: false,
+      exilus: false,
+      autoOrokin: false,
+      autoArcane: false,
+    };
+  }
+  const autoArcane = worksheetName === 'Warframes';
+  return {
+    maxLevel: maxLevelForRow(worksheetName, itemName),
+    valence: isValenceRelevant(itemName),
+    element: isElementRelevant(itemName),
+    orokin: true,
+    arcane: isArcaneRelevant(worksheetName, itemName),
+    exilus: isExilusRelevant(worksheetName),
+    autoOrokin: shouldAutoCompleteOrokin(worksheetName, itemName),
+    autoArcane,
+  };
+}

@@ -1,0 +1,585 @@
+import { describe, it, expect } from 'vitest';
+
+import type { Mod } from '../../types/warframe';
+import {
+  filterCompatibleMods,
+  normalizeWeaponIdentityName,
+  stanceMatchesEquipment,
+  WEAPON_CATEGORY_TO_MOD_COMPAT,
+} from '../modFiltering';
+
+describe('normalizeWeaponIdentityName', () => {
+  it('strips Kuva, Tenet, and Coda prefixes for augment matching', () => {
+    expect(normalizeWeaponIdentityName('Kuva Ogris')).toBe('OGRIS');
+    expect(normalizeWeaponIdentityName('Tenet Envoy')).toBe('ENVOY');
+    expect(normalizeWeaponIdentityName('Coda Vasto')).toBe('VASTO');
+    expect(normalizeWeaponIdentityName('Kuva Tenet Test')).toBe('TEST');
+  });
+});
+
+describe('Bow mod compatibility', () => {
+  it('accepts Rifle and Assault Rifle compat mods (shared with LongGuns arsenal slot)', () => {
+    const rifleMod: Mod = {
+      unique_name: '/lotus/upgrades/mods/rifle/convertammoriflemod',
+      name: 'Rifle Ammo Mutation',
+      type: 'Rifle Mod',
+      compat_name: 'Rifle',
+    };
+    const velocity: Mod = {
+      unique_name: '/lotus/upgrades/mods/rifle/bowspeedprojectilemod',
+      name: 'Terminal Velocity',
+      type: 'Rifle Mod',
+      compat_name: 'Rifle',
+    };
+    const artemis = {
+      unique_name: '/Lotus/Powersuits/Oberon/IronForest/IronForestWeaponBow',
+      name: 'Artemis Bow',
+      product_category: 'Bow',
+    };
+    expect(filterCompatibleMods([rifleMod], 'primary', artemis)).toHaveLength(1);
+    expect(filterCompatibleMods([velocity], 'primary', artemis)).toHaveLength(1);
+  });
+
+  it('accepts rifle-compat mods when Artemis Bow product_category is missing', () => {
+    const terminalVelocity: Mod = {
+      unique_name: '/lotus/upgrades/mods/rifle/bowspeedprojectilemod',
+      name: 'Terminal Velocity',
+      type: 'Rifle Mod',
+      compat_name: 'Rifle',
+    };
+    const artemisWithoutCategory = {
+      unique_name: '/Lotus/Powersuits/Oberon/IronForest/IronForestWeaponBow',
+      name: 'Artemis Bow',
+    };
+    expect(filterCompatibleMods([terminalVelocity], 'primary', artemisWithoutCategory)).toHaveLength(1);
+  });
+
+  it('accepts rifle-compat mods when Artemis Bow is exported as SpecialItems', () => {
+    const terminalVelocity: Mod = {
+      unique_name: '/Lotus/Upgrades/Mods/Rifle/WeaponProjectileSpeedMod',
+      name: 'Terminal Velocity',
+      type: 'PRIMARY',
+      compat_name: 'Rifle',
+      is_utility: 1,
+    };
+    const artemisSpecialItems = {
+      unique_name: '/Lotus/Powersuits/Ranger/ExaltedBow',
+      name: 'Artemis Bow',
+      product_category: 'SpecialItems',
+    };
+    expect(filterCompatibleMods([terminalVelocity], 'primary', artemisSpecialItems)).toHaveLength(1);
+  });
+
+  it('still accepts mods tagged Bow-only', () => {
+    const bowOnly: Mod = {
+      unique_name: '/lotus/upgrades/mods/rifle/examplebowmod',
+      name: 'Example Bow Mod',
+      type: 'Rifle Mod',
+      compat_name: 'Bow',
+    };
+    const paris = {
+      unique_name: '/Lotus/Weapons/Tenno/Bow/Bow',
+      name: 'Paris',
+      product_category: 'Bow',
+    };
+    expect(filterCompatibleMods([bowOnly], 'primary', paris)).toHaveLength(1);
+  });
+
+  it('does not accept Shotgun-compat mods', () => {
+    const shotgunMod: Mod = {
+      unique_name: '/lotus/upgrades/mods/shotgun/test',
+      name: 'Test',
+      type: 'Shotgun Mod',
+      compat_name: 'Shotgun',
+    };
+    const bow = {
+      unique_name: '/Lotus/Weapons/Tenno/Bow/Bow',
+      name: 'Paris',
+      product_category: 'Bow',
+    };
+    expect(filterCompatibleMods([shotgunMod], 'primary', bow)).toHaveLength(0);
+  });
+
+  it('does not accept beam-only Rifle utility mods on bows', () => {
+    const sinisterReach: Mod = {
+      unique_name: '/lotus/upgrades/mods/rifle/beamrangemod',
+      name: 'Sinister Reach',
+      type: 'Rifle Mod',
+      compat_name: 'Rifle',
+    };
+    const artemis = {
+      unique_name: '/Lotus/Powersuits/Oberon/IronForest/IronForestWeaponBow',
+      name: 'Artemis Bow',
+      product_category: 'Bow',
+    };
+    expect(filterCompatibleMods([sinisterReach], 'primary', artemis)).toHaveLength(0);
+  });
+
+  it('does not accept beam-only Rifle utility mods when bow category is inferred', () => {
+    const sinisterReach: Mod = {
+      unique_name: '/lotus/upgrades/mods/rifle/beamrangemod',
+      name: 'Sinister Reach',
+      type: 'Rifle Mod',
+      compat_name: 'Rifle',
+    };
+    const artemisWithoutCategory = {
+      unique_name: '/Lotus/Powersuits/Oberon/IronForest/IronForestWeaponBow',
+      name: 'Artemis Bow',
+    };
+    expect(filterCompatibleMods([sinisterReach], 'primary', artemisWithoutCategory)).toHaveLength(0);
+  });
+
+  it('does not accept beam-only Rifle utility mods on Artemis Bow exported as SpecialItems', () => {
+    const sinisterReach: Mod = {
+      unique_name: '/Lotus/Upgrades/Mods/Rifle/WeaponBeamDistanceMod',
+      name: 'Sinister Reach',
+      type: 'PRIMARY',
+      compat_name: 'PRIMARY',
+      is_utility: 1,
+    };
+    const artemisSpecialItems = {
+      unique_name: '/Lotus/Powersuits/Ranger/ExaltedBow',
+      name: 'Artemis Bow',
+      product_category: 'SpecialItems',
+    };
+    expect(filterCompatibleMods([sinisterReach], 'primary', artemisSpecialItems)).toHaveLength(0);
+  });
+});
+
+describe('Tome secondary mod compatibility', () => {
+  const fassCanticle: Mod = {
+    unique_name: '/Lotus/Upgrades/Mods/Tome/Canticle/FassCanticleMod',
+    name: 'Fass Canticle',
+    type: 'SECONDARY',
+    compat_name: 'Tome',
+  };
+  const netraInvocation: Mod = {
+    unique_name: '/Lotus/Upgrades/Mods/Tome/Invocation/NetraInvocationMod',
+    name: 'Netra Invocation',
+    type: 'SECONDARY',
+    compat_name: 'Tome',
+  };
+  const hornetStrike: Mod = {
+    unique_name: '/Lotus/Upgrades/Mods/Pistol/WeaponDamageAmountMod',
+    name: 'Hornet Strike',
+    type: 'SECONDARY',
+    compat_name: 'Pistol',
+  };
+
+  const noctua = {
+    unique_name: '/Lotus/Powersuits/Pagemaster/ExaltedBook',
+    name: 'Noctua',
+    product_category: 'SpecialItems',
+  };
+  const grimoire = {
+    unique_name: '/Lotus/Weapons/Tenno/Grimoire/TnGrimoire',
+    name: 'Grimoire',
+    product_category: 'Pistols',
+  };
+  const lex = {
+    unique_name: '/Lotus/Weapons/Tenno/Pistols/Lex/Lex',
+    name: 'Lex',
+    product_category: 'Pistols',
+  };
+
+  it('accepts Canticle and Invocation mods on Tome weapons', () => {
+    expect(filterCompatibleMods([fassCanticle], 'secondary', noctua)).toHaveLength(1);
+    expect(filterCompatibleMods([netraInvocation], 'secondary', grimoire)).toHaveLength(1);
+  });
+
+  it('still accepts pistol mods on Tome weapons', () => {
+    expect(filterCompatibleMods([hornetStrike], 'secondary', noctua)).toHaveLength(1);
+    expect(filterCompatibleMods([hornetStrike], 'secondary', grimoire)).toHaveLength(1);
+  });
+
+  it('does not offer Tome-only mods on regular secondaries', () => {
+    expect(filterCompatibleMods([fassCanticle], 'secondary', lex)).toHaveLength(0);
+    expect(filterCompatibleMods([netraInvocation], 'secondary', lex)).toHaveLength(0);
+  });
+});
+
+describe('SpecialItems primary category inference', () => {
+  it('treats Neutralizer (ExaltedSniper) as sniper for compat matching', () => {
+    const sniperOnlyMod: Mod = {
+      unique_name: '/Lotus/Upgrades/Mods/Rifle/WeaponSnipersConvertAmmoMod',
+      name: 'Sniper Ammo Mutation',
+      type: 'PRIMARY',
+      compat_name: 'Sniper',
+      is_utility: 1,
+    };
+    const neutralizer = {
+      unique_name: '/Lotus/Powersuits/Frumentarius/ExaltedSniper',
+      name: 'Neutralizer',
+      product_category: 'SpecialItems',
+    };
+    expect(filterCompatibleMods([sniperOnlyMod], 'primary', neutralizer)).toHaveLength(1);
+  });
+});
+
+describe('Launcher mod compatibility', () => {
+  it('accepts primary mods whose export type is "Rifle Mod"', () => {
+    const mod: Mod = {
+      unique_name: '/test/rifle/mod',
+      name: 'Test',
+      type: 'Rifle Mod',
+      compat_name: 'Rifle',
+    };
+    const weapon = {
+      unique_name: '/Lotus/Weapons/Tenno/Launcher/Ogris',
+      name: 'Ogris',
+      product_category: 'Launcher',
+    };
+    expect(filterCompatibleMods([mod], 'primary', weapon)).toHaveLength(1);
+  });
+
+  it('does not map Sniper via WEAPON_CATEGORY_TO_MOD_COMPAT.Launcher (uses path/name helper instead)', () => {
+    expect(WEAPON_CATEGORY_TO_MOD_COMPAT.Launcher).not.toContain('Sniper');
+  });
+
+  it('accepts Sniper-category mods on Launchers via primaryWeaponAcceptsSniperCategoryMods', () => {
+    const sniperMod: Mod = {
+      unique_name: '/lotus/upgrades/mods/sniper/test',
+      name: 'Sniper Ammo Mutation',
+      type: 'PRIMARY',
+      compat_name: 'Sniper',
+    };
+    const launcher = {
+      unique_name: '/weapons/launcher/test',
+      name: 'Test Launcher',
+      product_category: 'Launcher',
+    };
+    expect(filterCompatibleMods([sniperMod], 'primary', launcher)).toHaveLength(1);
+  });
+
+  it('accepts Sniper-category mods when unique_name uses /Launcher/ (singular) path', () => {
+    const sniperMod: Mod = {
+      unique_name: '/lotus/upgrades/mods/sniper/test',
+      name: 'Sniper Ammo Mutation',
+      type: 'PRIMARY',
+      compat_name: 'Sniper',
+    };
+    const ogrisLauncherPath = {
+      unique_name: '/Lotus/Weapons/Tenno/Launcher/Ogris',
+      name: 'Ogris',
+      product_category: 'LongGuns',
+    };
+    expect(filterCompatibleMods([sniperMod], 'primary', ogrisLauncherPath)).toHaveLength(1);
+  });
+
+  it('accepts Sniper-category mods when weapon is LongGuns but launcher-profile (e.g. Kuva Ogris)', () => {
+    const sniperMod: Mod = {
+      unique_name: '/lotus/upgrades/mods/sniper/test',
+      name: 'Sniper Ammo Mutation',
+      type: 'PRIMARY',
+      compat_name: 'Sniper',
+    };
+    const kuvaOgrisAsLongGuns = {
+      unique_name: '/Lotus/Weapons/Grineer/Kuva/KuvaOgris',
+      name: 'Kuva Ogris',
+      product_category: 'LongGuns',
+    };
+    expect(filterCompatibleMods([sniperMod], 'primary', kuvaOgrisAsLongGuns)).toHaveLength(1);
+  });
+
+  it('does not apply Sniper launcher rule to ordinary LongGuns rifles', () => {
+    const sniperMod: Mod = {
+      unique_name: '/lotus/upgrades/mods/sniper/test',
+      name: 'Sniper Ammo Mutation',
+      type: 'PRIMARY',
+      compat_name: 'Sniper',
+    };
+    const boltor = {
+      unique_name: '/Lotus/Weapons/Tenno/Rifle/Boltor',
+      name: 'Boltor',
+      product_category: 'LongGuns',
+    };
+    expect(filterCompatibleMods([sniperMod], 'primary', boltor)).toHaveLength(0);
+  });
+
+  it('matches weapon-specific mods to Kuva variants', () => {
+    const augment: Mod = {
+      unique_name: '/test/ogris/augment',
+      name: 'Nightwatch Napalm',
+      type: 'PRIMARY',
+      compat_name: 'Ogris',
+    };
+    const kuvaOgris = {
+      unique_name: '/weapons/kuva/ogris',
+      name: 'Kuva Ogris',
+      product_category: 'Launcher',
+    };
+    expect(filterCompatibleMods([augment], 'primary', kuvaOgris)).toHaveLength(1);
+  });
+});
+
+describe('DE generic type "---" mod compatibility', () => {
+  const sniperAmmoMutationReal: Mod = {
+    unique_name: '/Lotus/Upgrades/Mods/Rifle/WeaponSnipersConvertAmmoMod',
+    name: 'Sniper Ammo Mutation',
+    type: '---',
+    compat_name: 'Sniper',
+  };
+
+  const primedSniperAmmoMutationReal: Mod = {
+    unique_name: '/Lotus/Upgrades/Mods/Rifle/Expert/WeaponSnipersConvertAmmoModExpert',
+    name: 'Primed Sniper Ammo Mutation',
+    type: '---',
+    compat_name: 'Sniper',
+  };
+
+  const ogrisLauncher = {
+    unique_name: '/Lotus/Weapons/ClanTech/Chemical/RocketLauncher',
+    name: 'Ogris',
+    product_category: 'Launcher',
+  };
+
+  const kuvaOgrisLongGuns = {
+    unique_name: '/Lotus/Weapons/Grineer/Kuva/KuvaOgris',
+    name: 'Kuva Ogris',
+    product_category: 'LongGuns',
+  };
+
+  const rubicoPrimeSniper = {
+    unique_name: '/Lotus/Weapons/Tenno/Rifle/Rubico/RubicoPrime',
+    name: 'Rubico Prime',
+    product_category: 'Sniper',
+  };
+
+  const boltor = {
+    unique_name: '/Lotus/Weapons/Tenno/Rifle/Boltor',
+    name: 'Boltor',
+    product_category: 'LongGuns',
+  };
+
+  it('accepts Sniper Ammo Mutation (type "---") on Ogris (Launcher category)', () => {
+    expect(filterCompatibleMods([sniperAmmoMutationReal], 'primary', ogrisLauncher)).toHaveLength(1);
+  });
+
+  it('accepts Primed Sniper Ammo Mutation (type "---") on Ogris (Launcher category)', () => {
+    expect(filterCompatibleMods([primedSniperAmmoMutationReal], 'primary', ogrisLauncher)).toHaveLength(1);
+  });
+
+  it('accepts Sniper Ammo Mutation (type "---") on Kuva Ogris (LongGuns with launcher name)', () => {
+    expect(filterCompatibleMods([sniperAmmoMutationReal], 'primary', kuvaOgrisLongGuns)).toHaveLength(1);
+  });
+
+  it('accepts Sniper Ammo Mutation (type "---") on Rubico Prime (Sniper category)', () => {
+    expect(filterCompatibleMods([sniperAmmoMutationReal], 'primary', rubicoPrimeSniper)).toHaveLength(1);
+  });
+
+  it('does NOT accept Sniper Ammo Mutation (type "---") on Boltor (regular LongGuns)', () => {
+    expect(filterCompatibleMods([sniperAmmoMutationReal], 'primary', boltor)).toHaveLength(0);
+  });
+
+  it('does NOT accept Necramech mods (type "---") as primary', () => {
+    const necramechMod: Mod = {
+      unique_name: '/lotus/upgrades/mods/necramech/test',
+      name: 'Necramech Stretch',
+      type: '---',
+      compat_name: 'Necramech',
+    };
+    expect(filterCompatibleMods([necramechMod], 'primary', ogrisLauncher)).toHaveLength(0);
+  });
+
+  it('does NOT accept K-Drive mods (type "---") as primary', () => {
+    const kdriveMod: Mod = {
+      unique_name: '/lotus/upgrades/mods/kdrive/test',
+      name: 'K-Drive Test',
+      type: '---',
+      compat_name: 'K-Drive',
+    };
+    expect(filterCompatibleMods([kdriveMod], 'primary', ogrisLauncher)).toHaveLength(0);
+  });
+
+  it('accepts Sniper Ammo Mutation (type "---") after import resolves type to SNIPER', () => {
+    const resolved: Mod = {
+      ...sniperAmmoMutationReal,
+      type: 'SNIPER',
+    };
+    expect(filterCompatibleMods([resolved], 'primary', ogrisLauncher)).toHaveLength(1);
+    expect(filterCompatibleMods([resolved], 'primary', rubicoPrimeSniper)).toHaveLength(1);
+  });
+});
+
+describe('Melee stance compatibility aliases', () => {
+  it('matches stance family from description instead of compat_name string matching', () => {
+    const reapingSpiral: Mod = {
+      unique_name: '/Lotus/Upgrades/Mods/Melee/Stance/ReapingSpiral',
+      name: 'Reaping Spiral',
+      type: 'STANCE',
+      compat_name: 'Galeforce Dawn',
+      description: JSON.stringify(['Stance: A stance for Heavy Scythes.']),
+    };
+    const harmony = {
+      unique_name: '/Lotus/Weapons/Tenno/Melee/Scythes/Harmony',
+      name: 'Harmony',
+      product_category: 'Melee',
+    };
+
+    expect(stanceMatchesEquipment(reapingSpiral, harmony)).toBe(true);
+    expect(filterCompatibleMods([reapingSpiral], 'melee', harmony)).toHaveLength(1);
+  });
+
+  it('does not cross-match scythe stances to heavy sword weapons', () => {
+    const reapingSpiral: Mod = {
+      unique_name: '/Lotus/Upgrades/Mods/Melee/Stance/ReapingSpiral',
+      name: 'Reaping Spiral',
+      type: 'STANCE',
+      compat_name: 'Galeforce Dawn',
+      description: JSON.stringify(['Stance: A stance for Heavy Scythes.']),
+    };
+    const galatine = {
+      unique_name: '/Lotus/Weapons/Tenno/Melee/LongSword/TwoHanded/GreatSword/Galatine',
+      name: 'Galatine',
+      product_category: 'Melee',
+    };
+
+    expect(stanceMatchesEquipment(reapingSpiral, galatine)).toBe(false);
+    expect(filterCompatibleMods([reapingSpiral], 'melee', galatine)).toHaveLength(0);
+  });
+
+  it('matches heavy blade stance families via weapon path hints', () => {
+    const heavyBladeStance: Mod = {
+      unique_name: '/Lotus/Upgrades/Mods/Melee/Stance/TestHeavyBlade',
+      name: 'Test Heavy Blade Stance',
+      type: 'STANCE',
+      compat_name: 'Heavy Blade',
+    };
+    const galatine = {
+      unique_name: '/Lotus/Weapons/Tenno/Melee/LongSword/TwoHanded/GreatSword/Galatine',
+      name: 'Galatine',
+      product_category: 'Melee',
+    };
+
+    expect(stanceMatchesEquipment(heavyBladeStance, galatine)).toBe(true);
+    expect(filterCompatibleMods([heavyBladeStance], 'melee', galatine)).toHaveLength(1);
+  });
+
+  it('matches longsword path to sword stance compatibility', () => {
+    const swordStance: Mod = {
+      unique_name: '/Lotus/Upgrades/Mods/Melee/Stance/TestSword',
+      name: 'Test Sword Stance',
+      type: 'STANCE',
+      compat_name: 'Sword',
+    };
+    const skana = {
+      unique_name: '/Lotus/Weapons/Tenno/Melee/LongSword/Skana',
+      name: 'Skana',
+      product_category: 'Melee',
+    };
+
+    expect(stanceMatchesEquipment(swordStance, skana)).toBe(true);
+    expect(filterCompatibleMods([swordStance], 'melee', skana)).toHaveLength(1);
+  });
+});
+
+describe('Companion sentinel name-specific mods (Prime = base)', () => {
+  it('matches precepts tagged for base sentinel to the Prime variant', () => {
+    const negateLike: Mod = {
+      unique_name: '/Lotus/Upgrades/Mods/Sentinel/SentinelNegateMod',
+      name: 'Negate',
+      type: 'SENTINEL',
+      compat_name: 'Wyrm',
+    };
+    const wyrmPrime = {
+      unique_name: '/Lotus/Types/Sentinels/SentinelPrecepts/WyrmPrime',
+      name: 'Wyrm Prime',
+    };
+    expect(filterCompatibleMods([negateLike], 'companion', wyrmPrime)).toHaveLength(1);
+  });
+
+  it('still matches when equipment is the non-Prime sentinel', () => {
+    const negateLike: Mod = {
+      unique_name: '/Lotus/Upgrades/Mods/Sentinel/SentinelNegateMod',
+      name: 'Negate',
+      type: 'SENTINEL',
+      compat_name: 'Wyrm',
+    };
+    const wyrm = {
+      unique_name: '/Lotus/Types/Sentinels/SentinelPrecepts/Wyrm',
+      name: 'Wyrm',
+    };
+    expect(filterCompatibleMods([negateLike], 'companion', wyrm)).toHaveLength(1);
+  });
+});
+
+describe('filterCompatibleMods with malformed or incomplete records', () => {
+  it('returns no mods when mod type is empty string (cannot classify primary mod)', () => {
+    const mod: Mod = {
+      unique_name: '/x',
+      name: 'Odd Mod',
+      type: '',
+      compat_name: 'Rifle',
+    };
+    const weapon = {
+      unique_name: '/Lotus/Weapons/Tenno/Rifle/Boltor',
+      name: 'Boltor',
+      product_category: 'LongGuns',
+    };
+    expect(filterCompatibleMods([mod], 'primary', weapon)).toEqual([]);
+  });
+
+  it('returns no mods when weapon unique_name is empty (incomplete import row)', () => {
+    const mod: Mod = {
+      unique_name: '/test',
+      name: 'Test',
+      type: 'Rifle Mod',
+      compat_name: 'Rifle',
+    };
+    const weapon = { unique_name: '', name: 'X', product_category: 'LongGuns' };
+    expect(filterCompatibleMods([mod], 'primary', weapon)).toEqual([]);
+  });
+});
+
+describe('Melee stance compatibility leakage guards', () => {
+  it('does not match heavy-scythe stance to regular scythe weapon', () => {
+    const galeforceDawn: Mod = {
+      unique_name: '/Lotus/Upgrades/Mods/Melee/Stance/GaleforceDawn',
+      name: 'Galeforce Dawn',
+      type: 'STANCE',
+      compat_name: 'Heavy Scythe',
+    };
+    const harmony = {
+      unique_name: '/Lotus/Weapons/Tenno/Melee/Scythes/Harmony',
+      name: 'Harmony',
+      product_category: 'Melee',
+    };
+
+    expect(stanceMatchesEquipment(galeforceDawn, harmony)).toBe(false);
+    expect(filterCompatibleMods([galeforceDawn], 'melee', harmony)).toHaveLength(0);
+  });
+
+  it('does not match heavy-blade stance to normal sword weapon', () => {
+    const heavyBladeStance: Mod = {
+      unique_name: '/Lotus/Upgrades/Mods/Melee/Stance/TempoRoyale',
+      name: 'Tempo Royale',
+      type: 'STANCE',
+      compat_name: 'Heavy Blade',
+    };
+    const skana = {
+      unique_name: '/Lotus/Weapons/Tenno/Melee/LongSword/Skana',
+      name: 'Skana',
+      product_category: 'Melee',
+    };
+
+    expect(stanceMatchesEquipment(heavyBladeStance, skana)).toBe(false);
+    expect(filterCompatibleMods([heavyBladeStance], 'melee', skana)).toHaveLength(0);
+  });
+
+  it('does not match dual-dagger stance to single dagger weapon', () => {
+    const dualDaggerStance: Mod = {
+      unique_name: '/Lotus/Upgrades/Mods/Melee/Stance/SpinningNeedle',
+      name: 'Spinning Needle',
+      type: 'STANCE',
+      compat_name: 'Dual Daggers',
+    };
+    const singleDagger = {
+      unique_name: '/Lotus/Weapons/Tenno/Melee/Dagger/SkanaDaggerTest',
+      name: 'Dagger Test',
+      product_category: 'Melee',
+    };
+
+    expect(stanceMatchesEquipment(dualDaggerStance, singleDagger)).toBe(false);
+    expect(filterCompatibleMods([dualDaggerStance], 'melee', singleDagger)).toHaveLength(0);
+  });
+});

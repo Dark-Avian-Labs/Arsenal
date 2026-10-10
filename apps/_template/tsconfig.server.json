@@ -1,0 +1,8 @@
+{
+  "extends": "@dark-avian-labs/config/tsconfig.server.json",
+  "compilerOptions": {
+    "typeRoots": ["./node_modules/@types", "./server/types"]
+  },
+  "include": ["server/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

@@ -1,0 +1,9 @@
+{
+  "extends": "@dark-avian-labs/config/tsconfig.client.json",
+  "compilerOptions": {
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["src"]
+}

@@ -1,0 +1,101 @@
+name: PR checks
+
+on:
+  pull_request:
+
+concurrency:
+  group: pr-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+env:
+  CI: true
+  npm_config_store_dir: /pnpm-store
+  npm_config_cache: /npm-cache
+  PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
+
+jobs:
+  validate:
+    runs-on: build-node26
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Enable pnpm
+        run: npm install -g pnpm@$(node -p 'require("./package.json").packageManager.replace(/^pnpm@/, "")')
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate
+        run: pnpm run validate
+
+      - name: Build packages and template
+        run: pnpm --filter "@dark-avian-labs/*" --filter dal-template run --if-present build
+
+      - name: Build armory
+        env:
+          DOTENV_PRIVATE_KEY_PRODUCTION: ${{ secrets.DOTENV_PRIVATE_KEY_PRODUCTION_ARMORY }}
+        run: bash scripts/ci/build-app.sh armory
+
+      - name: Build budget-planner
+        env:
+          DOTENV_PRIVATE_KEY_PRODUCTION: ${{ secrets.DOTENV_PRIVATE_KEY_PRODUCTION_BUDGET_PLANNER }}
+        run: bash scripts/ci/build-app.sh budget-planner
+
+      - name: Build codex
+        env:
+          DOTENV_PRIVATE_KEY_PRODUCTION: ${{ secrets.DOTENV_PRIVATE_KEY_PRODUCTION_CODEX }}
+        run: bash scripts/ci/build-app.sh codex
+
+      - name: Build outfitter
+        env:
+          DOTENV_PRIVATE_KEY_PRODUCTION: ${{ secrets.DOTENV_PRIVATE_KEY_PRODUCTION_OUTFITTER }}
+        run: bash scripts/ci/build-app.sh outfitter
+
+      - name: Build sentinel
+        env:
+          DOTENV_PRIVATE_KEY_PRODUCTION: ${{ secrets.DOTENV_PRIVATE_KEY_PRODUCTION_SENTINEL }}
+        run: bash scripts/ci/build-app.sh sentinel
+
+      - name: Playwright browser and OS deps
+        run: |
+          pnpm exec playwright install chromium
+          pnpm exec playwright install-deps chromium
+
+      - name: E2E armory
+        run: pnpm --filter armory run test:e2e
+        env:
+          DOTENV_PRIVATE_KEY_DEVELOPMENT: ${{ secrets.DOTENV_PRIVATE_KEY_DEVELOPMENT_ARMORY }}
+          E2E_CLERK_USER_EMAIL: ${{ secrets.E2E_CLERK_USER_EMAIL }}
+          E2E_CLERK_USER_PASSWORD: ${{ secrets.E2E_CLERK_USER_PASSWORD }}
+
+      - name: E2E budget-planner
+        run: pnpm --filter budget-planner run test:e2e
+        env:
+          DOTENV_PRIVATE_KEY_DEVELOPMENT: ${{ secrets.DOTENV_PRIVATE_KEY_DEVELOPMENT_BUDGET_PLANNER }}
+          E2E_CLERK_USER_EMAIL: ${{ secrets.E2E_CLERK_USER_EMAIL }}
+          E2E_CLERK_USER_PASSWORD: ${{ secrets.E2E_CLERK_USER_PASSWORD }}
+
+      - name: E2E codex
+        run: pnpm --filter codex run test:e2e
+        env:
+          DOTENV_PRIVATE_KEY_DEVELOPMENT: ${{ secrets.DOTENV_PRIVATE_KEY_DEVELOPMENT_CODEX }}
+          E2E_CLERK_USER_EMAIL: ${{ secrets.E2E_CLERK_USER_EMAIL }}
+          E2E_CLERK_USER_PASSWORD: ${{ secrets.E2E_CLERK_USER_PASSWORD }}
+
+      - name: E2E outfitter
+        run: pnpm --filter outfitter run test:e2e
+        env:
+          DOTENV_PRIVATE_KEY_DEVELOPMENT: ${{ secrets.DOTENV_PRIVATE_KEY_DEVELOPMENT_OUTFITTER }}
+          E2E_CLERK_USER_EMAIL: ${{ secrets.E2E_CLERK_USER_EMAIL }}
+          E2E_CLERK_USER_PASSWORD: ${{ secrets.E2E_CLERK_USER_PASSWORD }}
+
+      - name: E2E sentinel
+        run: pnpm --filter sentinel run test:e2e
+
+      - name: E2E template
+        run: pnpm --filter dal-template run test:e2e
+        env:
+          DOTENV_PRIVATE_KEY_DEVELOPMENT: ${{ secrets.DOTENV_PRIVATE_KEY_DEVELOPMENT_TEMPLATE }}
+          E2E_CLERK_USER_EMAIL: ${{ secrets.E2E_CLERK_USER_EMAIL }}
+          E2E_CLERK_USER_PASSWORD: ${{ secrets.E2E_CLERK_USER_PASSWORD }}

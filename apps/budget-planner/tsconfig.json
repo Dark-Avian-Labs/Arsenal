@@ -1,0 +1,10 @@
+{
+  "extends": "@dark-avian-labs/config/tsconfig.client.json",
+  "compilerOptions": {
+    "paths": {
+      "@/*": ["./client/*"]
+    }
+  },
+  "include": ["client/**/*", "shared/**/*", "vite-env.d.ts"],
+  "exclude": ["node_modules", "dist", "server"]
+}

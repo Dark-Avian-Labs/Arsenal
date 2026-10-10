@@ -1,0 +1,42 @@
+{
+  "name": "@dark-avian-labs/server-kit",
+  "version": "0.0.0",
+  "private": true,
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./testing": {
+      "types": "./dist/testing/index.d.ts",
+      "import": "./dist/testing/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "pnpm --filter @dark-avian-labs/sentinel-agent run build && pnpm run build",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@clerk/express": "catalog:",
+    "@dark-avian-labs/sentinel-agent": "workspace:*",
+    "@dotenvx/dotenvx": "catalog:",
+    "better-sqlite3": "catalog:",
+    "express": "catalog:",
+    "express-rate-limit": "catalog:",
+    "helmet": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@dark-avian-labs/config": "workspace:*",
+    "@types/better-sqlite3": "catalog:",
+    "@types/express": "catalog:",
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

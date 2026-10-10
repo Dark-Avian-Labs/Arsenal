@@ -1,0 +1,25 @@
+import { Router, type Request, type Response } from 'express';
+
+import { APP_NAME } from '../config.ts';
+import { requireAuth } from '../middleware/auth.ts';
+import { invitesRouter, meRouter, plansRouter } from './plans.ts';
+
+export const apiRouter = Router();
+
+apiRouter.get('/health', (_req: Request, res: Response) => {
+  res.json({ status: 'ok', app: APP_NAME });
+});
+
+apiRouter.get(
+  '/auth/me',
+  (req, res, next) => {
+    void requireAuth(req, res, next);
+  },
+  (req, res) => {
+    res.json({ userId: req.appUser?.clerk_user_id ?? null });
+  },
+);
+
+apiRouter.use('/me', meRouter);
+apiRouter.use('/plans', plansRouter);
+apiRouter.use('/invites', invitesRouter);

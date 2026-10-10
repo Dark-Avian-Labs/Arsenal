@@ -1,0 +1,145 @@
+import { validateBody } from '@dark-avian-labs/server-kit';
+import { Router, type Response } from 'express';
+
+import { requireCodexAdmin } from '../core.ts';
+import { getWorCatalogDb, worAdminImportRunSchema } from '../games/wor/index.ts';
+import {
+  getWorAdminImportSnapshot,
+  isWorImportRunning,
+  startWorAdminImport,
+  subscribeWorAdminImport,
+} from '../import/wor/adminImportJob.ts';
+import { catalogNeedsImport } from '../import/wor/startupPipeline.ts';
+import { ensureWorDbAvailable } from '../worDbState.ts';
+
+export const worAdminApiRouter = Router();
+
+function json(res: Response, data: object, status = 200): void {
+  res.status(status).json(data);
+}
+
+function err(res: Response, message: string, status = 400): void {
+  res.status(status).json({ error: message });
+}
+
+worAdminApiRouter.get('/import/status', requireCodexAdmin, (_req, res) => {
+  if (!ensureWorDbAvailable()) {
+    err(res, 'WoR database unavailable', 503);
+    return;
+  }
+  json(res, getWorAdminImportSnapshot());
+});
+
+worAdminApiRouter.get('/import/stream', requireCodexAdmin, (req, res) => {
+  if (!ensureWorDbAvailable()) {
+    err(res, 'WoR database unavailable', 503);
+    return;
+  }
+  res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');
+  res.flushHeaders?.();
+
+  let closed = false;
+  let heartbeat: ReturnType<typeof setInterval> | null = null;
+
+  const cleanup = () => {
+    if (closed) return;
+    closed = true;
+    if (heartbeat) {
+      clearInterval(heartbeat);
+      heartbeat = null;
+    }
+    unsubscribe();
+  };
+
+  const canWrite = () => !closed && !res.writableEnded && !res.writableFinished && res.writable;
+
+  const sendSnapshot = () => {
+    if (!canWrite()) {
+      cleanup();
+      return;
+    }
+    try {
+      const payload = JSON.stringify(getWorAdminImportSnapshot());
+      res.write('event: snapshot\n');
+      res.write(`data: ${payload}\n\n`);
+    } catch {
+      cleanup();
+    }
+  };
+
+  const unsubscribe = subscribeWorAdminImport(() => {
+    sendSnapshot();
+  });
+
+  sendSnapshot();
+  heartbeat = setInterval(() => {
+    if (!canWrite()) {
+      cleanup();
+      return;
+    }
+    try {
+      res.write(': ping\n\n');
+    } catch {
+      cleanup();
+    }
+  }, 15_000);
+
+  req.on('close', () => {
+    cleanup();
+  });
+});
+
+worAdminApiRouter.post('/import/start', requireCodexAdmin, (req, res) => {
+  if (!ensureWorDbAvailable()) {
+    err(res, 'WoR database unavailable', 503);
+    return;
+  }
+  const data = validateBody(worAdminImportRunSchema, req.body ?? {}, res);
+  if (!data) return;
+  if (isWorImportRunning()) {
+    err(res, 'Import already running', 409);
+    return;
+  }
+  const result = startWorAdminImport({
+    forceImport: data.forceImport,
+    forceImages: data.forceImages,
+    forceSteps: data.forceSteps,
+  });
+  if (!result.started) {
+    err(res, result.reason ?? 'Import could not start', 409);
+    return;
+  }
+  json(res, { started: true, snapshot: result.snapshot }, 202);
+});
+
+worAdminApiRouter.get('/catalog/status', requireCodexAdmin, (_req, res) => {
+  if (!ensureWorDbAvailable()) {
+    err(res, 'WoR database unavailable', 503);
+    return;
+  }
+  const db = getWorCatalogDb();
+  json(res, {
+    needs_import: catalogNeedsImport(db),
+    has_catalog: !catalogNeedsImport(db),
+  });
+});
+
+worAdminApiRouter.post('/catalog/bootstrap', requireCodexAdmin, (_req, res) => {
+  if (!ensureWorDbAvailable()) {
+    err(res, 'WoR database unavailable', 503);
+    return;
+  }
+  if (isWorImportRunning()) {
+    err(res, 'Import already running', 409);
+    return;
+  }
+  const result = startWorAdminImport();
+  if (!result.started) {
+    err(res, result.reason ?? 'Import could not start', 409);
+    return;
+  }
+  json(res, { started: true, snapshot: result.snapshot }, 202);
+});

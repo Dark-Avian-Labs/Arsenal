@@ -1,0 +1,83 @@
+@import '@dark-avian-labs/ui/styles.css';
+@source '../../../../packages/ui/src';
+@source '../';
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.table-container table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table-container th,
+.table-container td {
+  padding: 12px 16px;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.table-container thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.table-container thead th {
+  background: var(--color-surface-thead);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  color: var(--color-muted);
+  font-weight: 600;
+  border-bottom: 1px solid var(--color-glass-border);
+}
+
+.table-container tbody tr {
+  border-bottom: 1px solid var(--color-glass-divider);
+}
+
+.table-container tbody tr:hover {
+  background: oklch(100% 0 0 / 0.03);
+}
+
+.table-container tbody tr:last-child {
+  border-bottom: none;
+}
+
+.fleet-table {
+  table-layout: fixed;
+  width: 100%;
+  min-width: 56rem;
+}
+
+.fleet-table .col-status {
+  width: 2.5rem;
+  padding-inline: 12px;
+  text-align: center;
+}
+
+.fleet-row {
+  cursor: pointer;
+}
+
+.fleet-row:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
+}
+
+.fleet-status-dot {
+  display: inline-block;
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: 9999px;
+  vertical-align: middle;
+}
+
+.fleet-status-dot.is-online {
+  background: var(--color-success);
+}
+
+.fleet-status-dot.is-offline {
+  background: var(--color-danger);
+}

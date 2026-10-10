@@ -1,0 +1,611 @@
+import fs from 'node:fs';
+import path from 'node:path';
+
+import { log } from '@dark-avian-labs/server-kit';
+import {
+  ensureWorCatalogDbTables,
+  ensureWorCoreTables,
+  getWorCatalogDb,
+  getWorDb,
+  worQueries,
+} from '../../games/wor/index.ts';
+import type Database from 'better-sqlite3';
+
+import { WOR_IMAGES_DIR, PROJECT_ROOT } from '../../config.ts';
+import {
+  bumpCatalogVersion,
+  deactivateStaleCatalogEntries,
+  getCatalogCounts,
+  rematerializeProspectorAliasOwnership,
+  upsertCatalogArtifacts,
+  upsertCatalogDemons,
+  upsertCatalogHeroes,
+  type CatalogBundle,
+} from './catalogQueries.ts';
+import {
+  copyWorCatalogToCollection,
+  seedWorCatalogFromCollectionIfEmpty,
+} from './copyCatalogToCollection.ts';
+import { importFandomHeroStats } from './fandomHeroStats.ts';
+import { downloadCatalogPortraits, type WorImageDownloadSummary } from './fandomImages.ts';
+import { fetchFastidiousCatalog, type FastidiousImageRef } from './fastidiousCatalog.ts';
+import {
+  noteWorImportLeaseHeartbeat,
+  releaseWorImportLease,
+  requireWorImportLease,
+  tryAcquireWorImportLease,
+  type WorImportLeaseWatch,
+} from './importLease.ts';
+import { applyWorOverrides } from './overrides.ts';
+import {
+  ensureWorImportDirs,
+  isWorImportLiveEnabled,
+  resolveWorImportCacheDir,
+  WOR_IMPORT_FIXTURE_CACHE_DIR,
+} from './paths.ts';
+import {
+  shouldFetchFastidiousCatalog,
+  shouldFetchProspectorCatalog,
+  shouldRunWorStep,
+  worImagesOnlyMissing,
+  type WorPipelineStepOptions,
+} from './pipelineStepControl.ts';
+import {
+  fillMissingHeroStatsFromProspector,
+  loadProspectorCatalog,
+  mergeProspectorCatalog,
+  PROSPECTOR_SLUG_ALIASES,
+  type ProspectorPortraitRefs,
+  type ProspectorSnapshot,
+} from './prospectorCatalog.ts';
+import {
+  computeCurrentSourceHashes,
+  fastidiousSourcesChanged,
+  overridesChanged,
+  readProcessedSourceHashes,
+  writeProcessedSourceHashes,
+} from './sourceHashes.ts';
+import { listMissingStarAssets, validateWorCatalogBundle } from './validateCatalog.ts';
+import type { WorPipelineStepKey } from './worPipelineSteps.ts';
+import { WOR_PIPELINE_STEP_LABELS } from './worPipelineSteps.ts';
+
+export type WorImportLogLine = {
+  ts: string;
+  level: 'info' | 'error';
+  message: string;
+};
+
+export type WorImportSummary = {
+  heroes: number;
+  artifacts: number;
+  demons: number;
+  imageSummary?: WorImageDownloadSummary;
+  missingStarAssets?: string[];
+  validationWarnings?: string[];
+  missingPortraits?: string[];
+};
+
+export type WorStartupPipelineOptions = WorPipelineStepOptions & {
+  fixturePath?: string;
+  overridesPath?: string;
+  onLog?: (line: WorImportLogLine) => void;
+  importLockToken?: string;
+};
+
+const DEFAULT_FIXTURE = path.join(PROJECT_ROOT, 'scripts', 'data', 'wor-catalog-fixture.json');
+
+const CATALOG_MUTATION_STEPS: WorPipelineStepKey[] = [
+  'fastidiousCatalog',
+  'prospectorCatalog',
+  'manualOverrides',
+  'fandomImages',
+  'fandomHeroStats',
+  'seedValidation',
+];
+
+function catalogPipelineRequested(options: WorStartupPipelineOptions): boolean {
+  if (!options.forceSteps?.length) return true;
+  return options.forceSteps.some((step) => CATALOG_MUTATION_STEPS.includes(step));
+}
+
+function nowIso(): string {
+  return new Date().toISOString();
+}
+
+function emit(
+  onLog: WorStartupPipelineOptions['onLog'],
+  level: WorImportLogLine['level'],
+  message: string,
+): void {
+  const line = { ts: nowIso(), level, message };
+  onLog?.(line);
+  if (level === 'error') {
+    log('error', `[wor-import] ${message}`);
+  } else {
+    log('info', `[wor-import] ${message}`);
+  }
+}
+
+function stepTag(step: WorPipelineStepKey): string {
+  return WOR_PIPELINE_STEP_LABELS[step];
+}
+
+export function applyWorCatalogUpserts(
+  catalogDb: Database.Database,
+  bundle: CatalogBundle | null,
+  onLog?: WorStartupPipelineOptions['onLog'],
+): void {
+  if (!bundle) {
+    emit(onLog, 'info', 'Skipping catalog upsert — no catalog bundle loaded.');
+    return;
+  }
+
+  catalogDb
+    .transaction(() => {
+      const heroCount = upsertCatalogHeroes(catalogDb, bundle.heroes);
+      emit(onLog, 'info', `Upserted ${heroCount} catalog heroes.`);
+      const artifactCount = upsertCatalogArtifacts(catalogDb, bundle.artifacts);
+      emit(onLog, 'info', `Upserted ${artifactCount} catalog artifacts.`);
+      const demonCount = upsertCatalogDemons(catalogDb, bundle.demons);
+      emit(onLog, 'info', `Upserted ${demonCount} catalog demons.`);
+
+      const deactivated = deactivateStaleCatalogEntries(catalogDb, bundle);
+      const deactivatedTotal = deactivated.heroes + deactivated.artifacts + deactivated.demons;
+      if (deactivatedTotal > 0) {
+        emit(
+          onLog,
+          'info',
+          `Deactivated stale catalog entries: ${deactivated.heroes} heroes, ${deactivated.artifacts} artifacts, ${deactivated.demons} demons.`,
+        );
+      }
+
+      bumpCatalogVersion(catalogDb);
+    })
+    .immediate();
+}
+
+export function syncWorAccountsFromCatalog(
+  appDb: Database.Database,
+  onLog?: WorStartupPipelineOptions['onLog'],
+  options?: { rematerializeAliases?: boolean },
+): void {
+  appDb
+    .transaction(() => {
+      if (options?.rematerializeAliases !== false) {
+        const rematerialized = rematerializeProspectorAliasOwnership(
+          appDb,
+          PROSPECTOR_SLUG_ALIASES,
+        );
+        if (rematerialized > 0) {
+          emit(
+            onLog,
+            'info',
+            `Rematerialized ownership for ${rematerialized} account hero row(s) from Prospector slug aliases.`,
+          );
+        }
+      }
+
+      const pruned = worQueries.pruneInactiveCatalogAccountRows(appDb);
+      const prunedTotal = pruned.heroes + pruned.artifacts + pruned.demons;
+      if (prunedTotal > 0) {
+        emit(
+          onLog,
+          'info',
+          `Removed ${prunedTotal} account row(s) tied to unknown catalog entries.`,
+        );
+      }
+      worQueries.syncNewCatalogEntriesToAllAccounts(appDb);
+      const synced = worQueries.syncAccountCatalogMetadata(appDb);
+      emit(
+        onLog,
+        'info',
+        `[${stepTag('sync_accounts')}] Synced catalog metadata for ${synced.heroes} heroes, ${synced.artifacts} artifacts, ${synced.demons} demons across accounts.`,
+      );
+    })
+    .immediate();
+}
+
+export function applyWorCatalogMutation(
+  catalogDb: Database.Database,
+  appDb: Database.Database,
+  bundle: CatalogBundle | null,
+  onLog?: WorStartupPipelineOptions['onLog'],
+): void {
+  applyWorCatalogUpserts(catalogDb, bundle, onLog);
+  copyWorCatalogToCollection(catalogDb, appDb);
+  syncWorAccountsFromCatalog(appDb, onLog, { rematerializeAliases: Boolean(bundle) });
+}
+
+function readFixtureBundle(fixturePath: string): CatalogBundle {
+  const raw = fs.readFileSync(fixturePath, 'utf8');
+  return JSON.parse(raw) as CatalogBundle;
+}
+
+function loadExistingPortraitPaths(db: Database.Database): {
+  heroes: Record<string, string | null>;
+  artifacts: Record<string, string | null>;
+  demons: Record<string, string | null>;
+} {
+  const heroes = Object.fromEntries(
+    (
+      db.prepare('SELECT slug, portrait_path FROM catalog_heroes').all() as {
+        slug: string;
+        portrait_path: string | null;
+      }[]
+    ).map((row) => [row.slug, row.portrait_path]),
+  );
+  const artifacts = Object.fromEntries(
+    (
+      db.prepare('SELECT slug, portrait_path FROM catalog_artifacts').all() as {
+        slug: string;
+        portrait_path: string | null;
+      }[]
+    ).map((row) => [row.slug, row.portrait_path]),
+  );
+  const demons = Object.fromEntries(
+    (
+      db.prepare('SELECT slug, portrait_path FROM catalog_demons').all() as {
+        slug: string;
+        portrait_path: string | null;
+      }[]
+    ).map((row) => [row.slug, row.portrait_path]),
+  );
+  return { heroes, artifacts, demons };
+}
+
+function updateSourceHashesInDb(
+  db: Database.Database,
+  hashes: Record<string, string | undefined>,
+): void {
+  db.prepare(`UPDATE catalog_meta SET source_hashes_json = ? WHERE id = 1`).run(
+    JSON.stringify(hashes),
+  );
+}
+
+export async function runWorStartupPipeline(
+  options: WorStartupPipelineOptions = {},
+): Promise<WorImportSummary> {
+  const onLog = options.onLog;
+  const catalogDb = getWorCatalogDb() as Database.Database;
+  const appDb = getWorDb() as Database.Database;
+  ensureWorImportDirs();
+  fs.mkdirSync(WOR_IMAGES_DIR, { recursive: true });
+
+  seedWorCatalogFromCollectionIfEmpty(catalogDb, appDb);
+
+  const ownsLease = !options.importLockToken;
+  let lockToken: string;
+  if (options.importLockToken) {
+    lockToken = options.importLockToken;
+  } else {
+    const acquired = tryAcquireWorImportLease(catalogDb, null);
+    if (!acquired) {
+      throw new Error('WoR import lease held by another process.');
+    }
+    lockToken = acquired;
+  }
+
+  const leaseWatch: WorImportLeaseWatch = { lost: false };
+  const heartbeat = setInterval(
+    () => {
+      noteWorImportLeaseHeartbeat(catalogDb, lockToken, leaseWatch);
+    },
+    5 * 60 * 1000,
+  );
+  heartbeat.unref();
+  try {
+    return await runWorStartupPipelineBody(catalogDb, appDb, options, onLog, lockToken, leaseWatch);
+  } finally {
+    clearInterval(heartbeat);
+    if (ownsLease) {
+      releaseWorImportLease(catalogDb, lockToken);
+    }
+  }
+}
+
+async function runWorStartupPipelineBody(
+  catalogDb: Database.Database,
+  appDb: Database.Database,
+  options: WorStartupPipelineOptions,
+  onLog: WorStartupPipelineOptions['onLog'],
+  lockToken: string,
+  leaseWatch: WorImportLeaseWatch,
+): Promise<WorImportSummary> {
+  let bundle: CatalogBundle | null = null;
+  let imageRefs: FastidiousImageRef | null = null;
+  let prospectorPortraits: ProspectorPortraitRefs | null = null;
+  let prospectorSnapshot: ProspectorSnapshot | null = null;
+  let imageSummary: WorImageDownloadSummary | undefined;
+  const validationWarnings: string[] = [];
+  const cacheDir = resolveWorImportCacheDir();
+  const live = isWorImportLiveEnabled();
+  const previousHashes = readProcessedSourceHashes();
+  const currentHashes = computeCurrentSourceHashes(cacheDir);
+  let pendingSourceHashes: ReturnType<typeof computeCurrentSourceHashes> | null = null;
+
+  requireWorImportLease(catalogDb, lockToken, leaseWatch);
+
+  if (shouldRunWorStep('schema', true, options)) {
+    emit(onLog, 'info', `[${stepTag('schema')}] Ensuring WoR catalog + collection tables…`);
+    ensureWorCatalogDbTables(catalogDb);
+    ensureWorCoreTables(appDb);
+  }
+
+  const catalogWouldRun =
+    live ||
+    fs.existsSync(path.join(cacheDir, 'heroes.json')) ||
+    fs.existsSync(path.join(WOR_IMPORT_FIXTURE_CACHE_DIR, 'heroes.json'));
+  const useFixtureOnly =
+    !catalogWouldRun && options.fixturePath
+      ? true
+      : !catalogWouldRun && fs.existsSync(DEFAULT_FIXTURE);
+
+  if (shouldRunWorStep('fastidiousCatalog', catalogWouldRun || useFixtureOnly, options)) {
+    if (useFixtureOnly && !catalogWouldRun) {
+      const fixturePath = options.fixturePath ?? DEFAULT_FIXTURE;
+      emit(
+        onLog,
+        'info',
+        `[${stepTag('fastidiousCatalog')}] Loading dev fixture from ${fixturePath}…`,
+      );
+      bundle = readFixtureBundle(fixturePath);
+      imageRefs = {
+        heroes: {},
+        artifacts: {},
+        demons: {},
+        storageUrl: 'https://fastidious.gg/storage/',
+        storageVersion: '1',
+      };
+    } else if (
+      shouldRunWorStep(
+        'fastidiousCatalog',
+        shouldFetchFastidiousCatalog({
+          live,
+          sourcesChanged: fastidiousSourcesChanged(currentHashes, previousHashes),
+          forceImport: options.forceImport,
+        }),
+        options,
+      )
+    ) {
+      emit(onLog, 'info', `[${stepTag('fastidiousCatalog')}] Fetching Fastidious metadata…`);
+      const result = await fetchFastidiousCatalog({
+        live,
+        onLog: (message) => emit(onLog, 'info', `[${stepTag('fastidiousCatalog')}] ${message}`),
+      });
+      bundle = result.bundle;
+      imageRefs = result.imageRefs;
+      const refreshedHashes = computeCurrentSourceHashes(cacheDir);
+      pendingSourceHashes = refreshedHashes;
+    } else {
+      emit(onLog, 'info', `[${stepTag('fastidiousCatalog')}] Skipped — source cache unchanged.`);
+      const result = await fetchFastidiousCatalog({
+        live: false,
+        onLog: (message) => emit(onLog, 'info', `[${stepTag('fastidiousCatalog')}] ${message}`),
+      });
+      bundle = result.bundle;
+      imageRefs = result.imageRefs;
+    }
+  } else {
+    emit(onLog, 'info', `[${stepTag('fastidiousCatalog')}] Skipped.`);
+  }
+
+  if (!bundle && catalogPipelineRequested(options) && (catalogWouldRun || useFixtureOnly)) {
+    emit(
+      onLog,
+      'info',
+      `[${stepTag('fastidiousCatalog')}] Reusing cached catalog for downstream steps…`,
+    );
+    const result = await fetchFastidiousCatalog({
+      live: false,
+      onLog: (message) => emit(onLog, 'info', `[${stepTag('fastidiousCatalog')}] ${message}`),
+    });
+    bundle = result.bundle;
+    imageRefs = result.imageRefs;
+  }
+
+  if (!bundle && catalogPipelineRequested(options)) {
+    throw new Error('Catalog bundle unavailable after fastidiousCatalog step.');
+  }
+
+  const prospectorCachePath = path.join(cacheDir, 'prospector.json');
+  const prospectorWouldRun = live || fs.existsSync(prospectorCachePath);
+  if (bundle && shouldRunWorStep('prospectorCatalog', prospectorWouldRun, options)) {
+    emit(
+      onLog,
+      'info',
+      `[${stepTag('prospectorCatalog')}] Loading Prospector heroes and artifacts…`,
+    );
+    const snapshot = await loadProspectorCatalog({
+      live: shouldFetchProspectorCatalog({ live, forceImport: options.forceImport }),
+      cacheDir,
+      onLog: (message) => emit(onLog, 'info', `[${stepTag('prospectorCatalog')}] ${message}`),
+    });
+    if (snapshot) {
+      const merged = mergeProspectorCatalog(bundle, snapshot);
+      bundle = merged.bundle;
+      prospectorPortraits = merged.portraits;
+      prospectorSnapshot = snapshot;
+      emit(
+        onLog,
+        'info',
+        `[${stepTag('prospectorCatalog')}] Added ${merged.addedHeroes.length} heroes and ${merged.addedArtifacts.length} artifacts. Filled missing faction, damage, or lord on ${merged.filledHeroes.length} existing heroes.`,
+      );
+      for (const message of merged.skipped) {
+        emit(onLog, 'info', `[${stepTag('prospectorCatalog')}] ${message}`);
+      }
+    } else {
+      emit(
+        onLog,
+        'info',
+        `[${stepTag('prospectorCatalog')}] No snapshot. Fastidious catalog left unchanged.`,
+      );
+    }
+  } else {
+    emit(onLog, 'info', `[${stepTag('prospectorCatalog')}] Skipped.`);
+  }
+
+  if (
+    shouldRunWorStep('manualOverrides', overridesChanged(currentHashes, previousHashes), options)
+  ) {
+    emit(onLog, 'info', `[${stepTag('manualOverrides')}] Applying overrides…`);
+  } else {
+    emit(onLog, 'info', `[${stepTag('manualOverrides')}] Skipped — overrides unchanged.`);
+  }
+  if (bundle) {
+    bundle = applyWorOverrides(bundle);
+  }
+
+  const imagesWouldRun = live || Boolean(process.env.WIKI_USER_AGENT?.trim()) || Boolean(imageRefs);
+  if (bundle && imageRefs && shouldRunWorStep('fandomImages', imagesWouldRun, options)) {
+    if (!process.env.WIKI_USER_AGENT?.trim()) {
+      emit(
+        onLog,
+        'info',
+        `[${stepTag('fandomImages')}] WIKI_USER_AGENT not set — using Fastidious card images, then Prospector portraits when Fastidious has no file.`,
+      );
+    }
+    const portraitResult = await downloadCatalogPortraits({
+      bundle,
+      imageRefs,
+      directPortraitUrls: prospectorPortraits ?? undefined,
+      existingPortraitPaths: loadExistingPortraitPaths(catalogDb),
+      onlyMissing: worImagesOnlyMissing(options),
+      forceDownload: options.forceImages,
+      onLog: (message) => emit(onLog, 'info', `[${stepTag('fandomImages')}] ${message}`),
+      onPortraitFailure: (detail) =>
+        emit(
+          onLog,
+          'error',
+          `[${stepTag('fandomImages')}] Missing portrait ${detail.kind}:${detail.slug} — ${detail.reason}`,
+        ),
+    });
+    bundle = portraitResult.bundle;
+    imageSummary = portraitResult.summary;
+  } else {
+    emit(onLog, 'info', `[${stepTag('fandomImages')}] Skipped.`);
+  }
+
+  if (bundle && shouldRunWorStep('seedValidation', true, options)) {
+    emit(onLog, 'info', `[${stepTag('seedValidation')}] Validating catalog bundle…`);
+    const validation = validateWorCatalogBundle(bundle);
+    for (const issue of validation.issues) {
+      const message = `[${stepTag('seedValidation')}] ${issue.message}`;
+      if (issue.level === 'error') emit(onLog, 'error', message);
+      else {
+        emit(onLog, 'info', message);
+        validationWarnings.push(issue.message);
+      }
+    }
+    if (!validation.ok) {
+      throw new Error('Catalog validation failed.');
+    }
+  }
+
+  requireWorImportLease(catalogDb, lockToken, leaseWatch);
+  applyWorCatalogUpserts(catalogDb, bundle, onLog);
+
+  const heroStatsCacheDir = path.join(resolveWorImportCacheDir(), 'hero-stats');
+  const heroStatsWouldRun =
+    Boolean(process.env.WIKI_USER_AGENT?.trim()) ||
+    fs.existsSync(heroStatsCacheDir) ||
+    Boolean(options.forceSteps?.includes('fandomHeroStats'));
+  if (shouldRunWorStep('fandomHeroStats', heroStatsWouldRun, options)) {
+    emit(onLog, 'info', `[${stepTag('fandomHeroStats')}] Importing Lv.60 A0 attributes from wiki…`);
+    const statsSummary = await importFandomHeroStats({
+      db: catalogDb,
+      force: Boolean(options.forceSteps?.includes('fandomHeroStats')),
+      live: Boolean(process.env.WIKI_USER_AGENT?.trim()),
+      onLog: (message) => emit(onLog, 'info', `[${stepTag('fandomHeroStats')}] ${message}`),
+    });
+    emit(
+      onLog,
+      'info',
+      `[${stepTag('fandomHeroStats')}] Updated ${statsSummary.updated}, missing ${statsSummary.missing}, failed ${statsSummary.failed}.`,
+    );
+  } else {
+    emit(onLog, 'info', `[${stepTag('fandomHeroStats')}] Skipped.`);
+  }
+
+  const snapshotForStats =
+    prospectorSnapshot ??
+    (fs.existsSync(prospectorCachePath)
+      ? await loadProspectorCatalog({
+          live: false,
+          cacheDir,
+          onLog: (message) => emit(onLog, 'info', `[${stepTag('prospectorCatalog')}] ${message}`),
+        })
+      : null);
+  if (snapshotForStats) {
+    const fill = fillMissingHeroStatsFromProspector(catalogDb, snapshotForStats, (message) =>
+      emit(onLog, 'info', `[${stepTag('prospectorCatalog')}] ${message}`),
+    );
+    emit(
+      onLog,
+      'info',
+      `[${stepTag('prospectorCatalog')}] Filled ${fill.updated} missing hero stats from Prospector (${fill.missing} still without stats).`,
+    );
+  }
+
+  if (pendingSourceHashes) {
+    requireWorImportLease(catalogDb, lockToken, leaseWatch);
+    writeProcessedSourceHashes(pendingSourceHashes);
+    updateSourceHashesInDb(catalogDb, pendingSourceHashes);
+  }
+
+  requireWorImportLease(catalogDb, lockToken, leaseWatch);
+  copyWorCatalogToCollection(catalogDb, appDb);
+  syncWorAccountsFromCatalog(appDb, onLog, { rematerializeAliases: Boolean(bundle) });
+
+  const counts = getCatalogCounts(catalogDb);
+  emit(
+    onLog,
+    'info',
+    `Catalog ready: ${counts.heroes} heroes, ${counts.artifacts} artifacts, ${counts.demons} demons.`,
+  );
+
+  const missingStarAssets = listMissingStarAssets(
+    path.join(PROJECT_ROOT, 'packages', 'games', 'wor', 'assets'),
+  );
+  if (missingStarAssets.length > 0) {
+    emit(onLog, 'info', `Missing UI star assets in package: ${missingStarAssets.join(', ')}`);
+  }
+
+  if (imageSummary?.missingPortraits.length) {
+    for (const missing of imageSummary.missingPortraits) {
+      emit(onLog, 'info', `[${stepTag('fandomImages')}] Still missing portrait: ${missing}`);
+    }
+  }
+
+  return {
+    ...counts,
+    imageSummary,
+    missingStarAssets,
+    validationWarnings,
+    missingPortraits: imageSummary?.missingPortraits,
+  };
+}
+
+export function catalogNeedsImport(db: Database.Database): boolean {
+  return !worQueries.catalogHasEntries(db);
+}
+
+export function ensureWorCatalogSeededFromCollection(): boolean {
+  return seedWorCatalogFromCollectionIfEmpty(
+    getWorCatalogDb() as Database.Database,
+    getWorDb() as Database.Database,
+  );
+}
+
+export function copyWorCatalogIntoCollectionIfNeeded(): boolean {
+  const catalogDb = getWorCatalogDb() as Database.Database;
+  const appDb = getWorDb() as Database.Database;
+  if (!worQueries.catalogHasEntries(catalogDb)) return false;
+  const catalogVersion = worQueries.getCatalogVersion(catalogDb);
+  const collectionVersion = worQueries.getCatalogVersion(appDb);
+  if (worQueries.catalogHasEntries(appDb) && collectionVersion >= catalogVersion) {
+    return false;
+  }
+  copyWorCatalogToCollection(catalogDb, appDb);
+  syncWorAccountsFromCatalog(appDb);
+  return true;
+}

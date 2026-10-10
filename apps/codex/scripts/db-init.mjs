@@ -1,0 +1,165 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+
+import Database from 'better-sqlite3';
+
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+
+function parseEnvFile(filePath) {
+  if (!fs.existsSync(filePath)) return;
+  const text = fs.readFileSync(filePath, 'utf8');
+  for (const line of text.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const eq = trimmed.indexOf('=');
+    if (eq <= 0) continue;
+    const key = trimmed.slice(0, eq).trim();
+    let value = trimmed.slice(eq + 1).trim();
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
+    }
+    if (value.startsWith('encrypted:')) continue;
+    if (process.env[key] === undefined) {
+      process.env[key] = value;
+    }
+  }
+}
+
+function isUsableEnvValue(value) {
+  const trimmed = value?.trim();
+  return Boolean(trimmed && !trimmed.startsWith('encrypted:'));
+}
+
+function loadEnv() {
+  const candidates = [
+    path.join(root, '.github', 'ci.env.development'),
+    path.join(root, '.env'),
+    path.join(root, '.env.development'),
+  ];
+  for (const file of candidates) {
+    parseEnvFile(file);
+  }
+}
+
+function resolveGameDbPath(envKey, defaultFilename) {
+  const raw = isUsableEnvValue(process.env[envKey]) ? process.env[envKey].trim() : '';
+  const resolved = raw
+    ? path.isAbsolute(raw)
+      ? raw
+      : path.resolve(root, raw)
+    : path.join(root, 'data', defaultFilename);
+  fs.mkdirSync(path.dirname(resolved), { recursive: true });
+  return resolved;
+}
+
+function applyDefaultPragmas(db, pragmas) {
+  db.pragma('foreign_keys = ON');
+  for (const p of pragmas) {
+    db.pragma(p);
+  }
+}
+
+async function importBuilt(modulePath) {
+  const url = pathToFileURL(modulePath).href;
+  return import(url);
+}
+
+function initDatabase(dbPath, label, runLifecycle) {
+  const db = new Database(dbPath);
+  try {
+    runLifecycle(db);
+    console.log(`[db:init] ${label}: ${dbPath}`);
+  } finally {
+    db.close();
+  }
+}
+
+loadEnv();
+process.env.DATA_DIR = process.env.DATA_DIR?.trim() || path.join(root, 'data');
+
+const warframeDbPath = resolveGameDbPath('WARFRAME_DB_PATH', 'warframe.db');
+const warframeCatalogDbPath = resolveGameDbPath('WARFRAME_CATALOG_DB_PATH', 'warframe-catalog.db');
+const epic7DbPath = resolveGameDbPath('EPIC7_DB_PATH', 'epic7.db');
+const worDbPath = resolveGameDbPath('WOR_DB_PATH', 'wor.db');
+const worCatalogDbPath = resolveGameDbPath('WOR_CATALOG_DB_PATH', 'wor-catalog.db');
+process.env.WARFRAME_DB_PATH = warframeDbPath;
+process.env.WARFRAME_CATALOG_DB_PATH = warframeCatalogDbPath;
+process.env.EPIC7_DB_PATH = epic7DbPath;
+process.env.WOR_DB_PATH = worDbPath;
+process.env.WOR_CATALOG_DB_PATH = worCatalogDbPath;
+
+const warframeSchemaPath = path.join(root, 'server/games/warframe/db/schema.ts');
+const epic7SchemaPath = path.join(root, 'server/games/epic7/db/schema.ts');
+const worSchemaPath = path.join(root, 'server/games/wor/db/schema.ts');
+const warframeCatalogSchemaPath = path.join(root, 'server/import/warframe/db/catalogSchema.ts');
+
+for (const file of [
+  warframeSchemaPath,
+  epic7SchemaPath,
+  worSchemaPath,
+  warframeCatalogSchemaPath,
+]) {
+  if (!fs.existsSync(file)) {
+    console.error(`[db:init] Missing ${file}.`);
+    process.exit(1);
+  }
+}
+
+const { DEFAULT_SQLITE_PRAGMAS } = await import('@dark-avian-labs/server-kit');
+const warframeSchema = await importBuilt(warframeSchemaPath);
+const epic7Schema = await importBuilt(epic7SchemaPath);
+const worSchema = await importBuilt(worSchemaPath);
+const warframeCatalogSchema = await importBuilt(warframeCatalogSchemaPath);
+
+const {
+  ensureWarframeCoreTables,
+  ensureWarframeCatalogMasterTable,
+  ensureWarframeCatalogActiveColumn,
+  ensureWarframeCatalogMaxLevelColumn,
+  ensureWarframeRowMarketHrefColumns,
+  ensureWarframeRowOrphanColumn,
+  ensureWarframeAdvancedProgressTable,
+  createSchema: createWarframeSchema,
+} = warframeSchema;
+
+const { ensureEpic7CoreTables, ensureUniqueBaseNameIndexes } = epic7Schema;
+const { ensureWorCoreTables, ensureWorCatalogDbTables, ensureSingleActiveAccountIndex } = worSchema;
+const { ensureWarframeCatalogTables } = warframeCatalogSchema;
+
+initDatabase(warframeDbPath, 'warframe', (db) => {
+  applyDefaultPragmas(db, DEFAULT_SQLITE_PRAGMAS);
+  ensureWarframeCoreTables(db);
+  ensureWarframeCatalogMasterTable(db);
+  ensureWarframeCatalogActiveColumn(db);
+  ensureWarframeCatalogMaxLevelColumn(db);
+  ensureWarframeRowMarketHrefColumns(db);
+  ensureWarframeRowOrphanColumn(db);
+  ensureWarframeAdvancedProgressTable(db);
+  createWarframeSchema(db, false);
+});
+
+initDatabase(warframeCatalogDbPath, 'warframe-catalog', (db) => {
+  applyDefaultPragmas(db, DEFAULT_SQLITE_PRAGMAS);
+  ensureWarframeCatalogTables(db);
+});
+
+initDatabase(epic7DbPath, 'epic7', (db) => {
+  applyDefaultPragmas(db, DEFAULT_SQLITE_PRAGMAS);
+  ensureEpic7CoreTables(db);
+  ensureUniqueBaseNameIndexes(db);
+});
+
+initDatabase(worDbPath, 'wor', (db) => {
+  applyDefaultPragmas(db, DEFAULT_SQLITE_PRAGMAS);
+  ensureWorCoreTables(db);
+  ensureSingleActiveAccountIndex(db);
+});
+
+initDatabase(worCatalogDbPath, 'wor-catalog', (db) => {
+  applyDefaultPragmas(db, DEFAULT_SQLITE_PRAGMAS);
+  ensureWorCatalogDbTables(db);
+});

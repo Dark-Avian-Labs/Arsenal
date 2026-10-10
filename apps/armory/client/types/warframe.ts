@@ -1,0 +1,316 @@
+export interface Warframe {
+  unique_name: string;
+  name: string;
+  description?: string;
+  health?: number;
+  shield?: number;
+  armor?: number;
+  power?: number;
+  sprint_speed?: number;
+  passive_description?: string;
+  passive_description_wiki?: string;
+  product_category?: string;
+  abilities?: string;
+  aura_polarity?: string;
+  exilus_polarity?: string;
+  polarities?: string;
+  mastery_req: number;
+  image_path?: string;
+  artifact_slots?: string;
+}
+
+export interface Weapon {
+  unique_name: string;
+  name: string;
+  description?: string;
+  product_category?: string;
+  slot?: number;
+  mastery_req: number;
+  total_damage?: number;
+  damage_per_shot?: string;
+  critical_chance?: number;
+  critical_multiplier?: number;
+  proc_chance?: number;
+  fire_rate?: number;
+  accuracy?: number;
+  magazine_size?: number;
+  reload_time?: number;
+  multishot?: number;
+  noise?: string;
+  trigger_type?: string;
+  omega_attenuation?: number;
+  riven_disposition?: number;
+  sentinel?: number;
+  blocking_angle?: number;
+  combo_duration?: number;
+  follow_through?: number;
+  range?: number;
+  slam_attack?: number;
+  heavy_attack_damage?: number;
+  wind_up?: number;
+  image_path?: string;
+  artifact_slots?: string;
+  fire_behaviors?: string;
+  has_incarnon?: number;
+  incarnon_data?: string;
+}
+
+export interface Companion {
+  unique_name: string;
+  name: string;
+  description?: string;
+  health?: number;
+  shield?: number;
+  armor?: number;
+  power?: number;
+  product_category?: string;
+  mastery_req: number;
+  image_path?: string;
+  artifact_slots?: string;
+}
+
+export type ModRarity = 'COMMON' | 'UNCOMMON' | 'RARE' | 'LEGENDARY';
+
+export interface Mod {
+  unique_name: string;
+  name: string;
+  polarity?: string;
+  rarity?: ModRarity;
+  type?: string;
+  compat_name?: string;
+  base_drain?: number;
+  fusion_limit?: number;
+  is_utility?: number;
+  is_augment?: number;
+  subtype?: string;
+  description?: string;
+  image_path?: string;
+  atragraph_card_path?: string;
+  foil_overlay_path?: string;
+  mod_set?: string;
+  set_num_in_set?: number;
+  set_stats?: string;
+}
+
+export type RivenWeaponType = 'primary' | 'secondary' | 'melee' | 'archgun';
+
+export interface RivenStat {
+  stat: string;
+  value: number;
+  isNegative: boolean;
+}
+
+export interface RivenConfig {
+  polarity?: 'AP_ATTACK' | 'AP_TACTIC' | 'AP_DEFENSE';
+  positive: RivenStat[];
+  negative?: RivenStat;
+  rivenRank?: number;
+}
+
+export interface ModLevelStat {
+  mod_unique_name: string;
+  rank: number;
+  stats: string;
+}
+
+export interface ModSet {
+  unique_name: string;
+  num_in_set?: number;
+  stats?: string;
+}
+
+export interface Ability {
+  unique_name: string;
+  name: string;
+  description?: string;
+  warframe_unique_name?: string;
+  is_helminth_extractable?: number;
+  image_path?: string;
+  wiki_stats?: string;
+  energy_cost?: number;
+}
+
+export type EquipmentType =
+  | 'warframe'
+  | 'primary'
+  | 'secondary'
+  | 'melee'
+  | 'archgun'
+  | 'archmelee'
+  | 'companion'
+  | 'beast_claws'
+  | 'archwing'
+  | 'necramech'
+  | 'kdrive'
+  | 'tektolyst';
+
+export type SlotType = 'general' | 'aura' | 'stance' | 'exilus' | 'posture';
+
+export interface ModSlot {
+  index: number;
+  type: SlotType;
+  polarity?: string;
+  mod?: Mod;
+  rank?: number;
+  setRank?: number;
+  riven_config?: RivenConfig;
+  riven_art_path?: string;
+}
+
+export const VALENCE_DAMAGE_TYPES = [
+  'Impact',
+  'Heat',
+  'Cold',
+  'Electricity',
+  'Toxin',
+  'Magnetic',
+  'Radiation',
+] as const;
+
+export type ValenceDamageType = (typeof VALENCE_DAMAGE_TYPES)[number];
+
+export interface ValenceBonus {
+  element: ValenceDamageType;
+  percent: number;
+}
+
+export interface BuildConfig {
+  id?: string;
+  name: string;
+  equipment_type: EquipmentType;
+  equipment_unique_name: string;
+  slots: ModSlot[];
+  valenceBonus?: ValenceBonus | null;
+  helminth?:
+    | {
+        replaced_ability_index: number;
+        replacement_ability_unique_name: string;
+      }
+    | {
+        replaced_ability_key: string;
+        replacement_ability_key: string;
+      };
+  arcaneSlots?: {
+    arcane?: {
+      unique_name: string;
+      name: string;
+      rarity?: string;
+      image_path?: string;
+      level_stats?: string;
+    };
+    rank: number;
+  }[];
+  shardSlots?: Array<
+    | {
+        shard_type_id?: string | number;
+        buff_id?: string | number;
+        tauforged?: boolean;
+      }
+    | { armory_shard_key: string }
+  >;
+  orokinReactor?: boolean;
+  incarnonEnabled?: boolean;
+  incarnonSelections?: {
+    tier: number;
+    perkName: string | null;
+    unlocked: boolean;
+  }[];
+}
+
+export type BuildVisibility = 'public' | 'private' | 'unlisted';
+
+export interface StoredBuild extends BuildConfig {
+  id: string;
+  equipment_name: string;
+  equipment_image?: string;
+  created_at: string;
+  updated_at: string;
+  visibility?: BuildVisibility;
+  description?: string | null;
+}
+
+export const EQUIPMENT_TYPE_LABELS: Record<EquipmentType, string> = {
+  warframe: 'Warframes',
+  primary: 'Primary',
+  secondary: 'Secondary',
+  melee: 'Melee',
+  archgun: 'Arch-Gun',
+  archmelee: 'Arch-Melee',
+  companion: 'Companion',
+  beast_claws: 'Beast Claws',
+  archwing: 'Archwing',
+  necramech: 'Necramech',
+  kdrive: 'K-Drive',
+  tektolyst: 'Tektolyst',
+};
+
+export const EQUIPMENT_TYPE_ORDER: EquipmentType[] = [
+  'warframe',
+  'primary',
+  'secondary',
+  'melee',
+  'companion',
+  'beast_claws',
+  'archwing',
+  'archgun',
+  'archmelee',
+  'necramech',
+  'kdrive',
+  'tektolyst',
+];
+
+export {
+  POLARITIES,
+  type PolarityKey,
+  AP_ATTACK,
+  AP_DEFENSE,
+  AP_TACTIC,
+  AP_WARD,
+  AP_POWER,
+  AP_PRECEPT,
+  AP_UMBRA,
+  AP_ANY,
+  REGULAR_POLARITIES,
+} from '../../shared/polarities.js';
+
+export const DAMAGE_TYPES = [
+  'Impact',
+  'Puncture',
+  'Slash',
+  'Heat',
+  'Cold',
+  'Electricity',
+  'Toxin',
+  'Blast',
+  'Radiation',
+  'Gas',
+  'Magnetic',
+  'Viral',
+  'Corrosive',
+  'Void',
+  'Tau',
+  'Cinematic',
+  'ShieldDrain',
+  'HealthDrain',
+  'EnergyDrain',
+  'True',
+] as const;
+
+export type DamageType = (typeof DAMAGE_TYPES)[number];
+
+export const PRIMARY_ELEMENTS = ['Heat', 'Cold', 'Electricity', 'Toxin'] as const;
+export type PrimaryElement = (typeof PRIMARY_ELEMENTS)[number];
+
+export const ELEMENT_COMBINATIONS: Record<string, { a: PrimaryElement; b: PrimaryElement }> = {
+  Blast: { a: 'Heat', b: 'Cold' },
+  Corrosive: { a: 'Electricity', b: 'Toxin' },
+  Gas: { a: 'Heat', b: 'Toxin' },
+  Magnetic: { a: 'Cold', b: 'Electricity' },
+  Radiation: { a: 'Electricity', b: 'Heat' },
+  Viral: { a: 'Cold', b: 'Toxin' },
+};
+
+export const ELEMENT_PRIORITY: PrimaryElement[] = ['Heat', 'Cold', 'Electricity', 'Toxin'];
+
+export type { EquipmentSlotConfig } from '../../shared/equipmentSlotConfig.js';
+export { EQUIPMENT_SLOT_CONFIGS } from '../../shared/equipmentSlotConfig.js';
