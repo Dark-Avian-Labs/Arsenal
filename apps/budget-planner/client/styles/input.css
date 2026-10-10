@@ -25,6 +25,7 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+@source '../../../../packages/ui/src';
 @source '../../client/**/*.{ts,tsx,js,jsx,html}';
 @source '../../index.html';
 @theme {

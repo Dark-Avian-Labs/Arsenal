@@ -1,4 +1,5 @@
 import { useAuth } from '@clerk/react';
+import { Button, Input, MaterialSymbol, Modal } from '@dark-avian-labs/ui';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams, useSearchParams } from 'react-router';
@@ -10,11 +11,7 @@ import {
   type PlanMonth,
 } from '../../../shared/planMonth';
 import { FrequencyBadge } from '../../components/budget/FrequencyBadge';
-import { Button } from '../../components/ui/Button';
 import { FormSelect } from '../../components/ui/FormSelect';
-import { Input } from '../../components/ui/Input';
-import { MaterialSymbol } from '../../components/ui/MaterialSymbol';
-import { Modal } from '../../components/ui/Modal';
 import { RequireAuth } from '../../features/auth/RequireAuth';
 import { formatMoney } from '../../lib/format';
 import { removeEntryFromPlan } from '../../lib/planEntriesState';

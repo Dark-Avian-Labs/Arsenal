@@ -4,6 +4,9 @@ import { Button } from './Button';
 
 interface ErrorBoundaryProps {
   children: ReactNode;
+  fallbackTitle?: string;
+  fallbackHint?: string;
+  fallbackReloadLabel?: string;
 }
 
 interface ErrorBoundaryState {
@@ -25,13 +28,16 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     if (this.state.hasError) {
       return (
         <div className="glass-surface mx-auto mt-8 max-w-md p-6">
-          <h1 className="text-lg font-semibold">Something went wrong</h1>
+          <h1 className="text-lg font-semibold">
+            {this.props.fallbackTitle ?? 'Something went wrong'}
+          </h1>
           <p className="text-muted mt-2 text-sm">
-            Reload the page. If this keeps happening, sign out and back in.
+            {this.props.fallbackHint ??
+              'Reload the page. If this keeps happening, sign out and back in.'}
           </p>
           <div className="modal-actions mt-4">
             <Button variant="accent" onClick={() => window.location.reload()}>
-              Reload
+              {this.props.fallbackReloadLabel ?? 'Reload'}
             </Button>
           </div>
         </div>

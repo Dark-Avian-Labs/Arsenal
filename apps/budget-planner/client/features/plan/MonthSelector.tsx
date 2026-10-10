@@ -1,3 +1,4 @@
+import { SelectDropdown } from '@dark-avian-labs/ui';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -10,7 +11,6 @@ import {
   parseMonthKey,
   shiftMonth,
 } from '../../../shared/planMonth';
-import { SelectDropdown } from '../../components/ui/SelectDropdown';
 
 const MONTHS_BACK = 24;
 const MONTHS_FORWARD = 12;

@@ -1,8 +1,8 @@
+import { MaterialSymbol } from '@dark-avian-labs/ui';
 import { useTranslation } from 'react-i18next';
 
 import { frequencyMonths } from '../../../shared/dueThisMonth';
 import type { EntryFrequency } from '../../lib/types';
-import { MaterialSymbol } from '../ui/MaterialSymbol';
 
 export function FrequencyBadge({ frequency }: { frequency: EntryFrequency }) {
   const { t } = useTranslation();

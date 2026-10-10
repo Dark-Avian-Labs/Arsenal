@@ -1,8 +1,9 @@
 import './styles/input.css';
-import '@/clerk/clerk-auth.css';
+import '@dark-avian-labs/ui/clerk-auth.css';
 import './i18n';
 
 import { ClerkProvider } from '@clerk/react';
+import { ThemeProvider } from '@dark-avian-labs/ui';
 import { StrictMode, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { RouterProvider } from 'react-router';
@@ -10,7 +11,6 @@ import { RouterProvider } from 'react-router';
 import { CLERK_PUBLISHABLE_KEY } from './app/config';
 import { APP_PATHS } from './app/paths';
 import { router } from './app/routes';
-import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider, DisabledAuthProvider } from './features/auth/AuthContext';
 
 function Providers({ children }: { children: ReactNode }) {
@@ -26,7 +26,11 @@ function Providers({ children }: { children: ReactNode }) {
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <ThemeProvider>
+    <ThemeProvider
+      appStorageKey="budgetplanner.theme.mode"
+      legacyKeys={['bp.theme.mode']}
+      legacyUiStyleKeys={['bp.ui.style']}
+    >
       <Providers>
         <RouterProvider router={router} />
       </Providers>

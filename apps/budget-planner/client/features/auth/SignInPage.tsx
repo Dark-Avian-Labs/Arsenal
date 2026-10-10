@@ -1,12 +1,16 @@
 import { SignIn } from '@clerk/react';
+import {
+  buildAuthPagePath,
+  buildClerkAppearance,
+  ClerkAuthShell,
+  getAuthRedirectUrl,
+  useTheme,
+} from '@dark-avian-labs/ui';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router';
 
 import { CLERK_PUBLISHABLE_KEY } from '../../app/config';
 import { APP_PATHS } from '../../app/paths';
-import { ClerkAuthShell, buildClerkAppearance } from '../../clerk';
-import { useTheme } from '../../context/ThemeContext';
-import { buildAuthPagePath, getAuthRedirectUrl } from './authRedirect';
 
 export function SignInPage() {
   const { t } = useTranslation();

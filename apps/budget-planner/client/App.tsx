@@ -1,7 +1,6 @@
+import { ErrorBoundary } from '@dark-avian-labs/ui';
 import { useTranslation } from 'react-i18next';
 import { Outlet } from 'react-router';
-
-import { ErrorBoundary } from './components/ui/ErrorBoundary';
 
 export function App() {
   const { t } = useTranslation();

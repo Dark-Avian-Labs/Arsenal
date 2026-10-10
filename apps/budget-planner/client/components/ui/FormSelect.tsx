@@ -1,6 +1,5 @@
+import { SelectDropdown, type SelectDropdownOption } from '@dark-avian-labs/ui';
 import { useId } from 'react';
-
-import { SelectDropdown, type SelectDropdownOption } from './SelectDropdown';
 
 const FORM_TRIGGER_CLASS =
   'user-menu-select-trigger flex w-full cursor-pointer items-center justify-between gap-2 text-left text-sm disabled:cursor-not-allowed disabled:opacity-50';

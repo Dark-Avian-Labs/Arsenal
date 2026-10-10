@@ -1,3 +1,4 @@
+import { buildAuthPagePath, safeAuthRedirectPath } from '@dark-avian-labs/ui';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation } from 'react-router';
@@ -5,7 +6,6 @@ import { Link, useLocation } from 'react-router';
 import { CLERK_PUBLISHABLE_KEY } from '../../app/config';
 import { APP_PATHS } from '../../app/paths';
 import { useAuth } from './AuthContext';
-import { buildAuthPagePath, safeAuthRedirectPath } from './authRedirect';
 
 export function RequireAuth({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
