@@ -292,30 +292,15 @@ importers:
       '@clerk/express':
         specifier: 'catalog:'
         version: 2.1.77(express@5.2.1)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      '@clerk/react':
-        specifier: 'catalog:'
-        version: 6.17.7(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@dark-avian-labs/sentinel-agent':
         specifier: workspace:*
         version: link:../../packages/sentinel-agent
       '@dark-avian-labs/server-kit':
         specifier: workspace:*
         version: link:../../packages/server-kit
-      '@dark-avian-labs/ui':
-        specifier: workspace:*
-        version: link:../../packages/ui
       '@dotenvx/dotenvx':
         specifier: 'catalog:'
         version: 2.34.1
-      '@fontsource-variable/cascadia-mono':
-        specifier: 'catalog:'
-        version: 5.3.0
-      '@fontsource-variable/geist':
-        specifier: 'catalog:'
-        version: 5.3.0
-      '@fontsource-variable/geist-mono':
-        specifier: 'catalog:'
-        version: 5.3.0
       better-sqlite3:
         specifier: 'catalog:'
         version: 13.0.3
@@ -328,22 +313,28 @@ importers:
       helmet:
         specifier: 'catalog:'
         version: 8.3.0
-      react:
-        specifier: 'catalog:'
-        version: 19.3.0
-      react-dom:
-        specifier: 'catalog:'
-        version: 19.3.0(react@19.3.0)
-      react-router:
-        specifier: 'catalog:'
-        version: 8.4.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
     devDependencies:
+      '@clerk/react':
+        specifier: 'catalog:'
+        version: 6.17.7(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@clerk/testing':
         specifier: 'catalog:'
         version: 2.2.44(@playwright/test@1.64.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@dark-avian-labs/config':
         specifier: workspace:*
         version: link:../../packages/config
+      '@dark-avian-labs/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
+      '@fontsource-variable/cascadia-mono':
+        specifier: 'catalog:'
+        version: 5.3.0
+      '@fontsource-variable/geist':
+        specifier: 'catalog:'
+        version: 5.3.0
+      '@fontsource-variable/geist-mono':
+        specifier: 'catalog:'
+        version: 5.3.0
       '@playwright/test':
         specifier: 'catalog:'
         version: 1.64.0
@@ -380,6 +371,15 @@ importers:
       oxlint:
         specifier: 'catalog:'
         version: 1.87.0
+      react:
+        specifier: 'catalog:'
+        version: 19.3.0
+      react-dom:
+        specifier: 'catalog:'
+        version: 19.3.0(react@19.3.0)
+      react-router:
+        specifier: 'catalog:'
+        version: 8.4.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       supertest:
         specifier: ^7.3.1
         version: 7.3.1
@@ -401,30 +401,15 @@ importers:
       '@clerk/express':
         specifier: 'catalog:'
         version: 2.1.77(express@5.2.1)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      '@clerk/react':
-        specifier: 'catalog:'
-        version: 6.17.7(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@dark-avian-labs/sentinel-agent':
         specifier: workspace:*
         version: link:../../packages/sentinel-agent
       '@dark-avian-labs/server-kit':
         specifier: workspace:*
         version: link:../../packages/server-kit
-      '@dark-avian-labs/ui':
-        specifier: workspace:*
-        version: link:../../packages/ui
       '@dotenvx/dotenvx':
         specifier: 'catalog:'
         version: 2.34.1
-      '@fontsource-variable/cascadia-mono':
-        specifier: 'catalog:'
-        version: 5.3.0
-      '@fontsource-variable/geist':
-        specifier: 'catalog:'
-        version: 5.3.0
-      '@fontsource-variable/geist-mono':
-        specifier: 'catalog:'
-        version: 5.3.0
       '@napi-rs/lzma':
         specifier: ^1.5.1
         version: 1.5.1
@@ -446,18 +431,6 @@ importers:
       helmet:
         specifier: 'catalog:'
         version: 8.3.0
-      html-to-image:
-        specifier: ^1.11.13
-        version: 1.11.13
-      react:
-        specifier: 'catalog:'
-        version: 19.3.0
-      react-dom:
-        specifier: 'catalog:'
-        version: 19.3.0(react@19.3.0)
-      react-router:
-        specifier: 'catalog:'
-        version: 8.4.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       undici:
         specifier: ^8.11.2
         version: 8.11.2
@@ -465,12 +438,27 @@ importers:
         specifier: 'catalog:'
         version: 4.6.5
     devDependencies:
+      '@clerk/react':
+        specifier: 'catalog:'
+        version: 6.17.7(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@clerk/testing':
         specifier: 'catalog:'
         version: 2.2.44(@playwright/test@1.64.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@dark-avian-labs/config':
         specifier: workspace:*
         version: link:../../packages/config
+      '@dark-avian-labs/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
+      '@fontsource-variable/cascadia-mono':
+        specifier: 'catalog:'
+        version: 5.3.0
+      '@fontsource-variable/geist':
+        specifier: 'catalog:'
+        version: 5.3.0
+      '@fontsource-variable/geist-mono':
+        specifier: 'catalog:'
+        version: 5.3.0
       '@playwright/test':
         specifier: 'catalog:'
         version: 1.64.0
@@ -513,12 +501,24 @@ importers:
       happy-dom:
         specifier: ^20.14.5
         version: 20.14.6
+      html-to-image:
+        specifier: ^1.11.13
+        version: 1.11.13
       oxfmt:
         specifier: 'catalog:'
         version: 0.72.0
       oxlint:
         specifier: 'catalog:'
         version: 1.87.0
+      react:
+        specifier: 'catalog:'
+        version: 19.3.0
+      react-dom:
+        specifier: 'catalog:'
+        version: 19.3.0(react@19.3.0)
+      react-router:
+        specifier: 'catalog:'
+        version: 8.4.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       supertest:
         specifier: ^7.3.1
         version: 7.3.1
@@ -540,36 +540,15 @@ importers:
       '@clerk/express':
         specifier: 'catalog:'
         version: 2.1.77(express@5.2.1)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      '@clerk/react':
-        specifier: 'catalog:'
-        version: 6.17.7(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@dark-avian-labs/sentinel-agent':
         specifier: workspace:*
         version: link:../../packages/sentinel-agent
       '@dark-avian-labs/server-kit':
         specifier: workspace:*
         version: link:../../packages/server-kit
-      '@dark-avian-labs/ui':
-        specifier: workspace:*
-        version: link:../../packages/ui
-      '@dnd-kit/helpers':
-        specifier: 0.5.0
-        version: 0.5.0
-      '@dnd-kit/react':
-        specifier: 0.5.0
-        version: 0.5.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@dotenvx/dotenvx':
         specifier: 'catalog:'
         version: 2.34.1
-      '@fontsource-variable/cascadia-mono':
-        specifier: 'catalog:'
-        version: 5.3.0
-      '@fontsource-variable/geist':
-        specifier: 'catalog:'
-        version: 5.3.0
-      '@fontsource-variable/geist-mono':
-        specifier: 'catalog:'
-        version: 5.3.0
       better-sqlite3:
         specifier: 'catalog:'
         version: 13.0.3
@@ -582,31 +561,37 @@ importers:
       helmet:
         specifier: 'catalog:'
         version: 8.3.0
-      i18next:
-        specifier: ^26.4.2
-        version: 26.4.2(typescript@7.0.2)
-      react:
-        specifier: 'catalog:'
-        version: 19.3.0
-      react-dom:
-        specifier: 'catalog:'
-        version: 19.3.0(react@19.3.0)
-      react-i18next:
-        specifier: ^17.0.16
-        version: 17.0.16(i18next@26.4.2(typescript@7.0.2))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(typescript@7.0.2)
-      react-router:
-        specifier: 'catalog:'
-        version: 8.4.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       zod:
         specifier: 'catalog:'
         version: 4.6.5
     devDependencies:
+      '@clerk/react':
+        specifier: 'catalog:'
+        version: 6.17.7(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@clerk/testing':
         specifier: 'catalog:'
         version: 2.2.44(@playwright/test@1.64.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@dark-avian-labs/config':
         specifier: workspace:*
         version: link:../../packages/config
+      '@dark-avian-labs/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
+      '@dnd-kit/helpers':
+        specifier: 0.5.0
+        version: 0.5.0
+      '@dnd-kit/react':
+        specifier: 0.5.0
+        version: 0.5.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      '@fontsource-variable/cascadia-mono':
+        specifier: 'catalog:'
+        version: 5.3.0
+      '@fontsource-variable/geist':
+        specifier: 'catalog:'
+        version: 5.3.0
+      '@fontsource-variable/geist-mono':
+        specifier: 'catalog:'
+        version: 5.3.0
       '@playwright/test':
         specifier: 'catalog:'
         version: 1.64.0
@@ -637,12 +622,27 @@ importers:
       '@vitest/coverage-v8':
         specifier: 'catalog:'
         version: 5.0.3(vitest@5.0.3)
+      i18next:
+        specifier: ^26.4.2
+        version: 26.4.2(typescript@7.0.2)
       oxfmt:
         specifier: 'catalog:'
         version: 0.72.0
       oxlint:
         specifier: 'catalog:'
         version: 1.87.0
+      react:
+        specifier: 'catalog:'
+        version: 19.3.0
+      react-dom:
+        specifier: 'catalog:'
+        version: 19.3.0(react@19.3.0)
+      react-i18next:
+        specifier: ^17.0.16
+        version: 17.0.16(i18next@26.4.2(typescript@7.0.2))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(typescript@7.0.2)
+      react-router:
+        specifier: 'catalog:'
+        version: 8.4.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       supertest:
         specifier: ^7.3.1
         version: 7.3.1
@@ -664,30 +664,15 @@ importers:
       '@clerk/express':
         specifier: 'catalog:'
         version: 2.1.77(express@5.2.1)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      '@clerk/react':
-        specifier: 'catalog:'
-        version: 6.17.7(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@dark-avian-labs/sentinel-agent':
         specifier: workspace:*
         version: link:../../packages/sentinel-agent
       '@dark-avian-labs/server-kit':
         specifier: workspace:*
         version: link:../../packages/server-kit
-      '@dark-avian-labs/ui':
-        specifier: workspace:*
-        version: link:../../packages/ui
       '@dotenvx/dotenvx':
         specifier: 'catalog:'
         version: 2.34.1
-      '@fontsource-variable/cascadia-mono':
-        specifier: 'catalog:'
-        version: 5.3.0
-      '@fontsource-variable/geist':
-        specifier: 'catalog:'
-        version: 5.3.0
-      '@fontsource-variable/geist-mono':
-        specifier: 'catalog:'
-        version: 5.3.0
       '@napi-rs/lzma':
         specifier: ^1.5.1
         version: 1.5.1
@@ -697,9 +682,6 @@ importers:
       cheerio:
         specifier: ^1.2.0
         version: 1.2.0
-      clsx:
-        specifier: ^2.1.1
-        version: 2.1.1
       cuimp:
         specifier: ^2.1.1
         version: 2.1.1
@@ -712,18 +694,6 @@ importers:
       helmet:
         specifier: 'catalog:'
         version: 8.3.0
-      react:
-        specifier: 'catalog:'
-        version: 19.3.0
-      react-dom:
-        specifier: 'catalog:'
-        version: 19.3.0(react@19.3.0)
-      react-router:
-        specifier: 'catalog:'
-        version: 8.4.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      tailwind-merge:
-        specifier: ^3.7.0
-        version: 3.7.0
       undici:
         specifier: ^8.11.2
         version: 8.11.2
@@ -731,12 +701,27 @@ importers:
         specifier: 'catalog:'
         version: 4.6.5
     devDependencies:
+      '@clerk/react':
+        specifier: 'catalog:'
+        version: 6.17.7(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@clerk/testing':
         specifier: 'catalog:'
         version: 2.2.44(@playwright/test@1.64.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@dark-avian-labs/config':
         specifier: workspace:*
         version: link:../../packages/config
+      '@dark-avian-labs/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
+      '@fontsource-variable/cascadia-mono':
+        specifier: 'catalog:'
+        version: 5.3.0
+      '@fontsource-variable/geist':
+        specifier: 'catalog:'
+        version: 5.3.0
+      '@fontsource-variable/geist-mono':
+        specifier: 'catalog:'
+        version: 5.3.0
       '@playwright/test':
         specifier: 'catalog:'
         version: 1.64.0
@@ -767,6 +752,9 @@ importers:
       '@vitest/coverage-v8':
         specifier: 'catalog:'
         version: 5.0.3(vitest@5.0.3)
+      clsx:
+        specifier: ^2.1.1
+        version: 2.1.1
       domhandler:
         specifier: ^6.0.1
         version: 6.0.1
@@ -776,9 +764,21 @@ importers:
       oxlint:
         specifier: 'catalog:'
         version: 1.87.0
+      react:
+        specifier: 'catalog:'
+        version: 19.3.0
+      react-dom:
+        specifier: 'catalog:'
+        version: 19.3.0(react@19.3.0)
+      react-router:
+        specifier: 'catalog:'
+        version: 8.4.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       supertest:
         specifier: ^7.3.1
         version: 7.3.1
+      tailwind-merge:
+        specifier: ^3.7.0
+        version: 3.7.0
       tailwindcss:
         specifier: 'catalog:'
         version: 4.3.3
@@ -797,30 +797,15 @@ importers:
       '@clerk/express':
         specifier: 'catalog:'
         version: 2.1.77(express@5.2.1)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      '@clerk/react':
-        specifier: 'catalog:'
-        version: 6.17.7(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@dark-avian-labs/sentinel-agent':
         specifier: workspace:*
         version: link:../../packages/sentinel-agent
       '@dark-avian-labs/server-kit':
         specifier: workspace:*
         version: link:../../packages/server-kit
-      '@dark-avian-labs/ui':
-        specifier: workspace:*
-        version: link:../../packages/ui
       '@dotenvx/dotenvx':
         specifier: 'catalog:'
         version: 2.34.1
-      '@fontsource-variable/cascadia-mono':
-        specifier: 'catalog:'
-        version: 5.3.0
-      '@fontsource-variable/geist':
-        specifier: 'catalog:'
-        version: 5.3.0
-      '@fontsource-variable/geist-mono':
-        specifier: 'catalog:'
-        version: 5.3.0
       better-sqlite3:
         specifier: 'catalog:'
         version: 13.0.3
@@ -833,28 +818,31 @@ importers:
       helmet:
         specifier: 'catalog:'
         version: 8.3.0
-      react:
-        specifier: 'catalog:'
-        version: 19.3.0
-      react-dom:
-        specifier: 'catalog:'
-        version: 19.3.0(react@19.3.0)
-      react-router:
-        specifier: 'catalog:'
-        version: 8.4.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      tesseract.js:
-        specifier: ^7.0.0
-        version: 7.0.0
       zod:
         specifier: 'catalog:'
         version: 4.6.5
     devDependencies:
+      '@clerk/react':
+        specifier: 'catalog:'
+        version: 6.17.7(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@clerk/testing':
         specifier: 'catalog:'
         version: 2.2.44(@playwright/test@1.64.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@dark-avian-labs/config':
         specifier: workspace:*
         version: link:../../packages/config
+      '@dark-avian-labs/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
+      '@fontsource-variable/cascadia-mono':
+        specifier: 'catalog:'
+        version: 5.3.0
+      '@fontsource-variable/geist':
+        specifier: 'catalog:'
+        version: 5.3.0
+      '@fontsource-variable/geist-mono':
+        specifier: 'catalog:'
+        version: 5.3.0
       '@playwright/test':
         specifier: 'catalog:'
         version: 1.64.0
@@ -891,12 +879,24 @@ importers:
       oxlint:
         specifier: 'catalog:'
         version: 1.87.0
+      react:
+        specifier: 'catalog:'
+        version: 19.3.0
+      react-dom:
+        specifier: 'catalog:'
+        version: 19.3.0(react@19.3.0)
+      react-router:
+        specifier: 'catalog:'
+        version: 8.4.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       supertest:
         specifier: ^7.3.1
         version: 7.3.1
       tailwindcss:
         specifier: 'catalog:'
         version: 4.3.3
+      tesseract.js:
+        specifier: ^7.0.0
+        version: 7.0.0
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -912,30 +912,15 @@ importers:
       '@clerk/express':
         specifier: 'catalog:'
         version: 2.1.77(express@5.2.1)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      '@clerk/react':
-        specifier: 'catalog:'
-        version: 6.17.7(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@dark-avian-labs/sentinel-agent':
         specifier: workspace:*
         version: link:../../packages/sentinel-agent
       '@dark-avian-labs/server-kit':
         specifier: workspace:*
         version: link:../../packages/server-kit
-      '@dark-avian-labs/ui':
-        specifier: workspace:*
-        version: link:../../packages/ui
       '@dotenvx/dotenvx':
         specifier: 'catalog:'
         version: 2.34.1
-      '@fontsource-variable/cascadia-mono':
-        specifier: 'catalog:'
-        version: 5.3.0
-      '@fontsource-variable/geist':
-        specifier: 'catalog:'
-        version: 5.3.0
-      '@fontsource-variable/geist-mono':
-        specifier: 'catalog:'
-        version: 5.3.0
       better-sqlite3:
         specifier: 'catalog:'
         version: 13.0.3
@@ -948,22 +933,28 @@ importers:
       helmet:
         specifier: 'catalog:'
         version: 8.3.0
-      react:
-        specifier: 'catalog:'
-        version: 19.3.0
-      react-dom:
-        specifier: 'catalog:'
-        version: 19.3.0(react@19.3.0)
-      react-router:
-        specifier: 'catalog:'
-        version: 8.4.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       zod:
         specifier: 'catalog:'
         version: 4.6.5
     devDependencies:
+      '@clerk/react':
+        specifier: 'catalog:'
+        version: 6.17.7(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@dark-avian-labs/config':
         specifier: workspace:*
         version: link:../../packages/config
+      '@dark-avian-labs/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
+      '@fontsource-variable/cascadia-mono':
+        specifier: 'catalog:'
+        version: 5.3.0
+      '@fontsource-variable/geist':
+        specifier: 'catalog:'
+        version: 5.3.0
+      '@fontsource-variable/geist-mono':
+        specifier: 'catalog:'
+        version: 5.3.0
       '@playwright/test':
         specifier: 'catalog:'
         version: 1.64.0
@@ -1000,6 +991,15 @@ importers:
       oxlint:
         specifier: 'catalog:'
         version: 1.87.0
+      react:
+        specifier: 'catalog:'
+        version: 19.3.0
+      react-dom:
+        specifier: 'catalog:'
+        version: 19.3.0(react@19.3.0)
+      react-router:
+        specifier: 'catalog:'
+        version: 8.4.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       supertest:
         specifier: ^7.3.1
         version: 7.3.1

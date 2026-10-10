@@ -69,6 +69,7 @@ jobs:
           VERSION: ${{ steps.release.outputs.version }}
           PM2_NAME: ${{ inputs.pm2_name }}
           PORT: ${{ inputs.port }}
+          SHA: ${{ github.sha }}
           DOTENV_PRIVATE_KEY_PRODUCTION: ${{ secrets.DOTENV_PRIVATE_KEY_PRODUCTION }}
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           SERVER_KNOWN_HOST: ${{ secrets.SERVER_KNOWN_HOST }}

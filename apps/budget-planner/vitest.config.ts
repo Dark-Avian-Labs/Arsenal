@@ -2,7 +2,6 @@ import { defineConfig } from 'vitest/config';
 
 const testEnv = {
   NODE_ENV: 'test',
-  SESSION_SECRET: 'budgetplanner-dev-only-session-secret-32ch',
   APP_PUBLIC_BASE_URL: 'http://127.0.0.1:3103',
   CLERK_PUBLISHABLE_KEY: '',
   CLERK_SECRET_KEY: '',

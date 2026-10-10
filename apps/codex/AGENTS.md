@@ -16,7 +16,7 @@ Leave these in place on a mirror pass.
 
 Build the workspace packages before tests, `db:init`, or a server compile. `pnpm run build` does this. `pnpm run validate` does not.
 
-Do not point the session path and a catalog path at the same file, and do not reuse BudgetPlanner SQLite files. The session path is absolute. Catalog defaults are `data/warframe-catalog.db` and `data/wor-catalog.db`. Armory reads the Warframe catalog. Outfitter reads the WoR catalog.
+Do not point two SQLite files at the same path, and do not reuse BudgetPlanner SQLite files. Catalog defaults are `data/warframe-catalog.db` and `data/wor-catalog.db`. Armory reads the Warframe catalog. Outfitter reads the WoR catalog.
 
 `/readyz` also checks the game DBs and that both catalog files are readable.
 

@@ -5,8 +5,6 @@ import { defineConfig } from 'vitest/config';
 
 const testEnvDefaults = {
   NODE_ENV: 'test',
-  SESSION_SECRET: 'codex-dev-only-session-secret-32ch',
-  SESSION_DB_PATH: path.join(os.tmpdir(), 'codex-vitest-session.db'),
   WARFRAME_CATALOG_DB_PATH: path.join(os.tmpdir(), 'codex-vitest-warframe-catalog.db'),
   WOR_CATALOG_DB_PATH: path.join(os.tmpdir(), 'codex-vitest-wor-catalog.db'),
   COOKIE_DOMAIN: 'localhost',

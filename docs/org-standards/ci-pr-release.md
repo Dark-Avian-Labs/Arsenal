@@ -49,3 +49,5 @@ Per app, with the suffix `ARMORY`, `BUDGET_PLANNER`, `CODEX`, `SENTINEL`, or `OU
 The template pull-request job also reads `DOTENV_PRIVATE_KEY_DEVELOPMENT_TEMPLATE`. If that secret is missing, the template's signed-in Playwright project stays unregistered and prints a warning.
 
 Every deployed app build decrypts `.env.production` with that app's `DOTENV_PRIVATE_KEY_PRODUCTION`, then runs the same `vite build`. The client base path is `/`. CI does not push commits to `main`.
+
+Each deploy rewrites `<SERVER_PATH>/.env.keys` from `DOTENV_PRIVATE_KEY_PRODUCTION`. Rotate a key by changing the Forgejo secret and deploying, not by editing the file on the server. The release directory is `releases/<version>-<short sha>`, so a redeploy of the same version does not unpack over the directory PM2 is serving.

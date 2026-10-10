@@ -5,7 +5,6 @@ export default defineConfig({
     environment: 'node',
     env: {
       NODE_ENV: 'test',
-      SESSION_SECRET: 'sentinel-dev-only-session-secret-32ch',
       APP_PUBLIC_BASE_URL: 'http://127.0.0.1:3005',
       SENTINEL_INGEST_TOKEN: 'test-ingest-token',
       CLERK_PUBLISHABLE_KEY: '',

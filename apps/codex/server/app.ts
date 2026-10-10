@@ -43,7 +43,7 @@ export function createApp(options: CreateAppOptions = {}): AppBundle {
       await assertCodexReady();
       return true;
     },
-    installSession(app) {
+    mount(app) {
       const isDevEnv = NODE_ENV !== 'production';
       const defaultDevOrigins = isDevEnv
         ? [
