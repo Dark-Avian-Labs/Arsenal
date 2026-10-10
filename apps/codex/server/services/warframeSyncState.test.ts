@@ -1,12 +1,14 @@
 import Database from 'better-sqlite3';
 import { describe, expect, it, vi } from 'vitest';
 
-vi.mock('../db/sessionDb.js', async () => {
-  const actual = await vi.importActual<typeof import('../db/sessionDb.js')>('../db/sessionDb.js');
+vi.mock('../games/warframe/db/schema.js', async () => {
+  const actual = await vi.importActual<typeof import('../games/warframe/db/schema.js')>(
+    '../games/warframe/db/schema.js',
+  );
   let sessionDb: Database.Database | null = null;
   return {
     ...actual,
-    getSessionDb: () => {
+    getDb: () => {
       if (!sessionDb) {
         sessionDb = new Database(':memory:');
         sessionDb.pragma('foreign_keys = ON');

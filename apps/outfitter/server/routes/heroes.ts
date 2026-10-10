@@ -9,8 +9,8 @@ import {
 } from '../../shared/pieceStats.js';
 import { getAppDb } from '../db/appDb.js';
 import * as q from '../db/queries.js';
+import { requireAccountId } from '../http/account.js';
 import { asyncHandler, json, sendError } from '../http/handlers.js';
-import { requireAccountId } from '../session/account.js';
 
 export const heroesRouter = Router();
 heroesRouter.use(requireAuthApi);

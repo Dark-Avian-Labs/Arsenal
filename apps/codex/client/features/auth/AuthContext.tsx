@@ -10,7 +10,7 @@ import {
   type ReactNode,
 } from 'react';
 
-import { apiFetch, clearCsrfToken, setClerkTokenGetter } from '../../utils/api';
+import { apiFetch, setClerkTokenGetter } from '../../utils/api';
 import type { AppSummary, AuthErrorDetail, AuthState } from './types';
 
 interface AuthContextValue {
@@ -110,7 +110,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await apiFetch('/api/auth/logout', { method: 'POST' });
     } finally {
-      clearCsrfToken();
       window.location.href = '/';
     }
   }, []);

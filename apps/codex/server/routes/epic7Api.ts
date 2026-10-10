@@ -26,13 +26,6 @@ import {
   epic7UpdateHeroSchema,
   getEpic7Db,
 } from '../games/epic7/index.js';
-import {
-  clearEpic7SessionFields,
-  ensureSessionBoundToClerkUser,
-  getEpic7Session,
-  patchEpic7Session,
-} from '../session/epic7SessionBinding.js';
-
 export const epic7ApiRouter = Router();
 
 function json(res: Response, data: object, status = 200): void {
@@ -58,28 +51,9 @@ function getDbOrFail(res: Response): ReturnType<typeof getEpic7Db> | null {
 
 type Epic7Database = ReturnType<typeof getEpic7Db>;
 
-function resolveAccountId(
-  db: Epic7Database,
-  req: Request,
-  clerkUserId: string,
-): Promise<number | null> {
-  return ensureSessionBoundToClerkUser(req, clerkUserId).then(() => {
-    const fromSession = getEpic7Session(req).account_id;
-    if (typeof fromSession === 'number' && fromSession > 0) {
-      const owned = q.getGameAccountByIdAndUser(db, fromSession, clerkUserId);
-      if (owned) {
-        return owned.id;
-      }
-      clearEpic7SessionFields(req);
-    }
-    const accounts = q.getUserAccountsForApi(db, clerkUserId);
-    const active = accounts.find((account) => account.is_active === 1);
-    if (active) {
-      patchEpic7Session(req, { account_id: active.id, account_name: active.account_name });
-      return active.id;
-    }
-    return null;
-  });
+function resolveAccountId(db: Epic7Database, clerkUserId: string): number | null {
+  const accounts = q.getUserAccountsForApi(db, clerkUserId);
+  return accounts.find((account) => account.is_active === 1)?.id ?? null;
 }
 
 function runWithDb(res: Response, fn: (db: Epic7Database) => void | Promise<void>): void {
@@ -123,7 +97,7 @@ epic7ApiRouter.get('/worksheets', (_req, res) => {
 epic7ApiRouter.get('/heroes', (req, res) => {
   runWithDb(res, async (db) => {
     const clerkUserId = requireClerkUserId(req);
-    const accountId = await resolveAccountId(db, req, clerkUserId);
+    const accountId = resolveAccountId(db, clerkUserId);
     if (!accountId) {
       err(res, 'No game account selected. Please create one first.');
       return;
@@ -138,7 +112,7 @@ epic7ApiRouter.get('/heroes', (req, res) => {
 epic7ApiRouter.get('/artifacts', (req, res) => {
   runWithDb(res, async (db) => {
     const clerkUserId = requireClerkUserId(req);
-    const accountId = await resolveAccountId(db, req, clerkUserId);
+    const accountId = resolveAccountId(db, clerkUserId);
     if (!accountId) {
       err(res, 'No game account selected. Please create one first.');
       return;
@@ -152,13 +126,9 @@ epic7ApiRouter.get('/artifacts', (req, res) => {
   });
 });
 
-async function requireAccountId(
-  db: Epic7Database,
-  req: Request,
-  res: Response,
-): Promise<number | null> {
+function requireAccountId(db: Epic7Database, req: Request, res: Response): number | null {
   const clerkUserId = requireClerkUserId(req);
-  const accountId = await resolveAccountId(db, req, clerkUserId);
+  const accountId = resolveAccountId(db, clerkUserId);
   if (!accountId) {
     err(res, 'No game account selected. Please create one first.');
     return null;
@@ -329,10 +299,8 @@ epic7ApiRouter.delete('/artifacts/:artifactId', (req, res) => {
 epic7ApiRouter.get('/accounts', (req, res) => {
   runWithDb(res, async (db) => {
     const clerkUserId = requireClerkUserId(req);
-    await ensureSessionBoundToClerkUser(req, clerkUserId);
     const accounts = q.getUserAccountsForApi(db, clerkUserId);
-    const active = accounts.find((account) => account.is_active === 1);
-    const currentId = getEpic7Session(req).account_id ?? active?.id ?? null;
+    const currentId = resolveAccountId(db, clerkUserId);
     json(res, {
       accounts: accounts.map((account) => ({
         id: account.id,
@@ -356,7 +324,6 @@ epic7ApiRouter.post('/accounts/switch', (req, res) => {
       return;
     }
     q.setActiveAccount(db, clerkUserId, data.account_id);
-    patchEpic7Session(req, { account_id: account.id, account_name: account.account_name });
     json(res, {
       success: true,
       account: { id: account.id, account_name: account.account_name },
@@ -382,9 +349,6 @@ epic7ApiRouter.post('/accounts', (req, res) => {
       q.seedAccountArtifactsFromBase(db, newAccountId);
       return newAccountId;
     })();
-    if (isFirst) {
-      patchEpic7Session(req, { account_id: accountId, account_name: data.account_name });
-    }
     json(res, { success: true, account_id: accountId });
   });
 });
@@ -415,9 +379,6 @@ epic7ApiRouter.patch('/accounts/:accountId', (req, res) => {
       err(res, 'Failed to update account name.');
       return;
     }
-    if (getEpic7Session(req).account_id === data.account_id) {
-      patchEpic7Session(req, { account_name: data.account_name });
-    }
     json(res, {
       success: true,
       account: { id: data.account_id, account_name: data.account_name },
@@ -442,27 +403,20 @@ epic7ApiRouter.delete('/accounts/:accountId', (req, res) => {
     if (accounts.length > 0 && !accounts.some((account) => account.is_active === 1)) {
       q.setActiveAccount(db, clerkUserId, accounts[0].id);
     }
-    const stillCurrent = getEpic7Session(req).account_id === data.account_id;
-    if (stillCurrent && accounts.length > 0) {
-      patchEpic7Session(req, {
-        account_id: accounts[0].id,
-        account_name: accounts[0].account_name,
-      });
-    } else if (stillCurrent) {
-      patchEpic7Session(req, { account_id: null, account_name: null });
-    }
     json(res, { success: true });
   });
 });
 
-epic7ApiRouter.get('/user', async (req, res) => {
-  const clerkUserId = requireClerkUserId(req);
-  await ensureSessionBoundToClerkUser(req, clerkUserId);
-  const s = getEpic7Session(req);
-  json(res, {
-    userId: requireClerkUserId(req),
-    account_id: s.account_id ?? null,
-    account_name: s.account_name ?? null,
+epic7ApiRouter.get('/user', (req, res) => {
+  runWithDb(res, (db) => {
+    const clerkUserId = requireClerkUserId(req);
+    const accountId = resolveAccountId(db, clerkUserId);
+    const account = accountId ? q.getGameAccountByIdAndUser(db, accountId, clerkUserId) : undefined;
+    json(res, {
+      userId: clerkUserId,
+      account_id: account?.id ?? null,
+      account_name: account?.account_name ?? null,
+    });
   });
 });
 

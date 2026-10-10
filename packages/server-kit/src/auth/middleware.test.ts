@@ -1,6 +1,16 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import type { NextFunction, Request, Response } from 'express';
+import express from 'express';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { isClerkConfigured } from './middleware.js';
+const auth = vi.hoisted(() => ({ userId: 'user_1' as string | null }));
+
+vi.mock('@clerk/express', () => ({
+  getAuth: () => ({ userId: auth.userId, sessionClaims: undefined }),
+  clerkMiddleware: () => (_req: Request, _res: Response, next: NextFunction) => next(),
+}));
+
+import { withServer } from '../testing/index.js';
+import { isClerkConfigured, rejectCrossSiteWrites, requireAuthApi } from './middleware.js';
 
 describe('isClerkConfigured', () => {
   const previousPublishable = process.env.CLERK_PUBLISHABLE_KEY;
@@ -29,5 +39,70 @@ describe('isClerkConfigured', () => {
     process.env.CLERK_PUBLISHABLE_KEY = 'pk_live_abc';
     process.env.CLERK_SECRET_KEY = 'sk_live_';
     expect(() => isClerkConfigured()).toThrow(/FATAL/);
+  });
+});
+
+describe('write guard', () => {
+  const previousPublishable = process.env.CLERK_PUBLISHABLE_KEY;
+  const previousSecret = process.env.CLERK_SECRET_KEY;
+
+  afterEach(() => {
+    auth.userId = 'user_1';
+    if (previousPublishable === undefined) delete process.env.CLERK_PUBLISHABLE_KEY;
+    else process.env.CLERK_PUBLISHABLE_KEY = previousPublishable;
+    if (previousSecret === undefined) delete process.env.CLERK_SECRET_KEY;
+    else process.env.CLERK_SECRET_KEY = previousSecret;
+  });
+
+  function app() {
+    process.env.CLERK_PUBLISHABLE_KEY = 'pk_test_abc';
+    process.env.CLERK_SECRET_KEY = 'sk_test_abc';
+    const server = express();
+    server.use(rejectCrossSiteWrites);
+    server.get('/read', requireAuthApi, (_req, res) => {
+      res.json({ ok: true });
+    });
+    server.post('/write', requireAuthApi, (_req, res) => {
+      res.json({ ok: true });
+    });
+    return server;
+  }
+
+  it('allows a signed-in GET without a bearer token', async () => {
+    await withServer(app(), async (baseUrl) => {
+      const res = await fetch(`${baseUrl}/read`);
+      expect(res.status).toBe(200);
+    });
+  });
+
+  it('rejects a cookie-only POST', async () => {
+    await withServer(app(), async (baseUrl) => {
+      const res = await fetch(`${baseUrl}/write`, { method: 'POST' });
+      expect(res.status).toBe(401);
+      await expect(res.json()).resolves.toEqual({
+        error: 'Bearer token required for write requests',
+      });
+    });
+  });
+
+  it('allows a POST with a bearer token', async () => {
+    await withServer(app(), async (baseUrl) => {
+      const res = await fetch(`${baseUrl}/write`, {
+        method: 'POST',
+        headers: { Authorization: 'Bearer test-token' },
+      });
+      expect(res.status).toBe(200);
+    });
+  });
+
+  it('rejects a cross-site POST', async () => {
+    await withServer(app(), async (baseUrl) => {
+      const res = await fetch(`${baseUrl}/write`, {
+        method: 'POST',
+        headers: { 'Sec-Fetch-Site': 'cross-site', Authorization: 'Bearer test-token' },
+      });
+      expect(res.status).toBe(403);
+      await expect(res.json()).resolves.toEqual({ error: 'Cross-site request rejected' });
+    });
   });
 });

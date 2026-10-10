@@ -10,7 +10,7 @@ import {
   type ReactNode,
 } from 'react';
 
-import { apiFetch, clearCsrfToken, setClerkTokenGetter } from '../../utils/api';
+import { apiFetch, setClerkTokenGetter } from '../../utils/api';
 
 export type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated' | 'error';
 
@@ -50,7 +50,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (refreshGenerationRef.current === generation) setAuth(next);
     };
     if (!isSignedIn) {
-      clearCsrfToken();
       applyAuth(UNAUTHENTICATED);
       return;
     }

@@ -152,7 +152,7 @@ describe('requireAuthApi', () => {
     authState.userId = 'user_1';
     const res = mockResponse();
     const next = vi.fn();
-    requireAuthApi({} as Request, res, next);
+    requireAuthApi({ method: 'GET', headers: {} } as Request, res, next);
     expect(next).toHaveBeenCalledOnce();
   });
 });

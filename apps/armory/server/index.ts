@@ -9,9 +9,7 @@ import {
   HOST,
   NODE_ENV,
   PORT,
-  SESSION_DB_PATH,
   SHUTDOWN_TIMEOUT_MS,
-  USING_INSECURE_DEV_SESSION_SECRET,
   ensureDataDirs,
 } from './config.js';
 import { closeAll } from './db/connection.js';
@@ -57,27 +55,9 @@ const sentinelAgent = createAppSentinelAgent({
   nodeEnv: NODE_ENV,
 });
 
-const { app, sessionStore } = createApp({
+const { app } = createApp({
   metricsMiddleware: sentinelAgent?.middleware,
 });
-log('info', 'Session DB ready', { path: SESSION_DB_PATH });
-
-if (USING_INSECURE_DEV_SESSION_SECRET) {
-  const hostIsLoopback =
-    HOST === '127.0.0.1' || HOST === 'localhost' || HOST === '::1' || HOST === '[::1]';
-  if (!hostIsLoopback) {
-    log(
-      'warn',
-      'INSECURE DEV SESSION_SECRET is active while HOST is non-loopback. Set SESSION_SECRET or bind to 127.0.0.1.',
-      { host: HOST },
-    );
-  } else {
-    log(
-      'warn',
-      'Using insecure DEV SESSION_SECRET (ALLOW_INSECURE_DEV=1). Do not use in production.',
-    );
-  }
-}
 
 const server = startServer({
   app,
@@ -97,7 +77,6 @@ const server = startServer({
   },
   onClose: () => {
     stopModListCacheCleanup();
-    sessionStore.dispose();
     try {
       closeAll();
     } catch (err) {

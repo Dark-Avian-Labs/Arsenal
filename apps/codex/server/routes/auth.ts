@@ -1,31 +1,18 @@
-import { Router, type Request, type Response } from 'express';
+import { Router } from 'express';
 
-import { SECURE_COOKIES, SESSION_COOKIE_NAME, sessionCookieDomain } from '../config.js';
 import { getClerkAuthState, getCodexAppId, requireAuthApi } from '../core.js';
 import {
   CODEX_GAMES as REGISTRY_CODEX_GAMES,
   getGameMetadata,
   unknownGameMetadata,
 } from '../games/metadataRegistry.js';
-import { ensureSessionBoundToClerkUser } from '../session/epic7SessionBinding.js';
 
 export const authRouter = Router();
 
 const FALLBACK_CODEX_GAMES = ['warframe', 'epic7', 'wor'] as const;
 const CODEX_GAMES = REGISTRY_CODEX_GAMES.length > 0 ? REGISTRY_CODEX_GAMES : FALLBACK_CODEX_GAMES;
 
-export function issueCsrfToken(req: Request, res: Response): void {
-  const request = req as Request & { csrfToken?: (overwrite?: boolean) => string };
-  const token = request.csrfToken ? request.csrfToken() : (req.session.csrfToken ?? '');
-  res.setHeader('Cache-Control', 'no-store');
-  res.json({
-    csrfToken: token,
-  });
-}
-
-authRouter.get('/csrf', issueCsrfToken);
-
-authRouter.get('/me', requireAuthApi, async (req, res) => {
+authRouter.get('/me', requireAuthApi, (req, res) => {
   const state = getClerkAuthState(req);
   if (!state.authenticated || !state.userId) {
     res.status(401).json({
@@ -44,7 +31,6 @@ authRouter.get('/me', requireAuthApi, async (req, res) => {
     };
     return { id, ...metadata };
   });
-  await ensureSessionBoundToClerkUser(req, state.userId);
   res.json({
     authenticated: true,
     userId: state.userId,
@@ -55,20 +41,6 @@ authRouter.get('/me', requireAuthApi, async (req, res) => {
   });
 });
 
-authRouter.post('/logout', (req, res) => {
-  req.session.destroy((destroyErr) => {
-    if (destroyErr) {
-      res.status(500).json({ error: 'Failed to logout' });
-      return;
-    }
-    const domain = sessionCookieDomain();
-    res.clearCookie(SESSION_COOKIE_NAME, {
-      ...(domain ? { domain } : {}),
-      path: '/',
-      httpOnly: true,
-      secure: SECURE_COOKIES,
-      sameSite: 'lax',
-    });
-    res.json({ ok: true, next: '/' });
-  });
+authRouter.post('/logout', (_req, res) => {
+  res.json({ ok: true, next: '/' });
 });

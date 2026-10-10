@@ -2,7 +2,7 @@ import { createHash, randomUUID } from 'node:crypto';
 
 import type Database from 'better-sqlite3';
 
-import { getSessionDb } from '../db/sessionDb.js';
+import { getDb as getWarframeDb } from '../games/warframe/db/schema.js';
 import type { WarframeSyncResult } from './warframeSync.js';
 
 export type WarframeSyncRunStatus = 'pending' | 'running' | 'succeeded' | 'failed';
@@ -33,7 +33,7 @@ const LEASE_ROW_ID = 1;
 
 let schemaReady = false;
 
-export function ensureWarframeSyncJobsSchema(db: Database.Database = getSessionDb()): void {
+export function ensureWarframeSyncJobsSchema(db: Database.Database = getWarframeDb()): void {
   if (schemaReady) return;
   db.exec(`
     CREATE TABLE IF NOT EXISTS warframe_sync_runs (
@@ -106,7 +106,7 @@ export function maskWarframeSyncResult(result: WarframeSyncResult): WarframeSync
 
 export function createWarframeSyncRun(initiatorClerkUserId: string): WarframeSyncRunRow {
   ensureWarframeSyncJobsSchema();
-  const db = getSessionDb();
+  const db = getWarframeDb();
   const initiator_hash = hashInitiator(initiatorClerkUserId);
   const pendingMeta = JSON.stringify({ _initiatorMasked: maskClerkUserId(initiatorClerkUserId) });
   const result = db
@@ -121,7 +121,7 @@ export function createWarframeSyncRun(initiatorClerkUserId: string): WarframeSyn
 
 export function getWarframeSyncRunRow(id: number): WarframeSyncRunRow | null {
   ensureWarframeSyncJobsSchema();
-  const row = getSessionDb()
+  const row = getWarframeDb()
     .prepare(
       `SELECT id, status, initiator_hash, started_at, finished_at, summary_json, error_text, lock_token
        FROM warframe_sync_runs WHERE id = ?`,
@@ -204,7 +204,7 @@ export function updateWarframeSyncRun(
   }
   if (fields.length === 0) return;
   values.push(id);
-  getSessionDb()
+  getWarframeDb()
     .prepare(`UPDATE warframe_sync_runs SET ${fields.join(', ')} WHERE id = ?`)
     .run(...values);
 }
@@ -214,7 +214,7 @@ const WARFRAME_SYNC_LEASE_TTL_MINUTES = 30;
 export function tryAcquireWarframeSyncLease(runId: number | null): string | null {
   ensureWarframeSyncJobsSchema();
   const lockToken = randomUUID();
-  const db = getSessionDb();
+  const db = getWarframeDb();
   const acquired = db.transaction(() => {
     db.prepare(
       'INSERT OR IGNORE INTO warframe_sync_lease (id, lock_token, run_id, acquired_at) VALUES (1, NULL, NULL, NULL)',
@@ -242,7 +242,7 @@ export function tryAcquireWarframeSyncLease(runId: number | null): string | null
 
 export function renewWarframeSyncLease(lockToken: string): boolean {
   ensureWarframeSyncJobsSchema();
-  const updated = getSessionDb()
+  const updated = getWarframeDb()
     .prepare(
       `UPDATE warframe_sync_lease
        SET acquired_at = datetime('now')
@@ -264,7 +264,7 @@ export function assertWarframeSyncLeaseOwner(lockToken: string): void {
 
 export function forceReleaseWarframeSyncLease(): boolean {
   ensureWarframeSyncJobsSchema();
-  const db = getSessionDb();
+  const db = getWarframeDb();
   return db.transaction(() => {
     const row = db
       .prepare('SELECT lock_token FROM warframe_sync_lease WHERE id = ?')
@@ -282,7 +282,7 @@ export function forceReleaseWarframeSyncLease(): boolean {
 
 export function releaseWarframeSyncLease(lockToken: string): void {
   ensureWarframeSyncJobsSchema();
-  const db = getSessionDb();
+  const db = getWarframeDb();
   db.transaction(() => {
     db.prepare(
       'UPDATE warframe_sync_lease SET lock_token = NULL, run_id = NULL WHERE id = ? AND lock_token = ?',
@@ -295,7 +295,7 @@ export function releaseWarframeSyncLease(lockToken: string): void {
 
 export function isWarframeSyncLeaseHeld(): boolean {
   ensureWarframeSyncJobsSchema();
-  const row = getSessionDb()
+  const row = getWarframeDb()
     .prepare(
       `SELECT lock_token FROM warframe_sync_lease
        WHERE id = ?
@@ -309,7 +309,7 @@ export function isWarframeSyncLeaseHeld(): boolean {
 
 export function getActiveWarframeSyncRunId(): number | null {
   ensureWarframeSyncJobsSchema();
-  const row = getSessionDb()
+  const row = getWarframeDb()
     .prepare('SELECT run_id FROM warframe_sync_lease WHERE id = ?')
     .get(LEASE_ROW_ID) as { run_id: number | null } | undefined;
   return row?.run_id ?? null;

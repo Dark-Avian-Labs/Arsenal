@@ -1,12 +1,11 @@
 import Database from 'better-sqlite3';
 import express from 'express';
-import session from 'express-session';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
 import { createSchema as createEpic7Schema } from '../server/games/epic7/db/schema.js';
 import { epic7Queries as q } from '../server/games/epic7/index.js';
 import { describeWithSqlite } from './helpers/describeWithSqlite.js';
-import { createSessionAgent, testSessionOptions } from './helpers/testExpress.js';
+import { createSessionAgent } from './helpers/testExpress.js';
 
 const authState = vi.hoisted(() => ({
   userId: null as string | null,
@@ -42,7 +41,6 @@ import { epic7ApiRouter } from '../server/routes/epic7Api.js';
 function createTestApp() {
   const app = express();
   app.use(express.json());
-  app.use(session(testSessionOptions()));
   app.use('/api/epic7', epic7ApiRouter);
   return app;
 }

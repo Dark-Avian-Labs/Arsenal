@@ -93,6 +93,7 @@ describeWithSqlite('warframe API routes', () => {
     authState.userId = 'user_test';
     const res = await request(createTestApp())
       .patch('/api/warframe/cells')
+      .set('Authorization', 'Bearer test-token')
       .send({ row_id: 'bad', column_id: 1, value: 'Obtained' });
     expect(res.status).toBe(400);
     expect(res.body.error).toBe('Validation failed');
@@ -102,6 +103,7 @@ describeWithSqlite('warframe API routes', () => {
     authState.userId = 'user_test';
     const res = await request(createTestApp())
       .patch('/api/warframe/cells')
+      .set('Authorization', 'Bearer test-token')
       .send({ row_id: 1, column_id: 1, value: 'NotARealStatus' });
     expect(res.status).toBe(400);
     expect(res.body.error).toMatch(/Invalid status/i);
@@ -112,6 +114,7 @@ describeWithSqlite('warframe API routes', () => {
     authState.sessionClaims = { metadata: { apps: { codex: 'user' } } };
     const res = await request(createTestApp())
       .patch('/api/warframe/admin/cells')
+      .set('Authorization', 'Bearer test-token')
       .send({ row_id: 1, column_id: 1, value: 'Unavailable' });
     expect(res.status).toBe(403);
   });

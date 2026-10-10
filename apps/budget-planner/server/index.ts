@@ -8,11 +8,10 @@ import {
   HOST,
   NODE_ENV,
   PORT,
-  SESSION_DB_PATH,
   SHUTDOWN_TIMEOUT_MS,
   ensureDataDirs,
 } from './config.js';
-import { closeAppDb, closeSessionDb } from './db/connection.js';
+import { closeAppDb } from './db/connection.js';
 
 ensureDataDirs();
 
@@ -22,10 +21,9 @@ const sentinelAgent = createAppSentinelAgent({
   nodeEnv: NODE_ENV,
 });
 
-const { app, sessionStore } = createApp({
+const { app } = createApp({
   metricsMiddleware: sentinelAgent?.middleware,
 });
-log('info', 'Session store ready', { app: APP_NAME, path: SESSION_DB_PATH });
 log('info', 'App database ready', { app: APP_NAME, path: APP_DB_PATH });
 
 void startServer({
@@ -36,14 +34,7 @@ void startServer({
   shutdownTimeoutMs: SHUTDOWN_TIMEOUT_MS,
   sentinelAgent,
   onClose: () => {
-    sessionStore.dispose();
     let failed = false;
-    try {
-      closeSessionDb();
-    } catch (err) {
-      failed = true;
-      log('error', 'Failed to close session DB during shutdown', { error: String(err) });
-    }
     try {
       closeAppDb();
     } catch (err) {

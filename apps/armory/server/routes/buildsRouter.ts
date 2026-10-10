@@ -57,7 +57,7 @@ function notePublicBuildsCatalogChanged(): void {
   bustCatalogResponseCache(PUBLIC_BUILDS_CATALOG_CACHE_KEY);
 }
 
-export const buildsRouter = Router();
+export const buildsRouter: Router = Router();
 
 buildsRouter.get('/users/:username/builds', async (req: Request, res: Response) => {
   try {

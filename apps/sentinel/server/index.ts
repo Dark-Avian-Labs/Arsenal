@@ -1,16 +1,7 @@
 import { createAppSentinelAgent, log, startServer } from '@dark-avian-labs/server-kit';
 
 import { createApp } from './app.js';
-import {
-  APP_ID,
-  APP_NAME,
-  HOST,
-  NODE_ENV,
-  PORT,
-  SESSION_DB_PATH,
-  SHUTDOWN_TIMEOUT_MS,
-} from './config.js';
-import { closeSessionDb } from './db/connection.js';
+import { APP_ID, APP_NAME, HOST, NODE_ENV, PORT, SHUTDOWN_TIMEOUT_MS } from './config.js';
 import { closeMetricsDb, getMetricsDb } from './metrics/db.js';
 import { rollupAndPrune } from './metrics/writer.js';
 import { startPm2Bridge } from './pm2/bridge.js';
@@ -22,10 +13,9 @@ const sentinelAgent = createAppSentinelAgent({
   defaultIngestUrl: `http://127.0.0.1:${PORT}/api/ingest`,
 });
 
-const { app, sessionStore } = createApp({
+const { app } = createApp({
   metricsMiddleware: sentinelAgent?.middleware,
 });
-log('info', 'Session store ready', { app: APP_NAME, path: SESSION_DB_PATH });
 
 getMetricsDb();
 const pm2Bridge = NODE_ENV === 'test' ? null : startPm2Bridge();
@@ -57,8 +47,6 @@ startServer({
     if (rollupTimer) clearInterval(rollupTimer);
   },
   onClose() {
-    sessionStore.dispose();
-    closeSessionDb();
     closeMetricsDb();
   },
 });

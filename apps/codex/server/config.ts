@@ -4,7 +4,6 @@ import { fileURLToPath } from 'url';
 
 import {
   getAppPublicBaseUrl,
-  isEncryptedEnvValue,
   normalizeClerkEnv,
   requireAbsoluteSqlitePath,
 } from '@dark-avian-labs/server-kit';
@@ -142,15 +141,6 @@ export const REQUIRED_EXPORTS = [
   'ExportWeapons',
 ] as const;
 
-function resolveSessionDbPath(): string {
-  const session = process.env.SESSION_DB_PATH?.trim();
-  if (session) return requireAbsoluteSqlitePath('SESSION_DB_PATH', session);
-  return path.join(DATA_DIR, 'session.db');
-}
-
-export const SESSION_DB_PATH = resolveSessionDbPath();
-process.env.SESSION_DB_PATH = SESSION_DB_PATH;
-
 const _port = parseInt(process.env.PORT || '3001', 10);
 export const PORT = Number.isFinite(_port) && _port > 0 ? _port : 3001;
 
@@ -169,38 +159,6 @@ function parseBooleanEnv(value: string | undefined): boolean | undefined {
   if (normalized === 'false' || normalized === '0') return false;
   return undefined;
 }
-
-const DEV_SESSION_SECRET = 'codex-dev-only-session-secret-32ch';
-const envSessionSecret = process.env.SESSION_SECRET?.trim() || '';
-const allowInsecureDev = parseBooleanEnv(process.env.ALLOW_INSECURE_DEV) === true;
-
-function resolveSessionSecret(): string {
-  if (isEncryptedEnvValue(envSessionSecret)) {
-    throw new Error(
-      'SESSION_SECRET is still encrypted. Ensure DOTENV_PRIVATE_KEY_* is available (see .env.keys) or run via dotenvx.',
-    );
-  }
-  if (NODE_ENV === 'production') {
-    if (envSessionSecret.length < 32) {
-      throw new Error('SESSION_SECRET must be set and at least 32 characters in production.');
-    }
-    return envSessionSecret;
-  }
-  if (envSessionSecret.length > 0) {
-    return envSessionSecret;
-  }
-  if (allowInsecureDev) {
-    console.warn(
-      '[Config] Using hardcoded SESSION_SECRET because ALLOW_INSECURE_DEV=1. Do not use this outside local development.',
-    );
-    return DEV_SESSION_SECRET;
-  }
-  throw new Error(
-    'SESSION_SECRET must be set, or set ALLOW_INSECURE_DEV=1 for local development only.',
-  );
-}
-
-export const SESSION_SECRET = resolveSessionSecret();
 
 export const TRUST_PROXY = parseBooleanEnv(process.env.TRUST_PROXY) ?? false;
 export const SECURE_COOKIES =
@@ -249,45 +207,14 @@ if (!DOMAIN_LABEL_REGEX.test(APP_SUBDOMAIN)) {
 }
 
 export const APP_PUBLIC_BASE_URL = getAppPublicBaseUrl();
-const configuredCookieDomain = process.env.COOKIE_DOMAIN?.trim().toLowerCase() || '';
-let resolvedCookieDomain = `.${BASE_DOMAIN}`;
-
-if (configuredCookieDomain) {
-  const cookieDomainWithoutDot = configuredCookieDomain.replace(/^\./, '');
-  if (!isValidDomain(cookieDomainWithoutDot)) {
-    console.warn(
-      `Invalid COOKIE_DOMAIN "${configuredCookieDomain}" provided; falling back to ".${BASE_DOMAIN}".`,
-    );
-  } else {
-    resolvedCookieDomain = `.${cookieDomainWithoutDot}`;
-  }
-}
-
-export const COOKIE_DOMAIN = resolvedCookieDomain;
-
-export function sessionCookieDomain(): string | undefined {
-  let host = '';
-  try {
-    host = new URL(APP_PUBLIC_BASE_URL).hostname.toLowerCase();
-  } catch {
-    return undefined;
-  }
-  const bare = COOKIE_DOMAIN.replace(/^\./, '');
-  if (host === bare || host.endsWith(`.${bare}`)) return COOKIE_DOMAIN;
-  return undefined;
-}
 
 export const LEGAL_PAGE_URL =
   process.env.VITE_LEGAL_PAGE_URL?.trim() ||
   process.env.LEGAL_PAGE_URL?.trim() ||
   'https://darkavianlabs.com/legal';
 
-export const SESSION_COOKIE_NAME =
-  process.env.SESSION_COOKIE_NAME?.trim() || 'darkavianlabs.codex.sid';
-
 export function ensureDataDirs(): void {
   fs.mkdirSync(DATA_DIR, { recursive: true });
-  fs.mkdirSync(path.dirname(SESSION_DB_PATH), { recursive: true });
   fs.mkdirSync(path.dirname(WARFRAME_DB_PATH), { recursive: true });
   fs.mkdirSync(path.dirname(WARFRAME_CATALOG_DB_PATH), { recursive: true });
   fs.mkdirSync(path.dirname(EPIC7_DB_PATH), { recursive: true });

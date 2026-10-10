@@ -17,12 +17,6 @@ import {
   worUpdateHeroGaugeSchema,
   worUpdateOwnedSchema,
 } from '../games/wor/index.js';
-import {
-  clearWorSessionFields,
-  ensureWorSessionBoundToClerkUser,
-  getWorSession,
-  patchWorSession,
-} from '../session/worSessionBinding.js';
 import { ensureWorDbAvailable } from '../worDbState.js';
 import {
   compactRosterArtifact,
@@ -58,32 +52,9 @@ function getDbOrFail(res: Response): ReturnType<typeof getWorDb> | null {
 
 type WorDatabase = ReturnType<typeof getWorDb>;
 
-async function reconcileWorSessionAccount(
-  db: WorDatabase,
-  req: Request,
-  clerkUserId: string,
-): Promise<number | null> {
-  await ensureWorSessionBoundToClerkUser(req, clerkUserId);
+function activeWorAccountId(db: WorDatabase, clerkUserId: string): number | null {
   const accounts = q.getUserAccountsForApi(db, clerkUserId);
-  let currentAccountId = getWorSession(req).wor_account_id ?? null;
-  if (typeof currentAccountId === 'number' && currentAccountId > 0) {
-    const owned = q.getGameAccountByIdAndUser(db, currentAccountId, clerkUserId);
-    if (!owned) {
-      clearWorSessionFields(req);
-      currentAccountId = null;
-    }
-  }
-  if (currentAccountId === null) {
-    const active = accounts.find((account) => account.is_active === 1);
-    if (active) {
-      currentAccountId = active.id;
-      patchWorSession(req, {
-        wor_account_id: active.id,
-        wor_account_name: active.account_name,
-      });
-    }
-  }
-  return currentAccountId;
+  return accounts.find((account) => account.is_active === 1)?.id ?? null;
 }
 
 async function requireAccountId(
@@ -92,7 +63,7 @@ async function requireAccountId(
   res: Response,
 ): Promise<number | null> {
   const clerkUserId = requireClerkUserId(req);
-  const accountId = await reconcileWorSessionAccount(db, req, clerkUserId);
+  const accountId = activeWorAccountId(db, clerkUserId);
   if (!accountId) {
     err(res, 'No game account selected. Please create one first.');
     return null;
@@ -206,7 +177,7 @@ worApiRouter.get('/roster', (req, res) => {
     } = {
       account: {
         id: accountId,
-        name: account?.account_name ?? getWorSession(req).wor_account_name ?? '',
+        name: account?.account_name ?? '',
       },
       stats: {
         heroes: q.getHeroStats(db, accountId),
@@ -349,7 +320,7 @@ worApiRouter.get('/accounts', (req, res) => {
   runWithDb(res, async (db) => {
     const clerkUserId = requireClerkUserId(req);
     const accounts = q.getUserAccountsForApi(db, clerkUserId);
-    const currentAccountId = await reconcileWorSessionAccount(db, req, clerkUserId);
+    const currentAccountId = activeWorAccountId(db, clerkUserId);
     json(res, { accounts, current_account_id: currentAccountId });
   });
 });
@@ -365,10 +336,6 @@ worApiRouter.post('/accounts/switch', (req, res) => {
       return;
     }
     q.setActiveAccount(db, clerkUserId, data.account_id);
-    patchWorSession(req, {
-      wor_account_id: data.account_id,
-      wor_account_name: account.account_name,
-    });
     json(res, { ok: true, account_id: data.account_id, account_name: account.account_name });
   });
 });
@@ -386,12 +353,6 @@ worApiRouter.post('/accounts', (req, res) => {
     const accounts = q.getGameAccountsByUserId(db, clerkUserId);
     const isFirst = accounts.length === 0;
     const accountId = q.createGameAccount(db, clerkUserId, data.account_name, isFirst);
-    if (isFirst) {
-      patchWorSession(req, {
-        wor_account_id: accountId,
-        wor_account_name: data.account_name,
-      });
-    }
     json(res, { ok: true, account_id: accountId });
   });
 });
@@ -420,10 +381,6 @@ worApiRouter.patch('/accounts/:accountId', (req, res) => {
       err(res, 'Failed to update account', 500);
       return;
     }
-    const session = getWorSession(req);
-    if (session.wor_account_id === data.account_id) {
-      patchWorSession(req, { wor_account_name: data.account_name });
-    }
     json(res, { ok: true });
   });
 });
@@ -442,22 +399,16 @@ worApiRouter.delete('/accounts/:accountId', (req, res) => {
       err(res, 'Account not found', 404);
       return;
     }
-    const wasActive = getWorSession(req).wor_account_id === data.account_id;
+    const wasActive = activeWorAccountId(db, clerkUserId) === data.account_id;
     const ok = q.deleteGameAccount(db, data.account_id, clerkUserId);
     if (!ok) {
       err(res, 'Failed to delete account', 500);
       return;
     }
     if (wasActive) {
-      clearWorSessionFields(req);
       const remaining = q.getUserAccountsForApi(db, clerkUserId);
-      const active = remaining.find((a) => a.is_active === 1);
-      if (active) {
-        patchWorSession(req, {
-          wor_account_id: active.id,
-          wor_account_name: active.account_name,
-        });
-      }
+      const next = remaining[0];
+      if (next) q.setActiveAccount(db, clerkUserId, next.id);
     }
     json(res, { ok: true });
   });
@@ -467,12 +418,13 @@ worApiRouter.get('/user', (req, res) => {
   runWithDb(res, async (db) => {
     const clerkUserId = requireClerkUserId(req);
     const accounts = q.getUserAccountsForApi(db, clerkUserId);
-    const currentAccountId = await reconcileWorSessionAccount(db, req, clerkUserId);
+    const currentAccountId = activeWorAccountId(db, clerkUserId);
+    const current = accounts.find((account) => account.id === currentAccountId);
     json(res, {
       clerk_user_id: clerkUserId,
       accounts,
       current_account_id: currentAccountId,
-      current_account_name: getWorSession(req).wor_account_name ?? null,
+      current_account_name: current?.account_name ?? null,
     });
   });
 });

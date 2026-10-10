@@ -1,56 +1,35 @@
 import path from 'path';
 
-import { createApp as createKitApp, getClerkAuthState } from '@dark-avian-labs/server-kit';
+import { createApp as createKitApp } from '@dark-avian-labs/server-kit';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
-import { csrfSync } from 'csrf-sync';
 import express, { type Request, type RequestHandler, type Response } from 'express';
-import session from 'express-session';
 
 import {
   APP_ID,
   APP_NAME,
-  APP_PUBLIC_BASE_URL,
   APP_VERSION,
   LEGAL_PAGE_URL,
   NODE_ENV,
   PROJECT_ROOT,
   SECURE_COOKIES,
-  SESSION_COOKIE_NAME,
-  SESSION_SECRET,
   TRUST_PROXY,
   WOR_IMAGES_DIR,
-  sessionCookieDomain,
 } from './config.js';
-import { getSessionDb } from './db/sessionDb.js';
-import { SqliteSessionStore } from './db/sqliteSessionStore.js';
-import { timingSafeEqualString } from './http/timingSafeEqual.js';
 import { contentTypeForImagePath, isAllowedImageExtension } from './import/wor/images.js';
 import { assertCodexReady } from './probes.js';
 import { apiRouter } from './routes/api.js';
-import { authRouter, issueCsrfToken } from './routes/auth.js';
-import { bindClerkUserSessionMiddleware } from './session/bindClerkUserSession.js';
+import { authRouter } from './routes/auth.js';
 
 export interface CreateAppOptions {
-  sessionDb?: ReturnType<typeof getSessionDb>;
   metricsMiddleware?: RequestHandler;
 }
 
 export interface AppBundle {
   app: express.Express;
-  sessionStore: SqliteSessionStore;
 }
 
-const CSRF_IGNORED_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
-const CSRF_PROTECTED_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
-
 export function createApp(options: CreateAppOptions = {}): AppBundle {
-  const sessionDb = options.sessionDb ?? getSessionDb();
-  const sessionStore = new SqliteSessionStore({
-    db: sessionDb,
-    cleanupIntervalMs: 15 * 60 * 1000,
-  });
-
   const bundle = createKitApp({
     appName: APP_NAME,
     appId: APP_ID,
@@ -71,66 +50,6 @@ export function createApp(options: CreateAppOptions = {}): AppBundle {
       app.use(cookieParser());
     },
     installSession(app) {
-      const cookieOptions: express.CookieOptions = {
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-        httpOnly: true,
-        secure: SECURE_COOKIES,
-        sameSite: 'lax',
-      };
-      const cookieDomain = sessionCookieDomain();
-      if (cookieDomain) cookieOptions.domain = cookieDomain;
-
-      app.use(
-        session({
-          name: SESSION_COOKIE_NAME,
-          store: sessionStore,
-          secret: SESSION_SECRET,
-          resave: false,
-          saveUninitialized: false,
-          cookie: cookieOptions,
-        }),
-      );
-
-      const { generateToken, getTokenFromRequest, getTokenFromState, invalidCsrfTokenError } =
-        csrfSync({
-          getTokenFromRequest: (req: Request) => {
-            if (req.body?._csrf) return req.body._csrf as string;
-            const header = req.headers['x-csrf-token'] || req.headers['x-xsrf-token'];
-            return (Array.isArray(header) ? header[0] : header) ?? null;
-          },
-          getTokenFromState: (req) => {
-            const sessionData = req.session;
-            if (!sessionData) return null;
-            return sessionData.csrfToken ?? null;
-          },
-          storeTokenInState: (req, token) => {
-            if (req.session) {
-              req.session.csrfToken = token as string;
-            }
-          },
-        });
-
-      app.use((req, res, next) => {
-        (req as Request & { csrfToken?: (overwrite?: boolean) => string }).csrfToken = (
-          overwrite,
-        ) => generateToken(req, overwrite);
-        if (CSRF_IGNORED_METHODS.has(req.method.toUpperCase())) {
-          next();
-          return;
-        }
-        const received = getTokenFromRequest(req);
-        const stored = getTokenFromState(req);
-        if (
-          typeof received === 'string' &&
-          typeof stored === 'string' &&
-          timingSafeEqualString(received, stored)
-        ) {
-          next();
-          return;
-        }
-        next(invalidCsrfTokenError);
-      });
-
       const isDevEnv = NODE_ENV !== 'production';
       const defaultDevOrigins = isDevEnv
         ? [
@@ -168,42 +87,12 @@ export function createApp(options: CreateAppOptions = {}): AppBundle {
       }
 
       app.use((req: Request, res: Response, next) => {
-        if (!CSRF_PROTECTED_METHODS.has(req.method.toUpperCase())) {
-          next();
-          return;
-        }
-
-        const secFetchSiteHeader = req.headers['sec-fetch-site'];
-        const secFetchSite = Array.isArray(secFetchSiteHeader)
-          ? secFetchSiteHeader[0]
-          : secFetchSiteHeader;
-        if (typeof secFetchSite === 'string' && secFetchSite.toLowerCase() === 'cross-site') {
-          res
-            .status(403)
-            .json({ error: 'Cross-site request blocked', code: 'CSRF_ORIGIN_INVALID' });
-          return;
-        }
-
-        const originHeader = req.headers.origin;
-        const origin = Array.isArray(originHeader) ? originHeader[0] : originHeader;
-        if (typeof origin === 'string' && origin.length > 0) {
-          const allowedOrigins = new Set<string>([APP_PUBLIC_BASE_URL, ...allowedAppOrigins]);
-          if (!allowedOrigins.has(origin)) {
-            res.status(403).json({ error: 'Origin not allowed', code: 'CSRF_ORIGIN_INVALID' });
-            return;
-          }
-        }
-
-        next();
-      });
-
-      app.use((req: Request, res: Response, next) => {
         const origin = req.headers.origin;
         if (typeof origin === 'string' && allowedAppOrigins.includes(origin)) {
           res.setHeader('Access-Control-Allow-Origin', origin);
           res.setHeader('Vary', 'Origin');
           res.setHeader('Access-Control-Allow-Credentials', 'true');
-          res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-CSRF-Token, X-XSRF-Token');
+          res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
           res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PATCH,PUT,DELETE,OPTIONS');
         }
         if (req.method === 'OPTIONS') {
@@ -217,16 +106,6 @@ export function createApp(options: CreateAppOptions = {}): AppBundle {
         res.setHeader('Cache-Control', 'no-store');
         next();
       });
-
-      app.use(
-        '/api',
-        bindClerkUserSessionMiddleware(
-          (req) => getClerkAuthState(req).userId,
-          (req) => {
-            (req as Request & { csrfToken?: (overwrite?: boolean) => string }).csrfToken?.(true);
-          },
-        ),
-      );
 
       app.use(
         '/wor-images',
@@ -269,7 +148,6 @@ export function createApp(options: CreateAppOptions = {}): AppBundle {
   });
 
   bundle.apiRouter.use('/auth', authRouter);
-  bundle.apiRouter.get('/csrf', issueCsrfToken);
   bundle.apiRouter.use(apiRouter);
-  return { app: bundle.app, sessionStore };
+  return { app: bundle.app };
 }

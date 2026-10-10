@@ -1,20 +1,9 @@
-import { Router, type NextFunction, type Request, type Response } from 'express';
+import { Router, type NextFunction } from 'express';
 
 import { hasActiveArmoryUser, syncArmoryUserFromClerk } from '../auth/armoryUsers.js';
 import { getClerkAuthState, requireAuthApi } from '../auth/middleware.js';
 
-export const authRouter = Router();
-
-export function issueCsrfToken(req: Request, res: Response): void {
-  const generate = req.app.locals.generateCsrfToken as ((request: Request) => string) | undefined;
-  const token = generate ? generate(req) : (req.session.csrfToken ?? '');
-  res.setHeader('Cache-Control', 'no-store');
-  res.json({
-    csrfToken: token,
-  });
-}
-
-authRouter.get('/csrf', issueCsrfToken);
+export const authRouter: Router = Router();
 
 authRouter.get('/me', requireAuthApi, async (req, res, next: NextFunction) => {
   try {

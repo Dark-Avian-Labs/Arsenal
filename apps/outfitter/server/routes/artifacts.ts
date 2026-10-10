@@ -11,9 +11,9 @@ import {
 } from '../../shared/catalog.js';
 import { getAppDb } from '../db/appDb.js';
 import * as q from '../db/queries.js';
+import { requireAccountId } from '../http/account.js';
 import { asyncHandler, json, sendError } from '../http/handlers.js';
 import { decodeGearScreenshot, recognizeArtifactStats } from '../ocr/recognizeGear.js';
-import { requireAccountId } from '../session/account.js';
 
 export const artifactsRouter = Router();
 artifactsRouter.use(requireAuthApi);

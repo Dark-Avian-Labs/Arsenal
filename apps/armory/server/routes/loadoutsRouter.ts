@@ -35,7 +35,7 @@ import {
   loadoutUpdateErrorMessage,
 } from './userContentSchemas.js';
 
-export const loadoutsRouter = Router();
+export const loadoutsRouter: Router = Router();
 
 loadoutsRouter.get('/loadouts', (req: Request, res: Response) => {
   try {

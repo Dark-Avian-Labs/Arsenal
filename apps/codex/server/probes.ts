@@ -4,7 +4,6 @@ import Database from 'better-sqlite3';
 import type { Request, Response } from 'express';
 
 import { APP_NAME, WARFRAME_CATALOG_DB_PATH, WOR_CATALOG_DB_PATH } from './config.js';
-import { getSessionDb } from './db/sessionDb.js';
 import { isEpic7DbAvailable, refreshEpic7DbAvailability } from './epic7DbState.js';
 import { getEpic7Db } from './games/epic7/index.js';
 import { getWarframeDb } from './games/warframe/index.js';
@@ -35,7 +34,6 @@ function assertCatalogTablesReadable(dbPath: string, requiredTables: string[]): 
 }
 
 export async function assertCodexReady(): Promise<void> {
-  getSessionDb().prepare('SELECT 1').get();
   getWarframeDb().prepare('SELECT 1').get();
   await refreshEpic7DbAvailability();
   if (!isEpic7DbAvailable()) {

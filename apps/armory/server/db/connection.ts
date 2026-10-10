@@ -1,10 +1,9 @@
 import Database from 'better-sqlite3';
 
-import { ARMORY_DB_PATH, SESSION_DB_PATH, USER_DB_PATH } from '../config.js';
+import { ARMORY_DB_PATH, USER_DB_PATH } from '../config.js';
 
 let catalogDb: Database.Database | null = null;
 let userDb: Database.Database | null = null;
-let sessionDb: Database.Database | null = null;
 
 function openDatabase(filePath: string): Database.Database {
   const db = new Database(filePath);
@@ -28,13 +27,6 @@ export function getUserDb(): Database.Database {
   return userDb;
 }
 
-export function getSessionDb(): Database.Database {
-  if (!sessionDb) {
-    sessionDb = openDatabase(SESSION_DB_PATH);
-  }
-  return sessionDb;
-}
-
 export function closeAll(): void {
   if (catalogDb) {
     catalogDb.close();
@@ -43,9 +35,5 @@ export function closeAll(): void {
   if (userDb) {
     userDb.close();
     userDb = null;
-  }
-  if (sessionDb) {
-    sessionDb.close();
-    sessionDb = null;
   }
 }

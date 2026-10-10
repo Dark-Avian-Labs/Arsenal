@@ -5,7 +5,7 @@ import { Router, type Request, type Response } from 'express';
 import { markArmoryUserDeleted, upsertArmoryUser } from '../auth/armoryUsers.js';
 import { CLERK_WEBHOOK_SIGNING_SECRET } from '../config.js';
 
-export const clerkWebhookRouter = Router();
+export const clerkWebhookRouter: Router = Router();
 
 type ClerkUserWebhookData = {
   id?: string;

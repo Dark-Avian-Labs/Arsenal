@@ -3,6 +3,7 @@ export {
   getAuth,
   getClerkAuthState,
   isClerkConfigured,
+  rejectCrossSiteWrites,
   requireAdmin,
   requireAuthApi,
 } from './auth/middleware.js';

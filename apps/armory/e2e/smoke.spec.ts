@@ -20,10 +20,13 @@ test('version endpoint is uncached', async ({ request }) => {
   expect(body.version.length).toBeGreaterThan(0);
 });
 
-test('writes without a CSRF token are rejected', async ({ request }) => {
-  const res = await request.post('/api/builds', { data: { name: 'Nope' } });
+test('cross-site writes are rejected', async ({ request }) => {
+  const res = await request.post('/api/builds', {
+    data: { name: 'Nope' },
+    headers: { 'Sec-Fetch-Site': 'cross-site' },
+  });
   expect(res.status()).toBe(403);
-  await expect(res.json()).resolves.toMatchObject({ code: 'CSRF_INVALID' });
+  await expect(res.json()).resolves.toMatchObject({ error: 'Cross-site request rejected' });
 });
 
 test('unknown API routes return JSON 404', async ({ request }) => {

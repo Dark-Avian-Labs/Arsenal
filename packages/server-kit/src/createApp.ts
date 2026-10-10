@@ -4,7 +4,7 @@ import path from 'node:path';
 import express, { type Express, type RequestHandler, type Router } from 'express';
 import { rateLimit } from 'express-rate-limit';
 
-import { clerkMiddleware } from './auth/middleware.js';
+import { clerkMiddleware, rejectCrossSiteWrites } from './auth/middleware.js';
 import { handleDalAppNavProxy } from './http/dalAppNavProxy.js';
 import { createAppHelmet } from './http/helmetCsp.js';
 import { getRequestId, requestIdMiddleware } from './http/requestId.js';
@@ -160,7 +160,7 @@ export function createApp(options: CreateAppOptions): AppBundle {
   });
 
   const apiRouter = express.Router();
-  app.use('/api', appApiLimiter, apiRouter);
+  app.use('/api', appApiLimiter, rejectCrossSiteWrites, apiRouter);
 
   const faviconPng = path.join(options.projectRoot, 'public', 'favicon.png');
   app.get('/favicon.png', publicPageLimiter, (_req, res) => {
@@ -239,12 +239,6 @@ export function createApp(options: CreateAppOptions): AppBundle {
         code?: unknown;
         expose?: unknown;
       };
-
-      if (maybe.code === 'EBADCSRFTOKEN') {
-        res.setHeader('X-CSRF-Error', '1');
-        res.status(403).json({ error: 'Invalid CSRF token', code: 'CSRF_INVALID' });
-        return;
-      }
 
       const statusFromError =
         typeof maybe.statusCode === 'number'

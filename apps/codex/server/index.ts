@@ -12,8 +12,6 @@ import {
   PORT,
   SHUTDOWN_TIMEOUT_MS,
 } from './config.js';
-import { closeSessionDb, getSessionDb } from './db/sessionDb.js';
-import { ensureSessionSchema } from './db/sessionSchema.js';
 import { refreshEpic7DbAvailability } from './epic7DbState.js';
 import { closeEpic7Db, getEpic7Db } from './games/epic7/index.js';
 import { closeWarframeDb, getWarframeDb } from './games/warframe/index.js';
@@ -27,12 +25,12 @@ import {
   ensureWorCatalogSeededFromCollection,
   runWorStartupPipeline,
 } from './import/wor/startupPipeline.js';
+import { ensureWarframeSyncJobsSchema } from './services/warframeSyncJobs.js';
 import { waitForWarframeSyncIdle } from './services/warframeSyncState.js';
 import { refreshWorDbAvailability } from './worDbState.js';
 
 ensureDataDirs();
-ensureSessionSchema();
-const sessionDb = getSessionDb();
+ensureWarframeSyncJobsSchema();
 function assertTableExists(db: { prepare: (sql: string) => unknown }, tableName: string): void {
   const row = (
     db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?") as {
@@ -109,8 +107,7 @@ const sentinelAgent = createAppSentinelAgent({
   displayName: APP_NAME,
   nodeEnv: NODE_ENV,
 });
-const { app, sessionStore } = createApp({
-  sessionDb,
+const { app } = createApp({
   metricsMiddleware: sentinelAgent?.middleware,
 });
 
@@ -128,9 +125,7 @@ startServer({
     }
   },
   onClose: () => {
-    sessionStore.dispose();
     try {
-      closeSessionDb();
       closeWarframeDb();
       closeEpic7Db();
       closeWorDb();

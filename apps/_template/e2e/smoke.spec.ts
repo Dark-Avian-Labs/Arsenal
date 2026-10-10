@@ -6,7 +6,7 @@ test('liveness probe is up', async ({ request }) => {
   await expect(res.json()).resolves.toMatchObject({ status: 'ok', app: 'AppBase' });
 });
 
-test('readiness probe reaches the session db', async ({ request }) => {
+test('readiness probe is up', async ({ request }) => {
   const res = await request.get('/readyz');
   expect(res.status()).toBe(200);
   await expect(res.json()).resolves.toMatchObject({ status: 'ready', app: 'AppBase' });
@@ -20,10 +20,13 @@ test('version endpoint is uncached', async ({ request }) => {
   expect(body.version.length).toBeGreaterThan(0);
 });
 
-test('writes without a CSRF token are rejected', async ({ request }) => {
-  const res = await request.post('/api/anything', { data: {} });
+test('cross-site writes are rejected', async ({ request }) => {
+  const res = await request.post('/api/anything', {
+    data: {},
+    headers: { 'Sec-Fetch-Site': 'cross-site' },
+  });
   expect(res.status()).toBe(403);
-  await expect(res.json()).resolves.toMatchObject({ code: 'CSRF_INVALID' });
+  await expect(res.json()).resolves.toMatchObject({ error: 'Cross-site request rejected' });
 });
 
 test('unknown API routes return JSON 404', async ({ request }) => {

@@ -1,6 +1,5 @@
 import Database from 'better-sqlite3';
 import express from 'express';
-import session from 'express-session';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
 import { createSchema as createWorSchema } from '../server/games/wor/db/schema.js';
@@ -42,18 +41,6 @@ import { worApiRouter } from '../server/routes/worApi.js';
 function createTestApp() {
   const app = express();
   app.use(express.json());
-  app.use(
-    session({
-      secret: 'test-secret',
-      resave: false,
-      saveUninitialized: false,
-      cookie: {
-        httpOnly: true,
-        sameSite: 'lax',
-        secure: true,
-      },
-    }),
-  );
   app.use('/api/wor', worApiRouter);
   return app;
 }

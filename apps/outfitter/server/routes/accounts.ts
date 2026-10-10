@@ -16,13 +16,7 @@ accountsRouter.get(
     const clerkUserId = requireClerkUserId(req);
     const db = getAppDb();
     const accounts = q.listAccounts(db, clerkUserId);
-    const current =
-      accounts.find((account) => account.id === req.session.account_id) ??
-      accounts.find((account) => account.is_active === 1) ??
-      null;
-    if (current && req.session.account_id !== current.id) {
-      req.session.account_id = current.id;
-    }
+    const current = accounts.find((account) => account.is_active === 1) ?? null;
     json(res, { accounts, current_account_id: current?.id ?? null });
   }),
 );
@@ -38,7 +32,6 @@ accountsRouter.post(
     }
     const db = getAppDb();
     const account = q.createAccount(db, clerkUserId, accountName);
-    if (account.is_active === 1) req.session.account_id = account.id;
     json(res, { account }, 201);
   }),
 );
@@ -54,7 +47,6 @@ accountsRouter.post(
     }
     const db = getAppDb();
     const account = q.setActiveAccount(db, accountId, clerkUserId);
-    req.session.account_id = account.id;
     json(res, { account });
   }),
 );
@@ -88,7 +80,6 @@ accountsRouter.delete(
       return;
     }
     q.deleteAccount(getAppDb(), accountId, clerkUserId);
-    if (req.session.account_id === accountId) req.session.account_id = undefined;
     json(res, { ok: true });
   }),
 );

@@ -20,8 +20,6 @@ function decryptIntoEnv(root, file) {
       k.startsWith('CLERK_') ||
       k.startsWith('VITE_') ||
       k.startsWith('E2E_') ||
-      k === 'SESSION_SECRET' ||
-      k === 'COOKIE_DOMAIN' ||
       k === 'ALLOWED_APP_ORIGINS' ||
       k === 'APP_PUBLIC_BASE_URL'
     ) {
@@ -64,7 +62,6 @@ const clerkProd = {
   CLERK_SECRET_KEY: pick(armoryProd, 'CLERK_SECRET_KEY'),
   VITE_CLERK_PUBLISHABLE_KEY: pick(armoryProd, 'VITE_CLERK_PUBLISHABLE_KEY'),
   CLERK_FAPI_URL: pick(armoryProd, 'CLERK_FAPI_URL'),
-  COOKIE_DOMAIN: pick(armoryProd, 'COOKIE_DOMAIN') || '.darkavianlabs.com',
   VITE_SHARED_THEME_COOKIE_DOMAIN:
     pick(armoryProd, 'VITE_SHARED_THEME_COOKIE_DOMAIN') || '.darkavianlabs.com',
   VITE_LEGAL_CONTACT_NAME: pick(armoryProd, 'VITE_LEGAL_CONTACT_NAME'),
@@ -84,8 +81,6 @@ if (!clerkProd.CLERK_SECRET_KEY || !clerkProd.VITE_CLERK_PUBLISHABLE_KEY) {
   process.exit(1);
 }
 
-const sessionSecretDev = crypto.randomBytes(32).toString('base64');
-const sessionSecretProd = crypto.randomBytes(32).toString('base64');
 const ingestTokenDev = crypto.randomBytes(24).toString('base64url');
 const ingestTokenProd = crypto.randomBytes(24).toString('base64url');
 
@@ -106,9 +101,6 @@ const devRows = [
   ['APP_ID', 'sentinel'],
   ['APP_PUBLIC_BASE_URL', 'http://127.0.0.1:3005'],
   ['ALLOWED_APP_ORIGINS', allowed],
-  ['SESSION_SECRET', sessionSecretDev],
-  ['SESSION_COOKIE_NAME', 'sentinel.sid'],
-  ['SESSION_DB_PATH', './data/sessions.db'],
   ['METRICS_DB_PATH', './data/metrics.db'],
   ['SENTINEL_INGEST_TOKEN', ingestTokenDev],
   ['TRUST_PROXY', '0'],
@@ -137,14 +129,10 @@ const prodRows = [
   ['APP_ID', 'sentinel'],
   ['APP_PUBLIC_BASE_URL', 'https://sentinel.darkavianlabs.com'],
   ['ALLOWED_APP_ORIGINS', allowed],
-  ['SESSION_SECRET', sessionSecretProd],
-  ['SESSION_COOKIE_NAME', 'sentinel.sid'],
-  ['SESSION_DB_PATH', './data/sessions.db'],
   ['METRICS_DB_PATH', './data/metrics.db'],
   ['SENTINEL_INGEST_TOKEN', ingestTokenProd],
   ['TRUST_PROXY', '1'],
   ['SECURE_COOKIES', '1'],
-  ['COOKIE_DOMAIN', clerkProd.COOKIE_DOMAIN],
   ['CLERK_SECRET_KEY', clerkProd.CLERK_SECRET_KEY],
   ['VITE_CLERK_PUBLISHABLE_KEY', clerkProd.VITE_CLERK_PUBLISHABLE_KEY],
   ...(clerkProd.CLERK_FAPI_URL ? [['CLERK_FAPI_URL', clerkProd.CLERK_FAPI_URL]] : []),

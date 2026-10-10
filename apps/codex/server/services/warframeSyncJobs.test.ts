@@ -3,11 +3,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const sessionDbRef = vi.hoisted(() => ({ current: null as Database.Database | null }));
 
-vi.mock('../db/sessionDb.js', async () => {
-  const actual = await vi.importActual<typeof import('../db/sessionDb.js')>('../db/sessionDb.js');
+vi.mock('../games/warframe/db/schema.js', async () => {
+  const actual = await vi.importActual<typeof import('../games/warframe/db/schema.js')>(
+    '../games/warframe/db/schema.js',
+  );
   return {
     ...actual,
-    getSessionDb: () => {
+    getDb: () => {
       if (!sessionDbRef.current) {
         sessionDbRef.current = new Database(':memory:');
         sessionDbRef.current.pragma('foreign_keys = ON');

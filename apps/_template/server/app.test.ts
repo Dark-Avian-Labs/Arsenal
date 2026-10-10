@@ -1,6 +1,5 @@
-import Database from 'better-sqlite3';
 import request from 'supertest';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 
 import type { AppBundle } from './app.js';
 import { createApp } from './app.js';
@@ -8,12 +7,7 @@ import { createApp } from './app.js';
 let bundle: AppBundle;
 
 beforeAll(() => {
-  bundle = createApp({ sessionDb: new Database(':memory:') });
-});
-
-afterAll(() => {
-  bundle.sessionStore.dispose();
-  bundle.sessionDb.close();
+  bundle = createApp();
 });
 
 describe('health endpoints', () => {
@@ -24,7 +18,7 @@ describe('health endpoints', () => {
     expect(res.headers['set-cookie']).toBeUndefined();
   });
 
-  it('GET /readyz probes the session DB', async () => {
+  it('GET /readyz responds ready', async () => {
     const res = await request(bundle.app).get('/readyz');
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('ready');
@@ -74,28 +68,15 @@ describe('request IDs', () => {
   });
 });
 
-describe('CSRF protection', () => {
-  it('GET /api/csrf issues a token and a session cookie', async () => {
-    const res = await request(bundle.app).get('/api/csrf');
-    expect(res.status).toBe(200);
-    expect(res.body.csrfToken).toBeTruthy();
-    expect(res.headers['set-cookie']?.[0]).toContain('appbase.sid');
-    expect(res.headers['set-cookie']?.[0]).toContain('HttpOnly');
-  });
-
-  it('rejects state-changing requests without a token', async () => {
-    const res = await request(bundle.app).post('/api/anything').send({});
+describe('cross-site writes', () => {
+  it('rejects a cross-site POST', async () => {
+    const res = await request(bundle.app).post('/api/anything').set('Sec-Fetch-Site', 'cross-site').send({});
     expect(res.status).toBe(403);
-    expect(res.body.code).toBe('CSRF_INVALID');
-    expect(res.headers['x-csrf-error']).toBe('1');
+    expect(res.body.error).toBe('Cross-site request rejected');
   });
 
-  it('accepts state-changing requests with a valid token', async () => {
-    const agent = request.agent(bundle.app);
-    const csrfRes = await agent.get('/api/csrf');
-    const token = csrfRes.body.csrfToken as string;
-
-    const res = await agent.post('/api/anything').set('X-CSRF-Token', token).send({});
+  it('lets a same-site POST reach routing', async () => {
+    const res = await request(bundle.app).post('/api/anything').send({});
     expect(res.status).toBe(404);
   });
 });

@@ -35,7 +35,7 @@ import {
   sendInternalError,
 } from './apiShared.js';
 
-export const catalogRouter = Router();
+export const catalogRouter: Router = Router();
 
 catalogRouter.get('/health', (_req: Request, res: Response) => {
   res.json({ status: 'ok', app: 'Armory' });

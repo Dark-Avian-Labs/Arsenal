@@ -13,6 +13,21 @@ describe('apiFetch clerk token', () => {
     vi.restoreAllMocks();
   });
 
+  it('does not send a CSRF header on writes', async () => {
+    let capturedInit: RequestInit | undefined;
+    vi.stubGlobal('fetch', async (_url: string, init?: RequestInit) => {
+      capturedInit = init;
+      return new Response('ok', { status: 200 });
+    });
+    setClerkTokenGetter(async () => 'fresh-session-token');
+
+    await apiFetch('/api/items', { method: 'POST', body: '{}' });
+
+    const headers = headersFromInit(capturedInit);
+    expect(headers.get('X-CSRF-Token')).toBeNull();
+    expect(headers.get('Authorization')).toBe('Bearer fresh-session-token');
+  });
+
   it('sends a Clerk bearer token on API requests', async () => {
     let capturedInit: RequestInit | undefined;
     vi.stubGlobal('fetch', async (_url: string, init?: RequestInit) => {

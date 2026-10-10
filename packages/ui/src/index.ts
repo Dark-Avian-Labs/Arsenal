@@ -1,4 +1,4 @@
-export { apiFetch, clearCsrfToken, setClerkTokenGetter } from './api/apiFetch';
+export { apiFetch, setClerkTokenGetter } from './api/apiFetch';
 export { AccountRequired } from './auth/AccountRequired';
 export { AuthProvider, DisabledAuthProvider, useAuth } from './auth/AuthContext';
 export { ProtectedRoute } from './auth/ProtectedRoute';

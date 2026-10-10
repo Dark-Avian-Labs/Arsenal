@@ -4,7 +4,7 @@ import { buildsRouter } from './buildsRouter.js';
 import { catalogRouter } from './catalogRouter.js';
 import { loadoutsRouter } from './loadoutsRouter.js';
 
-export const apiRouter = Router();
+export const apiRouter: Router = Router();
 
 apiRouter.use(catalogRouter);
 apiRouter.use(buildsRouter);

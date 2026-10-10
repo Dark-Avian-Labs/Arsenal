@@ -90,13 +90,9 @@ function artifactBody() {
   };
 }
 
-function createApp(session: { account_id?: number }) {
+function createApp() {
   const app = express();
   app.use(express.json());
-  app.use((req, _res, next) => {
-    req.session = session as typeof req.session;
-    next();
-  });
   app.use('/api/accounts', accountsRouter);
   app.use('/api/gear', gearRouter);
   app.use('/api/artifacts', artifactsRouter);
@@ -115,12 +111,9 @@ function createApp(session: { account_id?: number }) {
 }
 
 describe('signed-in account content', () => {
-  let session: { account_id?: number };
-
   beforeEach(() => {
     authState.userId = null;
     authState.isAdmin = false;
-    session = {};
     dbState.db?.close();
     dbState.db = memoryDb();
   });
@@ -131,14 +124,14 @@ describe('signed-in account content', () => {
   });
 
   it('rejects account, gear, and artifact reads when signed out', async () => {
-    const app = createApp(session);
+    const app = createApp();
     expect((await request(app).get('/api/accounts')).status).toBe(401);
     expect((await request(app).get('/api/gear')).status).toBe(401);
     expect((await request(app).get('/api/artifacts')).status).toBe(401);
   });
 
   it('creates an account for the signed-in user and hides it from someone else', async () => {
-    const app = createApp(session);
+    const app = createApp();
     authState.userId = 'user_a';
 
     const created = await request(app).post('/api/accounts').send({ account_name: 'Main' });
@@ -165,13 +158,13 @@ describe('signed-in account content', () => {
 
   it('rejects an empty account name', async () => {
     authState.userId = 'user_a';
-    const res = await request(createApp(session)).post('/api/accounts').send({ account_name: '  ' });
+    const res = await request(createApp()).post('/api/accounts').send({ account_name: '  ' });
     expect(res.status).toBe(400);
     expect(res.body.error).toMatch(/Account name/);
   });
 
   it('keeps gear on the owning account and replaces the equipped weapon', async () => {
-    const app = createApp(session);
+    const app = createApp();
     authState.userId = 'user_a';
     await request(app).post('/api/accounts').send({ account_name: 'Main' });
 
@@ -203,13 +196,13 @@ describe('signed-in account content', () => {
 
   it('rejects gear writes until the user has an account', async () => {
     authState.userId = 'user_a';
-    const res = await request(createApp(session)).post('/api/gear').send(weapon());
+    const res = await request(createApp()).post('/api/gear').send(weapon());
     expect(res.status).toBe(400);
     expect(res.body.error).toMatch(/game account/);
   });
 
   it('keeps artifacts on the owning account', async () => {
-    const app = createApp(session);
+    const app = createApp();
     authState.userId = 'user_a';
     await request(app).post('/api/accounts').send({ account_name: 'Main' });
 

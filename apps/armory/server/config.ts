@@ -2,7 +2,6 @@ import fs from 'fs';
 import path from 'path';
 
 import {
-  isEncryptedEnvValue,
   loadAppEnv,
   parseBooleanEnv,
   parseIntEnv,
@@ -38,11 +37,6 @@ export const USER_DB_PATH = resolveProjectPath(
   path.join('data', 'builds.db'),
 );
 
-export const SESSION_DB_PATH = resolveProjectPath(
-  process.env.SESSION_DB_PATH,
-  path.join('data', 'session.db'),
-);
-
 export const CODEX_WARFRAME_CATALOG_DB_PATH = resolveProjectPath(
   process.env.CODEX_WARFRAME_CATALOG_DB_PATH,
   path.join('..', 'Codex', 'data', 'warframe-catalog.db'),
@@ -61,39 +55,6 @@ export const NODE_ENV = process.env.NODE_ENV || 'development';
 if (NODE_ENV === 'production' && !path.isAbsolute(USER_DB_PATH)) {
   throw new Error('[FATAL] USER_DB_PATH must be an absolute path in production.');
 }
-
-const DEV_SESSION_SECRET = 'armory-dev-only-session-secret-32ch';
-const ALLOW_INSECURE_DEV = process.env.ALLOW_INSECURE_DEV?.trim() === '1';
-const envSessionSecret = process.env.SESSION_SECRET?.trim() || '';
-if (isEncryptedEnvValue(envSessionSecret)) {
-  throw new Error(
-    '[FATAL] SESSION_SECRET is still encrypted. Ensure DOTENV_PRIVATE_KEY_* is available (see .env.keys) or run via dotenvx.',
-  );
-}
-let usingInsecureDevSessionSecret = false;
-let rawSessionSecret = envSessionSecret;
-if (!rawSessionSecret) {
-  if (NODE_ENV === 'production') {
-    throw new Error('[FATAL] SESSION_SECRET must be set and at least 32 characters in production.');
-  }
-  if (!ALLOW_INSECURE_DEV) {
-    throw new Error(
-      '[FATAL] SESSION_SECRET must be set. For local-only insecure defaults, set ALLOW_INSECURE_DEV=1.',
-    );
-  }
-  const host = HOST.trim().toLowerCase();
-  if (host !== '127.0.0.1' && host !== 'localhost' && host !== '::1') {
-    throw new Error(
-      '[FATAL] ALLOW_INSECURE_DEV=1 requires HOST to be loopback (127.0.0.1, localhost, or ::1).',
-    );
-  }
-  rawSessionSecret = DEV_SESSION_SECRET;
-  usingInsecureDevSessionSecret = true;
-} else if (NODE_ENV === 'production' && rawSessionSecret.length < 32) {
-  throw new Error('[FATAL] SESSION_SECRET must be set and at least 32 characters in production.');
-}
-export const SESSION_SECRET = rawSessionSecret;
-export const USING_INSECURE_DEV_SESSION_SECRET = usingInsecureDevSessionSecret;
 
 export const APP_NAME = 'Armory';
 export const APP_ID = 'armory';
@@ -124,9 +85,6 @@ export const REQUIRED_EXPORTS = [
 export const TRUST_PROXY = parseBooleanEnv(process.env.TRUST_PROXY) ?? false;
 export const SECURE_COOKIES =
   parseBooleanEnv(process.env.SECURE_COOKIES) ?? NODE_ENV === 'production';
-export const COOKIE_DOMAIN = process.env.COOKIE_DOMAIN;
-export const SESSION_COOKIE_NAME =
-  process.env.SESSION_COOKIE_NAME?.trim() || 'darkavianlabs.armory.sid';
 export const LEGAL_PAGE_URL =
   process.env.LEGAL_PAGE_URL?.trim() ||
   process.env.VITE_LEGAL_PAGE_URL?.trim() ||
@@ -143,6 +101,5 @@ export function ensureDataDirs(): void {
       fs.mkdirSync(dir, { recursive: true });
     }
   }
-  fs.mkdirSync(path.dirname(SESSION_DB_PATH), { recursive: true });
   fs.mkdirSync(path.dirname(USER_DB_PATH), { recursive: true });
 }

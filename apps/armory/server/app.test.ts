@@ -4,7 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import type { AppBundle } from './app.js';
 import { createApp } from './app.js';
-import { APP_NAME, APP_VERSION, SESSION_COOKIE_NAME } from './config.js';
+import { APP_NAME, APP_VERSION } from './config.js';
 import { createMemoryUserDb } from './testing/memoryUserDb.js';
 
 let bundle: AppBundle | undefined;
@@ -16,15 +16,12 @@ beforeAll(() => {
   catalogDb.pragma('foreign_keys = ON');
   userDb = createMemoryUserDb();
   bundle = createApp({
-    sessionDb: new Database(':memory:'),
     catalogDb,
     userDb,
   });
 });
 
 afterAll(() => {
-  bundle?.sessionStore.dispose();
-  bundle?.sessionDb.close();
   catalogDb?.close();
   userDb?.close();
 });
@@ -37,7 +34,7 @@ describe('health endpoints', () => {
     expect(res.headers['set-cookie']).toBeUndefined();
   });
 
-  it('GET /readyz probes session, catalog, and user DBs', async () => {
+  it('GET /readyz probes catalog and user DBs', async () => {
     const res = await request(bundle!.app).get('/readyz');
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ status: 'ready', app: APP_NAME });
@@ -45,7 +42,6 @@ describe('health endpoints', () => {
 
   it('GET /readyz returns 503 when a database probe fails', async () => {
     const down = createApp({
-      sessionDb: new Database(':memory:'),
       catalogDb: {
         prepare: () => {
           throw new Error('catalog unavailable');
@@ -56,8 +52,6 @@ describe('health endpoints', () => {
     const res = await request(down.app).get('/readyz');
     expect(res.status).toBe(503);
     expect(res.body).toEqual({ status: 'not_ready', app: APP_NAME });
-    down.sessionStore.dispose();
-    down.sessionDb.close();
   });
 
   it('GET /api/version returns the package version', async () => {
@@ -78,7 +72,7 @@ describe('security headers', () => {
   });
 
   it('emits rate limit headers on API routes', async () => {
-    const res = await request(bundle!.app).get('/api/csrf');
+    const res = await request(bundle!.app).get('/api/auth/me');
     const hasRateLimitHeader = Boolean(res.headers['ratelimit'] ?? res.headers['ratelimit-limit']);
     expect(hasRateLimitHeader).toBe(true);
   });
@@ -97,40 +91,17 @@ describe('request IDs', () => {
   });
 });
 
-describe('CSRF protection', () => {
-  it('GET /api/csrf issues a token and a session cookie', async () => {
-    const res = await request(bundle!.app).get('/api/csrf');
-    expect(res.status).toBe(200);
-    expect(res.body.csrfToken).toBeTruthy();
-    expect(res.headers['set-cookie']?.[0]).toContain(SESSION_COOKIE_NAME);
-    expect(res.headers['set-cookie']?.[0]).toContain('HttpOnly');
-  });
-
-  it('rejects state-changing requests without a token', async () => {
-    const res = await request(bundle!.app).post('/api/builds').send({});
+describe('cross-site writes', () => {
+  it('rejects a cross-site POST', async () => {
+    const res = await request(bundle!.app).post('/api/nope').set('Sec-Fetch-Site', 'cross-site').send({});
     expect(res.status).toBe(403);
-    expect(res.body.code).toBe('CSRF_INVALID');
-    expect(res.headers['x-csrf-error']).toBe('1');
+    expect(res.body.error).toBe('Cross-site request rejected');
   });
 
-  it('accepts state-changing requests with a valid token', async () => {
-    const agent = request.agent(bundle!.app);
-    const csrfRes = await agent.get('/api/csrf');
-    const token = csrfRes.body.csrfToken as string;
-
-    const res = await agent.post('/api/nope').set('X-CSRF-Token', token).send({});
+  it('lets a same-site POST reach routing', async () => {
+    const res = await request(bundle!.app).post('/api/nope').send({});
     expect(res.status).toBe(404);
     expect(res.body.error).toBe('Not found');
-  });
-
-  it('blocks cross-site state-changing requests', async () => {
-    const agent = request.agent(bundle!.app);
-    const csrfRes = await agent.get('/api/csrf');
-    const token = csrfRes.body.csrfToken as string;
-
-    const res = await agent.post('/api/nope').set('X-CSRF-Token', token).set('Sec-Fetch-Site', 'cross-site').send({});
-    expect(res.status).toBe(403);
-    expect(res.body.code).toBe('CSRF_ORIGIN_INVALID');
   });
 });
 

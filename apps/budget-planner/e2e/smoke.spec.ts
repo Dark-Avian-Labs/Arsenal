@@ -6,7 +6,7 @@ test('liveness probe is up', async ({ request }) => {
   await expect(res.json()).resolves.toMatchObject({ status: 'ok', app: 'BudgetPlanner' });
 });
 
-test('readiness probe reaches session and app sqlite', async ({ request }) => {
+test('readiness probe reaches the app database', async ({ request }) => {
   const res = await request.get('/readyz');
   expect(res.status()).toBe(200);
   await expect(res.json()).resolves.toMatchObject({ status: 'ready', app: 'BudgetPlanner' });
@@ -26,13 +26,13 @@ test('in-app health probe is up', async ({ request }) => {
   await expect(res.json()).resolves.toMatchObject({ status: 'ok', app: 'BudgetPlanner' });
 });
 
-test('writes without a CSRF token are rejected', async ({ request }) => {
-  const res = await request.post('/api/plans', { data: { name: 'Nope' } });
-  expect(res.status()).toBe(403);
-  await expect(res.json()).resolves.toMatchObject({
-    error: 'Invalid CSRF token',
-    code: 'CSRF_INVALID',
+test('cross-site writes are rejected', async ({ request }) => {
+  const res = await request.post('/api/plans', {
+    data: { name: 'Nope' },
+    headers: { 'Sec-Fetch-Site': 'cross-site' },
   });
+  expect(res.status()).toBe(403);
+  await expect(res.json()).resolves.toMatchObject({ error: 'Cross-site request rejected' });
 });
 
 test('unknown API routes return JSON 404', async ({ request }) => {
