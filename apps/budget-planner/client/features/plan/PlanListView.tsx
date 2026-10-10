@@ -1,3 +1,4 @@
+import { MaterialSymbol } from '@dark-avian-labs/ui';
 import { move } from '@dnd-kit/helpers';
 import { DragDropProvider, useDroppable, type DragEndEvent } from '@dnd-kit/react';
 import { useSortable } from '@dnd-kit/react/sortable';
@@ -6,7 +7,6 @@ import { useTranslation } from 'react-i18next';
 
 import { amountForMonth, isDueInMonth } from '../../../shared/dueThisMonth';
 import { FrequencyBadge } from '../../components/budget/FrequencyBadge';
-import { MaterialSymbol } from '../../components/ui/MaterialSymbol';
 import { formatDueDay, formatDueMonthDay, formatMoney } from '../../lib/format';
 import type { Account, Category, Entry } from '../../lib/types';
 

@@ -1,5 +1,6 @@
+import { GlassCard } from '@dark-avian-labs/ui';
+
 import { LEGAL_ENTITY_NAME, LEGAL_PAGE_URL } from '../../app/config';
-import { GlassCard } from '../../components/ui/GlassCard';
 
 export function LegalPage() {
   window.location.replace(LEGAL_PAGE_URL);

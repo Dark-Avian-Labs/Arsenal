@@ -1,10 +1,10 @@
 import { useAuth } from '@clerk/react';
+import { Button } from '@dark-avian-labs/ui';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router';
 
 import { planPath } from '../../app/paths';
-import { Button } from '../../components/ui/Button';
 import { RequireAuth } from '../../features/auth/RequireAuth';
 import { apiJson } from '../../utils/api';
 

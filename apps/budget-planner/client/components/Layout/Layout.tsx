@@ -1,5 +1,18 @@
 import { useAuth, useClerk, useUser } from '@clerk/react';
-import { isSentinelAdmin } from '@dark-avian-labs/ui';
+import {
+  AsciiWaveBackground,
+  ChunkErrorBoundary,
+  DalAppNav,
+  HexSideBackground,
+  MaterialSymbol,
+  Menu,
+  StaleClientUpdateBanner,
+  UiStyleSelector,
+  buildClerkProfileAppearance,
+  isSentinelAdmin,
+  useRovingMenu,
+  useTheme,
+} from '@dark-avian-labs/ui';
 import { Suspense, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, Outlet, useLocation } from 'react-router';
@@ -14,20 +27,9 @@ import {
   LEGAL_PAGE_URL,
 } from '../../app/config';
 import { APP_PATHS } from '../../app/paths';
-import { buildClerkProfileAppearance } from '../../clerk';
-import { ChunkErrorBoundary } from '../../components/ui/ChunkErrorBoundary';
 import { LanguageSelector } from '../../components/ui/LanguageSelector';
-import { MaterialSymbol } from '../../components/ui/MaterialSymbol';
-import { Menu } from '../../components/ui/Menu';
-import { UiStyleSelector } from '../../components/ui/UiStyleSelector';
-import { useRovingMenu } from '../../components/ui/useRovingMenu';
-import { useTheme } from '../../context/ThemeContext';
 import { bindLocaleOwner, syncLocaleFromServer } from '../../lib/locale';
-import { AsciiWaveBackground } from './AsciiWaveBackground';
-import { DalAppNav } from './DalAppNav';
-import { HexSideBackground } from './HexSideBackground';
 import { PlanSwitcher } from './PlanSwitcher';
-import { StaleClientUpdateBanner } from './StaleClientUpdateBanner';
 
 function ClerkDalAppNav() {
   const { isLoaded, user } = useUser();

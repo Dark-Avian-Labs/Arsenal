@@ -1,7 +1,7 @@
+import { SelectDropdown } from '@dark-avian-labs/ui';
 import { useTranslation } from 'react-i18next';
 
 import { isAppLocale, LOCALES, setUserLocale } from '../../lib/locale';
-import { SelectDropdown } from './SelectDropdown';
 
 const LOCALE_LABELS: Record<(typeof LOCALES)[number], string> = {
   en: 'English',
