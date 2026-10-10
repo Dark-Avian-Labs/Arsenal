@@ -38,14 +38,14 @@ Live: [sentinel.darkavianlabs.com](https://sentinel.darkavianlabs.com)
 
 ## Self-hosting
 
-Node 26 or newer, and pnpm 12. Copy `.env.example` to `.env.development`. `pnpm dev` reads that file. Production refuses to start without Clerk keys, and the example already says so.
+Node 26 or newer, and pnpm 12. Copy `.env.example` to `.env.development`. `pnpm --filter sentinel dev` reads that file. Production refuses to start without Clerk keys, and the example already says so.
 
 ```
 pnpm install
-pnpm dev
+pnpm --filter sentinel dev
 ```
 
-Set `SENTINEL_INGEST_TOKEN` and give that same token to each app or to the PM2 bridge. A hosted process needs `NODE_ENV=production` and `.env.production`. Fill the Clerk keys before `pnpm run build`, because the client bundle reads `VITE_` values at build time. Sentinel only sees processes that can reach its ingest URL, so it belongs on the host that runs the fleet, or somewhere those agents can post to.
+Set `SENTINEL_INGEST_TOKEN` and give that same token to each app or to the PM2 bridge. A hosted process needs `NODE_ENV=production` and `.env.production`. Fill the Clerk keys before `pnpm --filter sentinel run build`, because the client bundle reads `VITE_` values at build time. Sentinel only sees processes that can reach its ingest URL, so it belongs on the host that runs the fleet, or somewhere those agents can post to.
 
 ## License
 

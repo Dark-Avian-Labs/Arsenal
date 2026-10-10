@@ -38,15 +38,15 @@ Live: [armory.darkavianlabs.com](https://armory.darkavianlabs.com)
 
 ## Self-hosting
 
-Node 26 or newer, and pnpm 12. Copy `.env.example` to `.env.development`. `pnpm start` leaves `NODE_ENV` unset, so it reads that file. A hosted process needs `NODE_ENV=production` and `.env.production`, or production refuses to boot.
+Node 26 or newer, and pnpm 12. Copy `.env.example` to `.env.development`. `pnpm --filter armory start` leaves `NODE_ENV` unset, so it reads that file. A hosted process needs `NODE_ENV=production` and `.env.production`, or production refuses to boot.
 
 ```
 pnpm install
-pnpm run build
-pnpm start
+pnpm --filter armory run build
+pnpm --filter armory start
 ```
 
-`pnpm run catalog:sync` copies Codex's Warframe catalog into Armory. It runs from the build output, so it has to follow `pnpm run build`, and `CODEX_WARFRAME_CATALOG_DB_PATH` has to point at a real Codex database. The client bundle reads `VITE_` values at build time, so fill `.env.production` before `pnpm run build` when you are hosting.
+`pnpm --filter armory dev` starts the API. `pnpm --filter armory dev:client` starts Vite. `pnpm --filter armory run catalog:sync` copies Codex's Warframe catalog into Armory. `CODEX_WARFRAME_CATALOG_DB_PATH` has to point at a real Codex database. The client bundle reads `VITE_` values at build time, so fill `.env.production` before `pnpm --filter armory run build` when you are hosting.
 
 ## License
 

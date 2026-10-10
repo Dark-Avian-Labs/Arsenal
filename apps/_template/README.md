@@ -26,20 +26,20 @@ It is for the next app, so that app copies a finished shell instead of inheritin
 
 ## What you should know
 
-There is no shared UI package. When the glass or the layout changes here, the same change is copied into Codex, Armory, and the others by hand. Shipping a tweak only in AppBase leaves the live apps on the old look.
+The shell is `@dark-avian-labs/ui`. The HTTP stack is `@dark-avian-labs/server-kit`. Change them once.
 
 This repo is not a public site. Nobody is meant to use an AppBase deployment as a product.
 
 ## Self-hosting
 
-Node 26 or newer, and pnpm 12. Copy `.env.example` to `.env.development`. `pnpm dev` reads that file. Clerk keys can stay empty there. Production refuses to start without them, which the example already says.
+Node 26 or newer, and pnpm 12. Copy `.env.example` to `.env.development`. `pnpm --filter dal-template dev` reads that file. Clerk keys can stay empty there. Production refuses to start without them, which the example already says.
 
 ```
 pnpm install
-pnpm dev
+pnpm --filter dal-template dev
 ```
 
-A hosted process needs `NODE_ENV=production` and `.env.production`. Fill the Clerk keys before `pnpm run build`. The client bundle reads `VITE_` values at build time. Point `APP_PUBLIC_BASE_URL` and the cookie settings at the host you are actually using. The example is filled in with the lab's domains.
+A hosted process needs `NODE_ENV=production` and `.env.production`. Fill the Clerk keys before `pnpm --filter dal-template run build`. The client bundle reads `VITE_` values at build time. Point `APP_PUBLIC_BASE_URL` and the cookie settings at the host you are actually using. The example is filled in with the lab's domains.
 
 ## License
 

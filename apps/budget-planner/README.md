@@ -36,14 +36,14 @@ Live: [budget.darkavianlabs.com](https://budget.darkavianlabs.com)
 
 ## Self-hosting
 
-Node 26 or newer, and pnpm 12. Copy `.env.example` to `.env.development` for local work. `pnpm dev` reads that file.
+Node 26 or newer, and pnpm 12. Copy `.env.example` to `.env.development` for local work. `pnpm --filter budget-planner dev` reads that file.
 
 ```
 pnpm install
-pnpm dev
+pnpm --filter budget-planner dev
 ```
 
-`pnpm run build` insists on `.env.production` and will stop if that file is missing or still encrypted. A hosted process also needs `NODE_ENV=production`, or `pnpm start` keeps reading `.env.development`. Fill the Clerk keys before you build. The client bundle picks up `VITE_` values at build time.
+`pnpm --filter budget-planner run build` insists on `.env.production` and will stop if that file is missing or still encrypted. A hosted process also needs `NODE_ENV=production`, or `pnpm --filter budget-planner start` keeps reading `.env.development`. Fill the Clerk keys before you build. The client bundle picks up `VITE_` values at build time.
 
 ## License
 

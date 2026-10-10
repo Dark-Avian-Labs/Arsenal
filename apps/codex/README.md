@@ -42,18 +42,18 @@ Live: [codex.darkavianlabs.com](https://codex.darkavianlabs.com)
 
 ## Self-hosting
 
-Node 26 or newer, and pnpm 12. Copy `.env.example` to `.env.production`. `pnpm start` looks for that file and will not boot without it.
+Node 26 or newer, and pnpm 12. Copy `.env.example` to `.env.production`. `pnpm --filter codex start` looks for that file and will not boot without it.
 
 ```
 pnpm install
-pnpm run build
-pnpm run db:init
-pnpm start
+pnpm --filter codex run build
+pnpm --filter codex run db:init
+pnpm --filter codex start
 ```
 
-`db:init` reads the compiled schemas, so it has to follow the build. The server then serves the built site on `PORT`.
+`pnpm --filter codex dev` starts the API. `pnpm --filter codex dev:client` starts Vite. `db:init` loads the TypeScript schemas. The server then serves the built site on `PORT`.
 
-An empty Warframe catalog starts an import on first boot. That needs outbound network and takes a while. Watcher of Realms comes up from a fixture in the repo. `pnpm run wor:import` replaces it with a full pull. Epic Seven starts with an empty list. Heroes and artifacts are added from the admin pages.
+An empty Warframe catalog starts an import on first boot. That needs outbound network and takes a while. Watcher of Realms comes up from a fixture in the repo. `pnpm --filter codex run wor:import` replaces it with a full pull. Epic Seven starts with an empty list. Heroes and artifacts are added from the admin pages.
 
 ## License
 

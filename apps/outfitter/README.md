@@ -40,14 +40,14 @@ Live: [outfitter.darkavianlabs.com](https://outfitter.darkavianlabs.com)
 
 ## Self-hosting
 
-Node 26 or newer, and pnpm 12. Copy `.env.example` to `.env.development`. `pnpm dev` reads that file. Clerk keys can stay empty there. Production refuses to start without them.
+Node 26 or newer, and pnpm 12. Copy `.env.example` to `.env.development`. `pnpm --filter outfitter dev` reads that file. Clerk keys can stay empty there. Production refuses to start without them.
 
 ```
 pnpm install
-pnpm dev
+pnpm --filter outfitter dev
 ```
 
-A hosted process needs `NODE_ENV=production` and `.env.production`. Fill the Clerk keys before `pnpm run build`. The client bundle reads `VITE_` values at build time. Without the Codex catalog file, the hero list stays empty no matter how the app is built.
+A hosted process needs `NODE_ENV=production` and `.env.production`. Fill the Clerk keys before `pnpm --filter outfitter run build`. The client bundle reads `VITE_` values at build time. Without the Codex catalog file, the hero list stays empty no matter how the app is built.
 
 ## License
 
