@@ -161,13 +161,22 @@ export function createApp(options: CreateAppOptions): AppBundle {
   const apiRouter = express.Router();
   app.use('/api', appApiLimiter, rejectCrossSiteWrites, apiRouter);
 
-  const faviconPng = path.join(options.projectRoot, 'public', 'favicon.png');
-  app.get('/favicon.png', publicPageLimiter, (_req, res) => {
-    res.sendFile(faviconPng);
-  });
-  app.get('/favicon.ico', publicPageLimiter, (_req, res) => {
-    res.sendFile(faviconPng);
-  });
+  const clientDir =
+    options.nodeEnv !== 'production' && process.env.E2E_CLIENT_DIR?.trim()
+      ? path.resolve(process.env.E2E_CLIENT_DIR.trim())
+      : path.join(options.projectRoot, 'dist', 'client');
+  const faviconPng = path.join(clientDir, 'favicon.png');
+  const sendFavicon: RequestHandler = (_req, res, next) => {
+    if (!fs.existsSync(faviconPng)) {
+      res.status(404).end();
+      return;
+    }
+    res.sendFile(faviconPng, (err) => {
+      if (err) next(err);
+    });
+  };
+  app.get('/favicon.png', publicPageLimiter, sendFavicon);
+  app.get('/favicon.ico', publicPageLimiter, sendFavicon);
 
   app.use('/api', (_req, res) => {
     res.status(404).json({ error: 'Not found' });
@@ -178,10 +187,6 @@ export function createApp(options: CreateAppOptions): AppBundle {
   });
 
   if (options.nodeEnv !== 'development') {
-    const clientDir =
-      options.nodeEnv !== 'production' && process.env.E2E_CLIENT_DIR?.trim()
-        ? path.resolve(process.env.E2E_CLIENT_DIR.trim())
-        : path.join(options.projectRoot, 'dist', 'client');
     const clientIndexPath = path.join(clientDir, 'index.html');
     let clientBuildPresent = fs.existsSync(clientIndexPath);
     if (!clientBuildPresent && options.nodeEnv === 'production') {
