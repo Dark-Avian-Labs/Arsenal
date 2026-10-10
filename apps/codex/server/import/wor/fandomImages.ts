@@ -1,0 +1,447 @@
+import fs from 'node:fs';
+import path from 'node:path';
+
+import { WOR_IMAGES_DIR } from '../../config.js';
+import { fetchWithTimeout, FETCH_TIMEOUT_MS } from '../../http/fetchWithTimeout.js';
+import { getWikiUserAgent } from '../../scraping/wikiUserAgent.js';
+import type { CatalogBundle } from './catalogQueries.js';
+import type { FastidiousImageRef } from './fastidiousCatalog.js';
+import { sleep } from './fastidiousClient.js';
+import { buildFastidiousStorageUrl, downloadImageToWorDir, worImageWebPath } from './images.js';
+import { wikiPageTitleFromName } from './normalize.js';
+import { WOR_FANDOM_API_URL } from './paths.js';
+
+export type WorImageDownloadSummary = {
+  portraitsDownloaded: number;
+  portraitsSkipped: number;
+  portraitsFailed: number;
+  missingPortraits: string[];
+  failedPortraitDetails: { slug: string; kind: 'hero' | 'artifact' | 'demon'; reason: string }[];
+};
+
+type WikiHeaders = Record<string, string>;
+
+function wikiConfigured(): boolean {
+  return Boolean(process.env.WIKI_USER_AGENT?.trim());
+}
+
+function wikiHeaders(): WikiHeaders | null {
+  if (!wikiConfigured()) return null;
+  return {
+    Accept: 'application/json',
+    'User-Agent': getWikiUserAgent(),
+  };
+}
+
+async function fetchWikiJson<T>(params: Record<string, string>): Promise<T | null> {
+  const headers = wikiHeaders();
+  if (!headers) return null;
+  const url = new URL(WOR_FANDOM_API_URL);
+  for (const [key, value] of Object.entries(params)) {
+    url.searchParams.set(key, value);
+  }
+  const response = await fetchWithTimeout(url, { headers }, FETCH_TIMEOUT_MS.wikiFetch);
+  if (!response.ok) {
+    throw new Error(`Wiki API HTTP ${response.status}`);
+  }
+  return (await response.json()) as T;
+}
+
+async function resolveWikiFileUrl(fileTitle: string): Promise<string | null> {
+  const data = await fetchWikiJson<{
+    query?: { pages?: Record<string, { imageinfo?: { url: string }[] }> };
+  }>({
+    action: 'query',
+    titles: `File:${fileTitle}`,
+    prop: 'imageinfo',
+    iiprop: 'url',
+    format: 'json',
+  });
+  if (!data) return null;
+  const pages = data.query?.pages;
+  if (!pages) return null;
+  const page = Object.values(pages)[0];
+  const url = page?.imageinfo?.[0]?.url;
+  return url ?? null;
+}
+
+async function listWikiPageImages(pageTitle: string): Promise<string[]> {
+  const data = await fetchWikiJson<{ parse?: { images?: string[] } }>({
+    action: 'parse',
+    page: pageTitle,
+    prop: 'images',
+    format: 'json',
+  });
+  return data?.parse?.images ?? [];
+}
+
+async function resolvePortraitFileName(entityName: string): Promise<string | null> {
+  if (!wikiConfigured()) return null;
+  const pageTitle = wikiPageTitleFromName(entityName);
+  const images = await listWikiPageImages(pageTitle);
+  const normalizedName = entityName.replace(/ /g, '_');
+  const candidates = [
+    `${normalizedName}_portrait.png`,
+    `${normalizedName}.png`,
+    `${entityName}.png`,
+  ];
+  for (const candidate of candidates) {
+    if (images.includes(candidate)) return candidate;
+  }
+  const loose = images.find(
+    (image) =>
+      image.toLowerCase().endsWith('.png') &&
+      image.toLowerCase().includes(normalizedName.toLowerCase().replace(/'/g, '')),
+  );
+  return loose ?? null;
+}
+
+async function downloadWikiFile(
+  fileTitle: string,
+  relativePath: string,
+  forceDownload: boolean,
+  summary: WorImageDownloadSummary,
+): Promise<string | null> {
+  if (!wikiConfigured()) return null;
+  const fileUrl = await resolveWikiFileUrl(fileTitle);
+  if (!fileUrl) {
+    return null;
+  }
+  const headers = wikiHeaders();
+  const result = await downloadImageToWorDir({
+    url: fileUrl,
+    relativePath,
+    forceDownload,
+    headers: headers ?? undefined,
+  });
+  if (result.status === 'downloaded') summary.portraitsDownloaded += 1;
+  else if (result.status === 'skipped') summary.portraitsSkipped += 1;
+  else summary.portraitsFailed += 1;
+  return result.status === 'failed' ? null : worImageWebPath(result.relativePath);
+}
+
+type PortraitFailureDetail = {
+  slug: string;
+  kind: 'hero' | 'artifact' | 'demon';
+  reason: string;
+};
+
+function notePortraitFailure(
+  summary: WorImageDownloadSummary,
+  detail: PortraitFailureDetail,
+  onFailure?: (detail: PortraitFailureDetail) => void,
+): void {
+  summary.failedPortraitDetails.push(detail);
+  onFailure?.(detail);
+}
+
+async function downloadPortraitForEntity(options: {
+  kind: 'hero' | 'artifact' | 'demon';
+  slug: string;
+  name: string;
+  fastidiousFile: string | null | undefined;
+  directUrl: string | null | undefined;
+  imageRefs: FastidiousImageRef;
+  forceDownload: boolean;
+  summary: WorImageDownloadSummary;
+  onFailure?: (detail: PortraitFailureDetail) => void;
+}): Promise<string | null> {
+  const basePath = `${options.kind}s/${options.slug}`;
+  const portraitFile = await resolvePortraitFileName(options.name);
+  if (portraitFile) {
+    const wikiPath = `${basePath}${pathExtFromFile(portraitFile)}`;
+    const webPath = await downloadWikiFile(
+      portraitFile,
+      wikiPath,
+      options.forceDownload,
+      options.summary,
+    );
+    if (webPath) return webPath;
+  }
+
+  const candidates: { url: string; reason: string }[] = [];
+  if (options.fastidiousFile) {
+    candidates.push({
+      url: buildFastidiousStorageUrl(
+        options.imageRefs.storageUrl,
+        options.imageRefs.storageVersion,
+        options.fastidiousFile,
+      ),
+      reason: `fastidious download failed (${options.fastidiousFile})`,
+    });
+  }
+  if (options.directUrl) {
+    candidates.push({
+      url: options.directUrl,
+      reason: `prospector download failed (${options.directUrl})`,
+    });
+  }
+
+  let lastReason =
+    portraitFile == null
+      ? 'no wiki portrait file; no fastidious or prospector image source'
+      : `wiki file unresolved or download failed: File:${portraitFile}`;
+  for (const candidate of candidates) {
+    const result = await downloadImageToWorDir({
+      url: candidate.url,
+      relativePath: `${basePath}.webp`,
+      forceDownload: options.forceDownload,
+    });
+    if (result.status === 'downloaded') options.summary.portraitsDownloaded += 1;
+    else if (result.status === 'skipped') options.summary.portraitsSkipped += 1;
+    else {
+      lastReason = `${candidate.reason}: ${result.error ?? 'download failed'} [${candidate.url}]`;
+      continue;
+    }
+    return worImageWebPath(result.relativePath);
+  }
+
+  options.summary.portraitsFailed += 1;
+  notePortraitFailure(
+    options.summary,
+    {
+      slug: options.slug,
+      kind: options.kind,
+      reason: lastReason,
+    },
+    options.onFailure,
+  );
+  return null;
+}
+
+function pathExtFromFile(fileName: string): string {
+  const dotIndex = fileName.lastIndexOf('.');
+  const ext = (dotIndex === -1 ? '.png' : fileName.slice(dotIndex)).toLowerCase();
+  if (
+    ext === '.png' ||
+    ext === '.webp' ||
+    ext === '.jpg' ||
+    ext === '.jpeg' ||
+    ext === '.gif' ||
+    ext === '.svg'
+  ) {
+    return ext;
+  }
+  return '.png';
+}
+
+function portraitFileExists(portraitPath: string | null | undefined): boolean {
+  if (!portraitPath?.startsWith('/wor-images/')) return false;
+  const relative = portraitPath.slice('/wor-images/'.length);
+  return fs.existsSync(path.join(WOR_IMAGES_DIR, relative));
+}
+
+export function isFastidiousFallbackPortrait(portraitPath: string | null | undefined): boolean {
+  if (!portraitPath) return false;
+  return /\.webp$/i.test(portraitPath);
+}
+
+export function shouldAttemptPortraitDownload(options: {
+  existingPath: string | null | undefined;
+  fileExists: boolean;
+  onlyMissing: boolean;
+  forceDownload: boolean;
+}): boolean {
+  if (options.forceDownload || !options.onlyMissing) return true;
+  if (!options.existingPath || !options.fileExists) return true;
+  return isFastidiousFallbackPortrait(options.existingPath);
+}
+
+function resolvePortraitPathAfterAttempt(
+  downloaded: string | null,
+  existing: string | null | undefined,
+): string | null {
+  if (downloaded) return downloaded;
+  if (existing && portraitFileExists(existing)) return existing;
+  return null;
+}
+
+function logPortraitProgress(
+  onLog: ((message: string) => void) | undefined,
+  processed: number,
+  total: number,
+  currentLabel: string,
+  summary: WorImageDownloadSummary,
+): void {
+  if (!onLog) return;
+  if (processed === 1 || processed === total || processed % 10 === 0) {
+    onLog(
+      `Portraits ${processed}/${total} — ${currentLabel}: ${summary.portraitsDownloaded} downloaded, ${summary.portraitsSkipped} skipped, ${summary.portraitsFailed} failed.`,
+    );
+  }
+}
+
+export async function downloadCatalogPortraits(options: {
+  bundle: CatalogBundle;
+  imageRefs: FastidiousImageRef;
+  existingPortraitPaths?: {
+    heroes: Record<string, string | null>;
+    artifacts: Record<string, string | null>;
+    demons: Record<string, string | null>;
+  };
+  onlyMissing?: boolean;
+  forceDownload?: boolean;
+  directPortraitUrls?: {
+    heroes?: Record<string, string | null | undefined>;
+    artifacts?: Record<string, string | null | undefined>;
+  };
+  onLog?: (message: string) => void;
+  onPortraitFailure?: (detail: PortraitFailureDetail) => void;
+}): Promise<{ bundle: CatalogBundle; summary: WorImageDownloadSummary }> {
+  const summary: WorImageDownloadSummary = {
+    portraitsDownloaded: 0,
+    portraitsSkipped: 0,
+    portraitsFailed: 0,
+    missingPortraits: [],
+    failedPortraitDetails: [],
+  };
+  const onlyMissing = options.onlyMissing ?? true;
+  const forceDownload = options.forceDownload ?? false;
+  const heroTotal = options.bundle.heroes.length;
+  const artifactTotal = options.bundle.artifacts.length;
+  const demonTotal = options.bundle.demons.length;
+  const portraitTotal = heroTotal + artifactTotal + demonTotal;
+  let processed = 0;
+
+  options.onLog?.(
+    onlyMissing && !forceDownload
+      ? `Checking portraits for missing or Fastidious-fallback entities (${heroTotal} heroes, ${artifactTotal} artifacts, ${demonTotal} demons)…`
+      : `Downloading ${portraitTotal} entity portraits (${heroTotal} heroes, ${artifactTotal} artifacts, ${demonTotal} demons)…`,
+  );
+
+  const heroes = [];
+  for (const hero of options.bundle.heroes) {
+    const existing = options.existingPortraitPaths?.heroes[hero.slug] ?? hero.portrait_path;
+    if (
+      !shouldAttemptPortraitDownload({
+        existingPath: existing,
+        fileExists: portraitFileExists(existing),
+        onlyMissing,
+        forceDownload,
+      })
+    ) {
+      heroes.push({ ...hero, portrait_path: existing });
+      summary.portraitsSkipped += 1;
+      processed += 1;
+      logPortraitProgress(options.onLog, processed, portraitTotal, `hero ${hero.slug}`, summary);
+      continue;
+    }
+    const portrait = resolvePortraitPathAfterAttempt(
+      await downloadPortraitForEntity({
+        kind: 'hero',
+        slug: hero.slug,
+        name: hero.name,
+        fastidiousFile: options.imageRefs.heroes[hero.slug],
+        directUrl: options.directPortraitUrls?.heroes?.[hero.slug],
+        imageRefs: options.imageRefs,
+        forceDownload,
+        summary,
+        onFailure: options.onPortraitFailure,
+      }),
+      existing,
+    );
+    heroes.push({ ...hero, portrait_path: portrait });
+    if (!portrait) summary.missingPortraits.push(`hero:${hero.slug}`);
+    processed += 1;
+    logPortraitProgress(options.onLog, processed, portraitTotal, `hero ${hero.slug}`, summary);
+    await sleep(200);
+  }
+
+  const artifacts = [];
+  for (const artifact of options.bundle.artifacts) {
+    const existing =
+      options.existingPortraitPaths?.artifacts[artifact.slug] ?? artifact.portrait_path;
+    if (
+      !shouldAttemptPortraitDownload({
+        existingPath: existing,
+        fileExists: portraitFileExists(existing),
+        onlyMissing,
+        forceDownload,
+      })
+    ) {
+      artifacts.push({ ...artifact, portrait_path: existing });
+      summary.portraitsSkipped += 1;
+      processed += 1;
+      logPortraitProgress(
+        options.onLog,
+        processed,
+        portraitTotal,
+        `artifact ${artifact.slug}`,
+        summary,
+      );
+      continue;
+    }
+    const portrait = resolvePortraitPathAfterAttempt(
+      await downloadPortraitForEntity({
+        kind: 'artifact',
+        slug: artifact.slug,
+        name: artifact.name,
+        fastidiousFile: options.imageRefs.artifacts[artifact.slug],
+        directUrl: options.directPortraitUrls?.artifacts?.[artifact.slug],
+        imageRefs: options.imageRefs,
+        forceDownload,
+        summary,
+        onFailure: options.onPortraitFailure,
+      }),
+      existing,
+    );
+    artifacts.push({ ...artifact, portrait_path: portrait });
+    if (!portrait) summary.missingPortraits.push(`artifact:${artifact.slug}`);
+    processed += 1;
+    logPortraitProgress(
+      options.onLog,
+      processed,
+      portraitTotal,
+      `artifact ${artifact.slug}`,
+      summary,
+    );
+    await sleep(200);
+  }
+
+  const demons = [];
+  for (const demon of options.bundle.demons) {
+    const existing = options.existingPortraitPaths?.demons[demon.slug] ?? demon.portrait_path;
+    if (
+      !shouldAttemptPortraitDownload({
+        existingPath: existing,
+        fileExists: portraitFileExists(existing),
+        onlyMissing,
+        forceDownload,
+      })
+    ) {
+      demons.push({ ...demon, portrait_path: existing });
+      summary.portraitsSkipped += 1;
+      processed += 1;
+      logPortraitProgress(options.onLog, processed, portraitTotal, `demon ${demon.slug}`, summary);
+      continue;
+    }
+    const portrait = resolvePortraitPathAfterAttempt(
+      await downloadPortraitForEntity({
+        kind: 'demon',
+        slug: demon.slug,
+        name: demon.name,
+        fastidiousFile: options.imageRefs.demons[demon.slug],
+        directUrl: null,
+        imageRefs: options.imageRefs,
+        forceDownload,
+        summary,
+        onFailure: options.onPortraitFailure,
+      }),
+      existing,
+    );
+    demons.push({ ...demon, portrait_path: portrait });
+    if (!portrait) summary.missingPortraits.push(`demon:${demon.slug}`);
+    processed += 1;
+    logPortraitProgress(options.onLog, processed, portraitTotal, `demon ${demon.slug}`, summary);
+    await sleep(200);
+  }
+
+  options.onLog?.(
+    `Portraits: ${summary.portraitsDownloaded} downloaded, ${summary.portraitsSkipped} skipped, ${summary.portraitsFailed} failed, ${summary.missingPortraits.length} missing.`,
+  );
+
+  return {
+    bundle: { heroes, artifacts, demons },
+    summary,
+  };
+}

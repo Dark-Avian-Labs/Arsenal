@@ -1,0 +1,435 @@
+import { useClerk } from '@clerk/react';
+import {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  Suspense,
+  type ReactNode,
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+} from 'react';
+import { Link, NavLink, Outlet, useLocation } from 'react-router';
+
+import feathers from '../../../packages/core/assets/feathers.svg';
+import epic7Favicon from '../../../packages/games/epic7/favicon.ico';
+import warframeFavicon from '../../../packages/games/warframe/favicon.ico';
+import worFavicon from '../../../packages/games/wor/favicon.ico';
+import {
+  APP_DISPLAY_NAME,
+  APP_ID,
+  APP_VERSION,
+  LEGAL_ENTITY_NAME,
+  LEGAL_PAGE_URL,
+} from '../../app/config';
+import { APP_PATHS } from '../../app/paths';
+import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../features/auth/AuthContext';
+import { rememberLastGamePath } from '../../features/auth/authRedirect';
+import { buildClerkProfileAppearance } from '../../lib/clerkAppearance';
+import { ChunkErrorBoundary } from '../ui/ChunkErrorBoundary';
+import { LazySuspenseFallback } from '../ui/LazySuspenseFallback';
+import { MaterialSymbol } from '../ui/MaterialSymbol';
+import { Menu } from '../ui/Menu';
+import { UiStyleSelector } from '../ui/UiStyleSelector';
+import { AsciiWaveBackground } from './AsciiWaveBackground';
+import { DalAppNav } from './DalAppNav';
+import { HexSideBackground } from './HexSideBackground';
+import { StaleClientUpdateBanner } from './StaleClientUpdateBanner';
+export type LayoutOutletContext = {
+  setHeaderCenter: (node: ReactNode | null) => void;
+  setHeaderActions: (node: ReactNode | null) => void;
+  subheaderTarget: HTMLDivElement | null;
+  setCollectionFill: (fill: boolean) => void;
+};
+
+export function Layout() {
+  const { mode, toggleMode } = useTheme();
+  const location = useLocation();
+  const { auth, refresh } = useAuth();
+  const clerk = useClerk();
+  const isLoggedIn = auth.status === 'authenticated' && auth.userId !== null;
+  const isAdmin = auth.status === 'authenticated' && auth.isAdmin;
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const firstMenuItemRef = useRef<HTMLElement | null>(null);
+  const menuItemRefs = useRef<Array<HTMLElement | null>>([]);
+  const menuItemNodeMap = useRef<Record<string, HTMLElement | null>>({});
+  const prevMenuOpenRef = useRef(menuOpen);
+  const userMenuId = 'codex-user-menu';
+  const currentYear = new Date().getFullYear();
+  const [headerCenter, setHeaderCenter] = useState<ReactNode | null>(null);
+  const [headerActions, setHeaderActions] = useState<ReactNode | null>(null);
+  const [subheaderTarget, setSubheaderTarget] = useState<HTMLDivElement | null>(null);
+  const [collectionFill, setCollectionFill] = useState(false);
+  const menuItemIds = useMemo(() => {
+    if (!isLoggedIn) {
+      return ['login'];
+    }
+    return isAdmin ? ['profile', 'admin', 'logout'] : ['profile', 'logout'];
+  }, [isAdmin, isLoggedIn]);
+  const menuItemIndexById = useMemo(() => {
+    return new Map(menuItemIds.map((id, index) => [id, index]));
+  }, [menuItemIds]);
+  const isWarframeRoute = location.pathname.startsWith(APP_PATHS.warframe);
+  const isEpic7Route = location.pathname.startsWith(APP_PATHS.epic7);
+  const isWorRoute = location.pathname.startsWith(APP_PATHS.wor);
+  const adminPath = isWarframeRoute
+    ? APP_PATHS.warframeAdmin
+    : isEpic7Route
+      ? APP_PATHS.epic7Admin
+      : isWorRoute
+        ? APP_PATHS.worAdmin
+        : APP_PATHS.admin;
+  const brandTitle = isWarframeRoute
+    ? 'Warframe'
+    : isEpic7Route
+      ? 'Epic7'
+      : isWorRoute
+        ? 'Watcher of Realms'
+        : '';
+  const baseTitle = APP_DISPLAY_NAME;
+  const setMenuItemRef = (id: string) => (node: HTMLElement | null) => {
+    menuItemNodeMap.current[id] = node;
+  };
+  const nextMenuItemRef = (id: string) => setMenuItemRef(id);
+
+  useEffect(() => {
+    rememberLastGamePath(location.pathname);
+  }, [location.pathname]);
+
+  useLayoutEffect(() => {
+    if (!menuOpen) {
+      menuItemRefs.current = [];
+      firstMenuItemRef.current = null;
+      return;
+    }
+
+    const refsInOrder = menuItemIds.map((id) => menuItemNodeMap.current[id] ?? null);
+    menuItemRefs.current = refsInOrder;
+    firstMenuItemRef.current =
+      refsInOrder.find((item): item is HTMLElement => item !== null) ?? null;
+
+    for (const id of Object.keys(menuItemNodeMap.current)) {
+      if (!menuItemIndexById.has(id)) {
+        delete menuItemNodeMap.current[id];
+      }
+    }
+  }, [menuItemIds, menuItemIndexById, menuOpen]);
+
+  const onMenuKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    const { key } = event;
+    if (
+      key !== 'ArrowDown' &&
+      key !== 'ArrowUp' &&
+      key !== 'Home' &&
+      key !== 'End' &&
+      key !== 'Escape'
+    ) {
+      return;
+    }
+
+    if (key === 'Escape') {
+      event.preventDefault();
+      if (document.querySelector('.select-dropdown-menu')) return;
+      setMenuOpen(false);
+      return;
+    }
+
+    const enabledItems = menuItemRefs.current.filter((item): item is HTMLElement => {
+      if (!item) {
+        return false;
+      }
+      if (item.hasAttribute('disabled')) {
+        return false;
+      }
+      return item.getAttribute('aria-disabled') !== 'true';
+    });
+
+    if (enabledItems.length === 0) {
+      return;
+    }
+
+    event.preventDefault();
+
+    if (key === 'Home') {
+      enabledItems[0]?.focus();
+      return;
+    }
+    if (key === 'End') {
+      enabledItems[enabledItems.length - 1]?.focus();
+      return;
+    }
+
+    const activeElement =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const currentIndex = activeElement ? enabledItems.indexOf(activeElement) : -1;
+    const direction = key === 'ArrowDown' ? 1 : -1;
+    const nextIndex =
+      currentIndex === -1
+        ? key === 'ArrowDown'
+          ? 0
+          : enabledItems.length - 1
+        : (currentIndex + direction + enabledItems.length) % enabledItems.length;
+
+    enabledItems[nextIndex]?.focus();
+  };
+
+  useEffect(() => {
+    const path = location.pathname;
+    let faviconHref = '/favicon.svg';
+    let faviconType = 'image/svg+xml';
+    if (path.startsWith(APP_PATHS.warframe)) {
+      document.title = 'Codex - Warframe';
+      faviconHref = warframeFavicon;
+      faviconType = 'image/x-icon';
+    } else if (path.startsWith(APP_PATHS.epic7)) {
+      document.title = 'Codex - Epic7';
+      faviconHref = epic7Favicon;
+      faviconType = 'image/x-icon';
+    } else if (path.startsWith(APP_PATHS.wor)) {
+      document.title = 'Codex - Watcher of Realms';
+      faviconHref = worFavicon;
+      faviconType = 'image/x-icon';
+    } else {
+      document.title = 'Codex';
+    }
+    let favicon = document.querySelector<HTMLLinkElement>('link[rel~="icon"]');
+    if (!favicon) {
+      favicon = document.createElement('link');
+      favicon.rel = 'icon';
+      document.head.append(favicon);
+    }
+    favicon.type = faviconType;
+    favicon.href = faviconHref;
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (!menuOpen) {
+      return undefined;
+    }
+    const onMouseDown = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (menuRef.current?.contains(target)) return;
+      if (target instanceof Element && target.closest('.select-dropdown-menu')) return;
+      setMenuOpen(false);
+    };
+    document.addEventListener('mousedown', onMouseDown);
+    return () => {
+      document.removeEventListener('mousedown', onMouseDown);
+    };
+  }, [menuOpen]);
+
+  useEffect(() => {
+    if (menuOpen) {
+      firstMenuItemRef.current?.focus();
+    } else if (prevMenuOpenRef.current) {
+      triggerRef.current?.focus();
+    }
+    prevMenuOpenRef.current = menuOpen;
+  }, [menuOpen]);
+
+  return (
+    <div className="flex h-dvh max-h-dvh flex-col overflow-hidden">
+      <a href="#main-content" className="skip-link">
+        Skip to main content
+      </a>
+      <HexSideBackground />
+      <AsciiWaveBackground />
+      <DalAppNav currentAppId={APP_ID} />
+      <header className="relative z-30 h-[100px] shrink-0 px-6">
+        <div className="mx-auto grid h-full w-full max-w-[2000px] grid-cols-[1fr_auto_1fr] items-center gap-4">
+          <div className="flex w-fit max-w-full min-w-0 flex-col gap-0.5 justify-self-start">
+            <Link to={APP_PATHS.home} className="brand-lockup w-fit">
+              <img
+                src={feathers}
+                alt="Dark Avian Labs feather mark"
+                className="brand-lockup__icon"
+              />
+              <span className="brand-lockup__title brand-lockup--fx">{baseTitle}</span>
+              {brandTitle.length > 0 ? (
+                <span className="brand-lockup__title brand-lockup__title_small">{brandTitle}</span>
+              ) : null}
+            </Link>
+            <div className="flex flex-wrap items-center justify-end gap-x-2 gap-y-0.5">
+              <span
+                className="text-muted font-mono text-[10px] leading-none tracking-wide opacity-70"
+                title={`Client ${APP_VERSION}`}
+              >
+                v{APP_VERSION}
+              </span>
+            </div>
+          </div>
+
+          <div className="justify-self-center">{headerCenter}</div>
+
+          <div className="flex flex-wrap items-center justify-end gap-3">
+            {headerActions}
+            <button
+              type="button"
+              className="icon-toggle-btn"
+              onClick={toggleMode}
+              aria-label={`Switch to ${mode === 'dark' ? 'light' : 'dark'} mode`}
+              title={`Switch to ${mode === 'dark' ? 'light' : 'dark'} mode`}
+            >
+              {mode === 'dark' ? (
+                <MaterialSymbol name="light_mode" filled />
+              ) : (
+                <MaterialSymbol name="dark_mode" filled />
+              )}
+            </button>
+
+            <div ref={menuRef} className="relative">
+              <button
+                ref={triggerRef}
+                type="button"
+                className="icon-toggle-btn"
+                aria-haspopup="menu"
+                aria-expanded={menuOpen}
+                aria-controls={menuOpen ? userMenuId : undefined}
+                aria-label="Open user menu"
+                onClick={() => setMenuOpen((prev) => !prev)}
+              >
+                <MaterialSymbol name="person" filled />
+              </button>
+              {menuOpen ? (
+                <Menu>
+                  <div
+                    id={userMenuId}
+                    role="menu"
+                    aria-orientation="vertical"
+                    onKeyDown={onMenuKeyDown}
+                  >
+                    {!isLoggedIn ? (
+                      <>
+                        <Link
+                          ref={nextMenuItemRef('login')}
+                          to={APP_PATHS.signIn}
+                          className="user-menu-item"
+                          role="menuitem"
+                          tabIndex={-1}
+                          onClick={() => setMenuOpen(false)}
+                        >
+                          Sign in
+                        </Link>
+                        <div className="user-menu-divider" role="separator" />
+                        <UiStyleSelector />
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          ref={nextMenuItemRef('profile')}
+                          className="user-menu-item text-left"
+                          role="menuitem"
+                          type="button"
+                          tabIndex={-1}
+                          onClick={() => {
+                            setMenuOpen(false);
+                            clerk.openUserProfile({
+                              appearance: buildClerkProfileAppearance(mode),
+                            });
+                          }}
+                        >
+                          Profile
+                        </button>
+                        <div className="user-menu-divider" role="separator" />
+                        <UiStyleSelector />
+                        {isAdmin ? (
+                          <NavLink
+                            ref={nextMenuItemRef('admin')}
+                            to={adminPath}
+                            className="user-menu-item"
+                            role="menuitem"
+                            tabIndex={-1}
+                            onClick={() => setMenuOpen(false)}
+                          >
+                            Admin
+                          </NavLink>
+                        ) : null}
+                        <button
+                          ref={nextMenuItemRef('logout')}
+                          className="user-menu-item text-left"
+                          role="menuitem"
+                          type="button"
+                          tabIndex={-1}
+                          onClick={() => {
+                            setMenuOpen(false);
+                            void clerk.signOut({ redirectUrl: APP_PATHS.home });
+                          }}
+                        >
+                          Logout
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </Menu>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div className="app-subheader relative z-20">
+        <div
+          ref={setSubheaderTarget}
+          className="app-subheader-inner mx-auto w-full max-w-[2000px]"
+        />
+      </div>
+
+      <main
+        id="main-content"
+        className={
+          collectionFill
+            ? 'collection-fill relative z-10 -mb-12 flex min-h-0 flex-1 flex-col overflow-hidden px-6 pb-14'
+            : 'relative z-10 min-h-0 flex-1 overflow-y-auto px-6 pb-6'
+        }
+      >
+        <div
+          className={
+            collectionFill
+              ? 'mx-auto flex h-full min-h-0 w-full max-w-[2000px] flex-col'
+              : 'mx-auto w-full max-w-[2000px]'
+          }
+        >
+          {auth.status === 'error' ? (
+            <div className="glass-panel mb-4 p-4" role="alert">
+              <p className="text-sm">Could not verify your session.</p>
+              <button
+                type="button"
+                className="btn btn-secondary mt-3"
+                onClick={() => void refresh()}
+              >
+                Retry
+              </button>
+            </div>
+          ) : null}
+          <ChunkErrorBoundary>
+            <Suspense fallback={<LazySuspenseFallback />}>
+              <Outlet
+                context={{ setHeaderCenter, setHeaderActions, subheaderTarget, setCollectionFill }}
+              />
+            </Suspense>
+          </ChunkErrorBoundary>
+        </div>
+      </main>
+
+      <footer
+        className={`relative flex h-[50px] shrink-0 items-center justify-center bg-transparent px-6 ${collectionFill ? 'z-20' : 'z-10'}`}
+      >
+        <div className="mx-auto w-full max-w-[2000px] text-center">
+          <a
+            href={LEGAL_PAGE_URL}
+            className="text-muted hover:text-foreground text-sm"
+            target={LEGAL_PAGE_URL.startsWith('http') ? '_blank' : undefined}
+            rel={LEGAL_PAGE_URL.startsWith('http') ? 'noreferrer' : undefined}
+          >
+            ©{currentYear} {LEGAL_ENTITY_NAME}
+          </a>
+        </div>
+      </footer>
+
+      <StaleClientUpdateBanner appVersion={APP_VERSION} />
+    </div>
+  );
+}

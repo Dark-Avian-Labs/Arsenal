@@ -1,0 +1,109 @@
+name: Codex PR Checks
+
+on:
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: build-node26
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Enable pnpm
+        run: npm install -g pnpm@$(node -p 'require("./package.json").packageManager.replace(/^pnpm@/, "")')
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Prepare test environment
+        env:
+          DOTENV_PRIVATE_KEY_DEVELOPMENT: ${{ secrets.DOTENV_PRIVATE_KEY_DEVELOPMENT }}
+        run: |
+          if [ -n "${DOTENV_PRIVATE_KEY_DEVELOPMENT:-}" ]; then
+            echo "USE_DOTENVX=true" >> "$GITHUB_ENV"
+          else
+            echo "USE_DOTENVX=false" >> "$GITHUB_ENV"
+            cp .github/ci.env.development .env.development
+            DB_ROOT="${RUNNER_TEMP}/codex-ci-db"
+            mkdir -p "$DB_ROOT"
+            {
+              echo ""
+              echo "# CI-only absolute DB paths (core rejects relative SESSION_DB_PATH)"
+              echo "SESSION_DB_PATH=${DB_ROOT}/session.test.db"
+              echo "WARFRAME_CATALOG_DB_PATH=${DB_ROOT}/warframe-catalog.test.db"
+              echo "WARFRAME_DB_PATH=${DB_ROOT}/warframe.test.db"
+              echo "EPIC7_DB_PATH=${DB_ROOT}/epic7.test.db"
+              echo "WOR_DB_PATH=${DB_ROOT}/wor.test.db"
+              echo "WOR_CATALOG_DB_PATH=${DB_ROOT}/wor-catalog.test.db"
+              : > "${DB_ROOT}/warframe-catalog.test.db"
+              : > "${DB_ROOT}/wor-catalog.test.db"
+            } >> .env.development
+            echo "::notice title=CI env::No DOTENV_PRIVATE_KEY_DEVELOPMENT (Dependabot/forks). Using .github/ci.env.development plus RUNNER_TEMP DB paths. Optional: add this secret under Settings → Secrets and variables → Actions → Dependabot to use the committed encrypted .env.development instead."
+          fi
+
+      - name: Run quality checks
+        env:
+          DOTENV_PRIVATE_KEY_DEVELOPMENT: ${{ secrets.DOTENV_PRIVATE_KEY_DEVELOPMENT }}
+        run: |
+          if [ "$USE_DOTENVX" = "true" ]; then
+            pnpm exec dotenvx run --strict -f .env.development -- pnpm run validate
+          else
+            pnpm run validate
+          fi
+
+      - name: Build project
+        env:
+          DOTENV_PRIVATE_KEY_DEVELOPMENT: ${{ secrets.DOTENV_PRIVATE_KEY_DEVELOPMENT }}
+        run: |
+          if [ "$USE_DOTENVX" = "true" ]; then
+            pnpm exec dotenvx run --strict -f .env.development -- pnpm run build
+          else
+            pnpm run build
+          fi
+
+      - name: Resolve Playwright version
+        id: playwright
+        run: |
+          echo "version=$(pnpm exec playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright Chromium
+        id: playwright-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ steps.playwright.outputs.version }}
+
+      - name: Install Playwright Chromium
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        env:
+          PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT: 300000
+          NODE_OPTIONS: --require /tmp/force-ipv4.cjs
+        run: |
+          cat > /tmp/force-ipv4.cjs << 'EOF'
+          const dns = require('dns');
+          const lookup = dns.promises.lookup.bind(dns.promises);
+          dns.promises.lookup = (hostname, options) => {
+            const opts = options && typeof options === 'object' ? { ...options, family: 4 } : { family: 4 };
+            return lookup(hostname, opts);
+          };
+          EOF
+          node -e "require('dns').promises.lookup('cdn.playwright.dev',{all:true}).then(a=>console.log(a))"
+          pnpm exec playwright install --with-deps chromium
+
+      - name: Install Playwright OS dependencies
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: pnpm exec playwright install-deps chromium
+
+      - name: Run end-to-end tests
+        run: pnpm run test:e2e
+        env:
+          DOTENV_PRIVATE_KEY_DEVELOPMENT: ${{ secrets.DOTENV_PRIVATE_KEY_DEVELOPMENT }}
+          E2E_CLERK_USER_EMAIL: ${{ secrets.E2E_CLERK_USER_EMAIL }}
+          E2E_CLERK_USER_PASSWORD: ${{ secrets.E2E_CLERK_USER_PASSWORD }}

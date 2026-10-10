@@ -1,0 +1,131 @@
+import { useAuth as useClerkAuth } from '@clerk/react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
+
+import { apiFetch, clearCsrfToken, setClerkTokenGetter } from '../../utils/api';
+import type { AppSummary, AuthErrorDetail, AuthState } from './types';
+
+interface AuthContextValue {
+  auth: AuthState;
+  refresh: () => Promise<void>;
+  logout: () => Promise<void>;
+}
+
+const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+
+const DEFAULT_AUTH_STATE: AuthState = {
+  status: 'loading',
+  userId: null,
+  isAdmin: false,
+  apps: [],
+};
+
+function toAuthErrorDetail(error: unknown): AuthErrorDetail {
+  if (error instanceof Error || typeof error === 'string') {
+    return error;
+  }
+  if (error && typeof error === 'object' && 'message' in error) {
+    const message = (error as { message?: unknown }).message;
+    if (typeof message === 'string') {
+      return { message };
+    }
+  }
+  return { message: 'Unable to refresh authentication state.' };
+}
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const { isSignedIn, isLoaded, getToken } = useClerkAuth();
+  const [auth, setAuth] = useState<AuthState>(DEFAULT_AUTH_STATE);
+  const refreshGenerationRef = useRef(0);
+
+  useEffect(() => {
+    setClerkTokenGetter((options) => getToken(options));
+    return () => {
+      setClerkTokenGetter(null);
+    };
+  }, [getToken]);
+
+  const refresh = useCallback(async () => {
+    if (!isLoaded) return;
+    const generation = ++refreshGenerationRef.current;
+    const applyAuth = (next: AuthState): void => {
+      if (refreshGenerationRef.current === generation) {
+        setAuth(next);
+      }
+    };
+    if (!isSignedIn) {
+      applyAuth({ status: 'unauthenticated', userId: null, isAdmin: false, apps: [] });
+      return;
+    }
+    try {
+      const response = await apiFetch('/api/auth/me');
+      if (!response.ok) {
+        applyAuth({ status: 'unauthenticated', userId: null, isAdmin: false, apps: [] });
+        return;
+      }
+      const body = (await response.json()) as {
+        authenticated?: boolean;
+        userId?: string;
+        isAdmin?: boolean;
+        apps?: AppSummary[];
+      };
+      if (!body.authenticated || !body.userId) {
+        applyAuth({ status: 'unauthenticated', userId: null, isAdmin: false, apps: [] });
+        return;
+      }
+      applyAuth({
+        status: 'authenticated',
+        userId: body.userId,
+        isAdmin: body.isAdmin === true,
+        apps: Array.isArray(body.apps) ? body.apps : [],
+      });
+    } catch (error) {
+      applyAuth({
+        status: 'error',
+        userId: null,
+        isAdmin: false,
+        apps: [],
+        error: toAuthErrorDetail(error),
+      });
+    }
+  }, [isLoaded, isSignedIn]);
+
+  useEffect(() => {
+    if (!isLoaded) {
+      setAuth(DEFAULT_AUTH_STATE);
+      return;
+    }
+    void refresh();
+  }, [isLoaded, isSignedIn, refresh]);
+
+  const logout = useCallback(async () => {
+    try {
+      await apiFetch('/api/auth/logout', { method: 'POST' });
+    } finally {
+      clearCsrfToken();
+      window.location.href = '/';
+    }
+  }, []);
+
+  const value = useMemo<AuthContextValue>(
+    () => ({ auth, refresh, logout }),
+    [auth, refresh, logout],
+  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+export function useAuth(): AuthContextValue {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within AuthProvider');
+  }
+  return context;
+}

@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "outDir": "dist",
+    "rootDir": ".",
+    "sourceMap": true,
+    "typeRoots": ["./node_modules/@types"]
+  },
+  "include": [
+    "server/**/*",
+    "shared/warframeImport/**/*",
+    "packages/core/src/types/express-session.d.ts"
+  ],
+  "exclude": ["node_modules", "dist", "**/*.test.ts"]
+}
