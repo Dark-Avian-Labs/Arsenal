@@ -1,0 +1,69 @@
+name: Outfitter PR Checks
+
+on:
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: build-node26
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Enable pnpm
+        run: npm install -g pnpm@$(node -p 'require("./package.json").packageManager.replace(/^pnpm@/, "")')
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run quality checks
+        run: pnpm run validate
+
+      - name: Build project
+        run: pnpm run build
+
+      - name: Resolve Playwright version
+        id: playwright
+        run: |
+          echo "version=$(pnpm exec playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright Chromium
+        id: playwright-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ steps.playwright.outputs.version }}
+
+      - name: Install Playwright Chromium
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        env:
+          PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT: 300000
+          NODE_OPTIONS: --require /tmp/force-ipv4.cjs
+        run: |
+          cat > /tmp/force-ipv4.cjs << 'EOF'
+          const dns = require('dns');
+          const lookup = dns.promises.lookup.bind(dns.promises);
+          dns.promises.lookup = (hostname, options) => {
+            const opts = options && typeof options === 'object' ? { ...options, family: 4 } : { family: 4 };
+            return lookup(hostname, opts);
+          };
+          EOF
+          node -e "require('dns').promises.lookup('cdn.playwright.dev',{all:true}).then(a=>console.log(a))"
+          pnpm exec playwright install --with-deps chromium
+
+      - name: Install Playwright OS dependencies
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: pnpm exec playwright install-deps chromium
+
+      - name: Run end-to-end tests
+        run: pnpm run test:e2e
+        env:
+          DOTENV_PRIVATE_KEY_DEVELOPMENT: ${{ secrets.DOTENV_PRIVATE_KEY_DEVELOPMENT }}
+          E2E_CLERK_USER_EMAIL: ${{ secrets.E2E_CLERK_USER_EMAIL }}
+          E2E_CLERK_USER_PASSWORD: ${{ secrets.E2E_CLERK_USER_PASSWORD }}
