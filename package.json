@@ -1,0 +1,35 @@
+{
+  "name": "dark-avian-labs-apps",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "preflight": "node scripts/runtime-preflight.mjs",
+    "validate": "node run-quality-checks.mjs",
+    "check-format": "oxfmt --check .",
+    "format": "oxfmt --write .",
+    "lint": "oxlint .",
+    "lint:fix": "oxlint --fix .",
+    "typecheck": "pnpm -r --workspace-concurrency=1 run --if-present typecheck",
+    "build": "pnpm -r run --if-present build",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "pnpm -r --workspace-concurrency=1 run --if-present test:e2e",
+    "icons:sync": "node scripts/icons/sync.mjs",
+    "dev": "echo 'use: pnpm --filter <app> dev'"
+  },
+  "devDependencies": {
+    "@material-symbols/svg-400": "^0.48.0",
+    "@playwright/test": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
+    "better-sqlite3": "catalog:",
+    "oxfmt": "catalog:",
+    "oxlint": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "engines": {
+    "node": ">=26.0.0",
+    "pnpm": ">=12.0.0"
+  },
+  "packageManager": "pnpm@12.9.1"
+}

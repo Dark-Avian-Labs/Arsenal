@@ -20,19 +20,5 @@ export default defineConfig({
       'scripts/**/*.test.ts',
     ],
     exclude: [...defaultExclude, 'dist/**', 'e2e/**'],
-    coverage: {
-      provider: 'v8',
-      all: true,
-      reporter: ['text-summary', 'html'],
-      reportsDirectory: 'coverage',
-      include: [
-        'server/**/*.ts',
-        'client/utils/**/*.ts',
-        'shared/**/*.ts',
-        'scripts/**/*.mjs',
-        'scripts/**/*.ts',
-      ],
-      exclude: ['**/*.test.ts', 'dist/**', 'node_modules/**', 'e2e/**', 'server/index.ts'],
-    },
   },
 });

@@ -32,18 +32,5 @@ export default defineConfig({
     env: {
       ...testEnvDefaults,
     },
-    coverage: {
-      provider: 'v8',
-      all: true,
-      reporter: ['text-summary', 'html'],
-      reportsDirectory: 'coverage',
-      include: [
-        'server/**/*.ts',
-        'packages/core/src/**/*.ts',
-        'packages/games/**/src/**/*.ts',
-        'client/**/*.ts',
-      ],
-      exclude: ['**/*.test.ts', 'dist/**', 'node_modules/**', 'e2e/**'],
-    },
   },
 });

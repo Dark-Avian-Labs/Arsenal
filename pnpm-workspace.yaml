@@ -1,0 +1,53 @@
+packages:
+  - apps/*
+  - packages/*
+  # Codex packages stay members until Stage 2 folds them into the app.
+  - apps/codex/packages/*
+  - apps/codex/packages/games/*
+
+allowBuilds:
+  '@clerk/shared': true
+  better-sqlite3: true
+  cuimp: true
+  esbuild: true
+  # postinstall is only the Open Collective prompt
+  tesseract.js: false
+  unrs-resolver: true
+
+update:
+  githubActions: true
+
+catalog:
+  '@clerk/express': ^2.1.77
+  '@clerk/react': ^6.17.7
+  '@clerk/testing': ^2.2.44
+  '@dotenvx/dotenvx': ^2.33.0
+  '@fontsource-variable/cascadia-mono': ^5.3.0
+  '@fontsource-variable/geist': ^5.3.0
+  '@fontsource-variable/geist-mono': ^5.3.0
+  '@playwright/test': ^1.64.0
+  '@tailwindcss/vite': ^4.3.3
+  '@types/better-sqlite3': ^9.6.0
+  '@types/express': ^5.0.6
+  '@types/node': ^26.6.4
+  '@types/react': ^19.3.0
+  '@types/react-dom': ^19.3.0
+  '@vitejs/plugin-react': ^6.1.2
+  '@vitest/coverage-v8': ^5.0.3
+  better-sqlite3: ^13.0.3
+  express: ^5.2.1
+  express-rate-limit: ^8.7.1
+  helmet: ^8.3.0
+  oxfmt: ^0.72.0
+  oxlint: ^1.87.0
+  react: ^19.3.0
+  react-dom: ^19.3.0
+  react-router: ^8.4.0
+  tailwindcss: ^4.3.3
+  typescript: ^7.0.2
+  vite: ^8.3.4
+  vitest: ^5.0.3
+  zod: ^4.6.5
+
+minimumReleaseAgeExclude:
+  - '@material-symbols/svg-400@0.48.0'

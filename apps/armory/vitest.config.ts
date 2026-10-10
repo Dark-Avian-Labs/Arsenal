@@ -12,25 +12,8 @@ const testEnv = {
   VITE_CLERK_PUBLISHABLE_KEY: '',
 } as const;
 
-const coverage = {
-  provider: 'v8' as const,
-  all: true,
-  reporter: ['text-summary', 'html'],
-  reportsDirectory: 'coverage',
-  include: ['server/**/*.ts', 'client/utils/**/*.ts', 'shared/**/*.ts', 'scripts/**/*.mjs'],
-  exclude: [
-    '**/*.test.ts',
-    '**/*.test.tsx',
-    'dist/**',
-    'node_modules/**',
-    'e2e/**',
-    'server/index.ts',
-  ],
-};
-
 export default defineConfig({
   test: {
-    coverage,
     projects: [
       {
         test: {

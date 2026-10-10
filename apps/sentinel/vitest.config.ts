@@ -14,13 +14,5 @@ export default defineConfig({
     },
     include: ['server/**/*.test.ts', 'client/**/*.test.ts'],
     exclude: ['dist/**', 'e2e/**'],
-    coverage: {
-      provider: 'v8',
-      all: true,
-      reporter: ['text-summary', 'html'],
-      reportsDirectory: 'coverage',
-      include: ['server/**/*.ts', 'client/utils/**/*.ts'],
-      exclude: ['**/*.test.ts', 'dist/**', 'e2e/**', 'server/index.ts'],
-    },
   },
 });

@@ -15,20 +15,5 @@ export default defineConfig({
     env: testEnv,
     include: ['server/**/*.test.ts', 'client/**/*.test.ts', 'shared/**/*.test.ts'],
     exclude: ['dist/**', 'e2e/**', 'node_modules/**'],
-    coverage: {
-      provider: 'v8',
-      all: true,
-      reporter: ['text-summary', 'html'],
-      reportsDirectory: 'coverage',
-      include: ['server/**/*.ts', 'shared/**/*.ts', 'client/utils/**/*.ts'],
-      exclude: [
-        '**/*.test.ts',
-        '**/*.test.tsx',
-        'dist/**',
-        'node_modules/**',
-        'e2e/**',
-        'server/index.ts',
-      ],
-    },
   },
 });
