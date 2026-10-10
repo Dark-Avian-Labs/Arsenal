@@ -1,0 +1,183 @@
+import { parseArchonShardKey } from '../../../shared/archonShardRegistry.js';
+import { isShardSlotV2 } from '../../../shared/buildReference.js';
+import { shardSlotTauforged } from '../../utils/buildConfigPersist';
+import { renderDamageTypeWords } from '../../utils/renderDamageTypeWords';
+import { formatShardBuffDescription } from '../../utils/shardBuffFormat';
+import { GlassTooltip } from '../GlassTooltip';
+import { MaterialSymbol } from '../ui/MaterialSymbol';
+
+export interface ShardSlotConfig {
+  shard_type_id?: string | number;
+  buff_id?: number | string;
+  tauforged?: boolean;
+  armory_shard_key?: string;
+}
+
+export interface ShardBuff {
+  id: number | string;
+  description: string;
+  base_value: number;
+  tauforged_value: number;
+  value_format: string;
+  sort_order?: number;
+  armory_key?: string;
+}
+
+export interface ShardType {
+  id: string | number;
+  name: string;
+  icon_path: string;
+  tauforged_icon_path: string;
+  buffs: ShardBuff[];
+}
+
+interface ArchonShardSlotsProps {
+  slots: ShardSlotConfig[];
+  shards: ShardType[];
+  activeSlot?: number | null;
+  onSlotClick: (slotIndex: number) => void;
+  onRemove: (slotIndex: number) => void;
+  readOnly?: boolean;
+}
+
+const V_OFFSETS = [0, 14, 28, 14, 0];
+
+export function ArchonShardSlots({
+  slots,
+  shards,
+  activeSlot,
+  onSlotClick,
+  onRemove,
+  readOnly = false,
+}: ArchonShardSlotsProps) {
+  const getShardInfo = (slot: ShardSlotConfig) => {
+    if (isShardSlotV2(slot)) {
+      const parsed = parseArchonShardKey(slot.armory_shard_key);
+      if (!parsed) return null;
+      const shard = shards.find((s) => s.name === parsed.color);
+      if (!shard) return null;
+      const buff = shard.buffs.find(
+        (b) =>
+          b.armory_key != null && parseArchonShardKey(b.armory_key)?.buffSlug === parsed.buffSlug,
+      );
+      if (!buff) return null;
+      return { shard, buff };
+    }
+
+    if (!slot.shard_type_id) return null;
+    const shard = shards.find((s) => String(s.id) === String(slot.shard_type_id));
+    if (!shard) return null;
+    const buff = shard.buffs.find((b) => String(b.id) === String(slot.buff_id));
+    return { shard, buff };
+  };
+
+  return (
+    <div className="overflow-visible">
+      <h3 className="text-muted mb-2 text-right text-xs font-semibold tracking-wider uppercase">
+        Archon Shards
+      </h3>
+      <div className="flex items-start justify-end gap-0.5">
+        {Array.from({ length: 5 }, (_, i) => {
+          const slot = slots[i] || { tauforged: false };
+          const info = getShardInfo(slot);
+          const isActive = activeSlot === i;
+          const vOffset = V_OFFSETS[i];
+
+          if (info) {
+            const tauforged = shardSlotTauforged(slot);
+            const iconPath = tauforged ? info.shard.tauforged_icon_path : info.shard.icon_path;
+            const shardLabel = tauforged ? `${info.shard.name} (Tauforged)` : info.shard.name;
+            const buffText = formatShardBuffDescription(info.buff, tauforged);
+
+            return (
+              <div
+                key={i}
+                className="relative flex flex-col items-center"
+                style={{ marginTop: vOffset }}
+              >
+                <GlassTooltip
+                  width="w-48"
+                  content={
+                    <>
+                      <div className="text-foreground text-xs font-semibold">{shardLabel}</div>
+                      {buffText && (
+                        <div className="text-muted mt-0.5 text-[10px]">
+                          {renderDamageTypeWords(buffText)}
+                        </div>
+                      )}
+                    </>
+                  }
+                >
+                  <button
+                    type="button"
+                    disabled={readOnly}
+                    tabIndex={readOnly ? -1 : undefined}
+                    onClick={() => onSlotClick(i)}
+                    onContextMenu={
+                      readOnly
+                        ? undefined
+                        : (e) => {
+                            e.preventDefault();
+                            onRemove(i);
+                          }
+                    }
+                    className={`relative flex h-12 w-12 items-center justify-center overflow-hidden rounded-lg transition-[color,background-color,border-color,box-shadow] duration-200 disabled:pointer-events-none disabled:opacity-90 ${
+                      isActive ? 'ring-accent ring-1' : ''
+                    }`}
+                  >
+                    <img
+                      src="/icons/shards/filledBackground.svg"
+                      alt=""
+                      className={`absolute inset-0 h-full w-full object-contain ${tauforged ? 'archon-shard-filled-bg--tau' : 'invert-on-light'}`}
+                      draggable={false}
+                    />
+                    <img
+                      src={iconPath}
+                      alt={info.shard.name}
+                      className="invert-on-light absolute inset-0 h-full w-full object-cover"
+                      draggable={false}
+                    />
+                  </button>
+                </GlassTooltip>
+                {!readOnly && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onRemove(i);
+                    }}
+                    className="border-muted/30 text-muted/30 hover:border-danger/50 hover:text-danger absolute -right-1 -bottom-1 flex h-3.25 w-3.25 items-center justify-center rounded-full border text-[7px] transition-colors"
+                    title="Remove"
+                  >
+                    <MaterialSymbol name="close" style={{ fontSize: 10 }} />
+                  </button>
+                )}
+              </div>
+            );
+          }
+
+          return (
+            <button
+              key={i}
+              type="button"
+              disabled={readOnly}
+              tabIndex={readOnly ? -1 : undefined}
+              onClick={() => onSlotClick(i)}
+              className={`relative flex h-12 w-12 items-center justify-center overflow-hidden rounded-lg transition-[color,background-color,border-color,box-shadow] duration-200 disabled:pointer-events-none disabled:opacity-90 ${
+                isActive ? 'ring-accent ring-1' : ''
+              }`}
+              style={{ marginTop: vOffset }}
+            >
+              <img
+                src="/icons/shards/emptyBackground.svg"
+                alt=""
+                className="invert-on-light absolute inset-0 h-full w-full object-contain"
+                draggable={false}
+              />
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,1446 @@
+import { toBlob } from 'html-to-image';
+import { useLayoutEffect, useMemo, useRef, useState } from 'react';
+import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react';
+
+import { helminthReplacedAbilityIndex } from '../../../shared/buildReference.js';
+import feathers from '../../assets/feathers.svg';
+import orokinReactorImg from '../../assets/orokin-reactor.png';
+import type { IncarnonSelection } from '../../types/incarnon';
+import type {
+  Ability,
+  BuildConfig,
+  EquipmentType,
+  ModSlot,
+  ValenceBonus,
+  Warframe,
+  Weapon,
+} from '../../types/warframe';
+import { getMaxRank } from '../../utils/arcaneUtils';
+import { extractArchonShardBonuses } from '../../utils/archonShardBonuses';
+import { resolveShardSlotForDisplay } from '../../utils/buildConfigPersist';
+import { calculateBuildDamage, formatDamage } from '../../utils/damage';
+import { calculateWeaponDps } from '../../utils/damageCalc';
+import { getElementColor } from '../../utils/elements';
+import { isAvatarStatsEquipmentType } from '../../utils/equipmentKind';
+import type { FormaCount } from '../../utils/formaCounter';
+import { renderDamageTypeWords } from '../../utils/renderDamageTypeWords';
+import { formatShardBuffDescription } from '../../utils/shardBuffFormat';
+import { calculateWarframeStats } from '../../utils/warframeCalc';
+import type { ArcaneSlot } from '../ModBuilder/ArcaneSlots';
+import type { ShardSlotConfig, ShardType } from '../ModBuilder/ArchonShardSlots';
+import { ArcaneCardPreview } from '../ModCard/ArcaneCardPreview';
+import {
+  DEFAULT_ARCANE_LAYOUT,
+  DEFAULT_LAYOUT,
+  normalizeArcaneRarity,
+} from '../ModCard/cardLayout';
+import { ModCard } from '../ModCard/ModCard';
+import { MaterialSymbol } from '../ui/MaterialSymbol';
+import { Modal } from '../ui/Modal';
+import { ShareHeroTitle } from './ShareHeroTitle';
+import { ShareRadarChart } from './ShareRadarChart';
+import {
+  getShareAbilityDbIcon,
+  type ParsedShareAbility,
+  useWarframeShareAbilities,
+} from './useWarframeShareAbilities';
+import { useWeaponShareIncarnon } from './useWeaponShareIncarnon';
+
+const SHARE_CANVAS_WIDTH = 720;
+const SHARE_CANVAS_HEIGHT = 1280;
+const SHARE_EXPORT_PIXEL_RATIO = 2;
+const MAX_DESCRIPTION_LENGTH = 900;
+const TRUNCATED_DESCRIPTION_LENGTH = MAX_DESCRIPTION_LENGTH - 3;
+
+const MAIN_PAGE_BACKGROUND_STYLE: CSSProperties = {
+  backgroundImage:
+    'radial-gradient(circle at 10% 10%, var(--color-bg-glow), transparent 40%), radial-gradient(circle at 85% 15%, var(--color-bg-glow), transparent 45%), linear-gradient(to bottom, var(--color-bg-start) 0%, var(--color-bg-end) 100%)',
+  backgroundSize: '100% 100%',
+  backgroundRepeat: 'no-repeat',
+};
+
+function clampBackgroundPan(
+  naturalW: number,
+  naturalH: number,
+  scale: number,
+  panX: number,
+  panY: number,
+): { x: number; y: number } {
+  const sw = naturalW * scale;
+  const sh = naturalH * scale;
+  const minX = Math.min(0, SHARE_CANVAS_WIDTH - sw);
+  const maxX = Math.max(0, SHARE_CANVAS_WIDTH - sw);
+  const minY = Math.min(0, SHARE_CANVAS_HEIGHT - sh);
+  const maxY = Math.max(0, SHARE_CANVAS_HEIGHT - sh);
+  return {
+    x: Math.min(maxX, Math.max(minX, panX)),
+    y: Math.min(maxY, Math.max(minY, panY)),
+  };
+}
+
+function ShareUploadBackgroundView({
+  dataUrl,
+  naturalW,
+  naturalH,
+  scale,
+  pan,
+}: {
+  dataUrl: string;
+  naturalW: number;
+  naturalH: number;
+  scale: number;
+  pan: { x: number; y: number };
+}) {
+  const w = Math.round(naturalW * scale);
+  const h = Math.round(naturalH * scale);
+  return (
+    <div
+      className="absolute top-0 left-0 overflow-hidden"
+      style={{ width: SHARE_CANVAS_WIDTH, height: SHARE_CANVAS_HEIGHT }}
+    >
+      <div style={{ transform: `translate(${pan.x}px, ${pan.y}px)` }}>
+        <img
+          src={dataUrl}
+          alt=""
+          width={w}
+          height={h}
+          className="block max-w-none"
+          draggable={false}
+        />
+      </div>
+    </div>
+  );
+}
+
+interface BuildShareModalProps {
+  open: boolean;
+  onClose: () => void;
+  buildName: string;
+  equipment: Warframe | Weapon;
+  equipmentName: string;
+  equipmentType: EquipmentType;
+  equipmentImagePath?: string;
+  slots: ModSlot[];
+  arcaneSlots: ArcaneSlot[];
+  shardSlots: ShardSlotConfig[];
+  shardTypes: ShardType[];
+  orokinReactor: boolean;
+  formaCost?: FormaCount;
+  helminthConfig?: BuildConfig['helminth'];
+  incarnonEnabled?: boolean;
+  incarnonSelections?: IncarnonSelection[];
+  valenceBonus?: ValenceBonus | null;
+}
+
+function formatEquipmentType(type: EquipmentType): string {
+  return type.replace(/_/g, ' ').replace(/\b\w/g, (ch) => ch.toUpperCase());
+}
+
+function sanitizeDownloadSegment(value: string, fallback: string, maxLen: number): string {
+  let t = value
+    .trim()
+    .replace(/["*/:<>?\\|]+/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!t) t = fallback;
+  t = t.replace(/^\.+|\.+$/g, '').trim() || fallback;
+  if (t.length > maxLen) t = t.slice(0, maxLen).trim();
+  return t;
+}
+
+function buildShareDownloadFileName(equipmentName: string, buildName: string): string {
+  const itemPart = sanitizeDownloadSegment(equipmentName, 'item', 96);
+  const buildPart = sanitizeDownloadSegment(buildName, 'build', 96);
+  return `armory-${itemPart}-${buildPart}.png`;
+}
+
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(reader.error ?? new Error('read failed'));
+    reader.readAsDataURL(file);
+  });
+}
+
+const SHARE_ELEMENT_ICONS: Record<string, string> = {
+  Impact: '01_impact',
+  Puncture: '02_puncture',
+  Slash: '03_slash',
+  Heat: '04_heat',
+  Cold: '05_cold',
+  Electricity: '06_electricity',
+  Toxin: '07_toxin',
+  Blast: '08_blast',
+  Radiation: '09_radiation',
+  Gas: '10_gas',
+  Magnetic: '11_magnetic',
+  Viral: '12_viral',
+  Corrosive: '13_corrosive',
+  Void: '14_void',
+  Tau: '15_tau',
+  True: '20_true',
+};
+
+const MOD_SHARE_GAP_PX = 3;
+const MOD_COLLAPSED_H = DEFAULT_LAYOUT.collapsedHeight;
+const MOD_SCALE_MIN = 0.28;
+const MOD_SCALE_MAX = 1.02;
+
+function ModShareColumnList({ slots, modScale }: { slots: ModSlot[]; modScale: number }) {
+  if (slots.length === 0) {
+    return (
+      <p className="text-muted py-4 text-center text-[10px] text-[#7e8fb8]">No mods equipped.</p>
+    );
+  }
+  return (
+    <div className="flex min-h-0 flex-1 flex-col gap-1 overflow-hidden pr-0.5">
+      {slots.map((slot) => (
+        <div
+          key={`${slot.index}-${slot.mod?.unique_name ?? 'm'}`}
+          className="flex shrink-0 justify-center"
+        >
+          <ModCard
+            mod={slot.mod!}
+            rank={slot.rank ?? 0}
+            setRank={slot.setRank}
+            slotType={slot.type}
+            slotPolarity={slot.polarity}
+            collapsed
+            scale={modScale}
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ModsShareSection({ slots }: { slots: ModSlot[] }) {
+  const listRef = useRef<HTMLDivElement>(null);
+  const [modScale, setModScale] = useState(0.42);
+  const n = slots.length;
+
+  useLayoutEffect(() => {
+    const el = listRef.current;
+    if (!el || n === 0) return;
+    const run = () => {
+      const h = el.clientHeight;
+      if (h <= 0) return;
+      const nEff = Math.min(n, 12);
+      const raw = (h - Math.max(0, nEff - 1) * MOD_SHARE_GAP_PX) / (nEff * MOD_COLLAPSED_H);
+      setModScale(Math.min(MOD_SCALE_MAX, Math.max(MOD_SCALE_MIN, raw)));
+    };
+    run();
+    const ro = new ResizeObserver(run);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [n]);
+
+  if (n === 0) {
+    return (
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col justify-center overflow-hidden">
+        <p className="text-center text-[10px] text-[#7e8fb8]">No mods equipped.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+      <div ref={listRef} className="min-h-0 min-w-0 flex-1">
+        <ModShareColumnList slots={slots} modScale={modScale} />
+      </div>
+    </div>
+  );
+}
+
+function ShareRadarAuto({
+  labels,
+  values,
+  fill,
+  stroke,
+}: {
+  labels: string[];
+  values: number[];
+  fill?: string;
+  stroke?: string;
+}) {
+  const boxRef = useRef<HTMLDivElement>(null);
+  const [size, setSize] = useState(168);
+
+  useLayoutEffect(() => {
+    const el = boxRef.current;
+    if (!el) return;
+    const run = () => {
+      const w = el.clientWidth;
+      const h = el.clientHeight;
+      setSize(Math.max(72, Math.floor(Math.min(w, h) - 8)));
+    };
+    run();
+    const ro = new ResizeObserver(run);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  return (
+    <div ref={boxRef} className="flex min-h-0 w-full min-w-0 flex-1 items-center justify-center">
+      <ShareRadarChart
+        dense
+        size={size}
+        labels={labels}
+        values={values}
+        fill={fill}
+        stroke={stroke}
+      />
+    </div>
+  );
+}
+
+function ShareFormaCounts({ forma }: { forma?: FormaCount }) {
+  if (!forma || forma.total <= 0) return null;
+  return (
+    <>
+      {forma.regular > 0 ? (
+        <div className="flex flex-col items-center gap-0.5">
+          <img src="/icons/forma.png" alt="" className="h-7 w-7 object-contain" draggable={false} />
+          <span className="text-[11px] font-semibold text-[#e8edff]">{forma.regular}</span>
+        </div>
+      ) : null}
+      {forma.universal > 0 ? (
+        <div className="flex flex-col items-center gap-0.5">
+          <img
+            src="/icons/forma-omni.png"
+            alt=""
+            className="h-7 w-7 object-contain"
+            draggable={false}
+          />
+          <span className="text-[11px] font-semibold text-[#e8edff]">{forma.universal}</span>
+        </div>
+      ) : null}
+      {forma.umbra > 0 ? (
+        <div className="flex flex-col items-center gap-0.5">
+          <img
+            src="/icons/forma-umbra.png"
+            alt=""
+            className="h-7 w-7 object-contain"
+            draggable={false}
+          />
+          <span className="text-[11px] font-semibold text-[#e8edff]">{forma.umbra}</span>
+        </div>
+      ) : null}
+      {forma.stance > 0 ? (
+        <div className="flex flex-col items-center gap-0.5">
+          <img
+            src="/icons/forma-stance.png"
+            alt=""
+            className="h-7 w-7 object-contain"
+            draggable={false}
+          />
+          <span className="text-[11px] font-semibold text-[#e8edff]">{forma.stance}</span>
+        </div>
+      ) : null}
+    </>
+  );
+}
+
+function ShareReactorStamp({ active }: { active: boolean }) {
+  return (
+    <div className="flex flex-col items-center gap-0.5">
+      <img src={orokinReactorImg} alt="" className="h-7 w-7 object-contain" draggable={false} />
+      <span
+        className={`inline-flex items-center justify-center ${active ? 'text-success' : 'text-danger/90'}`}
+        aria-hidden
+      >
+        {active ? (
+          <MaterialSymbol name="check" filled style={{ fontSize: 16 }} />
+        ) : (
+          <MaterialSymbol name="close" style={{ fontSize: 16 }} />
+        )}
+      </span>
+    </div>
+  );
+}
+
+function ShareIncarnonStamp({ active }: { active: boolean }) {
+  if (!active) return null;
+  return (
+    <div className="flex flex-col items-center gap-0.5">
+      <MaterialSymbol name="account_tree" className="text-success" style={{ fontSize: 28 }} />
+      <span className="text-success inline-flex items-center justify-center" aria-hidden>
+        <MaterialSymbol name="check" filled style={{ fontSize: 16 }} />
+      </span>
+    </div>
+  );
+}
+
+function ShareIncarnonPanel({
+  tiers,
+  iconPx,
+  iconsOnly = false,
+}: {
+  tiers: Array<{
+    tier: number;
+    unlocked: boolean;
+    perkName: string | null;
+    description: string | null;
+    imagePath: string | null;
+  }>;
+  iconPx: number;
+  iconsOnly?: boolean;
+}) {
+  const firstUnlocked = tiers.find((tier) => tier.unlocked && tier.description);
+  const displayDesc =
+    firstUnlocked?.description != null && firstUnlocked.description.length > MAX_DESCRIPTION_LENGTH
+      ? `${firstUnlocked.description.slice(0, TRUNCATED_DESCRIPTION_LENGTH).trim()}...`
+      : firstUnlocked?.description;
+
+  return (
+    <div className="flex min-h-0 flex-col gap-2">
+      <div className="flex justify-center gap-1.5">
+        {tiers.map((tier) => {
+          const initial = (tier.perkName ?? `Evolution ${tier.tier}`).charAt(0).toUpperCase();
+          return (
+            <div
+              key={tier.tier}
+              title={!tier.unlocked ? 'Upgrade not unlocked' : (tier.perkName ?? undefined)}
+              className={`relative flex shrink-0 items-center justify-center overflow-hidden rounded-lg border ${
+                !tier.unlocked
+                  ? 'border-white/10 bg-black/20 opacity-60'
+                  : 'border-white/15 bg-black/25'
+              }`}
+              style={{ width: iconPx, height: iconPx }}
+            >
+              {!tier.unlocked ? (
+                <MaterialSymbol
+                  name="hide_source"
+                  className="text-white/45"
+                  style={{ fontSize: 20 }}
+                />
+              ) : tier.imagePath ? (
+                <img
+                  src={`/images${tier.imagePath}`}
+                  alt=""
+                  className="invert-on-light max-h-[88%] max-w-[88%] rounded object-cover"
+                  draggable={false}
+                />
+              ) : (
+                <span className="text-sm font-bold text-white/45">{initial}</span>
+              )}
+              <span className="absolute -top-0.5 -left-0.5 flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-white/20 px-0.5 text-[8px] font-bold text-[#dbe4ff]">
+                {tier.tier}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+      {iconsOnly ? null : displayDesc ? (
+        <p className="line-clamp-[10] text-[10px] leading-snug break-words text-[#b8c8ec]">
+          {displayDesc}
+        </p>
+      ) : (
+        <p className="text-[10px] text-[#7e8fb8]">No Incarnon perk description loaded.</p>
+      )}
+    </div>
+  );
+}
+
+function ShareShardColumn({
+  slots,
+  shards,
+  compact = false,
+  textLeftIconRight = false,
+}: {
+  slots: ShardSlotConfig[];
+  shards: ShardType[];
+  compact?: boolean;
+  textLeftIconRight?: boolean;
+}) {
+  const lines: { key: string; name: string; tau: boolean; buff: string }[] = [];
+  for (let i = 0; i < 5; i++) {
+    const slot = slots[i] ?? { tauforged: false };
+    const resolved = resolveShardSlotForDisplay(slot, shards);
+    if (!resolved) continue;
+    const buffText = formatShardBuffDescription(resolved.buff, resolved.tauforged);
+    lines.push({
+      key: `shard-${i}-${resolved.shard.name}`,
+      name: resolved.shard.name,
+      tau: resolved.tauforged,
+      buff: buffText,
+    });
+  }
+
+  const iconSize = compact ? 'h-7 w-7' : 'h-9 w-9';
+  const gapClass = compact ? 'space-y-1' : 'space-y-2';
+
+  const shardIcon = (slot: ShardSlotConfig, shard?: ShardType, tauforged = false) => {
+    const resolved = resolveShardSlotForDisplay(slot, shards);
+    if (!resolved) {
+      return (
+        <div
+          className={`relative flex shrink-0 items-center justify-center overflow-hidden rounded-md ${iconSize}`}
+        >
+          <img
+            src="/icons/shards/emptyBackground.svg"
+            alt=""
+            className="invert-on-light absolute inset-0 h-full w-full object-contain"
+            draggable={false}
+          />
+        </div>
+      );
+    }
+    const displayShard = shard ?? resolved.shard;
+    const iconPath = tauforged ? displayShard.tauforged_icon_path : displayShard.icon_path;
+    return (
+      <div
+        className={`relative flex shrink-0 items-center justify-center overflow-hidden rounded-md ${iconSize}`}
+      >
+        <img
+          src="/icons/shards/filledBackground.svg"
+          alt=""
+          className={`absolute inset-0 h-full w-full object-contain ${tauforged ? 'archon-shard-filled-bg--tau' : 'invert-on-light'}`}
+          draggable={false}
+        />
+        <img
+          src={iconPath}
+          alt=""
+          className="invert-on-light absolute inset-0 h-full w-full object-cover"
+          draggable={false}
+        />
+      </div>
+    );
+  };
+
+  return (
+    <ul className={`${gapClass} ${textLeftIconRight ? 'flex w-full flex-col items-end' : ''}`}>
+      {Array.from({ length: 5 }, (_, i) => {
+        const slot = slots[i] ?? { tauforged: false };
+        const resolved = resolveShardSlotForDisplay(slot, shards);
+        if (!resolved) {
+          return (
+            <li
+              key={i}
+              className={`flex items-center gap-2 ${textLeftIconRight ? 'w-full max-w-full justify-end' : ''}`}
+            >
+              {textLeftIconRight ? (
+                <>
+                  <span className="text-[10px] text-[#8fa4d4]">Empty</span>
+                  {shardIcon(slot, undefined, false)}
+                </>
+              ) : (
+                <>
+                  {shardIcon(slot, undefined, false)}
+                  <span className="text-[10px] text-[#8fa4d4]">Empty</span>
+                </>
+              )}
+            </li>
+          );
+        }
+        const { shard, tauforged } = resolved;
+        const line = lines.find((l) => l.key.startsWith(`shard-${i}`));
+        const textBlock = (
+          <div className={`min-w-0 ${textLeftIconRight ? 'flex-1 text-right' : 'flex-1'}`}>
+            <div className="text-[10px] font-semibold text-[#eef2ff]">
+              {shard.name}
+              {line?.tau ? (
+                <span className="ml-1 text-[8px] tracking-wide text-cyan-200/90 uppercase">
+                  Tau
+                </span>
+              ) : null}
+            </div>
+            {line?.buff ? (
+              <div className="text-[9px] leading-snug text-[#a8b8e0]">
+                {renderDamageTypeWords(line.buff)}
+              </div>
+            ) : null}
+          </div>
+        );
+        return (
+          <li
+            key={i}
+            className={`flex items-start gap-2 ${textLeftIconRight ? 'w-full max-w-full justify-end' : ''}`}
+          >
+            {textLeftIconRight ? (
+              <>
+                {textBlock}
+                {shardIcon(slot, shard, tauforged)}
+              </>
+            ) : (
+              <>
+                {shardIcon(slot, shard, tauforged)}
+                {textBlock}
+              </>
+            )}
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+function ShareSkillsPanel({
+  ownAbilities,
+  dbAbilities,
+  selectedReplacement,
+  helminthConfig,
+  iconPx,
+  iconsOnly = false,
+}: {
+  ownAbilities: ParsedShareAbility[];
+  dbAbilities: Ability[];
+  selectedReplacement: Ability | null;
+  helminthConfig?: BuildConfig['helminth'];
+  iconPx: number;
+  iconsOnly?: boolean;
+}) {
+  const desc =
+    helminthConfig && selectedReplacement?.description
+      ? selectedReplacement.description
+      : ownAbilities.find((a) => a.description)?.description;
+
+  const displayDesc =
+    desc != null && desc.length > MAX_DESCRIPTION_LENGTH
+      ? `${desc.slice(0, TRUNCATED_DESCRIPTION_LENGTH).trim()}...`
+      : desc;
+
+  return (
+    <div className="flex min-h-0 flex-col gap-2">
+      <div className="flex justify-center gap-1.5">
+        {ownAbilities.map((ability) => {
+          const isReplaced =
+            helminthReplacedAbilityIndex(
+              helminthConfig,
+              ownAbilities.map((a) => ({
+                abilityName: a.name,
+                abilityUniqueName: a.unique_name,
+              })),
+            ) === ability.index;
+          const icon =
+            isReplaced && selectedReplacement?.image_path
+              ? `/images${selectedReplacement.image_path}`
+              : getShareAbilityDbIcon(ability, dbAbilities);
+          const initial = (
+            isReplaced && selectedReplacement ? selectedReplacement.name : ability.name
+          )
+            .charAt(0)
+            .toUpperCase();
+          return (
+            <div
+              key={ability.index}
+              className={`relative flex shrink-0 items-center justify-center overflow-hidden rounded-lg border ${
+                isReplaced
+                  ? 'bg-danger/10 border-danger/70 ring-danger/50 ring-1'
+                  : 'border-white/15 bg-black/25'
+              }`}
+              style={{ width: iconPx, height: iconPx }}
+            >
+              {icon ? (
+                <img
+                  src={icon}
+                  alt=""
+                  className="invert-on-light max-h-[88%] max-w-[88%] rounded object-cover"
+                  draggable={false}
+                />
+              ) : (
+                <span
+                  className={`text-sm font-bold ${isReplaced ? 'text-red-300/90' : 'text-white/45'}`}
+                >
+                  {initial}
+                </span>
+              )}
+              <span
+                className={`absolute -top-0.5 -left-0.5 flex h-3.5 min-w-[14px] items-center justify-center rounded-full px-0.5 text-[8px] font-bold ${
+                  isReplaced ? 'bg-danger text-white' : 'bg-white/20 text-[#dbe4ff]'
+                }`}
+              >
+                {ability.index + 1}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+      {iconsOnly ? null : displayDesc ? (
+        <p className="line-clamp-[10] text-[10px] leading-snug break-words text-[#b8c8ec]">
+          {displayDesc}
+        </p>
+      ) : (
+        <p className="text-[10px] text-[#7e8fb8]">No ability description loaded.</p>
+      )}
+    </div>
+  );
+}
+
+function ShareDamageBreakdownBars({
+  weapon,
+  slots,
+  valenceBonus,
+  hideHeader = false,
+}: {
+  weapon: Weapon;
+  slots: ModSlot[];
+  valenceBonus?: ValenceBonus | null;
+  hideHeader?: boolean;
+}) {
+  const { totalDamage, damageBreakdown } = calculateBuildDamage(
+    weapon,
+    slots,
+    undefined,
+    valenceBonus,
+  );
+  if (damageBreakdown.length === 0) return null;
+  const maxValue = Math.max(...damageBreakdown.map((e) => e.value));
+
+  return (
+    <div className="space-y-1">
+      {hideHeader ? (
+        <div className="mb-1 flex justify-end">
+          <span className="font-mono text-[12px] font-bold text-[#f0f4ff] tabular-nums">
+            {formatDamage(totalDamage)}
+          </span>
+        </div>
+      ) : (
+        <div className="mb-1 flex items-center justify-between gap-2">
+          <span className="text-[10px] tracking-[0.16em] text-[#c7d5ff] uppercase">Damage</span>
+          <span className="font-mono text-[12px] font-bold text-[#f0f4ff] tabular-nums">
+            {formatDamage(totalDamage)}
+          </span>
+        </div>
+      )}
+      {damageBreakdown.map((entry) => {
+        const color = getElementColor(entry.type);
+        const pct = totalDamage > 0 ? (entry.value / totalDamage) * 100 : 0;
+        const barWidth = maxValue > 0 ? (entry.value / maxValue) * 100 : 0;
+        const iconFile = SHARE_ELEMENT_ICONS[entry.type];
+        return (
+          <div
+            key={entry.type}
+            className="relative flex items-center gap-1.5 overflow-hidden rounded py-0.5 pr-1.5 pl-0.5"
+          >
+            <div
+              className="absolute inset-y-0 left-0 rounded"
+              style={{
+                width: `${barWidth}%`,
+                backgroundColor: color,
+                opacity: 0.14,
+              }}
+            />
+            <div className="relative z-10 flex h-4 w-4 shrink-0 items-center justify-center">
+              {iconFile ? (
+                <img
+                  src={`/icons/elements/${iconFile}.png`}
+                  alt=""
+                  className="h-3.5 w-3.5 object-contain"
+                  draggable={false}
+                />
+              ) : (
+                <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: color }} />
+              )}
+            </div>
+            <span className="relative z-10 min-w-[52px] text-[9px] font-medium" style={{ color }}>
+              {entry.type}
+            </span>
+            <div className="relative z-10 flex-1" />
+            <span className="relative z-10 font-mono text-[8px] text-[#9fb0d8] tabular-nums">
+              {pct.toFixed(1)}%
+            </span>
+            <span className="relative z-10 min-w-[40px] text-right font-mono text-[9px] font-semibold text-[#f0f4ff] tabular-nums">
+              {formatDamage(entry.value)}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+const HERO_MASK_HORIZONTAL = `linear-gradient(to right,
+  rgba(0,0,0,0) 0%,
+  rgba(0,0,0,0.06) 4%,
+  rgba(0,0,0,0.18) 8%,
+  rgba(0,0,0,0.42) 13%,
+  rgba(0,0,0,0.72) 18%,
+  rgba(0,0,0,0.92) 22%,
+  #000 28%,
+  #000 72%,
+  rgba(0,0,0,0.92) 78%,
+  rgba(0,0,0,0.72) 82%,
+  rgba(0,0,0,0.42) 87%,
+  rgba(0,0,0,0.18) 92%,
+  rgba(0,0,0,0.06) 96%,
+  rgba(0,0,0,0) 100%)`;
+const HERO_MASK_VERTICAL = `linear-gradient(to bottom,
+  #000 0%,
+  #000 52%,
+  rgba(0,0,0,0.88) 62%,
+  rgba(0,0,0,0.55) 72%,
+  rgba(0,0,0,0.22) 84%,
+  rgba(0,0,0,0) 100%)`;
+const HERO_MASK_IMAGE = `${HERO_MASK_HORIZONTAL}, ${HERO_MASK_VERTICAL}`;
+
+function ShareHeroImage({
+  equipmentImagePath,
+  equipmentName,
+}: {
+  equipmentImagePath?: string;
+  equipmentName: string;
+}) {
+  const heroMaskStyle: CSSProperties = {
+    WebkitMaskImage: HERO_MASK_IMAGE,
+    WebkitMaskRepeat: 'no-repeat',
+    WebkitMaskSize: '100% 100%',
+    maskImage: HERO_MASK_IMAGE,
+    maskRepeat: 'no-repeat',
+    maskSize: '100% 100%',
+    maskComposite: 'intersect',
+  };
+
+  return (
+    <div className="relative h-[340px] w-full shrink-0 overflow-hidden bg-transparent">
+      {equipmentImagePath ? (
+        <img
+          src={equipmentImagePath}
+          alt=""
+          className="h-full w-full object-contain object-top"
+          draggable={false}
+          style={heroMaskStyle}
+        />
+      ) : (
+        <div className="flex h-full w-full items-center justify-center px-2 text-center text-[11px] text-white/45">
+          No Art
+        </div>
+      )}
+      <div className="absolute right-0 bottom-0 left-0 z-10 pb-3">
+        <ShareHeroTitle text={equipmentName} />
+      </div>
+    </div>
+  );
+}
+
+export function BuildShareModal({
+  open,
+  onClose,
+  buildName,
+  equipment,
+  equipmentName,
+  equipmentType,
+  equipmentImagePath,
+  slots,
+  arcaneSlots,
+  shardSlots,
+  shardTypes,
+  orokinReactor,
+  formaCost,
+  helminthConfig,
+  incarnonEnabled = false,
+  incarnonSelections,
+  valenceBonus,
+}: BuildShareModalProps) {
+  const exportRef = useRef<HTMLDivElement | null>(null);
+  const previewBoxRef = useRef<HTMLDivElement | null>(null);
+  const bgPanSurfaceRef = useRef<HTMLDivElement | null>(null);
+  const bgPanDragRef = useRef<{
+    pointerId: number;
+    startClientX: number;
+    startClientY: number;
+    originPanX: number;
+    originPanY: number;
+    nw: number;
+    nh: number;
+    scale: number;
+  } | null>(null);
+  const [bgDataUrl, setBgDataUrl] = useState<string | null>(null);
+  const [uploadName, setUploadName] = useState<string>('');
+  const [bgOpacity, setBgOpacity] = useState(36);
+  const [bgImageScale, setBgImageScale] = useState(1);
+  const [bgNaturalW, setBgNaturalW] = useState(0);
+  const [bgNaturalH, setBgNaturalH] = useState(0);
+  const [bgPan, setBgPan] = useState({ x: 0, y: 0 });
+  const [bgPanSurfaceK, setBgPanSurfaceK] = useState(1);
+  const [previewScale, setPreviewScale] = useState(1);
+  const [isRendering, setIsRendering] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const isWarframe = equipmentType === 'warframe';
+  const isAvatarStats = isAvatarStatsEquipmentType(equipmentType);
+  const isCompanion = equipmentType === 'companion';
+  const shareAbilities = useWarframeShareAbilities(
+    isWarframe ? (equipment as Warframe) : null,
+    helminthConfig,
+  );
+  const shareIncarnon = useWeaponShareIncarnon(
+    !isAvatarStats ? (equipment as Weapon) : null,
+    incarnonEnabled,
+    incarnonSelections,
+  );
+  const incarnonInput =
+    shareIncarnon.showIncarnon && shareIncarnon.incarnonData
+      ? {
+          enabled: true,
+          data: shareIncarnon.incarnonData,
+          selections: incarnonSelections,
+        }
+      : undefined;
+  const warframeCalc = useMemo(() => {
+    if (!isAvatarStats) return null;
+    try {
+      const bonuses = isWarframe ? extractArchonShardBonuses(shardSlots, shardTypes) : undefined;
+      return calculateWarframeStats(equipment as Warframe, slots, bonuses);
+    } catch (err) {
+      console.error('[BuildShareModal] calculateWarframeStats failed', err);
+      return null;
+    }
+  }, [equipment, isAvatarStats, isWarframe, shardSlots, shardTypes, slots]);
+
+  const weaponCalc = useMemo(() => {
+    if (isAvatarStats) return null;
+    try {
+      return calculateWeaponDps(equipment as Weapon, slots, valenceBonus, incarnonInput);
+    } catch {
+      return null;
+    }
+  }, [equipment, isAvatarStats, slots, valenceBonus, incarnonInput]);
+
+  const equippedSlots = useMemo(() => slots.filter((s) => s.mod), [slots]);
+  const filledArcanes = useMemo(() => arcaneSlots.filter((s) => s.arcane), [arcaneSlots]);
+
+  const weaponRadarValues = useMemo(() => {
+    if (!weaponCalc) return null;
+    const b = weaponCalc.base;
+    const m = weaponCalc.modded;
+    const reloadScore =
+      b.reloadTime > 0.05
+        ? b.reloadTime / Math.max(m.reloadTime, 0.001)
+        : m.fireRate / Math.max(b.fireRate, 0.001);
+    return [m.critChance, m.critMultiplier, m.statusChance, m.fireRate, m.multishot, reloadScore];
+  }, [weaponCalc]);
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    const el = previewBoxRef.current;
+    if (!el) return;
+    const run = () => {
+      const w = el.clientWidth;
+      const h = el.clientHeight;
+      if (w <= 0 || h <= 0) return;
+      setPreviewScale(Math.min(w / SHARE_CANVAS_WIDTH, h / SHARE_CANVAS_HEIGHT, 1));
+    };
+    run();
+    const ro = new ResizeObserver(run);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [open]);
+
+  useLayoutEffect(() => {
+    const el = bgPanSurfaceRef.current;
+    if (!el || !bgDataUrl) return;
+    const run = () => {
+      const w = el.clientWidth;
+      if (w <= 0) return;
+      setBgPanSurfaceK(w / SHARE_CANVAS_WIDTH);
+    };
+    run();
+    const ro = new ResizeObserver(run);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [bgDataUrl, open]);
+
+  const arcaneScale = 0.5;
+  const skillIconPx = 34;
+
+  async function handleUploadChange(file: File | null): Promise<void> {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setError('Please choose an image file.');
+      return;
+    }
+    setError(null);
+    try {
+      const dataUrl = await readFileAsDataUrl(file);
+      const dims = await new Promise<{ w: number; h: number }>((resolve, reject) => {
+        const im = new Image();
+        im.onload = () => resolve({ w: im.naturalWidth, h: im.naturalHeight });
+        im.onerror = () => reject(new Error('image load failed'));
+        im.src = dataUrl;
+      });
+      if (dims.w <= 0 || dims.h <= 0) {
+        setError('That image has invalid dimensions.');
+        return;
+      }
+      const scale0 = Math.min(1, SHARE_CANVAS_WIDTH / dims.w, SHARE_CANVAS_HEIGHT / dims.h);
+      const sw = dims.w * scale0;
+      const sh = dims.h * scale0;
+      const pan0 = clampBackgroundPan(
+        dims.w,
+        dims.h,
+        scale0,
+        (SHARE_CANVAS_WIDTH - sw) / 2,
+        (SHARE_CANVAS_HEIGHT - sh) / 2,
+      );
+      setBgNaturalW(dims.w);
+      setBgNaturalH(dims.h);
+      setBgImageScale(scale0);
+      setBgPan(pan0);
+      setBgDataUrl(dataUrl);
+      setUploadName(file.name);
+    } catch {
+      setError('Could not read that image file.');
+    }
+  }
+
+  function handleBgPanPointerDown(e: ReactPointerEvent<HTMLDivElement>): void {
+    if (e.button !== 0 || bgNaturalW <= 0) return;
+    e.preventDefault();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    bgPanDragRef.current = {
+      pointerId: e.pointerId,
+      startClientX: e.clientX,
+      startClientY: e.clientY,
+      originPanX: bgPan.x,
+      originPanY: bgPan.y,
+      nw: bgNaturalW,
+      nh: bgNaturalH,
+      scale: bgImageScale,
+    };
+  }
+
+  function handleBgPanPointerMove(e: ReactPointerEvent<HTMLDivElement>): void {
+    const drag = bgPanDragRef.current;
+    if (!drag || e.pointerId !== drag.pointerId) return;
+    const surface = bgPanSurfaceRef.current;
+    if (!surface) return;
+    const rect = surface.getBoundingClientRect();
+    const k = SHARE_CANVAS_WIDTH / rect.width;
+    const dx = (e.clientX - drag.startClientX) * k;
+    const dy = (e.clientY - drag.startClientY) * k;
+    setBgPan(
+      clampBackgroundPan(drag.nw, drag.nh, drag.scale, drag.originPanX + dx, drag.originPanY + dy),
+    );
+  }
+
+  function handleBgPanPointerUp(e: ReactPointerEvent<HTMLDivElement>): void {
+    const drag = bgPanDragRef.current;
+    if (!drag || drag.pointerId !== e.pointerId) return;
+    bgPanDragRef.current = null;
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {
+      // ignore
+    }
+  }
+
+  async function handleExport(): Promise<void> {
+    if (!exportRef.current) return;
+    setIsRendering(true);
+    setError(null);
+    let objectUrl: string | null = null;
+    const exportEl = exportRef.current;
+    const captureClass = 'share-export--capture-png';
+    exportEl.classList.add(captureClass);
+    try {
+      const blob = await toBlob(exportEl, {
+        cacheBust: true,
+        pixelRatio: SHARE_EXPORT_PIXEL_RATIO,
+        canvasWidth: SHARE_CANVAS_WIDTH,
+        canvasHeight: SHARE_CANVAS_HEIGHT,
+      });
+      if (!blob) {
+        throw new Error('Export produced an empty image');
+      }
+      objectUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = objectUrl;
+      a.download = buildShareDownloadFileName(equipmentName, buildName || 'build');
+      a.click();
+    } catch (renderError) {
+      console.error('[BuildShareModal] Failed to render share image', renderError);
+      setError('Failed to export image. If this persists, try removing the background image.');
+    } finally {
+      exportEl.classList.remove(captureClass);
+      setIsRendering(false);
+      if (objectUrl) {
+        const u = objectUrl;
+        window.setTimeout(() => URL.revokeObjectURL(u), 500);
+      }
+    }
+  }
+
+  if (!open) return null;
+
+  const weaponStatLabels = weaponCalc?.isMelee
+    ? [
+        'Critical Chance',
+        'Critical Multiplier',
+        'Status Chance',
+        'Attack Speed',
+        'Multishot',
+        'Reload Speed',
+      ]
+    : [
+        'Critical Chance',
+        'Critical Multiplier',
+        'Status Chance',
+        'Fire Rate',
+        'Multishot',
+        'Reload Speed',
+      ];
+
+  const leftColumn = (
+    <div className="flex min-h-0 w-[46%] max-w-[46%] min-w-0 flex-[0_0_46%] flex-col gap-2 pr-1">
+      <div className="flex shrink-0 items-start gap-2.5">
+        <img
+          src={feathers}
+          alt=""
+          width={36}
+          height={36}
+          className="mt-0.5 h-9 w-9 shrink-0 object-contain opacity-95 drop-shadow-[0_1px_8px_rgba(0,0,0,0.45)]"
+          draggable={false}
+        />
+        <div className="min-w-0 flex-1">
+          <p className="text-[9px] tracking-[0.2em] text-[#9fb2e8]/95 uppercase">Armory</p>
+          <h4 className="mt-0.5 text-[28px] leading-[1.06] font-semibold tracking-tight text-[#f6f8ff]">
+            {buildName}
+          </h4>
+          <p className="mt-1 text-[10px] text-[#7d92c0]">{formatEquipmentType(equipmentType)}</p>
+        </div>
+      </div>
+      <div className="flex w-full shrink-0 flex-wrap items-end justify-center gap-4">
+        <ShareFormaCounts forma={formaCost} />
+        <ShareReactorStamp active={orokinReactor} />
+        <ShareIncarnonStamp active={shareIncarnon.showIncarnon} />
+      </div>
+      <ModsShareSection slots={equippedSlots} />
+      <div className="flex shrink-0 flex-wrap items-center justify-center gap-3 py-1">
+        {filledArcanes.length === 0 ? (
+          <span className="text-[9px] text-[#7e8fb8]">No arcanes</span>
+        ) : (
+          filledArcanes.map((slot, i) => {
+            const a = slot.arcane!;
+            const maxRank = getMaxRank(a);
+            const art = a.image_path ? `/images${a.image_path}` : '';
+            return (
+              <ArcaneCardPreview
+                key={`${a.unique_name}-${i}`}
+                layout={{ ...DEFAULT_ARCANE_LAYOUT, scale: arcaneScale }}
+                rarity={normalizeArcaneRarity(a.rarity)}
+                arcaneArt={art}
+                arcaneName={a.name}
+                rank={slot.rank}
+                maxRank={maxRank}
+              />
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+
+  const warframeRightColumn =
+    isAvatarStats && warframeCalc ? (
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2 pl-1">
+        <ShareHeroImage equipmentImagePath={equipmentImagePath} equipmentName={equipmentName} />
+        {isWarframe ? (
+          <>
+            <div className="shrink-0 px-0.5 py-1">
+              <ShareSkillsPanel
+                ownAbilities={shareAbilities.ownAbilities}
+                dbAbilities={shareAbilities.dbAbilities}
+                selectedReplacement={shareAbilities.selectedReplacement}
+                helminthConfig={helminthConfig}
+                iconPx={skillIconPx}
+                iconsOnly
+              />
+            </div>
+            <div className="min-h-0 shrink-0 pr-[30px] pl-0.5">
+              <ShareShardColumn compact textLeftIconRight slots={shardSlots} shards={shardTypes} />
+            </div>
+          </>
+        ) : null}
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2 overflow-hidden">
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+            <ShareRadarAuto
+              labels={
+                isCompanion
+                  ? ['Health', 'Shield', 'Armor', 'Energy']
+                  : ['Health', 'Shield', 'Armor', 'Sprint Speed', 'Energy']
+              }
+              values={
+                isCompanion
+                  ? [
+                      warframeCalc.health.modded,
+                      warframeCalc.shield.modded,
+                      warframeCalc.armor.modded,
+                      warframeCalc.energy.modded,
+                    ]
+                  : [
+                      warframeCalc.health.modded,
+                      warframeCalc.shield.modded,
+                      warframeCalc.armor.modded,
+                      warframeCalc.sprintSpeed.modded,
+                      warframeCalc.energy.modded,
+                    ]
+              }
+            />
+          </div>
+          {!isCompanion ? (
+            <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+              <ShareRadarAuto
+                labels={[
+                  'Ability Duration',
+                  'Ability Efficiency',
+                  'Ability Range',
+                  'Ability Strength',
+                ]}
+                values={[
+                  warframeCalc.abilityDuration.modded,
+                  warframeCalc.abilityEfficiency.modded,
+                  warframeCalc.abilityRange.modded,
+                  warframeCalc.abilityStrength.modded,
+                ]}
+                fill="rgba(70, 214, 190, 0.28)"
+                stroke="rgba(120, 230, 210, 0.95)"
+              />
+            </div>
+          ) : null}
+        </div>
+      </div>
+    ) : isAvatarStats ? (
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2 pl-1">
+        <ShareHeroImage equipmentImagePath={equipmentImagePath} equipmentName={equipmentName} />
+        <p className="text-[11px] text-[#b6c5ed]">Stats unavailable for this build.</p>
+      </div>
+    ) : null;
+
+  const weaponRightColumn =
+    !isAvatarStats && weaponCalc && weaponRadarValues ? (
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2 pl-1">
+        <ShareHeroImage equipmentImagePath={equipmentImagePath} equipmentName={equipmentName} />
+        {shareIncarnon.showIncarnon ? (
+          <div className="shrink-0 px-0.5 py-1">
+            <ShareIncarnonPanel tiers={shareIncarnon.tiers} iconPx={skillIconPx} iconsOnly />
+          </div>
+        ) : null}
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+          <ShareRadarAuto labels={weaponStatLabels} values={weaponRadarValues} />
+        </div>
+        <div className="min-h-0 flex-1 overflow-hidden">
+          <ShareDamageBreakdownBars
+            hideHeader
+            weapon={equipment as Weapon}
+            slots={slots}
+            valenceBonus={valenceBonus}
+          />
+        </div>
+      </div>
+    ) : !isAvatarStats ? (
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2 pl-1">
+        <ShareHeroImage equipmentImagePath={equipmentImagePath} equipmentName={equipmentName} />
+        <p className="text-[11px] text-[#b6c5ed]">Stats unavailable.</p>
+      </div>
+    ) : null;
+
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      ariaLabelledBy="share-build-title"
+      className="glass-modal-surface max-w-[1120px]"
+    >
+      <div className="grid gap-5 lg:grid-cols-[300px_1fr]">
+        <section className="space-y-4">
+          <h3 id="share-build-title" className="text-foreground text-lg font-semibold">
+            Export Share Image
+          </h3>
+          <p className="text-muted text-sm">
+            Your uploaded image stays local in the browser and is only used for this rendered
+            export.
+          </p>
+
+          <div className="glass-panel space-y-3 p-3">
+            <p className="text-muted text-xs tracking-[0.16em] uppercase">Partial Background</p>
+            <input
+              type="file"
+              accept="image/*"
+              className="form-input"
+              onChange={(event) => {
+                const file = event.currentTarget.files?.[0] ?? null;
+                void handleUploadChange(file);
+              }}
+            />
+            {uploadName ? (
+              <p className="text-muted text-xs">Using: {uploadName}</p>
+            ) : (
+              <p className="text-muted text-xs">Optional image behind build details.</p>
+            )}
+            <label className="text-muted block text-xs">
+              Opacity: {bgOpacity}%
+              <input
+                type="range"
+                min={10}
+                max={85}
+                value={bgOpacity}
+                onChange={(event) => setBgOpacity(Number(event.target.value))}
+                className="mt-1 w-full"
+              />
+            </label>
+            {bgDataUrl && bgNaturalW > 0 ? (
+              <>
+                <label className="text-muted block text-xs">
+                  Zoom: {bgImageScale.toFixed(2)}× (uniform; no crop)
+                  <input
+                    type="range"
+                    min={0.12}
+                    max={2.5}
+                    step={0.01}
+                    value={bgImageScale}
+                    onChange={(event) => {
+                      const v = Number(event.target.value);
+                      setBgImageScale(v);
+                      setBgPan((p) => clampBackgroundPan(bgNaturalW, bgNaturalH, v, p.x, p.y));
+                    }}
+                    className="mt-1 w-full"
+                  />
+                </label>
+                <div>
+                  <p className="text-muted mb-1.5 text-xs">Position (drag)</p>
+                  <div
+                    ref={bgPanSurfaceRef}
+                    role="application"
+                    aria-label="Drag to position the background image"
+                    className="relative cursor-grab touch-none overflow-hidden rounded-lg border border-white/15 bg-black/30 active:cursor-grabbing"
+                    style={{ aspectRatio: `${SHARE_CANVAS_WIDTH} / ${SHARE_CANVAS_HEIGHT}` }}
+                    onPointerDown={handleBgPanPointerDown}
+                    onPointerMove={handleBgPanPointerMove}
+                    onPointerUp={handleBgPanPointerUp}
+                    onPointerCancel={handleBgPanPointerUp}
+                  >
+                    <div
+                      className="pointer-events-none absolute top-0 left-0"
+                      style={{
+                        width: SHARE_CANVAS_WIDTH,
+                        height: SHARE_CANVAS_HEIGHT,
+                        transform: `scale(${Math.max(0.001, bgPanSurfaceK)})`,
+                        transformOrigin: 'top left',
+                      }}
+                    >
+                      <ShareUploadBackgroundView
+                        dataUrl={bgDataUrl}
+                        naturalW={bgNaturalW}
+                        naturalH={bgNaturalH}
+                        scale={bgImageScale}
+                        pan={bgPan}
+                      />
+                    </div>
+                    <div
+                      className="pointer-events-none absolute inset-0 rounded-lg ring-1 ring-white/12 ring-inset"
+                      aria-hidden
+                    />
+                  </div>
+                </div>
+              </>
+            ) : null}
+            {bgDataUrl ? (
+              <button
+                type="button"
+                className="btn btn-secondary w-full"
+                onClick={() => {
+                  setBgDataUrl(null);
+                  setUploadName('');
+                  setBgNaturalW(0);
+                  setBgNaturalH(0);
+                  setBgPan({ x: 0, y: 0 });
+                  setBgImageScale(1);
+                  bgPanDragRef.current = null;
+                }}
+              >
+                Remove Background Image
+              </button>
+            ) : null}
+          </div>
+
+          {error ? (
+            <p className="error-msg" role="alert">
+              {error}
+            </p>
+          ) : null}
+
+          <div className="flex gap-2">
+            <button type="button" className="btn btn-secondary flex-1" onClick={onClose}>
+              Close
+            </button>
+            <button
+              type="button"
+              className="btn btn-accent flex-1"
+              onClick={() => {
+                void handleExport();
+              }}
+              disabled={isRendering}
+            >
+              {isRendering ? 'Rendering...' : 'Export PNG'}
+            </button>
+          </div>
+        </section>
+
+        <section className="flex min-h-0 min-w-0 flex-col space-y-3">
+          <div className="text-muted text-xs tracking-[0.16em] uppercase">
+            Preview ({SHARE_CANVAS_WIDTH} × {SHARE_CANVAS_HEIGHT}) — scaled to fit; PNG exports at{' '}
+            {SHARE_CANVAS_WIDTH * SHARE_EXPORT_PIXEL_RATIO} ×{' '}
+            {SHARE_CANVAS_HEIGHT * SHARE_EXPORT_PIXEL_RATIO} for sharper output
+          </div>
+          <div
+            ref={previewBoxRef}
+            className="flex h-[min(720px,82vh)] min-h-0 w-full min-w-0 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-black/20 p-2"
+          >
+            <div
+              className="overflow-hidden rounded-[20px]"
+              style={{
+                width: SHARE_CANVAS_WIDTH * previewScale,
+                height: SHARE_CANVAS_HEIGHT * previewScale,
+              }}
+            >
+              <div
+                style={{
+                  width: SHARE_CANVAS_WIDTH,
+                  height: SHARE_CANVAS_HEIGHT,
+                  transform: `scale(${previewScale})`,
+                  transformOrigin: 'top left',
+                }}
+              >
+                <div
+                  ref={exportRef}
+                  style={{ width: SHARE_CANVAS_WIDTH, height: SHARE_CANVAS_HEIGHT }}
+                  className="share-export-root share-export-glass-frame relative flex shrink-0 flex-col overflow-hidden text-[#edf2ff]"
+                >
+                  <div
+                    className="pointer-events-none absolute inset-0"
+                    style={MAIN_PAGE_BACKGROUND_STYLE}
+                  />
+                  {bgDataUrl && bgNaturalW > 0 ? (
+                    <div
+                      className="pointer-events-none absolute inset-0 overflow-hidden"
+                      style={{ opacity: bgOpacity / 100 }}
+                    >
+                      <ShareUploadBackgroundView
+                        dataUrl={bgDataUrl}
+                        naturalW={bgNaturalW}
+                        naturalH={bgNaturalH}
+                        scale={bgImageScale}
+                        pan={bgPan}
+                      />
+                      <div className="absolute inset-0 bg-[linear-gradient(115deg,rgba(9,13,24,0.82),rgba(9,13,24,0.35),rgba(9,13,24,0.55))]" />
+                    </div>
+                  ) : null}
+                  <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.06)_0%,transparent_25%,transparent_70%,rgba(0,0,0,0.44)_100%)]" />
+
+                  <div className="relative z-10 flex min-h-0 flex-1 flex-col px-4 pt-4 pb-3">
+                    <div className="flex min-h-0 min-w-0 flex-1 flex-row gap-0">
+                      {leftColumn}
+                      {isAvatarStats ? warframeRightColumn : weaponRightColumn}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </Modal>
+  );
+}

@@ -1,0 +1,9 @@
+allowBuilds:
+  '@clerk/shared': true
+  better-sqlite3: true
+overrides:
+  tar: '>=7.5.22'
+  undici: '>7.29.1'
+
+update:
+  githubActions: true

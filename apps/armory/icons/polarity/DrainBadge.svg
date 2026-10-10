@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 70 34" width="70" height="34">
+  <!-- Left-pointing half-hexagon badge for mod drain display.
+       Left: two angled edges meeting at a point (half-hexagon).
+       Right: flat vertical edge (~10% wider flat section).
+       Override stroke via inline props for rarity theming. -->
+  <polygon
+    points="1,17 13,1 69,1 69,33 13,33"
+    fill="rgba(8,8,8,0.88)"
+    stroke="#b4922a"
+    stroke-width="1.5"
+    stroke-linejoin="miter"
+  />
+</svg>

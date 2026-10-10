@@ -1,0 +1,2456 @@
+import { Show, SignInButton } from '@clerk/react';
+import { lazy, Suspense, useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import {
+  Link,
+  useParams,
+  useNavigate,
+  useSearchParams,
+  useBlocker,
+  type BlockerFunction,
+} from 'react-router';
+
+import {
+  isArtifactSlotDisabled,
+  isArtifactSlotVisible,
+  isWarframeSecondAuraSlotActive,
+  hasMeaningfulArtifactSlotOverrides,
+  normalizeWarframeArtifactSlotsForLoad,
+  warframeExilusArtifactIndex,
+} from '../../../shared/artifactSlotState.js';
+import {
+  buildModSlotsAreEquivalent,
+  reconcileStoredBuildModSlots,
+  type BuildModSlot,
+} from '../../../shared/buildSlotLayout.js';
+import {
+  equipmentExilusArtifactIndex,
+  type EquipmentSlotConfigKey,
+} from '../../../shared/equipmentSlotConfig.js';
+import {
+  formatSiriusOrionWarframeHeading,
+  siriusOrionEquipmentSaveName,
+} from '../../../shared/siriusOrionRegistry.js';
+import { buildEditPath, userBuildsPath } from '../../app/paths';
+import { useAuth } from '../../features/auth/AuthContext';
+import { useApi } from '../../hooks/useApi';
+import { useBuildFavorites } from '../../hooks/useBuildFavorites';
+import { useBuildStorage } from '../../hooks/useBuildStorage';
+import { useModCatalog } from '../../hooks/useModCatalog';
+import type { IncarnonData, IncarnonSelection } from '../../types/incarnon';
+import {
+  EQUIPMENT_SLOT_CONFIGS,
+  POLARITIES,
+  type Mod,
+  type ModSlot,
+  type Weapon,
+  type Warframe,
+  type Companion,
+  type EquipmentType,
+  type BuildConfig,
+  type ValenceBonus,
+  type Ability,
+  type PolarityKey,
+  type RivenConfig,
+  type RivenWeaponType,
+} from '../../types/warframe';
+import { apiFetch } from '../../utils/api';
+import { getMaxRank } from '../../utils/arcaneUtils';
+import {
+  buildArmoryShardKeyFromPicker,
+  persistHelminthForSave,
+  persistShardSlotsForSave,
+} from '../../utils/buildConfigPersist';
+import { getCompanionWeaponSelectionType, isCompanionWeapon } from '../../utils/companionWeapons';
+import { calculateTotalCapacity } from '../../utils/drain';
+import { getEquipmentModCapacityBase } from '../../utils/equipmentCapacity';
+import { getModTypesForEquipment, NO_MOD_TYPES_FOR_EQUIPMENT } from '../../utils/equipmentModTypes';
+import { calculateFormaCount, type FormaCount } from '../../utils/formaCounter';
+import {
+  applyIncarnonUnlockCascade,
+  createDefaultIncarnonSelections,
+  selectIncarnonPerk,
+} from '../../utils/incarnonSelections';
+import { parseIncarnonData, weaponHasIncarnon } from '../../utils/incarnonStats';
+import { catalogKeyForMod, hydrateSlotsWithModCatalog } from '../../utils/modCatalogHydration';
+import { isModLockedOut, isPostureMod } from '../../utils/modFiltering';
+import { canPlaceModInSlot, findEmptySlotForMod } from '../../utils/modPlacement';
+import {
+  createRivenMod,
+  getRivenStatsForType,
+  getRivenWeaponType,
+  isRivenMod,
+  RIVEN_PLACEHOLDER_UNIQUE,
+} from '../../utils/riven';
+import { getEffectiveRivenDisposition } from '../../utils/riven';
+import {
+  augmentExaltedStanceModForDisplay,
+  equipmentHasStanceSlot,
+  getRequiredExaltedStanceName,
+  matchesSpecialItemType,
+  weaponOmitsExilusSlot,
+} from '../../utils/specialItems';
+import { weaponSupportsValenceBonus } from '../../utils/weaponValence';
+import { LazySuspenseFallback } from '../ui/LazySuspenseFallback';
+import { MaterialSymbol } from '../ui/MaterialSymbol';
+import { Modal } from '../ui/Modal';
+import { AbilityBar } from './AbilityBar';
+import { ArcaneSlots, type ArcaneSlot, type Arcane } from './ArcaneSlots';
+import { ArchonShardSlots, type ShardSlotConfig, type ShardType } from './ArchonShardSlots';
+import { BuildDescriptionPanel } from './BuildDescriptionPanel';
+import { BuildLoadoutsPanel } from './BuildLoadoutsPanel';
+import { BuildSaveModal } from './BuildSaveModal';
+import { CapacityBar } from './CapacityBar';
+import { CompactBuildOverview } from './CompactBuildOverview';
+import { ElementOutput } from './ElementOutput';
+import { useAddToCompare } from './hooks/useAddToCompare';
+import { useDocumentPictureInPicture } from './hooks/useDocumentPictureInPicture';
+import { useModBuilderState } from './hooks/useModBuilderState';
+import { IncarnonUpgradePanel } from './IncarnonUpgradePanel';
+import { ModBuilderToasts } from './ModBuilderToasts';
+import { ModSlotGrid } from './ModSlotGrid';
+import { StatsPanel } from './StatsPanel';
+import { ValenceBonusPanel, DEFAULT_VALENCE_BONUS } from './ValenceBonusPanel';
+
+const FILTER_PANEL_IDLE_TIMEOUT_MS = 2000;
+const TOAST_DURATION_SUCCESS_MS = 2500;
+const TOAST_DURATION_ERROR_MS = 4000;
+
+const FilterPanelLazy = lazy(() =>
+  import('./FilterPanel').then((m) => ({ default: m.FilterPanel })),
+);
+
+const BuildShareModal = lazy(() =>
+  import('../Share/BuildShareModal').then((m) => ({ default: m.BuildShareModal })),
+);
+const HelminthPickerPanel = lazy(() =>
+  import('./HelminthPickerPanel').then((m) => ({ default: m.HelminthPickerPanel })),
+);
+const ArcanePickerPanel = lazy(() =>
+  import('./ArcanePickerPanel').then((m) => ({ default: m.ArcanePickerPanel })),
+);
+const ShardPickerPanel = lazy(() =>
+  import('./ShardPickerPanel').then((m) => ({ default: m.ShardPickerPanel })),
+);
+const RivenBuilder = lazy(() =>
+  import('./RivenBuilder').then((m) => ({ default: m.RivenBuilder })),
+);
+
+const IncarnonPickerPanel = lazy(() =>
+  import('./IncarnonPickerPanel').then((m) => ({ default: m.IncarnonPickerPanel })),
+);
+
+function getAbilityName(warframe: Warframe | null, index: number): string {
+  if (!warframe?.abilities) return `Ability ${index + 1}`;
+  try {
+    const parsed = JSON.parse(warframe.abilities) as Array<{
+      abilityName?: string;
+      name?: string;
+    }>;
+    const ab = parsed[index];
+    return ab?.abilityName || ab?.name || `Ability ${index + 1}`;
+  } catch {
+    return `Ability ${index + 1}`;
+  }
+}
+
+type Equipment = Warframe | Weapon | Companion;
+
+function getEquipmentListUrl(type: EquipmentType): string {
+  switch (type) {
+    case 'warframe':
+      return '/api/warframes';
+    case 'primary':
+      return '/api/weapons?type=LongGuns';
+    case 'secondary':
+      return '/api/weapons?type=Pistols';
+    case 'melee':
+      return '/api/weapons?type=Melee';
+    case 'archgun':
+      return '/api/weapons?type=SpaceGuns';
+    case 'archmelee':
+      return '/api/weapons?type=SpaceMelee';
+    case 'companion':
+      return '/api/companions';
+    case 'beast_claws':
+      return '/api/weapons?type=SentinelWeapons';
+    case 'archwing':
+      return '/api/warframes';
+    case 'necramech':
+      return '/api/warframes';
+    default:
+      return '/api/warframes';
+  }
+}
+
+function getSetName(slot: ModSlot): string | undefined {
+  if (!slot.mod?.mod_set || !slot.mod.set_stats) return undefined;
+  return slot.mod.mod_set;
+}
+
+function clampSetRank(slot: ModSlot, rank: number): number {
+  const maxSetRank = slot.mod?.set_num_in_set ?? 1;
+  return Math.max(1, Math.min(maxSetRank, rank));
+}
+
+function applySetPieceDelta(prevSlots: ModSlot[], nextSlots: ModSlot[]): ModSlot[] {
+  const prevCounts = new Map<string, number>();
+  const prevRanks = new Map<string, number>();
+
+  for (const slot of prevSlots) {
+    const setName = getSetName(slot);
+    if (!setName) continue;
+    prevCounts.set(setName, (prevCounts.get(setName) ?? 0) + 1);
+    if (!prevRanks.has(setName)) {
+      prevRanks.set(setName, slot.setRank ?? 1);
+    }
+  }
+
+  const nextCounts = new Map<string, number>();
+  let updated = nextSlots.map((slot) => {
+    const setName = getSetName(slot);
+    if (!setName) return slot;
+    nextCounts.set(setName, (nextCounts.get(setName) ?? 0) + 1);
+    return slot.setRank == null ? { ...slot, setRank: 1 } : slot;
+  });
+
+  for (const [setName, nextCount] of nextCounts) {
+    const prevCount = prevCounts.get(setName) ?? 0;
+    if (prevCount === 0) continue;
+    const delta = nextCount - prevCount;
+    if (delta === 0) continue;
+
+    const baseRank = prevRanks.get(setName) ?? 1;
+    const targetRank = baseRank + delta;
+    updated = updated.map((slot) => {
+      if (getSetName(slot) !== setName) return slot;
+      const nextRank = clampSetRank(slot, targetRank);
+      return slot.setRank === nextRank ? slot : { ...slot, setRank: nextRank };
+    });
+  }
+
+  return updated;
+}
+
+function applySetRankDelta(
+  slots: ModSlot[],
+  setName: string,
+  delta: number,
+  fallbackRank: number,
+): ModSlot[] {
+  return slots.map((slot) => {
+    if (getSetName(slot) !== setName) return slot;
+    const currentRank = slot.setRank ?? fallbackRank;
+    const nextRank = clampSetRank(slot, currentRank + delta);
+    return slot.setRank === nextRank ? slot : { ...slot, setRank: nextRank };
+  });
+}
+
+function modBuilderPersistFingerprint(args: {
+  buildName: string;
+  buildDescription: string;
+  buildIsPublic: boolean;
+  equipmentType: EquipmentType;
+  equipmentUniqueName: string;
+  currentBuildId?: string;
+  slots: ModSlot[];
+  helminthConfig: BuildConfig['helminth'] | undefined;
+  incarnonEnabled: boolean;
+  incarnonSelections: IncarnonSelection[] | undefined;
+  arcaneSlots: ArcaneSlot[];
+  shardSlots: ShardSlotConfig[];
+  orokinReactor: boolean;
+  valenceBonus: ValenceBonus | null;
+}): string {
+  return JSON.stringify({
+    n: args.buildName,
+    d: args.buildDescription,
+    p: args.buildIsPublic,
+    et: args.equipmentType,
+    eu: args.equipmentUniqueName,
+    id: args.currentBuildId ?? '',
+    s: args.slots,
+    h: args.helminthConfig,
+    ie: args.incarnonEnabled,
+    is: args.incarnonSelections,
+    a: args.arcaneSlots,
+    sh: args.shardSlots,
+    o: args.orokinReactor,
+    v: args.valenceBonus,
+  });
+}
+
+export function ModBuilder() {
+  const {
+    buildId,
+    equipmentType: routeEqType,
+    equipmentId,
+  } = useParams<{
+    buildId?: string;
+    equipmentType?: string;
+    equipmentId?: string;
+  }>();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const readOnly = searchParams.get('view') === '1';
+  const compactOverview = searchParams.get('compact') === '1';
+  const { saveBuild: storageSave, getBuild, copyBuildFromId } = useBuildStorage();
+  const { toggleFavorite, favoriteBusy } = useBuildFavorites();
+  const { auth } = useAuth();
+
+  const routeKey = `${buildId ?? ''}|${routeEqType ?? ''}|${equipmentId ?? ''}`;
+  const allowNavigationBypassRef = useRef(false);
+  const livePersistFingerprintRef = useRef('');
+
+  const {
+    equipmentType,
+    setEquipmentType,
+    selectedEquipment,
+    setSelectedEquipment,
+    slots,
+    setSlots,
+    orokinReactor,
+    setOrokinReactor,
+    valenceBonus,
+    setValenceBonus,
+    buildName,
+    setBuildName,
+    buildDescription,
+    setBuildDescription,
+    currentBuildId,
+    setCurrentBuildId,
+    targetEquipmentUniqueName,
+    setTargetEquipmentUniqueName,
+    helminthConfig,
+    setHelminthConfig,
+    incarnonEnabled,
+    setIncarnonEnabled,
+    incarnonSelections,
+    setIncarnonSelections,
+    activeIncarnonTier,
+    setActiveIncarnonTier,
+    activeSlotType,
+    setActiveSlotType,
+    activeSlotIndex,
+    setActiveSlotIndex,
+    loaded,
+    setLoaded,
+    equipmentLoadError,
+    setEquipmentLoadError,
+    isOwnBuild,
+    setIsOwnBuild,
+    isBuildOwner,
+    setIsBuildOwner,
+    isFavorited,
+    setIsFavorited,
+    buildOwnerUserId,
+    setBuildOwnerUserId,
+    buildOwnerUsername,
+    setBuildOwnerUsername,
+    buildIsPublic,
+    setBuildIsPublic,
+    arcaneSlots,
+    setArcaneSlots,
+    shardSlots,
+    setShardSlots,
+    formaMode,
+    setFormaMode,
+    defaultPolarities,
+    setDefaultPolarities,
+    rightPanelMode,
+    setRightPanelMode,
+    mountFilterPanel,
+    setMountFilterPanel,
+    activeAbilityIndex,
+    setActiveAbilityIndex,
+    activeArcaneSlot,
+    setActiveArcaneSlot,
+    activeShardSlot,
+    setActiveShardSlot,
+    editingRivenSlot,
+    setEditingRivenSlot,
+    draftRivenSlot,
+    setDraftRivenSlot,
+    dirtyBaseline,
+    setDirtyBaseline,
+    dirtyRouteCapturedRef,
+    prevRightPanelModeRef,
+  } = useModBuilderState(routeKey, buildId, routeEqType);
+
+  useEffect(() => {
+    let cancelled = false;
+    const kick = () => {
+      void import('./FilterPanel').then(() => {
+        if (!cancelled) setMountFilterPanel(true);
+      });
+    };
+    let idleId: number | undefined;
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+    if (typeof requestIdleCallback === 'function') {
+      idleId = requestIdleCallback(kick, { timeout: FILTER_PANEL_IDLE_TIMEOUT_MS });
+    } else {
+      timeoutId = setTimeout(kick, 1);
+    }
+    return () => {
+      cancelled = true;
+      if (idleId !== undefined) cancelIdleCallback(idleId);
+      if (timeoutId !== undefined) clearTimeout(timeoutId);
+    };
+  }, []);
+
+  useEffect(() => {
+    const prev = prevRightPanelModeRef.current;
+    prevRightPanelModeRef.current = rightPanelMode;
+    if (rightPanelMode === 'mods' && prev !== null && prev !== 'mods') {
+      setMountFilterPanel(true);
+    }
+  }, [rightPanelMode]);
+
+  const apiUrl = getEquipmentListUrl(equipmentType);
+  const { data: equipmentData, refetch: refetchEquipmentData } = useApi<{ items: Equipment[] }>(
+    apiUrl,
+  );
+
+  useEffect(() => {
+    refetchEquipmentData();
+  }, [routeKey, refetchEquipmentData]);
+
+  const { data: shardData } = useApi<{ shards: ShardType[] }>('/api/archon-shards');
+  const shardTypes = shardData?.shards || [];
+  const { data: stanceData, loading: stanceListLoading } = useModCatalog('/api/mods?types=STANCE');
+
+  const modCatalogTypes = getModTypesForEquipment(equipmentType);
+  const modCatalogUrl =
+    modCatalogTypes !== NO_MOD_TYPES_FOR_EQUIPMENT
+      ? `/api/mods?types=${encodeURIComponent(modCatalogTypes)}`
+      : null;
+  const { data: modCatalogData } = useModCatalog(modCatalogUrl);
+
+  const modCatalogByUnique = useMemo(() => {
+    const items = modCatalogData?.items;
+    if (!items?.length) return new Map<string, Mod>();
+    const m = new Map<string, Mod>();
+    for (const mod of items) {
+      m.set(mod.unique_name, mod);
+    }
+    return m;
+  }, [modCatalogData?.items]);
+
+  const modCatalogByNameAndType = useMemo(() => {
+    const items = modCatalogData?.items;
+    if (!items?.length) return new Map<string, Mod>();
+    const m = new Map<string, Mod>();
+    for (const mod of items) {
+      m.set(catalogKeyForMod(mod), mod);
+      const loose = mod.name ? `${mod.name}|||` : null;
+      if (loose && !m.has(loose)) {
+        m.set(loose, mod);
+      }
+    }
+    return m;
+  }, [modCatalogData?.items]);
+
+  const hydratedSlots = useMemo(() => {
+    const hydrated = hydrateSlotsWithModCatalog(slots, modCatalogByUnique, modCatalogByNameAndType);
+    if (equipmentType !== 'melee' || !selectedEquipment?.name) {
+      return hydrated;
+    }
+    const exaltedStanceName = getRequiredExaltedStanceName(selectedEquipment.name);
+    if (!exaltedStanceName) {
+      return hydrated;
+    }
+    return hydrated.map((slot) => {
+      if (slot.type !== 'stance' || !slot.mod) {
+        return slot;
+      }
+      const mod = slot.mod;
+      if (mod.name.trim().toLowerCase() !== exaltedStanceName.toLowerCase()) {
+        return slot;
+      }
+      const augmented = augmentExaltedStanceModForDisplay(mod, selectedEquipment.image_path);
+      return augmented === mod ? slot : { ...slot, mod: augmented };
+    });
+  }, [
+    slots,
+    modCatalogByUnique,
+    modCatalogByNameAndType,
+    equipmentType,
+    selectedEquipment?.name,
+    selectedEquipment?.image_path,
+  ]);
+
+  const supportsValence = useMemo(
+    () =>
+      Boolean(
+        selectedEquipment &&
+        equipmentType !== 'warframe' &&
+        weaponSupportsValenceBonus(selectedEquipment as Weapon),
+      ),
+    [selectedEquipment, equipmentType],
+  );
+
+  useEffect(() => {
+    if (equipmentType === 'warframe') {
+      if (valenceBonus !== null) setValenceBonus(null);
+      return;
+    }
+    if (!selectedEquipment) {
+      return;
+    }
+    if (!weaponSupportsValenceBonus(selectedEquipment as Weapon)) {
+      if (valenceBonus !== null) setValenceBonus(null);
+      return;
+    }
+    if (valenceBonus === null) {
+      setValenceBonus(DEFAULT_VALENCE_BONUS);
+    }
+  }, [equipmentType, selectedEquipment, valenceBonus]);
+
+  const effectiveValenceBonus = useMemo(
+    () => (supportsValence ? (valenceBonus ?? DEFAULT_VALENCE_BONUS) : null),
+    [supportsValence, valenceBonus],
+  );
+
+  const viewOwnerUserId =
+    buildOwnerUserId ?? (isBuildOwner && auth.status === 'authenticated' ? auth.userId : null);
+  const deletedOwnerLabel = '[Deleted User]';
+  const viewOwnerUsername =
+    buildOwnerUsername &&
+    buildOwnerUsername !== deletedOwnerLabel &&
+    !buildOwnerUsername.startsWith('user_')
+      ? buildOwnerUsername
+      : null;
+
+  const incarnonData = useMemo((): IncarnonData | null => {
+    if (equipmentType === 'warframe' || !selectedEquipment) return null;
+    const weapon = selectedEquipment as Weapon;
+    if (!weaponHasIncarnon(weapon)) return null;
+    return parseIncarnonData(weapon.incarnon_data);
+  }, [equipmentType, selectedEquipment]);
+
+  const hasIncarnon = incarnonData != null;
+
+  livePersistFingerprintRef.current = modBuilderPersistFingerprint({
+    buildName,
+    buildDescription,
+    buildIsPublic,
+    equipmentType,
+    equipmentUniqueName: selectedEquipment?.unique_name ?? '',
+    currentBuildId,
+    slots,
+    helminthConfig,
+    incarnonEnabled,
+    incarnonSelections,
+    arcaneSlots,
+    shardSlots,
+    orokinReactor,
+    valenceBonus: effectiveValenceBonus,
+  });
+
+  const isDirty = dirtyBaseline !== null && livePersistFingerprintRef.current !== dirtyBaseline;
+
+  const { addToCompare, compareToast, compareCount, compareFull } = useAddToCompare({
+    selectedEquipment:
+      selectedEquipment && equipmentType !== 'warframe' ? (selectedEquipment as Weapon) : null,
+    equipmentType,
+    buildName,
+    hydratedSlots,
+    effectiveValenceBonus,
+    hasIncarnon,
+    incarnonEnabled,
+    incarnonData,
+    incarnonSelections,
+  });
+  const { openPip: openBuildPip, pipToastMessage } = useDocumentPictureInPicture(buildName);
+
+  const resolveSpecialItem = useCallback(
+    async (targetUniqueName: string): Promise<Equipment | null> => {
+      if (
+        equipmentType !== 'primary' &&
+        equipmentType !== 'secondary' &&
+        equipmentType !== 'melee' &&
+        equipmentType !== 'beast_claws' &&
+        equipmentType !== 'necramech' &&
+        equipmentType !== 'archgun' &&
+        equipmentType !== 'archmelee'
+      ) {
+        return null;
+      }
+
+      const companionPromise = apiFetch('/api/weapons?type=SentinelWeapons').catch(() => null);
+      const response = await apiFetch('/api/weapons?type=SpecialItems');
+      if (!response.ok) return null;
+      const data = (await response.json()) as { items?: Weapon[] };
+      const specialItem = (data.items ?? []).find(
+        (item) =>
+          item.unique_name === targetUniqueName && matchesSpecialItemType(item.name, equipmentType),
+      );
+      if (specialItem) return specialItem;
+
+      const companionResponse = await companionPromise;
+      if (!companionResponse || !companionResponse.ok) return null;
+      const companionData = (await companionResponse.json()) as {
+        items?: Weapon[];
+      };
+      const companionWeapon = (companionData.items ?? []).find(
+        (item) =>
+          item.unique_name === targetUniqueName &&
+          getCompanionWeaponSelectionType(item) === equipmentType,
+      );
+      return companionWeapon ?? null;
+    },
+    [equipmentType],
+  );
+
+  const warframeDisplayName = useMemo(() => {
+    if (!selectedEquipment || equipmentType !== 'warframe') return undefined;
+    return formatSiriusOrionWarframeHeading(selectedEquipment as Warframe);
+  }, [equipmentType, selectedEquipment]);
+
+  useEffect(() => {
+    if (loaded) return undefined;
+    let alive = true;
+
+    async function syncBuildMetadataFromApi(targetBuildId: string): Promise<void> {
+      const response = await apiFetch(`/api/builds/${targetBuildId}`);
+      if (!response.ok) return;
+      const body = (await response.json()) as {
+        can_edit?: boolean;
+        is_owner?: boolean;
+        is_favorited?: boolean;
+        owner_user_id?: string;
+        owner_username?: string | null;
+        build?: { visibility?: string };
+      };
+      if (!alive) return;
+      setIsOwnBuild(body.can_edit === true);
+      setIsBuildOwner(body.is_owner === true);
+      setIsFavorited(body.is_favorited === true);
+      setBuildOwnerUserId(
+        typeof body.owner_user_id === 'string' && body.owner_user_id.length > 0
+          ? body.owner_user_id
+          : null,
+      );
+      setBuildOwnerUsername(typeof body.owner_username === 'string' ? body.owner_username : null);
+      if (body.build?.visibility === 'public') {
+        setBuildIsPublic(true);
+      } else if (body.build?.visibility === 'private' || body.build?.visibility === 'unlisted') {
+        setBuildIsPublic(false);
+      }
+    }
+
+    async function loadBuildFromApi(targetBuildId: string): Promise<void> {
+      const response = await apiFetch(`/api/builds/${targetBuildId}`);
+      if (!response.ok) {
+        if (alive) {
+          setEquipmentLoadError(`Failed to load build (${response.status})`);
+        }
+        return;
+      }
+      const body = (await response.json()) as {
+        build?: {
+          id: number | string;
+          name: string;
+          equipment_type: EquipmentType;
+          equipment_unique_name: string;
+          mod_config?: Partial<BuildConfig>;
+          visibility?: string;
+          description?: string | null;
+        };
+        can_edit?: boolean;
+        is_owner?: boolean;
+        is_favorited?: boolean;
+        owner_user_id?: string;
+        owner_username?: string | null;
+      };
+      if (!body.build) {
+        if (alive) {
+          setEquipmentLoadError('Build payload was missing expected data');
+        }
+        return;
+      }
+      const config = (body.build.mod_config ?? {}) as Partial<BuildConfig>;
+      if (!alive) return;
+      setEquipmentType(body.build.equipment_type);
+      setBuildName(typeof config.name === 'string' ? config.name : body.build.name);
+      setBuildDescription(typeof body.build.description === 'string' ? body.build.description : '');
+      setTargetEquipmentUniqueName(body.build.equipment_unique_name);
+      setCurrentBuildId(String(body.build.id));
+      setIsOwnBuild(body.can_edit === true);
+      setIsBuildOwner(body.is_owner === true);
+      setIsFavorited(body.is_favorited === true);
+      setBuildOwnerUserId(
+        typeof body.owner_user_id === 'string' && body.owner_user_id.length > 0
+          ? body.owner_user_id
+          : null,
+      );
+      setBuildOwnerUsername(typeof body.owner_username === 'string' ? body.owner_username : null);
+      setBuildIsPublic(body.build.visibility === 'public');
+      setHelminthConfig(config.helminth);
+      setIncarnonEnabled(config.incarnonEnabled === true);
+      setIncarnonSelections(
+        Array.isArray(config.incarnonSelections)
+          ? (config.incarnonSelections as IncarnonSelection[])
+          : undefined,
+      );
+      if (Array.isArray(config.arcaneSlots)) {
+        setArcaneSlots(config.arcaneSlots as ArcaneSlot[]);
+      }
+      if (Array.isArray(config.shardSlots)) {
+        setShardSlots(config.shardSlots as ShardSlotConfig[]);
+      }
+      if (typeof config.orokinReactor === 'boolean') {
+        setOrokinReactor(config.orokinReactor);
+      }
+      if (config.valenceBonus && typeof config.valenceBonus === 'object') {
+        setValenceBonus(config.valenceBonus as ValenceBonus);
+      } else {
+        setValenceBonus(null);
+      }
+      if (Array.isArray(config.slots)) {
+        setSlots(config.slots as ModSlot[]);
+      }
+      setEquipmentLoadError(null);
+    }
+
+    if (buildId) {
+      const stored = getBuild(buildId);
+      if (stored) {
+        setEquipmentType(stored.equipment_type);
+        setBuildName(stored.name);
+        setBuildDescription(typeof stored.description === 'string' ? stored.description : '');
+        setTargetEquipmentUniqueName(stored.equipment_unique_name);
+        setCurrentBuildId(stored.id);
+        setIsOwnBuild(true);
+        setIsBuildOwner(true);
+        setBuildOwnerUserId(null);
+        setBuildOwnerUsername(null);
+        setBuildIsPublic(stored.visibility === 'public');
+        setHelminthConfig(stored.helminth);
+        setIncarnonEnabled(stored.incarnonEnabled === true);
+        setIncarnonSelections(
+          Array.isArray(stored.incarnonSelections)
+            ? (stored.incarnonSelections as IncarnonSelection[])
+            : undefined,
+        );
+        if (stored.slots?.length) setSlots(stored.slots as ModSlot[]);
+        if (stored.arcaneSlots) setArcaneSlots(stored.arcaneSlots as ArcaneSlot[]);
+        if (stored.shardSlots) setShardSlots(stored.shardSlots as ShardSlotConfig[]);
+        if (stored.orokinReactor !== undefined) setOrokinReactor(stored.orokinReactor);
+        if (stored.valenceBonus && typeof stored.valenceBonus === 'object') {
+          setValenceBonus(stored.valenceBonus as ValenceBonus);
+        } else {
+          setValenceBonus(null);
+        }
+        if (!stored.slots?.length) {
+          void loadBuildFromApi(buildId);
+        } else {
+          void syncBuildMetadataFromApi(buildId);
+        }
+      } else {
+        void loadBuildFromApi(buildId);
+      }
+    } else if (routeEqType && equipmentId) {
+      setEquipmentType(routeEqType as EquipmentType);
+    }
+    return () => {
+      alive = false;
+    };
+  }, [buildId, routeEqType, equipmentId, getBuild, loaded]);
+
+  const slotsInitKeyRef = useRef<string | null>(null);
+  const buildSlotsReconcileKeyRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    slotsInitKeyRef.current = null;
+    buildSlotsReconcileKeyRef.current = null;
+  }, [routeKey]);
+
+  useEffect(() => {
+    if (!equipmentData?.items?.length) return undefined;
+    let alive = true;
+
+    async function setSpecialItemSelection(targetUniqueName: string): Promise<void> {
+      if (selectedEquipment || loaded) return;
+      const specialItem = await resolveSpecialItem(targetUniqueName);
+      if (!alive) return;
+      if (specialItem) {
+        setSelectedEquipment(specialItem);
+        setLoaded(true);
+        setEquipmentLoadError(null);
+      }
+    }
+
+    function applyCatalogSelection(item: Equipment): void {
+      const artifactSlotsChanged =
+        loaded &&
+        selectedEquipment?.unique_name === item.unique_name &&
+        selectedEquipment?.artifact_slots !== item.artifact_slots;
+      if (!loaded || selectedEquipment?.unique_name !== item.unique_name || artifactSlotsChanged) {
+        if (artifactSlotsChanged && !buildId) {
+          slotsInitKeyRef.current = null;
+        }
+        setSelectedEquipment(item);
+        setLoaded(true);
+        setEquipmentLoadError(null);
+      }
+    }
+
+    if (buildId && !loaded) {
+      const targetUniqueName =
+        targetEquipmentUniqueName ?? (isOwnBuild ? getBuild(buildId)?.equipment_unique_name : null);
+      if (targetUniqueName) {
+        const item = equipmentData.items.find((i) => i.unique_name === targetUniqueName);
+        if (item) {
+          applyCatalogSelection(item);
+        } else {
+          void setSpecialItemSelection(targetUniqueName).catch((error) => {
+            const message =
+              error instanceof Error ? error.message : 'Failed to load special equipment.';
+            setEquipmentLoadError(message);
+          });
+        }
+      }
+    } else if (equipmentId) {
+      const decodedId = decodeURIComponent(equipmentId);
+      const item = equipmentData.items.find((i) => i.unique_name === decodedId);
+      if (item) {
+        applyCatalogSelection(item);
+      } else if (!loaded) {
+        void setSpecialItemSelection(decodedId).catch((error) => {
+          const message =
+            error instanceof Error ? error.message : 'Failed to load special equipment.';
+          setEquipmentLoadError(message);
+        });
+      }
+    }
+    return () => {
+      alive = false;
+    };
+  }, [
+    equipmentData,
+    buildId,
+    equipmentId,
+    getBuild,
+    isOwnBuild,
+    loaded,
+    targetEquipmentUniqueName,
+    resolveSpecialItem,
+    selectedEquipment,
+    setEquipmentLoadError,
+  ]);
+
+  const slotsSyncedBuildIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!loaded || !buildId || !isOwnBuild) return;
+    if (slotsSyncedBuildIdRef.current === buildId) return;
+    const stored = getBuild(buildId);
+    if (stored?.slots?.length) {
+      slotsSyncedBuildIdRef.current = buildId;
+      setSlots(stored.slots);
+    }
+  }, [loaded, buildId, getBuild, isOwnBuild]);
+
+  useEffect(() => {
+    if (
+      compactOverview ||
+      readOnly ||
+      !isOwnBuild ||
+      equipmentLoadError ||
+      !loaded ||
+      !selectedEquipment
+    ) {
+      return undefined;
+    }
+    if (dirtyRouteCapturedRef.current === routeKey) {
+      return undefined;
+    }
+    const timer = window.setTimeout(() => {
+      if (dirtyRouteCapturedRef.current === routeKey) return;
+      dirtyRouteCapturedRef.current = routeKey;
+      setDirtyBaseline(livePersistFingerprintRef.current);
+    }, 1);
+    return () => window.clearTimeout(timer);
+  }, [
+    compactOverview,
+    readOnly,
+    isOwnBuild,
+    equipmentLoadError,
+    loaded,
+    selectedEquipment,
+    routeKey,
+  ]);
+
+  useEffect(() => {
+    if (!buildId || !loaded || isOwnBuild || readOnly) return;
+    const next = new URLSearchParams(searchParams);
+    next.set('view', '1');
+    navigate(`${buildEditPath(buildId)}?${next.toString()}`, { replace: true });
+  }, [buildId, loaded, isOwnBuild, readOnly, navigate, searchParams]);
+
+  const shouldBlockNavigation = useCallback<BlockerFunction>(
+    ({ currentLocation, nextLocation }) => {
+      if (allowNavigationBypassRef.current) {
+        allowNavigationBypassRef.current = false;
+        return false;
+      }
+      if (!isDirty || readOnly || !isOwnBuild || compactOverview) return false;
+      return (
+        `${currentLocation.pathname}${currentLocation.search}` !==
+        `${nextLocation.pathname}${nextLocation.search}`
+      );
+    },
+    [isDirty, readOnly, isOwnBuild, compactOverview],
+  );
+
+  const navigationBlocker = useBlocker(shouldBlockNavigation);
+
+  useEffect(() => {
+    if (!isDirty || readOnly || !isOwnBuild || compactOverview) return undefined;
+    const onBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+    };
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => window.removeEventListener('beforeunload', onBeforeUnload);
+  }, [isDirty, readOnly, isOwnBuild, compactOverview]);
+
+  const equippedMods = useMemo(
+    () => hydratedSlots.filter((s) => s.mod).map((s) => s.mod!),
+    [hydratedSlots],
+  );
+  const selectedRequiredExaltedStanceName = useMemo(() => {
+    if (equipmentType !== 'melee' || !selectedEquipment?.name) {
+      return null;
+    }
+    return getRequiredExaltedStanceName(selectedEquipment.name);
+  }, [equipmentType, selectedEquipment?.name]);
+  const autoInstallStanceMod = useMemo(() => {
+    if (!selectedEquipment || !selectedRequiredExaltedStanceName) {
+      return null;
+    }
+    const stanceMods = stanceData?.items ?? [];
+    const found = stanceMods.find(
+      (mod) =>
+        (mod.type || '').toUpperCase() === 'STANCE' &&
+        !isPostureMod(mod) &&
+        mod.name.trim().toLowerCase() === selectedRequiredExaltedStanceName.toLowerCase(),
+    );
+
+    if (!found && stanceListLoading) {
+      return null;
+    }
+
+    const syntheticUniqueName = `/Synthetic/SpecialItems/Stances/${selectedEquipment.name.trim().toLowerCase().replace(/\s+/g, '-')}`;
+    const base =
+      found ??
+      ({
+        unique_name: syntheticUniqueName,
+        name: selectedRequiredExaltedStanceName,
+        type: 'STANCE',
+        compat_name: selectedEquipment.name,
+        rarity: 'COMMON',
+        base_drain: 0,
+        fusion_limit: 5,
+      } satisfies Mod);
+    return augmentExaltedStanceModForDisplay(base, selectedEquipment.image_path);
+  }, [selectedEquipment, selectedRequiredExaltedStanceName, stanceData?.items, stanceListLoading]);
+  const rivenWeaponType = useMemo<RivenWeaponType | null>(
+    () => getRivenWeaponType(equipmentType, selectedEquipment?.name),
+    [equipmentType, selectedEquipment?.name],
+  );
+
+  useEffect(() => {
+    if (!selectedEquipment) {
+      slotsInitKeyRef.current = null;
+      setDefaultPolarities([]);
+      if (!buildId) {
+        setSlots([]);
+      }
+      return;
+    }
+
+    const shouldInitializeSlots = !buildId;
+
+    const config = EQUIPMENT_SLOT_CONFIGS[equipmentType] || EQUIPMENT_SLOT_CONFIGS.warframe;
+    const companionWeaponSelectionTypes: EquipmentType[] = [
+      'primary',
+      'secondary',
+      'melee',
+      'beast_claws',
+    ];
+    const isSelectedCompanionWeapon =
+      companionWeaponSelectionTypes.includes(equipmentType) &&
+      isCompanionWeapon(selectedEquipment as Weapon);
+    const newSlots: ModSlot[] = [];
+    let idx = 0;
+
+    const artifactSlotsRaw: string[] = (() => {
+      try {
+        const eq = selectedEquipment as Warframe & Weapon & Companion;
+        return eq.artifact_slots ? JSON.parse(eq.artifact_slots) : [];
+      } catch {
+        return [];
+      }
+    })();
+    const artifactSlots =
+      equipmentType === 'warframe'
+        ? normalizeWarframeArtifactSlotsForLoad(artifactSlotsRaw, config.generalSlots)
+        : artifactSlotsRaw;
+
+    const polarityFromAP = (ap: string | undefined): string | undefined => {
+      if (!ap || ap === 'AP_UNIVERSAL' || isArtifactSlotDisabled(ap)) return undefined;
+      return (POLARITIES as Record<string, string>)[ap as PolarityKey] ? ap : undefined;
+    };
+
+    const hasArtifactSlotOverrides = hasMeaningfulArtifactSlotOverrides(artifactSlotsRaw);
+    const specialSlotIndex = config.generalSlots;
+
+    if (
+      config.hasAura &&
+      isArtifactSlotVisible(artifactSlots, specialSlotIndex, hasArtifactSlotOverrides)
+    ) {
+      const warframe = selectedEquipment as Warframe;
+      const pol = hasArtifactSlotOverrides
+        ? polarityFromAP(artifactSlots[specialSlotIndex])
+        : warframe.aura_polarity || undefined;
+      newSlots.push({ index: idx++, type: 'aura', polarity: pol });
+    }
+    if (
+      equipmentType === 'warframe' &&
+      isWarframeSecondAuraSlotActive(artifactSlotsRaw, config.generalSlots)
+    ) {
+      const pol = polarityFromAP(artifactSlots[specialSlotIndex + 1]);
+      newSlots.push({ index: idx++, type: 'aura', polarity: pol });
+    }
+    if (
+      equipmentHasStanceSlot(equipmentType, selectedEquipment.name) &&
+      isArtifactSlotVisible(artifactSlots, specialSlotIndex, hasArtifactSlotOverrides)
+    ) {
+      const pol = hasArtifactSlotOverrides
+        ? polarityFromAP(artifactSlots[specialSlotIndex])
+        : undefined;
+      newSlots.push({ index: idx++, type: 'stance', polarity: pol });
+    }
+    if (
+      config.hasPosture &&
+      isArtifactSlotVisible(artifactSlots, specialSlotIndex, hasArtifactSlotOverrides)
+    ) {
+      const pol = hasArtifactSlotOverrides
+        ? polarityFromAP(artifactSlots[specialSlotIndex])
+        : undefined;
+      newSlots.push({ index: idx++, type: 'posture', polarity: pol });
+    }
+
+    const legacyGeneralPolarities: (string | undefined)[] = (() => {
+      if (hasArtifactSlotOverrides) return [];
+      try {
+        const wf = selectedEquipment as Warframe;
+        const parsed: string[] = wf.polarities ? JSON.parse(wf.polarities) : [];
+        return parsed;
+      } catch {
+        return [];
+      }
+    })();
+
+    for (let i = 0; i < config.generalSlots; i++) {
+      const artifactIndex = config.generalSlots - 1 - i;
+      if (hasArtifactSlotOverrides && !isArtifactSlotVisible(artifactSlots, artifactIndex, true)) {
+        continue;
+      }
+      const polarity = hasArtifactSlotOverrides
+        ? polarityFromAP(artifactSlots[artifactIndex])
+        : legacyGeneralPolarities[i] || undefined;
+      newSlots.push({
+        index: idx++,
+        type: 'general',
+        polarity,
+      });
+    }
+
+    const omitExilus = weaponOmitsExilusSlot(selectedEquipment.name, equipmentType);
+    const exilusArtifactIndex =
+      equipmentType === 'warframe'
+        ? warframeExilusArtifactIndex(artifactSlotsRaw, config.generalSlots)
+        : equipmentExilusArtifactIndex(config);
+    if (
+      config.hasExilus &&
+      !isSelectedCompanionWeapon &&
+      !omitExilus &&
+      isArtifactSlotVisible(artifactSlots, exilusArtifactIndex, hasArtifactSlotOverrides)
+    ) {
+      const warframe = selectedEquipment as Warframe;
+      const pol = hasArtifactSlotOverrides
+        ? polarityFromAP(artifactSlots[exilusArtifactIndex])
+        : warframe.exilus_polarity || undefined;
+      newSlots.push({ index: idx++, type: 'exilus', polarity: pol });
+    }
+
+    setDefaultPolarities(newSlots.map((s) => ({ polarity: s.polarity, type: s.type })));
+    if (!shouldInitializeSlots) {
+      slotsInitKeyRef.current = null;
+      return;
+    }
+
+    const initKey = `${equipmentType}:${selectedEquipment.unique_name}:${selectedEquipment.artifact_slots ?? ''}`;
+    if (slotsInitKeyRef.current === initKey) {
+      return;
+    }
+    slotsInitKeyRef.current = initKey;
+
+    setSlots(newSlots);
+    setHelminthConfig(undefined);
+    setIncarnonEnabled(false);
+    setIncarnonSelections(undefined);
+    setActiveIncarnonTier(null);
+  }, [selectedEquipment, equipmentType, buildId]);
+
+  useEffect(() => {
+    if (!buildId || !loaded || !selectedEquipment) return;
+
+    const equipmentTypeKey = equipmentType as EquipmentSlotConfigKey;
+    if (!(equipmentTypeKey in EQUIPMENT_SLOT_CONFIGS)) return;
+
+    const reconcileKey = `${buildId}:${selectedEquipment.unique_name}:${selectedEquipment.artifact_slots ?? ''}:${slots.length}`;
+    if (buildSlotsReconcileKeyRef.current === reconcileKey) return;
+    if (slots.length === 0) return;
+
+    let artifactSlotsRaw: string[] = [];
+    try {
+      artifactSlotsRaw = selectedEquipment.artifact_slots
+        ? (JSON.parse(selectedEquipment.artifact_slots) as string[])
+        : [];
+    } catch {
+      artifactSlotsRaw = [];
+    }
+
+    const companionWeaponSelectionTypes: EquipmentType[] = [
+      'primary',
+      'secondary',
+      'melee',
+      'beast_claws',
+    ];
+    const isSelectedCompanionWeapon =
+      companionWeaponSelectionTypes.includes(equipmentType) &&
+      isCompanionWeapon(selectedEquipment as Weapon);
+
+    const warframe = equipmentType === 'warframe' ? (selectedEquipment as Warframe) : undefined;
+
+    const reconciled = reconcileStoredBuildModSlots(slots as BuildModSlot[], {
+      equipmentType: equipmentTypeKey,
+      equipmentName: selectedEquipment.name,
+      artifactSlotsRaw,
+      exportDefaults: warframe
+        ? {
+            aura_polarity: warframe.aura_polarity,
+            exilus_polarity: warframe.exilus_polarity,
+            polarities: warframe.polarities,
+          }
+        : undefined,
+      isCompanionWeaponEquipped: isSelectedCompanionWeapon,
+    });
+
+    buildSlotsReconcileKeyRef.current = reconcileKey;
+    if (!buildModSlotsAreEquivalent(slots as BuildModSlot[], reconciled)) {
+      setSlots(reconciled as ModSlot[]);
+    }
+  }, [buildId, loaded, selectedEquipment, equipmentType, slots]);
+
+  useEffect(() => {
+    if (buildId || equipmentType !== 'melee' || !selectedEquipment?.unique_name) {
+      return;
+    }
+    if (!selectedRequiredExaltedStanceName || !autoInstallStanceMod) {
+      return;
+    }
+
+    setSlots((prev) => {
+      const stanceSlot = prev.find((slot) => slot.type === 'stance');
+      if (!stanceSlot) {
+        return prev;
+      }
+
+      const target = autoInstallStanceMod;
+
+      const modType = (target.type || '').toUpperCase();
+      if (
+        modType !== 'STANCE' ||
+        isPostureMod(target) ||
+        target.name.trim().toLowerCase() !== selectedRequiredExaltedStanceName.toLowerCase()
+      ) {
+        return prev;
+      }
+
+      const currentMods = prev
+        .filter((slot) => slot.mod && slot.index !== stanceSlot.index)
+        .map((slot) => slot.mod!);
+      if (isModLockedOut(target, currentMods)) {
+        return prev;
+      }
+
+      const current = stanceSlot.mod;
+
+      const matchesTarget =
+        current &&
+        current.unique_name === target.unique_name &&
+        (current.image_path ?? '') === (target.image_path ?? '');
+      if (matchesTarget) {
+        return prev;
+      }
+
+      const mayReplaceWithAuto =
+        !current || current.unique_name.startsWith('/Synthetic/SpecialItems/Stances/');
+
+      if (current && !mayReplaceWithAuto) {
+        return prev;
+      }
+
+      const updated = prev.map((slot) =>
+        slot.index === stanceSlot.index
+          ? {
+              ...slot,
+              mod: target,
+              rank: target.fusion_limit ?? 0,
+              setRank: target.set_stats ? 1 : undefined,
+            }
+          : slot,
+      );
+      return applySetPieceDelta(prev, updated);
+    });
+  }, [
+    buildId,
+    equipmentType,
+    selectedEquipment?.unique_name,
+    selectedRequiredExaltedStanceName,
+    autoInstallStanceMod,
+  ]);
+
+  const placementOptions = { requiredExaltedStanceName: selectedRequiredExaltedStanceName };
+
+  const [searchResetKey, setSearchResetKey] = useState(0);
+  const openRivenEditorForSlotRef = useRef<number | null>(null);
+  const placedNewRivenRef = useRef(false);
+  const showRivenLimitToastRef = useRef(false);
+
+  const getDefaultRivenConfig = useCallback((): RivenConfig => {
+    return {
+      polarity: 'AP_ATTACK',
+      positive: [
+        { stat: '', value: 0, isNegative: false },
+        { stat: '', value: 0, isNegative: false },
+        { stat: '', value: 0, isNegative: false },
+      ],
+      negative: undefined,
+    };
+  }, []);
+
+  const handleModDrop = useCallback(
+    (slotIndex: number, mod: Mod) => {
+      if (readOnly) return;
+      const isRivenPlaceholder = mod.unique_name === RIVEN_PLACEHOLDER_UNIQUE;
+      openRivenEditorForSlotRef.current = null;
+      placedNewRivenRef.current = false;
+      showRivenLimitToastRef.current = false;
+      setSlots((prev) => {
+        const targetSlot = prev.find((s) => s.index === slotIndex);
+        if (!targetSlot) return prev;
+
+        if (isRivenPlaceholder && targetSlot.type !== 'general') return prev;
+        if (!isRivenPlaceholder && !canPlaceModInSlot(mod, targetSlot.type, placementOptions)) {
+          return prev;
+        }
+
+        if (isRivenPlaceholder) {
+          if (targetSlot.mod && isRivenMod(targetSlot.mod)) {
+            openRivenEditorForSlotRef.current = slotIndex;
+            return prev;
+          }
+          const existingRiven = prev.find((s) => s.mod && isRivenMod(s.mod));
+          if (existingRiven && existingRiven.index !== slotIndex) {
+            showRivenLimitToastRef.current = true;
+            return prev;
+          }
+        }
+
+        const currentMods = prev.filter((s) => s.mod && s.index !== slotIndex).map((s) => s.mod!);
+
+        if (!isRivenPlaceholder && isModLockedOut(mod, currentMods)) {
+          return prev;
+        }
+
+        const rivenConfig = getDefaultRivenConfig();
+        const resolvedMod = isRivenPlaceholder ? createRivenMod(rivenConfig, mod.image_path) : mod;
+        if (isRivenPlaceholder) {
+          openRivenEditorForSlotRef.current = slotIndex;
+          placedNewRivenRef.current = true;
+        }
+
+        const updated = prev.map((s) =>
+          s.index === slotIndex
+            ? {
+                ...s,
+                mod: resolvedMod,
+                rank: resolvedMod.fusion_limit ?? 0,
+                setRank: resolvedMod.set_stats ? 1 : undefined,
+                riven_config: isRivenPlaceholder ? rivenConfig : undefined,
+                riven_art_path: isRivenPlaceholder ? mod.image_path : undefined,
+              }
+            : s,
+        );
+        return applySetPieceDelta(prev, updated);
+      });
+      if (showRivenLimitToastRef.current) {
+        setRivenToastMessage('Only one Riven mod can be equipped at a time.');
+        return;
+      }
+      if (openRivenEditorForSlotRef.current !== null) {
+        setEditingRivenSlot(openRivenEditorForSlotRef.current);
+        setDraftRivenSlot(placedNewRivenRef.current ? openRivenEditorForSlotRef.current : null);
+      }
+      setSearchResetKey((k) => k + 1);
+    },
+    [getDefaultRivenConfig, placementOptions, readOnly],
+  );
+
+  const handleSetRankChange = useCallback(
+    (slotIndex: number, setRank: number) => {
+      if (readOnly) return;
+      setSlots((prev) => {
+        const targetSlot = prev.find((s) => s.index === slotIndex);
+        if (!targetSlot) return prev;
+
+        const setName = getSetName(targetSlot);
+        if (!setName) {
+          return prev.map((s) => (s.index === slotIndex ? { ...s, setRank } : s));
+        }
+
+        const currentRank = targetSlot.setRank ?? 1;
+        const delta = setRank - currentRank;
+        if (delta === 0) return prev;
+        return applySetRankDelta(prev, setName, delta, currentRank);
+      });
+    },
+    [readOnly],
+  );
+
+  const handleModSwap = useCallback(
+    (sourceIndex: number, targetIndex: number) => {
+      if (sourceIndex === targetIndex) return;
+
+      setSlots((prev) => {
+        const source = prev.find((s) => s.index === sourceIndex);
+        const target = prev.find((s) => s.index === targetIndex);
+        if (!source || !target || !source.mod) return prev;
+
+        const sourceMod = source.mod;
+        const sourceRank = source.rank;
+        const sourceSetRank = source.setRank;
+        const sourceRivenConfig = source.riven_config;
+        const sourceRivenArt = source.riven_art_path;
+        const targetMod = target.mod;
+        const targetRank = target.rank;
+        const targetSetRank = target.setRank;
+        const targetRivenConfig = target.riven_config;
+        const targetRivenArt = target.riven_art_path;
+
+        if (!canPlaceModInSlot(sourceMod, target.type, placementOptions)) return prev;
+
+        if (targetMod && !canPlaceModInSlot(targetMod, source.type, placementOptions)) return prev;
+
+        const otherMods = prev
+          .filter((s) => s.mod && s.index !== sourceIndex && s.index !== targetIndex)
+          .map((s) => s.mod!);
+
+        if (isModLockedOut(sourceMod, [...otherMods, ...(targetMod ? [targetMod] : [])]))
+          return prev;
+
+        if (targetMod && isModLockedOut(targetMod, [...otherMods, sourceMod])) return prev;
+
+        const swapped = prev.map((s) => {
+          if (s.index === targetIndex)
+            return {
+              ...s,
+              mod: sourceMod,
+              rank: sourceRank,
+              setRank: sourceSetRank,
+              riven_config: sourceRivenConfig,
+              riven_art_path: sourceRivenArt,
+            };
+          if (s.index === sourceIndex)
+            return {
+              ...s,
+              mod: targetMod,
+              rank: targetRank,
+              setRank: targetSetRank,
+              riven_config: targetRivenConfig,
+              riven_art_path: targetRivenArt,
+            };
+          return s;
+        });
+        return applySetPieceDelta(prev, swapped);
+      });
+    },
+    [placementOptions],
+  );
+
+  const handleModRemove = useCallback(
+    (slotIndex: number) => {
+      if (readOnly) return;
+      setSlots((prev) => {
+        const updated = prev.map((s) =>
+          s.index === slotIndex
+            ? {
+                ...s,
+                mod: undefined,
+                rank: undefined,
+                setRank: undefined,
+                riven_config: undefined,
+                riven_art_path: undefined,
+              }
+            : s,
+        );
+        return applySetPieceDelta(prev, updated);
+      });
+    },
+    [readOnly],
+  );
+
+  const handleRankChange = useCallback(
+    (slotIndex: number, rank: number) => {
+      if (readOnly) return;
+      setSlots((prev) => prev.map((s) => (s.index === slotIndex ? { ...s, rank } : s)));
+    },
+    [readOnly],
+  );
+
+  const modCapacityBase = useMemo(
+    () => getEquipmentModCapacityBase(equipmentType, selectedEquipment ?? undefined),
+    [equipmentType, selectedEquipment],
+  );
+
+  const capacity = useMemo(
+    () => calculateTotalCapacity(hydratedSlots, modCapacityBase, orokinReactor),
+    [hydratedSlots, modCapacityBase, orokinReactor],
+  );
+
+  const formaCost = useMemo<FormaCount>(
+    () =>
+      calculateFormaCount(
+        defaultPolarities,
+        slots.map((s) => ({ polarity: s.polarity, type: s.type })),
+        { equipmentType, equipmentName: selectedEquipment?.name },
+      ),
+    [defaultPolarities, equipmentType, selectedEquipment?.name, slots],
+  );
+
+  const handlePolarityChange = useCallback((slotIndex: number, polarity: string | undefined) => {
+    setSlots((prev) => prev.map((s) => (s.index === slotIndex ? { ...s, polarity } : s)));
+  }, []);
+
+  const handleArcaneSlotClick = useCallback(
+    (slotIndex: number) => {
+      if (readOnly) return;
+      if (activeArcaneSlot === slotIndex && rightPanelMode === 'arcanes') {
+        setActiveArcaneSlot(null);
+        setRightPanelMode('mods');
+      } else {
+        setActiveArcaneSlot(slotIndex);
+        setActiveShardSlot(null);
+        setActiveAbilityIndex(null);
+        setActiveSlotIndex(undefined);
+        setActiveSlotType(undefined);
+        setRightPanelMode('arcanes');
+      }
+    },
+    [activeArcaneSlot, rightPanelMode, readOnly],
+  );
+
+  const handleArcaneSelect = useCallback(
+    (arcane: Arcane) => {
+      if (activeArcaneSlot === null) return;
+      setArcaneSlots((prev) => {
+        const next = [...prev];
+        next[activeArcaneSlot] = { arcane, rank: getMaxRank(arcane) };
+        return next;
+      });
+      setActiveArcaneSlot(null);
+      setRightPanelMode('mods');
+    },
+    [activeArcaneSlot],
+  );
+
+  const handleArcaneRemove = useCallback(
+    (slotIndex: number) => {
+      if (readOnly) return;
+      setArcaneSlots((prev) => {
+        const next = [...prev];
+        next[slotIndex] = { rank: 0 };
+        return next;
+      });
+    },
+    [readOnly],
+  );
+
+  const handleArcaneRankChange = useCallback(
+    (slotIndex: number, rank: number) => {
+      if (readOnly) return;
+      setArcaneSlots((prev) => {
+        const next = [...prev];
+        if (next[slotIndex]) {
+          next[slotIndex] = { ...next[slotIndex], rank };
+        }
+        return next;
+      });
+    },
+    [readOnly],
+  );
+
+  const handleShardSlotClick = useCallback(
+    (slotIndex: number) => {
+      if (readOnly) return;
+      if (activeShardSlot === slotIndex && rightPanelMode === 'shards') {
+        setActiveShardSlot(null);
+        setRightPanelMode('mods');
+      } else {
+        setActiveShardSlot(slotIndex);
+        setActiveArcaneSlot(null);
+        setActiveAbilityIndex(null);
+        setActiveSlotIndex(undefined);
+        setActiveSlotType(undefined);
+        setRightPanelMode('shards');
+      }
+    },
+    [activeShardSlot, rightPanelMode, readOnly],
+  );
+
+  const handleShardSelect = useCallback(
+    (shardTypeId: string, buffId: number, tauforged: boolean, buffArmoryKey?: string) => {
+      if (activeShardSlot === null) return;
+      setShardSlots((prev) => {
+        const next = [...prev];
+        const armoryKey = buildArmoryShardKeyFromPicker(buffArmoryKey, tauforged);
+        next[activeShardSlot] = armoryKey
+          ? { armory_shard_key: armoryKey }
+          : {
+              shard_type_id: shardTypeId,
+              buff_id: buffId,
+              tauforged,
+            };
+        return next;
+      });
+      setActiveShardSlot(null);
+      setRightPanelMode('mods');
+    },
+    [activeShardSlot],
+  );
+
+  const handleShardRemove = useCallback(
+    (slotIndex: number) => {
+      if (readOnly) return;
+      setShardSlots((prev) => {
+        const next = [...prev];
+        next[slotIndex] = { tauforged: false };
+        return next;
+      });
+    },
+    [readOnly],
+  );
+
+  const handleRivenSave = useCallback(
+    (config: RivenConfig) => {
+      if (editingRivenSlot === null) return;
+      const rank = config.rivenRank ?? 8;
+      setSlots((prev) =>
+        prev.map((slot) => {
+          if (slot.index !== editingRivenSlot) return slot;
+          if (!slot.mod || !isRivenMod(slot.mod)) return slot;
+          return {
+            ...slot,
+            rank,
+            riven_config: config,
+            mod: createRivenMod(config, slot.riven_art_path ?? slot.mod.image_path),
+          };
+        }),
+      );
+      setEditingRivenSlot(null);
+      setDraftRivenSlot(null);
+    },
+    [editingRivenSlot],
+  );
+
+  const [rivenToastMessage, setRivenToastMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!rivenToastMessage) return undefined;
+    const timer = window.setTimeout(() => setRivenToastMessage(null), 2500);
+    return () => window.clearTimeout(timer);
+  }, [rivenToastMessage]);
+
+  const handleRivenClose = useCallback(() => {
+    if (editingRivenSlot !== null && draftRivenSlot === editingRivenSlot) {
+      setSlots((prev) =>
+        prev.map((s) =>
+          s.index === editingRivenSlot
+            ? {
+                ...s,
+                mod: undefined,
+                rank: undefined,
+                setRank: undefined,
+                riven_config: undefined,
+                riven_art_path: undefined,
+              }
+            : s,
+        ),
+      );
+    }
+    setEditingRivenSlot(null);
+    setDraftRivenSlot(null);
+  }, [draftRivenSlot, editingRivenSlot]);
+
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [saveModalName, setSaveModalName] = useState('');
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveToast, setSaveToast] = useState<{ tone: 'success' | 'error'; message: string } | null>(
+    null,
+  );
+  const saveToastTimerRef = useRef<number | null>(null);
+  const showSaveToast = useCallback((tone: 'success' | 'error', message: string): void => {
+    if (saveToastTimerRef.current !== null) {
+      window.clearTimeout(saveToastTimerRef.current);
+    }
+    setSaveToast({ tone, message });
+    saveToastTimerRef.current = window.setTimeout(
+      () => {
+        saveToastTimerRef.current = null;
+        setSaveToast(null);
+      },
+      tone === 'success' ? TOAST_DURATION_SUCCESS_MS : TOAST_DURATION_ERROR_MS,
+    );
+  }, []);
+  useEffect(() => {
+    return () => {
+      if (saveToastTimerRef.current !== null) {
+        window.clearTimeout(saveToastTimerRef.current);
+      }
+    };
+  }, []);
+
+  const openSaveModal = () => {
+    if (!selectedEquipment) return;
+    setSaveModalName(buildName);
+    setSaveError(null);
+    setShowSaveModal(true);
+  };
+
+  const handleToggleFavorite = async () => {
+    if (!currentBuildId || auth.status !== 'authenticated') return;
+    const nextFavorited = !isFavorited;
+    const ok = await toggleFavorite(currentBuildId, isFavorited);
+    if (ok) {
+      setIsFavorited(nextFavorited);
+      return;
+    }
+    const message = nextFavorited
+      ? 'Failed to add build to favorites'
+      : 'Failed to remove build from favorites';
+    console.error(message);
+    showSaveToast('error', message);
+  };
+
+  const readOnlyActionButtonClass =
+    'btn btn-secondary flex h-9 w-9 shrink-0 items-center justify-center p-0';
+  const readOnlyAdminEditButtonClass =
+    'btn btn-danger flex h-9 w-9 shrink-0 items-center justify-center p-0';
+
+  const confirmSave = async () => {
+    if (!selectedEquipment) return;
+    setSaveError(null);
+    try {
+      const finalName = saveModalName.trim() || buildName;
+      setBuildName(finalName);
+
+      if (!isOwnBuild && currentBuildId) {
+        const newId = await copyBuildFromId(currentBuildId, finalName);
+        setCurrentBuildId(newId);
+        setIsOwnBuild(true);
+        setShowSaveModal(false);
+        allowNavigationBypassRef.current = true;
+        navigate(buildEditPath(newId), { replace: true });
+        queueMicrotask(() => {
+          if (allowNavigationBypassRef.current) {
+            allowNavigationBypassRef.current = false;
+          }
+        });
+        showSaveToast('success', 'Build saved successfully');
+        return;
+      }
+
+      const warframeForSave = equipmentType === 'warframe' ? (selectedEquipment as Warframe) : null;
+
+      const config: BuildConfig = {
+        id: isOwnBuild ? currentBuildId : undefined,
+        name: finalName,
+        equipment_type: equipmentType,
+        equipment_unique_name: selectedEquipment.unique_name,
+        slots,
+        helminth: persistHelminthForSave(helminthConfig, warframeForSave),
+        incarnonEnabled: hasIncarnon ? incarnonEnabled : undefined,
+        incarnonSelections: hasIncarnon ? incarnonSelections : undefined,
+        arcaneSlots,
+        shardSlots: persistShardSlotsForSave(shardSlots, shardTypes),
+        orokinReactor,
+        valenceBonus: effectiveValenceBonus ?? undefined,
+      };
+
+      const imagePath = selectedEquipment.image_path
+        ? `/images${selectedEquipment.image_path}`
+        : undefined;
+
+      const saved = await storageSave(
+        config,
+        siriusOrionEquipmentSaveName(selectedEquipment),
+        imagePath,
+        buildIsPublic ? 'public' : 'private',
+        buildDescription,
+      );
+      setBuildIsPublic(saved.visibility === 'public');
+      setBuildDescription(typeof saved.description === 'string' ? saved.description : '');
+      setCurrentBuildId(saved.id);
+      setIsOwnBuild(true);
+      setShowSaveModal(false);
+
+      setDirtyBaseline(
+        modBuilderPersistFingerprint({
+          buildName: finalName,
+          buildDescription: typeof saved.description === 'string' ? saved.description : '',
+          buildIsPublic: saved.visibility === 'public',
+          equipmentType: saved.equipment_type,
+          equipmentUniqueName: saved.equipment_unique_name,
+          currentBuildId: saved.id,
+          slots,
+          helminthConfig,
+          incarnonEnabled,
+          incarnonSelections,
+          arcaneSlots,
+          shardSlots,
+          orokinReactor,
+          valenceBonus: effectiveValenceBonus,
+        }),
+      );
+
+      showSaveToast('success', 'Build saved successfully');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to save build';
+      setSaveError(message);
+      showSaveToast('error', message);
+    }
+  };
+
+  const arcaneSlotCount = equipmentType === 'warframe' ? 2 : 1;
+  const selectedWeaponTypes: EquipmentType[] = [
+    'primary',
+    'secondary',
+    'melee',
+    'archgun',
+    'archmelee',
+    'beast_claws',
+  ];
+  const selectedWeapon =
+    selectedEquipment && selectedWeaponTypes.includes(equipmentType)
+      ? (selectedEquipment as Weapon)
+      : null;
+  const rivenDisposition = selectedWeapon ? (getEffectiveRivenDisposition(selectedWeapon) ?? 1) : 1;
+  const selectedIsCompanionWeapon = selectedWeapon != null && isCompanionWeapon(selectedWeapon);
+  const supportsArcanes =
+    !selectedIsCompanionWeapon &&
+    equipmentType !== 'companion' &&
+    equipmentType !== 'archgun' &&
+    equipmentType !== 'archmelee' &&
+    equipmentType !== 'archwing' &&
+    equipmentType !== 'necramech';
+  const selectedEquipmentImagePath = selectedEquipment?.image_path
+    ? `/images${selectedEquipment.image_path}`
+    : undefined;
+
+  const selectedOmitsExilus = weaponOmitsExilusSlot(selectedEquipment?.name, equipmentType);
+  const shouldOmitExilus = selectedIsCompanionWeapon || selectedOmitsExilus;
+
+  useEffect(() => {
+    if (!shouldOmitExilus) return;
+    setSlots((prev) => {
+      if (!prev.some((slot) => slot.type === 'exilus')) {
+        return prev;
+      }
+      return prev
+        .filter((slot) => slot.type !== 'exilus')
+        .map((slot, index) => ({ ...slot, index }));
+    });
+  }, [shouldOmitExilus]);
+
+  const hasSelection =
+    activeSlotIndex !== undefined ||
+    activeArcaneSlot !== null ||
+    activeShardSlot !== null ||
+    activeAbilityIndex !== null ||
+    activeIncarnonTier !== null;
+
+  const handleBackgroundClick = useCallback((e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (
+      target.closest(
+        '.glass-panel, .mod-builder-side-panel, button, input, [role="button"], [draggable="true"]',
+      )
+    )
+      return;
+    setActiveSlotIndex(undefined);
+    setActiveSlotType(undefined);
+    setActiveArcaneSlot(null);
+    setActiveShardSlot(null);
+    setActiveAbilityIndex(null);
+    setActiveIncarnonTier(null);
+    setRightPanelMode('mods');
+  }, []);
+
+  const handleIncarnonToggle = useCallback(() => {
+    setIncarnonEnabled((prev) => {
+      const next = !prev;
+      if (next && incarnonData && !incarnonSelections) {
+        setIncarnonSelections(createDefaultIncarnonSelections(incarnonData));
+      }
+      if (!next) {
+        setActiveIncarnonTier(null);
+        if (rightPanelMode === 'incarnon') {
+          setRightPanelMode('mods');
+        }
+      }
+      return next;
+    });
+  }, [incarnonData, incarnonSelections, rightPanelMode]);
+
+  const handleIncarnonTierClick = useCallback(
+    (tier: number) => {
+      if (readOnly) return;
+      if (activeIncarnonTier === tier && rightPanelMode === 'incarnon') {
+        setActiveIncarnonTier(null);
+        setRightPanelMode('mods');
+        return;
+      }
+      if (incarnonData && !incarnonSelections) {
+        setIncarnonSelections(createDefaultIncarnonSelections(incarnonData));
+      }
+      setActiveIncarnonTier(tier);
+      setActiveSlotIndex(undefined);
+      setActiveSlotType(undefined);
+      setActiveAbilityIndex(null);
+      setActiveArcaneSlot(null);
+      setActiveShardSlot(null);
+      setRightPanelMode('incarnon');
+    },
+    [readOnly, activeIncarnonTier, rightPanelMode, incarnonData, incarnonSelections],
+  );
+
+  if (compactOverview) {
+    if (!equipmentLoadError && (!loaded || !selectedEquipment)) {
+      return <div className="text-muted px-6 py-10 text-center text-sm">Loading build…</div>;
+    }
+    if (equipmentLoadError || !selectedEquipment) {
+      return (
+        <div className="error-msg px-6 py-10 text-center text-sm">
+          {equipmentLoadError ?? 'Equipment could not be loaded.'}
+        </div>
+      );
+    }
+
+    return (
+      <CompactBuildOverview
+        buildName={buildName}
+        equipmentName={warframeDisplayName ?? selectedEquipment.name}
+        equipmentType={equipmentType}
+        slots={hydratedSlots}
+        arcaneSlots={arcaneSlots}
+        shardSlots={shardSlots}
+        shardTypes={shardTypes}
+        pipEmbed={searchParams.get('pip') === '1'}
+      />
+    );
+  }
+
+  return (
+    <div
+      className="mx-auto max-w-[2000px] space-y-6"
+      onClick={hasSelection ? handleBackgroundClick : undefined}
+    >
+      <div className="flex flex-col gap-6 2xl:flex-row 2xl:items-stretch">
+        <div className="w-full shrink-0 space-y-4 2xl:w-72">
+          {selectedEquipment && (
+            <StatsPanel
+              equipment={selectedEquipment as Warframe | Weapon}
+              type={equipmentType}
+              displayName={warframeDisplayName}
+              slots={hydratedSlots}
+              shardSlots={equipmentType === 'warframe' ? shardSlots : undefined}
+              shardTypes={equipmentType === 'warframe' ? shardTypes : undefined}
+              valenceBonus={effectiveValenceBonus}
+              incarnonEnabled={hasIncarnon ? incarnonEnabled : false}
+              incarnonData={incarnonData}
+              incarnonSelections={incarnonSelections}
+              headerActions={
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    className="btn btn-secondary flex h-9 w-9 shrink-0 items-center justify-center p-0"
+                    onClick={() => setShowShareModal(true)}
+                    title="Share build image"
+                    aria-label="Share build image"
+                  >
+                    <MaterialSymbol name="share" style={{ fontSize: 22 }} />
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-secondary flex h-9 w-9 shrink-0 items-center justify-center p-0"
+                    onClick={() => {
+                      void openBuildPip();
+                    }}
+                    title="Open build in Picture-in-Picture"
+                    aria-label="Open build in Picture-in-Picture"
+                  >
+                    <MaterialSymbol name="picture_in_picture" style={{ fontSize: 22 }} />
+                  </button>
+                </div>
+              }
+              abilities={
+                equipmentType === 'warframe' ? (
+                  <AbilityBar
+                    warframe={selectedEquipment as Warframe}
+                    helminthConfig={helminthConfig}
+                    onHelminthChange={setHelminthConfig}
+                    activeAbilityIndex={activeAbilityIndex}
+                    readOnly={readOnly}
+                    onAbilityClick={(index) => {
+                      if (readOnly) return;
+                      if (activeAbilityIndex === index && rightPanelMode === 'helminth') {
+                        setActiveAbilityIndex(null);
+                        setRightPanelMode('mods');
+                      } else {
+                        setActiveAbilityIndex(index);
+                        setActiveArcaneSlot(null);
+                        setActiveShardSlot(null);
+                        setActiveSlotIndex(undefined);
+                        setActiveSlotType(undefined);
+                        setRightPanelMode('helminth');
+                      }
+                    }}
+                  />
+                ) : undefined
+              }
+            />
+          )}
+          {hasIncarnon && incarnonData && (
+            <IncarnonUpgradePanel
+              incarnonData={incarnonData}
+              selections={incarnonSelections ?? createDefaultIncarnonSelections(incarnonData)}
+              incarnonEnabled={incarnonEnabled}
+              activeTier={activeIncarnonTier}
+              onTierClick={handleIncarnonTierClick}
+              readOnly={readOnly}
+            />
+          )}
+          {supportsValence && effectiveValenceBonus && (
+            <ValenceBonusPanel
+              value={effectiveValenceBonus}
+              onChange={setValenceBonus}
+              readOnly={readOnly}
+            />
+          )}
+          {selectedEquipment && equipmentType !== 'warframe' && (
+            <ElementOutput
+              weapon={selectedEquipment as Weapon}
+              slots={hydratedSlots}
+              valenceBonus={effectiveValenceBonus}
+            />
+          )}
+        </div>
+
+        <div className="flex min-h-0 w-full shrink-0 flex-col gap-4 2xl:w-[820px]">
+          <div className="glass-shell shrink-0 p-4 sm:p-5">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div className="min-w-0 space-y-1">
+                {readOnly ? (
+                  <div className="flex flex-col gap-0.5">
+                    <span className="display-title text-foreground text-[2rem] leading-tight">
+                      {buildName}
+                    </span>
+                    {viewOwnerUserId != null &&
+                      (viewOwnerUsername ? (
+                        <Link
+                          to={userBuildsPath(viewOwnerUsername)}
+                          className="text-muted hover:text-accent w-fit text-sm transition-colors"
+                        >
+                          by {viewOwnerUsername}
+                        </Link>
+                      ) : buildOwnerUsername === deletedOwnerLabel ? (
+                        <span className="text-muted text-sm">by {deletedOwnerLabel}</span>
+                      ) : null)}
+                    <span className="text-muted/70 text-xs">View only</span>
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap items-end gap-x-3 gap-y-1">
+                    <span className="display-title text-foreground text-[2rem]">{buildName}</span>
+                    {!isOwnBuild && (
+                      <span className="text-muted/70 text-xs">Read-only shared build</span>
+                    )}
+                  </div>
+                )}
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                {equipmentType !== 'warframe' && (
+                  <button
+                    className="btn btn-secondary text-sm"
+                    onClick={addToCompare}
+                    disabled={readOnly || compareFull}
+                    title={compareFull ? 'Max 3 snapshots' : 'Add current build to comparison'}
+                  >
+                    Compare
+                  </button>
+                )}
+                {readOnly && currentBuildId ? (
+                  <>
+                    {!isBuildOwner ? (
+                      <button
+                        type="button"
+                        className={readOnlyActionButtonClass}
+                        onClick={openSaveModal}
+                        title="Copy build"
+                        aria-label="Copy build"
+                      >
+                        <MaterialSymbol name="content_copy" style={{ fontSize: 22 }} />
+                      </button>
+                    ) : null}
+                    {isOwnBuild ? (
+                      <button
+                        type="button"
+                        className={
+                          !isBuildOwner ? readOnlyAdminEditButtonClass : readOnlyActionButtonClass
+                        }
+                        onClick={() => navigate(buildEditPath(currentBuildId))}
+                        title={!isBuildOwner ? 'Edit build (admin)' : 'Edit build'}
+                        aria-label={!isBuildOwner ? 'Edit build (admin)' : 'Edit build'}
+                      >
+                        <MaterialSymbol name="edit_document" style={{ fontSize: 22 }} />
+                      </button>
+                    ) : null}
+                    <Show when="signed-in">
+                      <button
+                        type="button"
+                        className={`${readOnlyActionButtonClass}${isFavorited ? ' text-accent' : ''}`}
+                        onClick={() => {
+                          void handleToggleFavorite();
+                        }}
+                        disabled={favoriteBusy}
+                        title={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
+                        aria-label={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
+                        aria-pressed={isFavorited}
+                      >
+                        <MaterialSymbol
+                          name="favorite"
+                          filled={isFavorited}
+                          style={{ fontSize: 22 }}
+                        />
+                      </button>
+                    </Show>
+                    <Show when="signed-out">
+                      <SignInButton mode="modal" forceRedirectUrl={window.location.pathname}>
+                        <button
+                          type="button"
+                          className={readOnlyActionButtonClass}
+                          title="Sign in to favorite"
+                          aria-label="Sign in to favorite"
+                        >
+                          <MaterialSymbol name="favorite" style={{ fontSize: 22 }} />
+                        </button>
+                      </SignInButton>
+                    </Show>
+                  </>
+                ) : null}
+                {!readOnly && isOwnBuild ? (
+                  <>
+                    <Show when="signed-in">
+                      <button type="button" className="btn btn-accent" onClick={openSaveModal}>
+                        Save Build
+                      </button>
+                    </Show>
+                    <Show when="signed-out">
+                      <SignInButton mode="modal" forceRedirectUrl={window.location.pathname}>
+                        <button type="button" className="btn btn-accent">
+                          Sign in to save
+                        </button>
+                      </SignInButton>
+                    </Show>
+                  </>
+                ) : null}
+              </div>
+            </div>
+          </div>
+
+          <div className="shrink-0">
+            <CapacityBar
+              capacity={capacity}
+              formaCost={formaCost}
+              formaMode={formaMode}
+              onFormaToggle={readOnly ? undefined : () => setFormaMode((p) => !p)}
+              orokinReactor={orokinReactor}
+              onOrokinReactorToggle={
+                !readOnly && isOwnBuild ? () => setOrokinReactor((p) => !p) : undefined
+              }
+              incarnonEnabled={incarnonEnabled}
+              onIncarnonToggle={
+                !readOnly && isOwnBuild && hasIncarnon ? handleIncarnonToggle : undefined
+              }
+              incarnonAvailable={hasIncarnon}
+              buildIsPublic={buildIsPublic}
+              onBuildIsPublicChange={
+                !readOnly && isOwnBuild ? (next) => setBuildIsPublic(next) : undefined
+              }
+              readOnly={readOnly}
+            />
+          </div>
+
+          <div className="shrink-0">
+            {selectedEquipment ? (
+              <ModSlotGrid
+                slots={hydratedSlots}
+                onDrop={handleModDrop}
+                onSwap={handleModSwap}
+                onRemove={handleModRemove}
+                onRankChange={handleRankChange}
+                onSetRankChange={handleSetRankChange}
+                onEditRiven={(slotIndex) => {
+                  if (readOnly) return;
+                  const slot = slots.find((s) => s.index === slotIndex);
+                  if (!slot?.mod || !isRivenMod(slot.mod)) return;
+                  setEditingRivenSlot(slotIndex);
+                  setDraftRivenSlot(null);
+                }}
+                activeSlotIndex={readOnly ? undefined : activeSlotIndex}
+                onSlotClick={(slotIndex, slotType) => {
+                  if (readOnly) return;
+                  if (activeSlotIndex === slotIndex) {
+                    setActiveSlotType(undefined);
+                    setActiveSlotIndex(undefined);
+                  } else {
+                    setActiveSlotType(slotType);
+                    setActiveSlotIndex(slotIndex);
+                  }
+                  setRightPanelMode('mods');
+                  setActiveAbilityIndex(null);
+                  setActiveArcaneSlot(null);
+                  setActiveShardSlot(null);
+                  setActiveIncarnonTier(null);
+                }}
+                formaMode={formaMode}
+                onPolarityChange={handlePolarityChange}
+                equipmentType={equipmentType}
+                equipmentName={selectedEquipment.name}
+                readOnly={readOnly}
+              />
+            ) : (
+              <div className="glass-shell empty-state">
+                <h2 className="empty-state__title">Preparing equipment</h2>
+                <p className="empty-state__body">
+                  {equipmentLoadError
+                    ? `Failed to load equipment: ${equipmentLoadError}`
+                    : 'Loading equipment and assembling the builder surface.'}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {selectedEquipment && (
+            <div className="glass-shell shrink-0 p-4">
+              <div className="flex min-h-[136px] items-start justify-between gap-3 overflow-visible">
+                {supportsArcanes && (
+                  <div className={readOnly ? 'opacity-95' : undefined}>
+                    <ArcaneSlots
+                      readOnly={readOnly}
+                      slotCount={arcaneSlotCount}
+                      slots={arcaneSlots}
+                      activeSlot={activeArcaneSlot}
+                      onSlotClick={handleArcaneSlotClick}
+                      onRankChange={handleArcaneRankChange}
+                      onRemove={handleArcaneRemove}
+                      onDrop={(slotIndex, arcane) => {
+                        setArcaneSlots((prev) => {
+                          const next = [...prev];
+                          next[slotIndex] = { arcane, rank: getMaxRank(arcane) };
+                          return next;
+                        });
+                      }}
+                    />
+                  </div>
+                )}
+                {equipmentType === 'warframe' && (
+                  <div className={readOnly ? 'opacity-95' : undefined}>
+                    <ArchonShardSlots
+                      readOnly={readOnly}
+                      slots={shardSlots}
+                      shards={shardTypes}
+                      activeSlot={activeShardSlot}
+                      onSlotClick={handleShardSlotClick}
+                      onRemove={handleShardRemove}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {selectedEquipment ? (
+            <BuildDescriptionPanel
+              value={buildDescription}
+              onChange={setBuildDescription}
+              readOnly={readOnly}
+              className="min-h-0"
+            />
+          ) : null}
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <div className="glass-shell p-4 sm:p-5">
+            {readOnly && buildId ? (
+              <BuildLoadoutsPanel buildId={buildId} />
+            ) : (
+              <div>
+                <div className={rightPanelMode !== 'mods' ? 'hidden' : ''}>
+                  {mountFilterPanel ? (
+                    <Suspense fallback={<LazySuspenseFallback />}>
+                      <FilterPanelLazy
+                        active={rightPanelMode === 'mods'}
+                        searchResetKey={searchResetKey}
+                        equipmentType={equipmentType}
+                        equipment={
+                          selectedEquipment
+                            ? {
+                                unique_name: selectedEquipment.unique_name,
+                                name: selectedEquipment.name,
+                                product_category: (selectedEquipment as Weapon).product_category,
+                                image_path: selectedEquipment.image_path,
+                              }
+                            : undefined
+                        }
+                        equippedMods={equippedMods}
+                        targetSlotType={activeSlotType}
+                        onModRemove={() => {
+                          if (activeSlotIndex !== undefined) {
+                            handleModRemove(activeSlotIndex);
+                          }
+                        }}
+                        onModSelect={(mod) => {
+                          const emptySlot = findEmptySlotForMod(slots, mod, {
+                            ...placementOptions,
+                            activeSlotType: activeSlotType,
+                            isRivenPlaceholder: mod.unique_name === RIVEN_PLACEHOLDER_UNIQUE,
+                          });
+
+                          if (emptySlot) {
+                            handleModDrop(emptySlot.index, mod);
+                          }
+                        }}
+                      />
+                    </Suspense>
+                  ) : (
+                    <LazySuspenseFallback />
+                  )}
+                </div>
+
+                {rightPanelMode === 'helminth' && activeAbilityIndex !== null ? (
+                  <Suspense fallback={<LazySuspenseFallback />}>
+                    <HelminthPickerPanel
+                      replacingAbilityName={getAbilityName(
+                        selectedEquipment as Warframe,
+                        activeAbilityIndex,
+                      )}
+                      onSelect={(ability: Ability) => {
+                        setHelminthConfig({
+                          replaced_ability_index: activeAbilityIndex,
+                          replacement_ability_unique_name: ability.unique_name,
+                        });
+                        setActiveAbilityIndex(null);
+                        setRightPanelMode('mods');
+                      }}
+                      onRestore={() => {
+                        setHelminthConfig(undefined);
+                        setActiveAbilityIndex(null);
+                        setRightPanelMode('mods');
+                      }}
+                      onClose={() => {
+                        setActiveAbilityIndex(null);
+                        setRightPanelMode('mods');
+                      }}
+                    />
+                  </Suspense>
+                ) : null}
+
+                {rightPanelMode === 'incarnon' && activeIncarnonTier !== null && incarnonData ? (
+                  <Suspense fallback={<LazySuspenseFallback />}>
+                    <IncarnonPickerPanel
+                      tier={activeIncarnonTier}
+                      incarnonData={incarnonData}
+                      onSelectPerk={(perkName) => {
+                        setIncarnonSelections((prev) => {
+                          const base =
+                            prev ??
+                            (incarnonData ? createDefaultIncarnonSelections(incarnonData) : []);
+                          return selectIncarnonPerk(base, activeIncarnonTier, perkName);
+                        });
+                        setActiveIncarnonTier(null);
+                        setRightPanelMode('mods');
+                      }}
+                      onTurnOff={() => {
+                        setIncarnonSelections((prev) => {
+                          const base =
+                            prev ??
+                            (incarnonData ? createDefaultIncarnonSelections(incarnonData) : []);
+                          return applyIncarnonUnlockCascade(base, activeIncarnonTier);
+                        });
+                        setActiveIncarnonTier(null);
+                        setRightPanelMode('mods');
+                      }}
+                      onClose={() => {
+                        setActiveIncarnonTier(null);
+                        setRightPanelMode('mods');
+                      }}
+                    />
+                  </Suspense>
+                ) : null}
+
+                {rightPanelMode === 'arcanes' && activeArcaneSlot !== null ? (
+                  <Suspense fallback={<LazySuspenseFallback />}>
+                    <ArcanePickerPanel
+                      equipmentType={equipmentType}
+                      currentArcaneName={arcaneSlots[activeArcaneSlot]?.arcane?.name}
+                      onSelect={handleArcaneSelect}
+                      onRemove={() => {
+                        handleArcaneRemove(activeArcaneSlot);
+                        setActiveArcaneSlot(null);
+                        setRightPanelMode('mods');
+                      }}
+                      onClose={() => {
+                        setActiveArcaneSlot(null);
+                        setRightPanelMode('mods');
+                      }}
+                    />
+                  </Suspense>
+                ) : null}
+
+                {rightPanelMode === 'shards' && activeShardSlot !== null ? (
+                  <Suspense fallback={<LazySuspenseFallback />}>
+                    <ShardPickerPanel
+                      shards={shardTypes}
+                      currentSlot={shardSlots[activeShardSlot] || { tauforged: false }}
+                      onSelect={handleShardSelect}
+                      onRemove={() => {
+                        handleShardRemove(activeShardSlot);
+                        setActiveShardSlot(null);
+                        setRightPanelMode('mods');
+                      }}
+                      onClose={() => {
+                        setActiveShardSlot(null);
+                        setRightPanelMode('mods');
+                      }}
+                    />
+                  </Suspense>
+                ) : null}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {navigationBlocker.state === 'blocked' ? (
+        <Modal
+          open
+          onClose={() => navigationBlocker.reset()}
+          ariaLabelledBy="unsaved-build-nav-title"
+          className="glass-modal-surface max-w-md p-5 shadow-2xl"
+        >
+          <h3 id="unsaved-build-nav-title" className="text-foreground text-base font-semibold">
+            Unsaved changes
+          </h3>
+          <p className="text-muted mt-2 text-sm">
+            You have not saved this build. If you leave now, your changes will be lost.
+          </p>
+          <div className="mt-5 flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => navigationBlocker.reset()}
+              className="border-glass-border text-muted hover:border-glass-border-hover hover:text-foreground rounded-lg border px-3 py-1.5 text-sm transition-colors"
+            >
+              Stay
+            </button>
+            <button
+              type="button"
+              onClick={() => navigationBlocker.proceed()}
+              className="border-danger/50 bg-danger/10 text-danger hover:bg-danger/20 rounded-lg border px-3 py-1.5 text-sm transition-colors"
+            >
+              Leave without saving
+            </button>
+          </div>
+        </Modal>
+      ) : null}
+
+      <BuildSaveModal
+        open={showSaveModal}
+        isCopy={!isOwnBuild}
+        name={saveModalName}
+        error={saveError}
+        onNameChange={setSaveModalName}
+        onClose={() => setShowSaveModal(false)}
+        onConfirm={() => {
+          void confirmSave();
+        }}
+      />
+      {showShareModal && selectedEquipment ? (
+        <Suspense fallback={<LazySuspenseFallback />}>
+          <BuildShareModal
+            open
+            onClose={() => setShowShareModal(false)}
+            buildName={buildName}
+            equipment={selectedEquipment as Warframe | Weapon}
+            equipmentName={selectedEquipment.name}
+            equipmentType={equipmentType}
+            equipmentImagePath={selectedEquipmentImagePath}
+            slots={hydratedSlots}
+            arcaneSlots={arcaneSlots}
+            shardSlots={shardSlots}
+            shardTypes={equipmentType === 'warframe' ? shardTypes : []}
+            orokinReactor={orokinReactor}
+            formaCost={formaCost}
+            helminthConfig={equipmentType === 'warframe' ? helminthConfig : undefined}
+            incarnonEnabled={hasIncarnon ? incarnonEnabled : false}
+            incarnonSelections={hasIncarnon ? incarnonSelections : undefined}
+            valenceBonus={effectiveValenceBonus}
+          />
+        </Suspense>
+      ) : null}
+
+      <ModBuilderToasts
+        saveToast={saveToast}
+        compareToast={compareToast}
+        compareCount={compareCount}
+        rivenToastMessage={rivenToastMessage}
+        pipToastMessage={pipToastMessage}
+      />
+      {editingRivenSlot !== null && rivenWeaponType ? (
+        <Suspense fallback={<LazySuspenseFallback />}>
+          <RivenBuilder
+            availableStats={getRivenStatsForType(equipmentType, selectedEquipment?.name)}
+            weaponType={rivenWeaponType}
+            weaponDisposition={rivenDisposition}
+            config={slots.find((s) => s.index === editingRivenSlot)?.riven_config}
+            onSave={handleRivenSave}
+            onClose={handleRivenClose}
+          />
+        </Suspense>
+      ) : null}
+    </div>
+  );
+}

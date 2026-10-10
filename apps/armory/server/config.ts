@@ -1,0 +1,228 @@
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+import dotenvx from '@dotenvx/dotenvx';
+
+import { isEncryptedEnvValue, normalizeClerkEnv } from './clerkEnv.js';
+
+const { config: loadEnv } = dotenvx;
+
+function resolveEnvFilePath(projectRoot: string): string | null {
+  const normalizedNodeEnv = (process.env.NODE_ENV ?? '').trim().toLowerCase();
+
+  if (normalizedNodeEnv === 'test') {
+    const testPath = path.join(projectRoot, '.env.test');
+    return fs.existsSync(testPath) ? testPath : null;
+  }
+
+  if (
+    normalizedNodeEnv &&
+    normalizedNodeEnv !== 'production' &&
+    normalizedNodeEnv !== 'development'
+  ) {
+    throw new Error(
+      `[FATAL] Unsupported NODE_ENV "${process.env.NODE_ENV}". Use production, development, or test.`,
+    );
+  }
+
+  const isProduction = normalizedNodeEnv === 'production';
+  const fileName = isProduction ? '.env.production' : '.env.development';
+  const candidatePath = path.join(projectRoot, fileName);
+  if (fs.existsSync(candidatePath)) {
+    return candidatePath;
+  }
+  if (isProduction) {
+    throw new Error(
+      `[FATAL] Missing ${fileName}. Refusing to start production without the matching env file.`,
+    );
+  }
+  return null;
+}
+
+const projectRoot = process.cwd();
+const envKeysPath = path.join(projectRoot, '.env.keys');
+if (fs.existsSync(envKeysPath)) {
+  try {
+    loadEnv({ path: envKeysPath, quiet: true });
+  } catch (error) {
+    console.error(`[Config] Failed to load environment keys from "${envKeysPath}".`, error);
+    throw error;
+  }
+}
+
+const envPath = resolveEnvFilePath(projectRoot);
+if (envPath) {
+  try {
+    loadEnv({ path: envPath, quiet: true });
+  } catch (error) {
+    console.error(`[Config] Failed to load environment via loadEnv from "${envPath}".`, error);
+    throw error;
+  }
+} else {
+  console.debug(
+    `[Config] No env file resolved (envPath is null); skipping loadEnv for cwd "${projectRoot}".`,
+  );
+}
+
+normalizeClerkEnv();
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+const parentName = path.basename(path.resolve(__dirname, '..'));
+export const PROJECT_ROOT = path.resolve(__dirname, parentName === 'dist' ? '../..' : '..');
+
+function readPackageVersion(projectRoot: string): string {
+  try {
+    const pkgPath = path.join(projectRoot, 'package.json');
+    const raw = fs.readFileSync(pkgPath, 'utf-8');
+    const pkg = JSON.parse(raw) as { version?: string };
+    const v = pkg.version?.trim();
+    return v && v.length > 0 ? v : '0.0.0';
+  } catch {
+    return '0.0.0';
+  }
+}
+
+export const APP_VERSION = readPackageVersion(PROJECT_ROOT);
+
+export const DATA_DIR = path.join(PROJECT_ROOT, 'data');
+export const EXPORTS_DIR = path.join(DATA_DIR, 'exports');
+export const IMAGES_DIR = path.join(DATA_DIR, 'images');
+
+function resolveProjectPath(configured: string | undefined, fallbackRelative: string): string {
+  const value = configured?.trim();
+  if (value) {
+    return path.isAbsolute(value) ? value : path.resolve(PROJECT_ROOT, value);
+  }
+  return path.resolve(PROJECT_ROOT, fallbackRelative);
+}
+
+export const ARMORY_DB_PATH = resolveProjectPath(
+  process.env.ARMORY_DB_PATH,
+  path.join('data', 'armory.db'),
+);
+
+export const USER_DB_PATH = resolveProjectPath(
+  process.env.USER_DB_PATH,
+  path.join('data', 'builds.db'),
+);
+
+export const SESSION_DB_PATH = resolveProjectPath(
+  process.env.SESSION_DB_PATH,
+  path.join('data', 'session.db'),
+);
+
+export const CODEX_WARFRAME_CATALOG_DB_PATH = resolveProjectPath(
+  process.env.CODEX_WARFRAME_CATALOG_DB_PATH,
+  path.join('..', 'Codex', 'data', 'warframe-catalog.db'),
+);
+
+export const CODEX_WARFRAME_IMAGES_DIR = resolveProjectPath(
+  process.env.CODEX_WARFRAME_IMAGES_DIR,
+  path.join('..', 'Codex', 'data', 'warframe-images'),
+);
+
+const _port = parseInt(process.env.PORT || '3002', 10);
+export const PORT = Number.isFinite(_port) && _port > 0 ? _port : 3002;
+const _shutdownTimeoutMs = parseInt(process.env.SHUTDOWN_TIMEOUT_MS || '10000', 10);
+export const SHUTDOWN_TIMEOUT_MS =
+  Number.isFinite(_shutdownTimeoutMs) && _shutdownTimeoutMs > 0 ? _shutdownTimeoutMs : 10_000;
+export const HOST = process.env.HOST || '127.0.0.1';
+export const NODE_ENV = process.env.NODE_ENV || 'development';
+
+if (NODE_ENV === 'production' && !path.isAbsolute(USER_DB_PATH)) {
+  throw new Error('[FATAL] USER_DB_PATH must be an absolute path in production.');
+}
+
+const DEV_SESSION_SECRET = 'armory-dev-only-session-secret-32ch';
+const ALLOW_INSECURE_DEV = process.env.ALLOW_INSECURE_DEV?.trim() === '1';
+const envSessionSecret = process.env.SESSION_SECRET?.trim() || '';
+if (isEncryptedEnvValue(envSessionSecret)) {
+  throw new Error(
+    '[FATAL] SESSION_SECRET is still encrypted. Ensure DOTENV_PRIVATE_KEY_* is available (see .env.keys) or run via dotenvx.',
+  );
+}
+let usingInsecureDevSessionSecret = false;
+let rawSessionSecret = envSessionSecret;
+if (!rawSessionSecret) {
+  if (NODE_ENV === 'production') {
+    throw new Error('[FATAL] SESSION_SECRET must be set and at least 32 characters in production.');
+  }
+  if (!ALLOW_INSECURE_DEV) {
+    throw new Error(
+      '[FATAL] SESSION_SECRET must be set. For local-only insecure defaults, set ALLOW_INSECURE_DEV=1.',
+    );
+  }
+  const host = HOST.trim().toLowerCase();
+  if (host !== '127.0.0.1' && host !== 'localhost' && host !== '::1') {
+    throw new Error(
+      '[FATAL] ALLOW_INSECURE_DEV=1 requires HOST to be loopback (127.0.0.1, localhost, or ::1).',
+    );
+  }
+  rawSessionSecret = DEV_SESSION_SECRET;
+  usingInsecureDevSessionSecret = true;
+} else if (NODE_ENV === 'production' && rawSessionSecret.length < 32) {
+  throw new Error('[FATAL] SESSION_SECRET must be set and at least 32 characters in production.');
+}
+export const SESSION_SECRET = rawSessionSecret;
+export const USING_INSECURE_DEV_SESSION_SECRET = usingInsecureDevSessionSecret;
+
+export const APP_NAME = 'Armory';
+
+export const MANIFEST_URL = 'https://origin.warframe.com/PublicExport/index_en.txt.lzma';
+export const CONTENT_BASE_URL = 'https://content.warframe.com/PublicExport/Manifest/';
+export const IMAGE_BASE_URL = 'https://content.warframe.com/PublicExport';
+
+export const REQUIRED_EXPORTS = [
+  'ExportCustoms',
+  'ExportDrones',
+  'ExportFlavour',
+  'ExportFusionBundles',
+  'ExportGear',
+  'ExportKeys',
+  'ExportManifest',
+  'ExportRecipes',
+  'ExportRegions',
+  'ExportRelicArcane',
+  'ExportResources',
+  'ExportSentinels',
+  'ExportSortieRewards',
+  'ExportUpgrades',
+  'ExportWarframes',
+  'ExportWeapons',
+] as const;
+
+function parseBooleanEnv(value: string | undefined): boolean | undefined {
+  if (value == null) return undefined;
+  const normalized = value.trim().toLowerCase();
+  if (normalized === 'true' || normalized === '1') return true;
+  if (normalized === 'false' || normalized === '0') return false;
+  return undefined;
+}
+
+export const TRUST_PROXY = parseBooleanEnv(process.env.TRUST_PROXY) ?? false;
+export const SECURE_COOKIES =
+  parseBooleanEnv(process.env.SECURE_COOKIES) ?? NODE_ENV === 'production';
+export const COOKIE_DOMAIN = process.env.COOKIE_DOMAIN;
+export const SESSION_COOKIE_NAME =
+  process.env.SESSION_COOKIE_NAME?.trim() || 'darkavianlabs.armory.sid';
+export const LEGAL_PAGE_URL =
+  process.env.LEGAL_PAGE_URL?.trim() ||
+  process.env.VITE_LEGAL_PAGE_URL?.trim() ||
+  'https://darkavianlabs.com/legal';
+export const CLERK_WEBHOOK_SIGNING_SECRET = process.env.CLERK_WEBHOOK_SIGNING_SECRET?.trim() || '';
+if (NODE_ENV === 'production' && !CLERK_WEBHOOK_SIGNING_SECRET) {
+  throw new Error('[FATAL] CLERK_WEBHOOK_SIGNING_SECRET must be set in production.');
+}
+export { GAME_ID } from './gameId.js';
+
+export function ensureDataDirs(): void {
+  for (const dir of [DATA_DIR, EXPORTS_DIR, IMAGES_DIR]) {
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+  }
+  fs.mkdirSync(path.dirname(SESSION_DB_PATH), { recursive: true });
+  fs.mkdirSync(path.dirname(USER_DB_PATH), { recursive: true });
+}
