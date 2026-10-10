@@ -3,7 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
-const sourcePath = path.join(root, 'scripts/data/warframe-rank-exceptions.json');
+const sourcePath = path.join(root, 'scripts/warframe-rank-exceptions.json');
 const outPath = path.join(root, 'src/warframeRankExceptions.generated.ts');
 
 function formatTsString(value) {

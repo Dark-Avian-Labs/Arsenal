@@ -18,7 +18,7 @@ export const PIPELINE_STEPS = [
     key: 'warframeRankExceptions',
     label: 'Rank Exceptions',
     description:
-      'Regenerate warframe rank-30 bonus exceptions when scripts/data/warframe-rank-exceptions.json changes; force step to refresh manually.',
+      'Regenerate warframe rank-30 bonus exceptions when packages/warframe-catalog/scripts/warframe-rank-exceptions.json changes; force step to refresh manually.',
   },
   {
     key: 'exaltedStanceMods',

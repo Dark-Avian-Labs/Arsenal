@@ -6,7 +6,7 @@ import path from 'path';
 import { DATA_DIR, PROJECT_ROOT } from '../../config.ts';
 
 const CATALOG_ROOT = path.join(PROJECT_ROOT, '../../packages/warframe-catalog');
-const SOURCE_PATH = path.join(CATALOG_ROOT, 'scripts/data/warframe-rank-exceptions.json');
+const SOURCE_PATH = path.join(CATALOG_ROOT, 'scripts/warframe-rank-exceptions.json');
 export const WARFRAME_RANK_EXCEPTIONS_OUT_PATH = path.join(
   CATALOG_ROOT,
   'src/warframeRankExceptions.generated.ts',
