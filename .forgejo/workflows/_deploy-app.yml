@@ -12,21 +12,6 @@ on:
       port:
         required: true
         type: number
-    secrets:
-      DOTENV_PRIVATE_KEY_PRODUCTION:
-        required: true
-      SERVER_PATH:
-        required: true
-      SSH_PRIVATE_KEY:
-        required: true
-      SERVER_KNOWN_HOST:
-        required: true
-      SERVER_HOST:
-        required: true
-      SERVER_USER:
-        required: true
-      SERVER_SSH_PORT:
-        required: true
 
 env:
   CI: true

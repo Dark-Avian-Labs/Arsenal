@@ -30,7 +30,7 @@ Pin third-party actions to a commit SHA and put the release tag in a trailing co
 
 `pr.yml` uses `cancel-in-progress: true`. `deploy.yml` uses `cancel-in-progress: false`. Do not add path filters to `pr.yml`. A skipped required check stays pending and blocks the merge. Path filters belong on the `push` trigger of `deploy.yml` and `security.yml`.
 
-The caller jobs in `deploy.yml` have no `runs-on`. Forgejo expands the reusable workflow, and the job inside `_deploy-app.yml` sets `build-node26`.
+The caller jobs in `deploy.yml` have no `runs-on`. Forgejo expands the reusable workflow, and the job inside `_deploy-app.yml` sets `build-node26`. Forgejo rejects a `secrets` key under `workflow_call`. The caller jobs pass secrets with `jobs.<job_id>.secrets`.
 
 The required check is the `security` job. It stays green when the audit is skipped and fails when the audit fails. A high advisory published between dependency pull requests is caught by the Monday run.
 
