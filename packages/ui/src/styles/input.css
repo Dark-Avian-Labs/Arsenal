@@ -99,17 +99,9 @@
   --font-brand:
     'Geist Variable', Geist, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
   --theme-mode: dark;
-  --ascii-opacity: 0.05;
   --font-cascadia-mono: 'Cascadia Mono Variable', ui-monospace, monospace;
   --bg-art-font-size: 11px;
   --bg-art-line-height: 13px;
-  --ascii-canvas-fg: color-mix(
-    in oklab,
-    var(--color-foreground) calc(var(--ascii-opacity) * 100%),
-    transparent
-  );
-  --ascii-canvas-fg-bright: color-mix(in oklab, var(--color-foreground) 12%, transparent);
-  --ascii-canvas-fg-accent: color-mix(in oklab, #ff0000 12%, transparent);
   --hex-side-fill: color-mix(in oklab, var(--color-foreground) 30%, transparent);
   --hex-design-panel-width: 335;
   --hex-design-cluster-height: 658;
@@ -128,7 +120,6 @@
 html:not(.dark) {
   color-scheme: light;
   --theme-mode: light;
-  --ascii-opacity: 0.1;
   --color-foreground: oklch(0% 0 0);
   --color-muted: oklch(45% 0.02 260);
   --color-glass: oklch(100% 0 0 / 0.5);
@@ -143,8 +134,6 @@ html:not(.dark) {
   --color-bg-end: oklch(98.4% 0.004 264);
   --color-bg-glow: oklch(68% 0.03 252 / 0.28);
   --shadow-panel: 0 8px 28px oklch(21% 0.04 266 / 0.16);
-  --ascii-canvas-fg-bright: color-mix(in oklab, var(--color-foreground) 18%, transparent);
-  --ascii-canvas-fg-accent: color-mix(in oklab, #ff0000 18%, transparent);
   --hex-side-fill: color-mix(in oklab, var(--color-foreground) 24%, transparent);
 }
 
@@ -166,7 +155,6 @@ html.dark.ui-shadow {
   --color-bg-start: oklch(1% 0.01 264);
   --color-bg-end: oklch(8% 0.02 270);
   --color-bg-glow: oklch(35% 0.04 270 / 0.14);
-  --ascii-opacity: 0.035;
 }
 
 html.ui-shadow:not(.dark) {
@@ -197,7 +185,6 @@ html.dark.ui-clear {
   --radius-ui: 4px;
   --radius-ui-lg: 6px;
   --radius-ui-sm: 3px;
-  --ascii-opacity: 0.03;
 }
 
 html.ui-clear:not(.dark) {
@@ -240,7 +227,6 @@ html.dark.ui-acrylic {
     0 2px 4px rgb(0 0 0 / 0.12), 0 12px 28px rgb(0 0 0 / 0.28), 0 32px 80px rgb(0 0 0 / 0.38);
   --acrylic-inset: inset 0 0.5px 0 rgb(255 255 255 / 0.14);
   --acrylic-fallback: #2c2c2c;
-  --ascii-opacity: 0.06;
 }
 
 html.ui-acrylic:not(.dark) {
@@ -1730,6 +1716,12 @@ html:not(.dark) .invert-on-light {
 
 .bg-art canvas {
   display: block;
+}
+
+.bg-art .ascii-layer-front {
+  position: absolute;
+  top: 0;
+  left: 0;
 }
 
 @keyframes slide-up {
