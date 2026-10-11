@@ -24,7 +24,7 @@ export const PIPELINE_STEPS = [
     key: 'exaltedStanceMods',
     label: 'Exalted Stances',
     description:
-      'Exalted stance mods: Overframe only when forced; otherwise wiki stance images when exports are unchanged.',
+      'Exalted stance mods. Overframe only when that scrape is requested; otherwise wiki stance images when exports change.',
   },
   {
     key: 'atragraphMods',
@@ -46,8 +46,7 @@ export const PIPELINE_STEPS = [
   {
     key: 'overframe',
     label: 'Overframe',
-    description:
-      'Overframe artifact slots (manual force only). Use Admin slot editor for polarity fixes.',
+    description: 'Overframe artifact slots. Off unless the import asks for the Overframe scrape.',
   },
   {
     key: 'wiki',

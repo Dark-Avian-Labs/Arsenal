@@ -23,6 +23,7 @@ export function WarframeImportAdminTool() {
   const [starting, setStarting] = useState(false);
   const [forceImport, setForceImport] = useState(false);
   const [forceImages, setForceImages] = useState(false);
+  const [includeOverframe, setIncludeOverframe] = useState(false);
   const logContainerRef = useRef<HTMLDivElement | null>(null);
 
   const applySnapshot = useCallback((next: ImportSnapshot) => {
@@ -99,7 +100,11 @@ export function WarframeImportAdminTool() {
       const response = await apiFetch('/api/warframe/admin/import/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ forceImport, forceImages }),
+        body: JSON.stringify({
+          forceImport,
+          forceImages,
+          ...(includeOverframe ? { forceSteps: ['overframe', 'exaltedStanceMods'] } : {}),
+        }),
       });
       const body = (await response.json().catch(() => null)) as
         | ({ error?: string; snapshot?: ImportSnapshot } & ImportSnapshot)
@@ -114,7 +119,7 @@ export function WarframeImportAdminTool() {
     } finally {
       setStarting(false);
     }
-  }, [applySnapshot, forceImages, forceImport]);
+  }, [applySnapshot, forceImages, forceImport, includeOverframe]);
 
   const lines = snapshot?.lines ?? [];
 
@@ -153,6 +158,14 @@ export function WarframeImportAdminTool() {
             onChange={(event) => setForceImages(event.target.checked)}
           />
           Force image re-download
+        </label>
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={includeOverframe}
+            onChange={(event) => setIncludeOverframe(event.target.checked)}
+          />
+          Include Overframe
         </label>
       </div>
       {error ? (

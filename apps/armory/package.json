@@ -11,8 +11,7 @@
     "public",
     "icons",
     "ecosystem.config.cjs",
-    ".env.production",
-    "scripts/data"
+    ".env.production"
   ],
   "type": "module",
   "scripts": {

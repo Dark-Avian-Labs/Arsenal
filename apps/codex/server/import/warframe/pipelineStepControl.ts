@@ -6,10 +6,19 @@ export interface PipelineStepControlOptions {
   forceSteps?: PipelineStepKey[];
 }
 
+const OPT_IN_STEPS = new Set<PipelineStepKey>(['overframe']);
+
 export function isStepForced(step: PipelineStepKey, options: PipelineStepControlOptions): boolean {
-  if (options.forceImport === true) return true;
+  if (options.forceImport === true && !OPT_IN_STEPS.has(step)) return true;
   if (step === 'images' && options.forceImages === true) return true;
   return options.forceSteps?.includes(step) ?? false;
+}
+
+export function wantsOverframeScrape(options: PipelineStepControlOptions): boolean {
+  return (
+    options.forceSteps?.includes('overframe') === true ||
+    options.forceSteps?.includes('exaltedStanceMods') === true
+  );
 }
 
 export function shouldRunStep(
