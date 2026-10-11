@@ -14,7 +14,7 @@ export type ChartPoint = {
 type Mode = 'volume' | 'duration';
 
 const WIDTH = 960;
-const HEIGHT = 340;
+const HEIGHT = 420;
 const PAD = { top: 18, right: 18, bottom: 28, left: 44 };
 const STROKE = 1.5;
 
@@ -220,8 +220,8 @@ export function ActionsChart({ points }: { points: ChartPoint[] }) {
       <div className="relative mt-3">
         <svg
           viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
-          preserveAspectRatio="none"
-          className="h-80 w-full touch-pan-y"
+          className="w-full touch-pan-y"
+          style={{ aspectRatio: `${WIDTH} / ${HEIGHT}` }}
           role="img"
           aria-label={mode === 'volume' ? 'Stacked runs over time' : 'Median duration over time'}
           onMouseMove={(event) => setHoverIndex(nearestIndex(event.clientX, event.currentTarget))}
