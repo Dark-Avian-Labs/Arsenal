@@ -77,33 +77,24 @@ export function processExports(options?: { skipPreserve?: boolean }): {
     ? { warframes: [], weapons: [], companions: [], abilities: [], mods: [] }
     : saveScrapedData();
 
-  const warframesData = readExport('ExportWarframes_en');
-  if (warframesData) {
-    counts.warframes = processWarframes(warframesData);
-    counts.abilities = processAbilities(warframesData);
-  }
-
-  const weaponsData = readExport('ExportWeapons_en');
-  if (weaponsData) {
-    counts.weapons = processWeapons(weaponsData);
-  }
-
-  const companionsData = readExport('ExportSentinels_en');
-  if (companionsData) {
-    counts.companions = processCompanions(companionsData);
-  }
-
-  const upgradesData = readExport('ExportUpgrades_en');
-  if (upgradesData) {
-    counts.modSets = processModSets(upgradesData);
-    counts.mods = processMods(upgradesData);
+  consumeExport('ExportWarframes_en', (data) => {
+    counts.warframes = processWarframes(data);
+    counts.abilities = processAbilities(data);
+  });
+  consumeExport('ExportWeapons_en', (data) => {
+    counts.weapons = processWeapons(data);
+  });
+  consumeExport('ExportSentinels_en', (data) => {
+    counts.companions = processCompanions(data);
+  });
+  consumeExport('ExportUpgrades_en', (data) => {
+    counts.modSets = processModSets(data);
+    counts.mods = processMods(data);
     backfillModDescriptions();
-  }
-
-  const arcaneData = readExport('ExportRelicArcane_en');
-  if (arcaneData) {
-    counts.arcanes = processArcanes(arcaneData);
-  }
+  });
+  consumeExport('ExportRelicArcane_en', (data) => {
+    counts.arcanes = processArcanes(data);
+  });
 
   if (!skipPreserve) {
     restoreImagePaths(savedImagePaths);
@@ -279,6 +270,12 @@ function restoreScrapedData(saved: ReturnType<typeof saveScrapedData>): void {
 
   tx();
   log('info', 'Restored scraped data rows after reprocessing', { count: total });
+}
+
+function consumeExport(category: string, use: (data: Record<string, unknown[]>) => void): void {
+  const data = readExport(category);
+  if (!data) return;
+  use(data);
 }
 
 function readExport(category: string): Record<string, unknown[]> | null {

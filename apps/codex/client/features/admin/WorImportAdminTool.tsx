@@ -9,7 +9,6 @@ type ImportSnapshot = {
     artifacts: number;
     demons: number;
     missingPortraits?: string[];
-    missingStarAssets?: string[];
   } | null;
   error: string | null;
 };
@@ -172,11 +171,6 @@ export function WorImportAdminTool() {
           {snapshot.summary.missingPortraits && snapshot.summary.missingPortraits.length > 0 ? (
             <p className="text-muted">
               Missing portraits: {snapshot.summary.missingPortraits.length} (listed in log below).
-            </p>
-          ) : null}
-          {snapshot.summary.missingStarAssets && snapshot.summary.missingStarAssets.length > 0 ? (
-            <p className="text-muted">
-              Missing star UI assets: {snapshot.summary.missingStarAssets.join(', ')}
             </p>
           ) : null}
         </div>

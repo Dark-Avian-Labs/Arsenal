@@ -39,8 +39,32 @@ function readInfoboxRowValue(
   return found;
 }
 
+export function extractInfoboxHtml(html: string): string {
+  const start = html.search(/<div\b[^>]*\bclass="[^"]*\binfobox\b/i);
+  if (start < 0) return html;
+  let depth = 0;
+  let i = start;
+  while (i < html.length) {
+    const nextOpen = html.toLowerCase().indexOf('<div', i);
+    const nextClose = html.toLowerCase().indexOf('</div>', i);
+    if (nextClose < 0) return html;
+    if (nextOpen !== -1 && nextOpen < nextClose) {
+      const after = html[nextOpen + 4];
+      if (after === '>' || after === ' ' || after === '\n' || after === '\t' || after === '/') {
+        depth += 1;
+      }
+      i = nextOpen + 4;
+      continue;
+    }
+    depth -= 1;
+    i = nextClose + 6;
+    if (depth === 0) return html.slice(start, i);
+  }
+  return html;
+}
+
 export function parseWeaponFireBehaviorsFromWikiHtml(html: string): WikiFireBehavior[] {
-  const $ = cheerio.load(html);
+  const $ = cheerio.load(extractInfoboxHtml(html));
   const infobox = $('div.infobox').first();
   if (infobox.length === 0) return [];
 
