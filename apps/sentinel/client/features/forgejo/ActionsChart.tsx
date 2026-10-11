@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 
 import { smoothBandPath, smoothLinePath, smoothLinePathMasked } from './chartPath';
 
@@ -13,8 +13,8 @@ export type ChartPoint = {
 
 type Mode = 'volume' | 'duration';
 
-const WIDTH = 960;
-const HEIGHT = 420;
+const HEIGHT = 400;
+const FALLBACK_WIDTH = 960;
 const PAD = { top: 18, right: 18, bottom: 28, left: 44 };
 const STROKE = 1.5;
 
@@ -45,8 +45,8 @@ function formatMs(ms: number): string {
   return `${secs}s`;
 }
 
-function xAt(index: number, count: number): number {
-  const inner = WIDTH - PAD.left - PAD.right;
+function xAt(index: number, count: number, width: number): number {
+  const inner = width - PAD.left - PAD.right;
   if (count <= 1) return PAD.left + inner / 2;
   return PAD.left + (index / (count - 1)) * inner;
 }
@@ -60,6 +60,22 @@ function yAt(value: number, max: number): number {
 export function ActionsChart({ points }: { points: ChartPoint[] }) {
   const [mode, setMode] = useState<Mode>('volume');
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+  const [width, setWidth] = useState(FALLBACK_WIDTH);
+  const frameRef = useRef<HTMLDivElement>(null);
+  const clipId = useId().replace(/:/g, '');
+
+  useEffect(() => {
+    const el = frameRef.current;
+    if (!el) return;
+    const sync = () => {
+      const next = Math.round(el.clientWidth);
+      if (next > 0) setWidth(next);
+    };
+    sync();
+    const observer = new ResizeObserver(sync);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   const chart = useMemo(() => {
     const count = points.length;
@@ -83,17 +99,17 @@ export function ActionsChart({ points }: { points: ChartPoint[] }) {
 
     if (mode === 'volume') {
       const maxVolume = Math.max(...points.map((p) => p.total), 1);
-      const base = points.map((_, i) => ({ x: xAt(i, count), y: yAt(0, maxVolume) }));
+      const base = points.map((_, i) => ({ x: xAt(i, count, width), y: yAt(0, maxVolume) }));
       const successTop = points.map((p, i) => ({
-        x: xAt(i, count),
+        x: xAt(i, count, width),
         y: yAt(p.success, maxVolume),
       }));
       const otherTop = points.map((p, i) => ({
-        x: xAt(i, count),
+        x: xAt(i, count, width),
         y: yAt(p.success + p.other, maxVolume),
       }));
       const failureTop = points.map((p, i) => ({
-        x: xAt(i, count),
+        x: xAt(i, count, width),
         y: yAt(p.total, maxVolume),
       }));
       return {
@@ -120,10 +136,10 @@ export function ActionsChart({ points }: { points: ChartPoint[] }) {
     const durations = points.map((p) => p.medianDurationMs).filter((v): v is number => v != null);
     const maxDuration = Math.max(...durations, 1);
     const line = points.map((p, i) => ({
-      x: xAt(i, count),
+      x: xAt(i, count, width),
       y: yAt(p.medianDurationMs ?? 0, maxDuration),
     }));
-    const base = points.map((_, i) => ({ x: xAt(i, count), y: yAt(0, maxDuration) }));
+    const base = points.map((_, i) => ({ x: xAt(i, count, width), y: yAt(0, maxDuration) }));
     return {
       layers: null,
       durationPath: smoothLinePath(line),
@@ -133,28 +149,20 @@ export function ActionsChart({ points }: { points: ChartPoint[] }) {
       ticks: [0, maxDuration / 2, maxDuration],
       tops: line,
     };
-  }, [mode, points]);
+  }, [mode, points, width]);
 
   const hover = hoverIndex != null ? points[hoverIndex] : null;
   const hoverPoint = hoverIndex != null ? chart.tops[hoverIndex] : null;
 
-  function clientToSvgX(clientX: number, svg: SVGSVGElement): number | null {
-    const ctm = svg.getScreenCTM();
-    if (!ctm) return null;
-    const pt = svg.createSVGPoint();
-    pt.x = clientX;
-    pt.y = 0;
-    return pt.matrixTransform(ctm.inverse()).x;
-  }
-
   function nearestIndex(clientX: number, svg: SVGSVGElement): number | null {
     if (points.length === 0) return null;
-    const x = clientToSvgX(clientX, svg);
-    if (x == null) return null;
+    const rect = svg.getBoundingClientRect();
+    if (rect.width <= 0) return null;
+    const x = ((clientX - rect.left) / rect.width) * width;
     let best = 0;
     let bestDist = Number.POSITIVE_INFINITY;
     for (let i = 0; i < points.length; i += 1) {
-      const dist = Math.abs(xAt(i, points.length) - x);
+      const dist = Math.abs(xAt(i, points.length, width) - x);
       if (dist < bestDist) {
         best = i;
         bestDist = dist;
@@ -217,22 +225,21 @@ export function ActionsChart({ points }: { points: ChartPoint[] }) {
         </div>
       ) : null}
 
-      <div className="relative mt-3">
+      <div ref={frameRef} className="relative mt-3">
         <svg
-          viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
-          className="w-full touch-pan-y"
-          style={{ aspectRatio: `${WIDTH} / ${HEIGHT}` }}
+          viewBox={`0 0 ${width} ${HEIGHT}`}
+          className="block h-[400px] w-full touch-pan-y"
           role="img"
           aria-label={mode === 'volume' ? 'Stacked runs over time' : 'Median duration over time'}
           onMouseMove={(event) => setHoverIndex(nearestIndex(event.clientX, event.currentTarget))}
           onMouseLeave={() => setHoverIndex(null)}
         >
           <defs>
-            <clipPath id="forgejo-plot-clip">
+            <clipPath id={`forgejo-plot-clip-${clipId}`}>
               <rect
                 x={PAD.left}
                 y={PAD.top}
-                width={WIDTH - PAD.left - PAD.right}
+                width={width - PAD.left - PAD.right}
                 height={HEIGHT - PAD.top - PAD.bottom}
               />
             </clipPath>
@@ -245,7 +252,7 @@ export function ActionsChart({ points }: { points: ChartPoint[] }) {
                 <line
                   x1={PAD.left}
                   y1={y}
-                  x2={WIDTH - PAD.right}
+                  x2={width - PAD.right}
                   y2={y}
                   stroke="var(--color-glass-border)"
                   strokeWidth="1"
@@ -265,7 +272,7 @@ export function ActionsChart({ points }: { points: ChartPoint[] }) {
             );
           })}
 
-          <g clipPath="url(#forgejo-plot-clip)">
+          <g clipPath={`url(#forgejo-plot-clip-${clipId})`}>
             {mode === 'volume' && chart.layers ? (
               <>
                 <path d={chart.layers.successFill} fill={COLORS.success} opacity="0.55" />
@@ -332,7 +339,7 @@ export function ActionsChart({ points }: { points: ChartPoint[] }) {
 
           {points.length === 0 ? (
             <text
-              x={WIDTH / 2}
+              x={width / 2}
               y={HEIGHT / 2}
               textAnchor="middle"
               fill="var(--color-muted)"
@@ -348,7 +355,7 @@ export function ActionsChart({ points }: { points: ChartPoint[] }) {
                 {formatHoverTime(points[0]!.ts)}
               </text>
               <text
-                x={WIDTH - PAD.right}
+                x={width - PAD.right}
                 y={HEIGHT - 8}
                 textAnchor="end"
                 fill="var(--color-muted)"
@@ -364,7 +371,7 @@ export function ActionsChart({ points }: { points: ChartPoint[] }) {
           <div
             className="pointer-events-none absolute top-2 rounded-md px-2 py-1 text-[11px] leading-snug"
             style={{
-              left: `clamp(0px, calc(${(hoverPoint.x / WIDTH) * 100}% - 4rem), calc(100% - 9rem))`,
+              left: `clamp(0px, calc(${(hoverPoint.x / width) * 100}% - 4rem), calc(100% - 9rem))`,
               background: 'var(--color-glass)',
               border: '1px solid var(--color-glass-border)',
               color: 'var(--color-foreground)',
