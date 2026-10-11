@@ -2,16 +2,6 @@
 
 Workflows live in `.forgejo/workflows/`. Forgejo is the source of truth. Do not put a `permissions` block in those files. Forgejo ignores it and warns on every run.
 
-## Runner labels
-
-| Label          | Use                                                                          |
-| -------------- | ---------------------------------------------------------------------------- |
-| `build-node26` | Node builds, validate, Playwright, deploy                                    |
-| `light-node26` | Light Node jobs, including dependency updates and the deploy change detector |
-| `light`        | The `security` gate job, which does not need Node                            |
-
-A Windows job uses `windows-2025:host`. The `:host` suffix is required. Do not invent a new label.
-
 ## Actions
 
 Pin third-party actions to a commit SHA and put the release tag in a trailing comment. Sayori bumps those SHAs from `dependencies.yml`. Install pnpm in the job with `npm install -g pnpm@$(node -p 'require("./package.json").packageManager.replace(/^pnpm@/, "")')`, then `pnpm install --frozen-lockfile`.
