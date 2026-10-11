@@ -24,7 +24,7 @@ jobs:
           fetch-depth: 0
 
       - name: Review
-        uses: iShark5060/actions-coderabbit@fdb624c7ca8cb1ccadc0894f5578e31ba644ad3d # v1.0.3
+        uses: iShark5060/actions-coderabbit@304c2058bb2b7593463cae4f9d43f685e6fa8c6b # v1.0.4
         with:
           coderabbit_api_key: ${{ secrets.CODERABBIT_API_KEY }}
           forgejo_token: ${{ secrets.CODERABBIT_TOKEN }}
