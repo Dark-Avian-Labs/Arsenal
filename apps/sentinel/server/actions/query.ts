@@ -111,8 +111,8 @@ function buildFilters(options: {
 
   const repo = options.repo?.trim().toLowerCase();
   if (repo) {
-    if (repo.includes('/')) {
-      const [owner, name] = repo.split('/');
+    const [owner, name, ...rest] = repo.split('/');
+    if (owner && name && rest.length === 0) {
       where.push('LOWER(owner) = @owner AND LOWER(repo) = @repoName');
       params.owner = owner;
       params.repoName = name;

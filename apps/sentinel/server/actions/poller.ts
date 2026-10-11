@@ -32,7 +32,7 @@ async function syncRepo(
   owner: string,
   repo: string,
   options: { bootstrap: boolean },
-): Promise<void> {
+): Promise<{ ok: true } | { ok: false; error: string }> {
   const db = getActionsDb();
   const since = Date.now() - BOOTSTRAP_LOOKBACK_MS;
   const maxPages = options.bootstrap ? BOOTSTRAP_MAX_PAGES : 1;
@@ -55,6 +55,7 @@ async function syncRepo(
       if (oldestStarted < since) break;
     }
     recordSyncOk(db, owner, repo);
+    return { ok: true };
   } catch (err) {
     const message =
       err instanceof ForgejoApiError
@@ -64,6 +65,7 @@ async function syncRepo(
           : String(err);
     recordSyncError(db, owner, repo, message);
     log('warn', 'actions_repo_sync_failed', { owner, repo, error: message });
+    return { ok: false, error: message };
   }
 }
 
@@ -93,20 +95,27 @@ export async function pollActionsOnce(): Promise<void> {
   const db = getActionsDb();
   try {
     const bootstrapped = getPollerMeta(db, 'bootstrapped') === '1';
+    let clean = true;
+    let lastError = '';
     for (const owner of FORGEJO_OWNERS) {
       let repos;
       try {
         repos = await listReposForOwner(owner);
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
-        setPollerMeta(db, 'last_poll_error', message.slice(0, 500));
+        clean = false;
+        lastError = message;
         log('warn', 'actions_owner_list_failed', { owner, error: message });
         continue;
       }
 
       for (const repo of repos) {
         if (repo.archived || !repo.hasActions) continue;
-        await syncRepo(repo.owner, repo.name, { bootstrap: !bootstrapped });
+        const result = await syncRepo(repo.owner, repo.name, { bootstrap: !bootstrapped });
+        if (!result.ok) {
+          clean = false;
+          lastError = result.error;
+        }
       }
     }
 
@@ -115,9 +124,13 @@ export async function pollActionsOnce(): Promise<void> {
     }
 
     pruneOldRuns(db);
-    setPollerMeta(db, 'bootstrapped', '1');
     setPollerMeta(db, 'last_poll_at', String(Date.now()));
-    setPollerMeta(db, 'last_poll_error', '');
+    if (clean) {
+      setPollerMeta(db, 'bootstrapped', '1');
+      setPollerMeta(db, 'last_poll_error', '');
+    } else if (lastError) {
+      setPollerMeta(db, 'last_poll_error', lastError.slice(0, 500));
+    }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     setPollerMeta(db, 'last_poll_error', message.slice(0, 500));

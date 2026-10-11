@@ -34,6 +34,8 @@ export function isForgejoConfigured(): boolean {
   return Boolean(FORGEJO_TOKEN);
 }
 
+const FETCH_TIMEOUT_MS = 15_000;
+
 async function forgejoFetch(path: string): Promise<Response> {
   const url = `${FORGEJO_BASE_URL}${path.startsWith('/') ? path : `/${path}`}`;
   const res = await fetch(url, {
@@ -41,6 +43,7 @@ async function forgejoFetch(path: string): Promise<Response> {
       Accept: 'application/json',
       Authorization: `token ${FORGEJO_TOKEN}`,
     },
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
   return res;
 }

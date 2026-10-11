@@ -174,5 +174,12 @@ describe('actions query', () => {
     expect(filled.length).toBeGreaterThan(0);
     expect(filled.reduce((sum, point) => sum + point.total, 0)).toBe(4);
     expect(filled.reduce((sum, point) => sum + point.failure, 0)).toBe(2);
+
+    // Incomplete owner/repo inputs use LIKE, not an empty exact match.
+    expect(listRuns(db, { repo: 'Dark-Avian-Labs/', range: '24h', now }).length).toBeGreaterThan(0);
+    expect(listRuns(db, { repo: 'a/b/c', range: '24h', now })).toHaveLength(0);
+    const exact = listRuns(db, { repo: 'Dark-Avian-Labs/Arsenal', range: '24h', now });
+    expect(exact.length).toBeGreaterThan(0);
+    expect(exact.every((row) => row.repo === 'Arsenal')).toBe(true);
   });
 });
