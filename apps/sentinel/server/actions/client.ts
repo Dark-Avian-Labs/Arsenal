@@ -79,7 +79,17 @@ async function listOwnerRepos(owner: string, kind: 'orgs' | 'users'): Promise<Fo
 export async function listReposForOwner(owner: string): Promise<ForgejoRepoRef[]> {
   const asOrg = await listOwnerRepos(owner, 'orgs');
   if (asOrg.length > 0) return asOrg;
-  return listOwnerRepos(owner, 'users');
+  try {
+    return await listOwnerRepos(owner, 'users');
+  } catch (err) {
+    if (err instanceof ForgejoApiError && /read:user/i.test(err.message)) {
+      throw new ForgejoApiError(
+        err.status,
+        `Listing repos for ${owner} needs a token with read:user (personal accounts). ${err.message}`,
+      );
+    }
+    throw err;
+  }
 }
 
 export async function listActionRuns(
