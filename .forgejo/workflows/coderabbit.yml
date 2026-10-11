@@ -14,13 +14,17 @@ jobs:
     runs-on: light-node26
     timeout-minutes: 20
     steps:
+      - name: Install git
+        shell: sh
+        run: apk add --no-cache git
+
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
       - name: Review
-        uses: iShark5060/actions-coderabbit@91508f2201577607e5f3e6bbddcd7ca2f5d4630d # v1.0.2
+        uses: iShark5060/actions-coderabbit@fdb624c7ca8cb1ccadc0894f5578e31ba644ad3d # v1.0.3
         with:
           coderabbit_api_key: ${{ secrets.CODERABBIT_API_KEY }}
           forgejo_token: ${{ secrets.CODERABBIT_TOKEN }}
