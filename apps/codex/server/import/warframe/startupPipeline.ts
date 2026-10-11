@@ -28,6 +28,7 @@ import {
   shouldRebuildSqliteFromExports,
   shouldRunStep,
   usesOnlyMissingMode,
+  wantsOverframeScrape,
 } from './pipelineStepControl.ts';
 import {
   printStartupPipelineSummary,
@@ -429,7 +430,16 @@ async function runStartupPipelineInner(
   const rankExceptionsSourceAvailable = isWarframeRankExceptionsSourceAvailable();
   const rankExceptionsSourceChanged =
     rankExceptionsSourceAvailable && warframeRankExceptionsSourceChanged();
-  if (shouldRunStep('warframeRankExceptions', rankExceptionsSourceChanged, options)) {
+  if (!rankExceptionsSourceAvailable) {
+    log(
+      '[Rank Exceptions] Skipped — source JSON is not in this release; using the compiled registry.',
+    );
+    summary.warframeRankExceptions = {
+      outcome: 'skipped',
+      detail:
+        'packages/warframe-catalog/scripts/warframe-rank-exceptions.json is not in this release; using the compiled registry.',
+    };
+  } else if (shouldRunStep('warframeRankExceptions', rankExceptionsSourceChanged, options)) {
     const reason = isStepForced('warframeRankExceptions', options)
       ? 'Force step requested — regenerating rank exception registry.'
       : !fs.existsSync(WARFRAME_RANK_EXCEPTIONS_OUT_PATH)
@@ -453,20 +463,11 @@ async function runStartupPipelineInner(
       };
       err('[Rank Exceptions] Failed —', e);
     }
-  } else if (!rankExceptionsSourceAvailable) {
-    log(
-      '[Rank Exceptions] Skipped — source JSON is not in the deployment bundle; using compiled registry.',
-    );
-    summary.warframeRankExceptions = {
-      outcome: 'skipped',
-      detail:
-        'scripts/data/warframe-rank-exceptions.json is unavailable on this host; using compiled warframe rank exceptions.',
-    };
   } else {
     log('[Rank Exceptions] Skipped — source JSON unchanged since last generation.');
     summary.warframeRankExceptions = {
       outcome: 'skipped',
-      detail: 'scripts/data/warframe-rank-exceptions.json unchanged since last generation.',
+      detail: 'scripts/warframe-rank-exceptions.json unchanged since last generation.',
     };
   }
 
@@ -527,11 +528,7 @@ async function runStartupPipelineInner(
   );
   const onlyMissingStances = usesOnlyMissingMode('exaltedStanceMods', options);
   const stancesNeedBackfill = countMissingExaltedStanceSeeds() > 0;
-  const shouldSyncStancesFromOverframe = shouldRunStep(
-    'exaltedStanceMods',
-    isStepForced('exaltedStanceMods', options) && (weaponsExportChanged || stancesNeedBackfill),
-    options,
-  );
+  const shouldSyncStancesFromOverframe = wantsOverframeScrape(options);
   const shouldRefreshStanceWikiImages = shouldRunStep(
     'exaltedStanceMods',
     weaponsExportChanged && !stancesNeedBackfill,
@@ -539,9 +536,9 @@ async function runStartupPipelineInner(
   );
 
   if (shouldSyncStancesFromOverframe) {
-    await prepareOverframeFetch();
     log('[Exalted Stances] Syncing exalted stance mods from Overframe...');
     try {
+      await prepareOverframeFetch();
       const result = await syncExaltedStanceModsFromOverframe((msg) => {
         log(`[Exalted Stances] ${msg}`);
       }, onlyMissingStances);
@@ -725,9 +722,9 @@ async function runStartupPipelineInner(
   const onlyMissingOverframe = usesOnlyMissingMode('overframe', options);
   const missingOverframeItems = countItemsMissingOverframeData();
   if (shouldRunStep('overframe', false, options)) {
-    await prepareOverframeFetch();
     log('[Overframe] Indexing and scraping build data...');
     try {
+      await prepareOverframeFetch();
       const indexResult = await scrapeIndex(
         undefined,
         (msg) => log(`[Overframe] ${msg}`),
@@ -773,13 +770,13 @@ async function runStartupPipelineInner(
     }
   } else {
     log(
-      '[Overframe] Skipped — automatic Overframe scrape disabled (force this step in Admin if needed).',
+      '[Overframe] Skipped — Overframe scrape is off unless Include Overframe is checked.',
     );
     summary.overframe.outcome = 'skipped';
     summary.overframe.detail =
       missingOverframeItems > 0
-        ? `${missingOverframeItems} items still missing artifact slots; use Admin slot editor or force Overframe step.`
-        : 'Automatic Overframe scrape disabled; no requests made.';
+        ? `${missingOverframeItems} items still missing artifact slots. Check Include Overframe, or use the Admin slot editor.`
+        : 'Overframe scrape is off; no requests made.';
     summary.overframe.pagesScraped = 0;
   }
 
