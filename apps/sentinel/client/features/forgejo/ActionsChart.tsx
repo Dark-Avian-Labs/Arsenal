@@ -14,8 +14,8 @@ export type ChartPoint = {
 type Mode = 'volume' | 'duration';
 
 const WIDTH = 960;
-const HEIGHT = 260;
-const PAD = { top: 18, right: 18, bottom: 28, left: 40 };
+const HEIGHT = 340;
+const PAD = { top: 18, right: 18, bottom: 28, left: 44 };
 const STROKE = 1.5;
 
 const COLORS = {
@@ -138,11 +138,19 @@ export function ActionsChart({ points }: { points: ChartPoint[] }) {
   const hover = hoverIndex != null ? points[hoverIndex] : null;
   const hoverPoint = hoverIndex != null ? chart.tops[hoverIndex] : null;
 
+  function clientToSvgX(clientX: number, svg: SVGSVGElement): number | null {
+    const ctm = svg.getScreenCTM();
+    if (!ctm) return null;
+    const pt = svg.createSVGPoint();
+    pt.x = clientX;
+    pt.y = 0;
+    return pt.matrixTransform(ctm.inverse()).x;
+  }
+
   function nearestIndex(clientX: number, svg: SVGSVGElement): number | null {
     if (points.length === 0) return null;
-    const rect = svg.getBoundingClientRect();
-    if (rect.width <= 0) return null;
-    const x = ((clientX - rect.left) / rect.width) * WIDTH;
+    const x = clientToSvgX(clientX, svg);
+    if (x == null) return null;
     let best = 0;
     let bestDist = Number.POSITIVE_INFINITY;
     for (let i = 0; i < points.length; i += 1) {
@@ -212,7 +220,8 @@ export function ActionsChart({ points }: { points: ChartPoint[] }) {
       <div className="relative mt-3">
         <svg
           viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
-          className="h-64 w-full"
+          preserveAspectRatio="none"
+          className="h-80 w-full touch-pan-y"
           role="img"
           aria-label={mode === 'volume' ? 'Stacked runs over time' : 'Median duration over time'}
           onMouseMove={(event) => setHoverIndex(nearestIndex(event.clientX, event.currentTarget))}

@@ -6,7 +6,7 @@ PM2 monitor for DAL Node apps on one host. Alerts and logs stay with `pm2-discor
 
 `POST /api/ingest` uses `SENTINEL_INGEST_TOKEN` as a Bearer token. Metrics are `data/metrics.db`.
 
-`/forgejo` is the Actions dashboard. The poller needs `FORGEJO_TOKEN` (server-only). Runs land in `data/actions.db`.
+`/forgejo` is the Actions dashboard. The poller needs `FORGEJO_TOKEN` (server-only; scopes `read:repository`, plus `read:user` when `FORGEJO_OWNERS` includes personal accounts). Runs land in `data/actions.db`.
 
 Ingest and the agent must not send IPs, user ids, emails, cookies, Authorization headers, bodies, full URLs, or query strings. HTTP dimensions are method, route pattern, status class, and latency buckets.
 
