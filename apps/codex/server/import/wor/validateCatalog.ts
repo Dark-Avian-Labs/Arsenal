@@ -1,5 +1,3 @@
-import fs from 'node:fs';
-
 import type { CatalogBundle } from './catalogQueries.ts';
 import { isValidFactionKey, isValidHeroClassKey } from './normalize.ts';
 
@@ -86,9 +84,4 @@ export function validateWorCatalogBundle(bundle: CatalogBundle): WorValidationRe
 
   const errors = issues.filter((issue) => issue.level === 'error');
   return { ok: errors.length === 0, issues };
-}
-
-export function listMissingStarAssets(assetsDir: string): string[] {
-  const required = ['star1.png', 'star2.png', 'star3.png', 'star4.png', 'star5.png', 'star6.png'];
-  return required.filter((file) => !fs.existsSync(`${assetsDir}/ranks/${file}`));
 }

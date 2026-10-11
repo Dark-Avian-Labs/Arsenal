@@ -21,6 +21,14 @@ export function shouldRunStep(
   return wouldRun;
 }
 
+export function shouldRebuildSqliteFromExports(input: {
+  forceImport: boolean;
+  hashChanged: boolean;
+  catalogEmpty: boolean;
+}): boolean {
+  return input.forceImport || input.hashChanged || input.catalogEmpty;
+}
+
 export function usesOnlyMissingMode(
   step: PipelineStepKey,
   options: PipelineStepControlOptions,

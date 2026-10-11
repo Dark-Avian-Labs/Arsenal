@@ -2,6 +2,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import { log } from '@dark-avian-labs/server-kit';
+import type Database from 'better-sqlite3';
+
+import { WOR_IMAGES_DIR, PROJECT_ROOT } from '../../config.ts';
 import {
   ensureWorCatalogDbTables,
   ensureWorCoreTables,
@@ -9,9 +12,6 @@ import {
   getWorDb,
   worQueries,
 } from '../../games/wor/index.ts';
-import type Database from 'better-sqlite3';
-
-import { WOR_IMAGES_DIR, PROJECT_ROOT } from '../../config.ts';
 import {
   bumpCatalogVersion,
   deactivateStaleCatalogEntries,
@@ -65,7 +65,7 @@ import {
   readProcessedSourceHashes,
   writeProcessedSourceHashes,
 } from './sourceHashes.ts';
-import { listMissingStarAssets, validateWorCatalogBundle } from './validateCatalog.ts';
+import { validateWorCatalogBundle } from './validateCatalog.ts';
 import type { WorPipelineStepKey } from './worPipelineSteps.ts';
 import { WOR_PIPELINE_STEP_LABELS } from './worPipelineSteps.ts';
 
@@ -80,7 +80,6 @@ export type WorImportSummary = {
   artifacts: number;
   demons: number;
   imageSummary?: WorImageDownloadSummary;
-  missingStarAssets?: string[];
   validationWarnings?: string[];
   missingPortraits?: string[];
 };
@@ -563,13 +562,6 @@ async function runWorStartupPipelineBody(
     `Catalog ready: ${counts.heroes} heroes, ${counts.artifacts} artifacts, ${counts.demons} demons.`,
   );
 
-  const missingStarAssets = listMissingStarAssets(
-    path.join(PROJECT_ROOT, 'packages', 'games', 'wor', 'assets'),
-  );
-  if (missingStarAssets.length > 0) {
-    emit(onLog, 'info', `Missing UI star assets in package: ${missingStarAssets.join(', ')}`);
-  }
-
   if (imageSummary?.missingPortraits.length) {
     for (const missing of imageSummary.missingPortraits) {
       emit(onLog, 'info', `[${stepTag('fandomImages')}] Still missing portrait: ${missing}`);
@@ -579,7 +571,6 @@ async function runWorStartupPipelineBody(
   return {
     ...counts,
     imageSummary,
-    missingStarAssets,
     validationWarnings,
     missingPortraits: imageSummary?.missingPortraits,
   };

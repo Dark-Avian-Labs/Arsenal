@@ -23,8 +23,6 @@ const CATALOG_TABLE_DELETE_ORDER = [
   'archon_shard_buffs',
   'archon_shard_types',
   'warframe_market_links',
-  'import_lease',
-  'import_runs',
 ] as const;
 
 const ALLOWED_TABLE_NAMES = new Set<string>([...USER_TABLE_NAMES, ...CATALOG_TABLE_DELETE_ORDER]);

@@ -6,7 +6,8 @@ import { log as writeLog } from '@dark-avian-labs/server-kit';
 import type { PipelineStepKey } from '../../../shared/warframeImport/pipelineSteps.ts';
 import { EXPORTS_DIR, REQUIRED_EXPORTS } from '../../config.ts';
 import { getCatalogDb } from './db/connection.ts';
-import { processExports, backfillModDescriptions } from './db/queries.ts';
+import { processExportsIsolated } from './db/processExportsIsolated.ts';
+import { backfillModDescriptions } from './db/queries.ts';
 import { resetCatalogData } from './db/resetCatalogData.ts';
 import { createAppSchema } from './db/schema.ts';
 import { syncHelminthFlagsFromWiki } from './helminthWiki.ts';
@@ -22,7 +23,12 @@ import {
   type ImportLeaseWatch,
 } from './importRuns.ts';
 import { runImportPipeline, listExportFiles } from './pipeline.ts';
-import { isStepForced, shouldRunStep, usesOnlyMissingMode } from './pipelineStepControl.ts';
+import {
+  isStepForced,
+  shouldRebuildSqliteFromExports,
+  shouldRunStep,
+  usesOnlyMissingMode,
+} from './pipelineStepControl.ts';
 import {
   printStartupPipelineSummary,
   type StartupPipelineSummary,
@@ -365,17 +371,24 @@ async function runStartupPipelineInner(
     currentExportHashes = getCurrentExportHashes();
     previousExportHashes = readProcessedExportHashes();
     const hashChanged = hashesChanged(currentExportHashes, previousExportHashes);
-    const rebuildSqlite = forceImport || hashChanged;
+    const catalogEmpty = !hasDbData();
+    const rebuildSqlite = shouldRebuildSqliteFromExports({
+      forceImport,
+      hashChanged,
+      catalogEmpty,
+    });
     dataChanged = rebuildSqlite;
 
     if (shouldRunStep('sqliteFromExports', rebuildSqlite, options)) {
       const reason = forceImport
         ? 'Force import requested — rebuilding all game tables.'
-        : previousExportHashes === null
-          ? 'First run — importing export JSON into database.'
-          : 'Export hashes changed — rebuilding game tables.';
+        : catalogEmpty
+          ? 'Catalog tables are empty — rebuilding game tables.'
+          : previousExportHashes === null
+            ? 'First run — importing export JSON into database.'
+            : 'Export hashes changed — rebuilding game tables.';
       log(`[Database] ${reason}`);
-      const counts = processExports({ skipPreserve: forceImport });
+      const counts = await processExportsIsolated(forceImport);
       const backfillCount = backfillModDescriptions();
       writeProcessedExportHashes(currentExportHashes);
       log(
