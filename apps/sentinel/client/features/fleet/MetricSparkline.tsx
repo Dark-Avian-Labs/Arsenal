@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react';
 
+import { smoothLinePath, smoothLineY } from '../forgejo/chartPath';
+
 type Point = { ts: number; value: number | null };
 
 type SparklineProps = {
@@ -9,7 +11,9 @@ type SparklineProps = {
   colorVar?: string;
 };
 
-type Plotted = { index: number; ts: number; value: number; x: number; y: number };
+type Plotted = { ts: number; value: number; x: number; y: number };
+
+type Hover = { index: number; x: number };
 
 function formatHoverTime(ts: number): string {
   return new Date(ts).toLocaleString(undefined, {
@@ -29,9 +33,9 @@ export function MetricSparkline({
   const width = 560;
   const height = 140;
   const pad = 12;
-  const [hover, setHover] = useState<Plotted | null>(null);
+  const [hover, setHover] = useState<Hover | null>(null);
 
-  const { plotted, linePoints } = useMemo(() => {
+  const { plotted, linePath } = useMemo(() => {
     const values = points
       .map((p) => p.value)
       .filter((v): v is number => v != null && Number.isFinite(v));
@@ -45,7 +49,6 @@ export function MetricSparkline({
       const point = points[i];
       if (point.value == null || !Number.isFinite(point.value)) continue;
       next.push({
-        index: i,
         ts: point.ts,
         value: point.value,
         x: pad + (i / denom) * (width - pad * 2),
@@ -55,28 +58,33 @@ export function MetricSparkline({
 
     return {
       plotted: next,
-      linePoints: next.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' '),
+      linePath: smoothLinePath(next),
     };
   }, [points]);
 
   const latest = plotted.length ? plotted[plotted.length - 1].value : null;
-  const headerValue = hover?.value ?? latest;
+  const sample = hover != null ? plotted[hover.index] : null;
+  const headerValue = sample?.value ?? latest;
+  const markerY = hover != null && plotted.length > 0 ? smoothLineY(plotted, hover.x) : null;
 
-  function nearestAt(clientX: number, svg: SVGSVGElement): Plotted | null {
+  function pointerAt(clientX: number, svg: SVGSVGElement): Hover | null {
     if (plotted.length === 0) return null;
     const rect = svg.getBoundingClientRect();
     if (rect.width <= 0) return null;
-    const x = ((clientX - rect.left) / rect.width) * width;
-    let best = plotted[0];
-    let bestDist = Math.abs(best.x - x);
+    const raw = ((clientX - rect.left) / rect.width) * width;
+    const left = plotted[0]!.x;
+    const right = plotted[plotted.length - 1]!.x;
+    const x = Math.min(right, Math.max(left, raw));
+    let best = 0;
+    let bestDist = Math.abs(plotted[0]!.x - x);
     for (let i = 1; i < plotted.length; i++) {
-      const dist = Math.abs(plotted[i].x - x);
+      const dist = Math.abs(plotted[i]!.x - x);
       if (dist < bestDist) {
-        best = plotted[i];
+        best = i;
         bestDist = dist;
       }
     }
-    return best;
+    return { index: best, x };
   }
 
   return (
@@ -85,7 +93,7 @@ export function MetricSparkline({
         <h3 className="text-foreground text-sm font-semibold">{title}</h3>
         <p className="text-muted text-xs">
           {headerValue == null ? '-' : `${headerValue.toFixed(1)} ${unit}`}
-          {hover ? <span className="ml-2 opacity-80">{formatHoverTime(hover.ts)}</span> : null}
+          {sample ? <span className="ml-2 opacity-80">{formatHoverTime(sample.ts)}</span> : null}
         </p>
       </div>
       <div className="relative mt-3">
@@ -95,7 +103,7 @@ export function MetricSparkline({
           role="img"
           aria-label={`${title} chart`}
           onMouseMove={(event) => {
-            setHover(nearestAt(event.clientX, event.currentTarget));
+            setHover(pointerAt(event.clientX, event.currentTarget));
           }}
           onMouseLeave={() => setHover(null)}
         >
@@ -108,7 +116,14 @@ export function MetricSparkline({
             strokeWidth="1"
           />
           {plotted.length > 1 ? (
-            <polyline fill="none" stroke={colorVar} strokeWidth="2" points={linePoints} />
+            <path
+              d={linePath}
+              fill="none"
+              stroke={colorVar}
+              strokeWidth="1.5"
+              strokeLinejoin="round"
+              strokeLinecap="round"
+            />
           ) : (
             <text
               x={width / 2}
@@ -120,7 +135,7 @@ export function MetricSparkline({
               No data in range
             </text>
           )}
-          {hover ? (
+          {hover && sample && markerY != null ? (
             <>
               <line
                 x1={hover.x}
@@ -129,12 +144,11 @@ export function MetricSparkline({
                 y2={height - pad}
                 stroke="var(--color-muted)"
                 strokeWidth="1"
-                strokeDasharray="3 3"
-                opacity="0.7"
+                opacity="0.6"
               />
               <circle
                 cx={hover.x}
-                cy={hover.y}
+                cy={markerY}
                 r="4"
                 fill={colorVar}
                 stroke="var(--color-foreground)"
@@ -143,7 +157,7 @@ export function MetricSparkline({
             </>
           ) : null}
         </svg>
-        {hover ? (
+        {hover && sample ? (
           <div
             className="pointer-events-none absolute top-2 rounded-md px-2 py-1 text-[11px] leading-snug"
             style={{
@@ -155,9 +169,9 @@ export function MetricSparkline({
             }}
           >
             <div className="font-medium">
-              {hover.value.toFixed(2)} {unit}
+              {sample.value.toFixed(2)} {unit}
             </div>
-            <div className="text-muted">{formatHoverTime(hover.ts)}</div>
+            <div className="text-muted">{formatHoverTime(sample.ts)}</div>
           </div>
         ) : null}
       </div>

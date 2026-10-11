@@ -1,6 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 
-import { smoothBandPath, smoothLinePath, smoothLinePathMasked } from './chartPath';
+import { smoothBandPath, smoothLinePath, smoothLinePathMasked, smoothLineY } from './chartPath';
 
 export type ChartPoint = {
   ts: number;
@@ -57,9 +57,11 @@ function yAt(value: number, max: number): number {
   return HEIGHT - PAD.bottom - (Math.max(0, value) / max) * inner;
 }
 
+type Hover = { index: number; x: number };
+
 export function ActionsChart({ points }: { points: ChartPoint[] }) {
   const [mode, setMode] = useState<Mode>('volume');
-  const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+  const [hover, setHover] = useState<Hover | null>(null);
   const [width, setWidth] = useState(FALLBACK_WIDTH);
   const frameRef = useRef<HTMLDivElement>(null);
   const clipId = useId().replace(/:/g, '');
@@ -151,14 +153,17 @@ export function ActionsChart({ points }: { points: ChartPoint[] }) {
     };
   }, [mode, points, width]);
 
-  const hover = hoverIndex != null ? points[hoverIndex] : null;
-  const hoverPoint = hoverIndex != null ? chart.tops[hoverIndex] : null;
+  const sample = hover != null ? points[hover.index] : null;
+  const markerY = hover != null && chart.tops.length > 0 ? smoothLineY(chart.tops, hover.x) : null;
 
-  function nearestIndex(clientX: number, svg: SVGSVGElement): number | null {
-    if (points.length === 0) return null;
+  function pointerAt(clientX: number, svg: SVGSVGElement): Hover | null {
+    if (points.length === 0 || chart.tops.length === 0) return null;
     const rect = svg.getBoundingClientRect();
     if (rect.width <= 0) return null;
-    const x = ((clientX - rect.left) / rect.width) * width;
+    const raw = ((clientX - rect.left) / rect.width) * width;
+    const left = chart.tops[0]!.x;
+    const right = chart.tops[chart.tops.length - 1]!.x;
+    const x = Math.min(right, Math.max(left, raw));
     let best = 0;
     let bestDist = Number.POSITIVE_INFINITY;
     for (let i = 0; i < points.length; i += 1) {
@@ -168,7 +173,7 @@ export function ActionsChart({ points }: { points: ChartPoint[] }) {
         bestDist = dist;
       }
     }
-    return best;
+    return { index: best, x };
   }
 
   return (
@@ -231,8 +236,8 @@ export function ActionsChart({ points }: { points: ChartPoint[] }) {
           className="block h-[400px] w-full touch-pan-y"
           role="img"
           aria-label={mode === 'volume' ? 'Stacked runs over time' : 'Median duration over time'}
-          onMouseMove={(event) => setHoverIndex(nearestIndex(event.clientX, event.currentTarget))}
-          onMouseLeave={() => setHoverIndex(null)}
+          onMouseMove={(event) => setHover(pointerAt(event.clientX, event.currentTarget))}
+          onMouseLeave={() => setHover(null)}
         >
           <defs>
             <clipPath id={`forgejo-plot-clip-${clipId}`}>
@@ -283,12 +288,16 @@ export function ActionsChart({ points }: { points: ChartPoint[] }) {
                   fill="none"
                   stroke={COLORS.success}
                   strokeWidth={STROKE}
+                  strokeLinejoin="round"
+                  strokeLinecap="round"
                 />
                 <path
                   d={chart.layers.otherStroke}
                   fill="none"
                   stroke={COLORS.other}
                   strokeWidth={STROKE}
+                  strokeLinejoin="round"
+                  strokeLinecap="round"
                 />
               </>
             ) : null}
@@ -301,32 +310,33 @@ export function ActionsChart({ points }: { points: ChartPoint[] }) {
                   fill="none"
                   stroke={COLORS.duration}
                   strokeWidth={STROKE}
+                  strokeLinejoin="round"
+                  strokeLinecap="round"
                 />
               </>
             ) : null}
 
-            {hover && hoverPoint ? (
+            {hover && sample && markerY != null ? (
               <>
                 <line
-                  x1={hoverPoint.x}
+                  x1={hover.x}
                   y1={PAD.top}
-                  x2={hoverPoint.x}
+                  x2={hover.x}
                   y2={HEIGHT - PAD.bottom}
                   stroke="var(--color-muted)"
                   strokeWidth="1"
-                  strokeDasharray="3 3"
-                  opacity="0.8"
+                  opacity="0.6"
                 />
                 <circle
-                  cx={hoverPoint.x}
-                  cy={hoverPoint.y}
+                  cx={hover.x}
+                  cy={markerY}
                   r="4"
                   fill={
                     mode === 'duration'
                       ? COLORS.duration
-                      : hover.failure > 0
+                      : sample.failure > 0
                         ? COLORS.failure
-                        : hover.other > 0
+                        : sample.other > 0
                           ? COLORS.other
                           : COLORS.success
                   }
@@ -367,27 +377,28 @@ export function ActionsChart({ points }: { points: ChartPoint[] }) {
           ) : null}
         </svg>
 
-        {hover && hoverPoint ? (
+        {hover && sample ? (
           <div
             className="pointer-events-none absolute top-2 rounded-md px-2 py-1 text-[11px] leading-snug"
             style={{
-              left: `clamp(0px, calc(${(hoverPoint.x / width) * 100}% - 4rem), calc(100% - 9rem))`,
+              left: `clamp(0px, calc(${(hover.x / width) * 100}% - 4rem), calc(100% - 9rem))`,
               background: 'var(--color-glass)',
               border: '1px solid var(--color-glass-border)',
               color: 'var(--color-foreground)',
               backdropFilter: 'blur(8px)',
             }}
           >
-            <div className="font-medium">{formatHoverTime(hover.ts)}</div>
+            <div className="font-medium">{formatHoverTime(sample.ts)}</div>
             {mode === 'volume' ? (
               <div className="text-muted mt-0.5">
-                {hover.total} runs · {hover.success} ok · {hover.failure} fail · {hover.other} other
+                {sample.total} runs · {sample.success} ok · {sample.failure} fail · {sample.other}{' '}
+                other
               </div>
             ) : (
               <div className="text-muted mt-0.5">
-                {hover.medianDurationMs == null
+                {sample.medianDurationMs == null
                   ? 'No finished runs'
-                  : formatMs(hover.medianDurationMs)}
+                  : formatMs(sample.medianDurationMs)}
               </div>
             )}
           </div>
