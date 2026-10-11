@@ -20,6 +20,8 @@ It is for the person who wants the graphs when something feels slow, without sta
 
 **A fleet list.** Each app shows how many restarts and crashes it had in the last day. Open one for the charts.
 
+**Forgejo Actions.** The Forgejo tab polls workflow runs across your owners, filters by workflow and status, and charts volume and duration.
+
 **The numbers that explain a stall.** CPU and memory sit next to HTTP p95 latency and event-loop lag. A process can look idle on CPU and still be late on requests. Both are on the same page.
 
 **Restarts and crashes, split apart.** A clean restart and a crash are different events. The app page lists them for the time range you picked.

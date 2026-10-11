@@ -1,7 +1,8 @@
 import { apiFetch, GlassCard, useAuth } from '@dark-avian-labs/ui';
 import { useEffect, useState } from 'react';
-import { Link, useParams, useSearchParams } from 'react-router';
+import { useParams, useSearchParams } from 'react-router';
 
+import { SentinelTabs } from '../shell/SentinelTabs';
 import { MetricSparkline } from './MetricSparkline';
 
 const RANGES = [
@@ -109,39 +110,30 @@ export function AppDetailPage() {
 
   return (
     <div className="space-y-4">
-      <div className="tabs items-center">
-        <div className="flex min-w-0 flex-wrap gap-1" role="tablist" aria-label="App detail">
-          <Link to="/" className="tab no-underline" role="tab" aria-selected="false">
-            Fleet
-          </Link>
-          <button
-            type="button"
-            className="tab active max-w-[16rem] truncate"
-            role="tab"
-            aria-selected="true"
+      <SentinelTabs
+        active="app"
+        appLabel={data?.app.displayName ?? appId}
+        trailing={
+          <div
+            className="ml-auto flex min-w-0 flex-wrap justify-end gap-1"
+            role="tablist"
+            aria-label="Time range"
           >
-            {data?.app.displayName ?? appId}
-          </button>
-        </div>
-        <div
-          className="ml-auto flex min-w-0 flex-wrap justify-end gap-1"
-          role="tablist"
-          aria-label="Time range"
-        >
-          {RANGES.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              className={range === item.id ? 'tab active' : 'tab'}
-              role="tab"
-              aria-selected={range === item.id}
-              onClick={() => setSearchParams({ range: item.id })}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
-      </div>
+            {RANGES.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                className={range === item.id ? 'tab active' : 'tab'}
+                role="tab"
+                aria-selected={range === item.id}
+                onClick={() => setSearchParams({ range: item.id })}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        }
+      />
 
       {error ? (
         <div className="error-msg" role="alert">

@@ -24,6 +24,24 @@ function resolveMetricsDbPath(): string {
 export const METRICS_DB_PATH = resolveMetricsDbPath();
 export const SENTINEL_INGEST_TOKEN = process.env.SENTINEL_INGEST_TOKEN?.trim() || '';
 
+function resolveActionsDbPath(): string {
+  const configured = process.env.ACTIONS_DB_PATH?.trim();
+  if (configured) {
+    return path.isAbsolute(configured) ? configured : path.resolve(PROJECT_ROOT, configured);
+  }
+  return path.join(DATA_DIR, 'actions.db');
+}
+
+export const ACTIONS_DB_PATH = resolveActionsDbPath();
+export const FORGEJO_BASE_URL = (
+  process.env.FORGEJO_BASE_URL?.trim() || 'https://git.darkavianlabs.com'
+).replace(/\/+$/, '');
+export const FORGEJO_TOKEN = process.env.FORGEJO_TOKEN?.trim() || '';
+export const FORGEJO_OWNERS = (process.env.FORGEJO_OWNERS?.trim() || 'Dark-Avian-Labs,shark5060')
+  .split(',')
+  .map((owner) => owner.trim())
+  .filter(Boolean);
+
 const serverEnv = readServerEnv({ port: 3005, appName: 'Sentinel', appId: 'sentinel' });
 export const PORT = serverEnv.PORT;
 export const SHUTDOWN_TIMEOUT_MS = serverEnv.SHUTDOWN_TIMEOUT_MS;
@@ -38,7 +56,7 @@ export const APP_PUBLIC_BASE_URL = serverEnv.APP_PUBLIC_BASE_URL;
 export const LEGAL_PAGE_URL = serverEnv.LEGAL_PAGE_URL;
 
 export function ensureDataDirs(): void {
-  for (const dir of [DATA_DIR, path.dirname(METRICS_DB_PATH)]) {
+  for (const dir of [DATA_DIR, path.dirname(METRICS_DB_PATH), path.dirname(ACTIONS_DB_PATH)]) {
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }

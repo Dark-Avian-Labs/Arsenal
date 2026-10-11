@@ -1,5 +1,7 @@
 import { createAppSentinelAgent, log, startServer } from '@dark-avian-labs/server-kit';
 
+import { closeActionsDb, getActionsDb } from './actions/db.ts';
+import { startActionsPoller } from './actions/poller.ts';
 import { createApp } from './app.ts';
 import { APP_ID, APP_NAME, HOST, NODE_ENV, PORT, SHUTDOWN_TIMEOUT_MS } from './config.ts';
 import { closeMetricsDb, getMetricsDb } from './metrics/db.ts';
@@ -18,7 +20,9 @@ const { app } = createApp({
 });
 
 getMetricsDb();
+getActionsDb();
 const pm2Bridge = NODE_ENV === 'test' ? null : startPm2Bridge();
+const actionsPoller = NODE_ENV === 'test' ? null : startActionsPoller();
 const rollupTimer =
   NODE_ENV === 'test'
     ? null
@@ -44,10 +48,12 @@ startServer({
   sentinelAgent,
   beforeClose() {
     pm2Bridge?.stop();
+    actionsPoller?.stop();
     if (rollupTimer) clearInterval(rollupTimer);
   },
   onClose() {
     closeMetricsDb();
+    closeActionsDb();
   },
 });
 
