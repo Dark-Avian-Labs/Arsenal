@@ -22,6 +22,11 @@ const AppDetailPage = lazy(() =>
     default: mod.AppDetailPage,
   })),
 );
+const ForgejoPage = lazy(() =>
+  import('../features/forgejo/ForgejoPage').then((mod) => ({
+    default: mod.ForgejoPage,
+  })),
+);
 
 export const router = createBrowserRouter(
   createRoutesFromElements(
@@ -46,6 +51,14 @@ export const router = createBrowserRouter(
           element={
             <ProtectedRoute requireAdmin>
               <AppDetailPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={APP_PATHS.forgejo}
+          element={
+            <ProtectedRoute requireAdmin>
+              <ForgejoPage />
             </ProtectedRoute>
           }
         />

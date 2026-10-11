@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 
 import { appDetailPath } from '../../app/paths';
+import { SentinelTabs } from '../shell/SentinelTabs';
 
 type FleetApp = {
   id: string;
@@ -183,28 +184,32 @@ export function HomePage() {
 
   return (
     <div className="space-y-4">
-      <div className="tabs items-center">
-        <h1 className="text-foreground px-2 text-sm font-medium">Fleet</h1>
-        {updatedAt ? (
-          <span className="text-muted text-xs">
-            Updated {new Date(updatedAt).toLocaleTimeString()}
-          </span>
-        ) : null}
-        <dl className="text-muted ml-auto flex flex-wrap items-center gap-x-5 gap-y-1 px-2 text-sm">
-          <div>
-            Load{' '}
-            <span className="text-foreground font-medium">
-              {host?.load1 == null ? '-' : host.load1.toFixed(2)}
-            </span>
-          </div>
-          <div>
-            RAM{' '}
-            <span className="text-foreground font-medium">
-              {host?.memUsedPct == null ? '-' : `${host.memUsedPct.toFixed(0)}%`}
-            </span>
-          </div>
-        </dl>
-      </div>
+      <SentinelTabs
+        active="fleet"
+        trailing={
+          <>
+            {updatedAt ? (
+              <span className="text-muted ml-4 text-xs">
+                Updated {new Date(updatedAt).toLocaleTimeString()}
+              </span>
+            ) : null}
+            <dl className="text-muted ml-auto flex flex-wrap items-center gap-x-5 gap-y-1 px-2 text-sm">
+              <div>
+                Load{' '}
+                <span className="text-foreground font-medium">
+                  {host?.load1 == null ? '-' : host.load1.toFixed(2)}
+                </span>
+              </div>
+              <div>
+                RAM{' '}
+                <span className="text-foreground font-medium">
+                  {host?.memUsedPct == null ? '-' : `${host.memUsedPct.toFixed(0)}%`}
+                </span>
+              </div>
+            </dl>
+          </>
+        }
+      />
 
       {error ? (
         <div className="error-msg" role="alert">

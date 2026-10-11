@@ -1,5 +1,6 @@
 export const APP_PATHS = {
   home: '/',
+  forgejo: '/forgejo',
   appDetail: '/apps/:appId',
   legal: '/legal',
   signIn: '/sign-in',
