@@ -194,6 +194,7 @@ export function summarizeRuns(
   let successCount = 0;
   let failureCount = 0;
   const finishedDurations: number[] = [];
+  const lastSuccessAt = new Map<string, number>();
   const failByRepo = new Map<
     string,
     {
@@ -207,10 +208,16 @@ export function summarizeRuns(
   >();
 
   for (const row of rows) {
-    if (row.status === 'success') successCount += 1;
+    const key = `${row.owner}/${row.repo}`;
+    if (row.status === 'success') {
+      successCount += 1;
+      if (row.startedAt != null) {
+        const prev = lastSuccessAt.get(key);
+        if (prev == null || row.startedAt > prev) lastSuccessAt.set(key, row.startedAt);
+      }
+    }
     if (row.status === 'failure') {
       failureCount += 1;
-      const key = `${row.owner}/${row.repo}`;
       const existing = failByRepo.get(key) ?? {
         owner: row.owner,
         repo: row.repo,
@@ -254,10 +261,16 @@ export function summarizeRuns(
     medianDurationMs: percentile(finishedDurations, 0.5),
     p95DurationMs: percentile(finishedDurations, 0.95),
     repos: workflowSet
-      ? [...failByRepo.values()].sort(
-          (a, b) =>
-            b.failedCount - a.failedCount || (b.lastFailureAt ?? 0) - (a.lastFailureAt ?? 0),
-        )
+      ? [...failByRepo.values()]
+          .filter((row) => {
+            if (row.lastFailureAt == null) return false;
+            const okAt = lastSuccessAt.get(`${row.owner}/${row.repo}`);
+            return okAt == null || row.lastFailureAt > okAt;
+          })
+          .sort(
+            (a, b) =>
+              b.failedCount - a.failedCount || (b.lastFailureAt ?? 0) - (a.lastFailureAt ?? 0),
+          )
       : [],
   };
 }
@@ -289,7 +302,7 @@ export function querySeries(
   const now = options.now ?? Date.now();
   const { where, params } = buildFilters({ ...options, now });
   const bucketMs = bucketMsForRange(options.range);
-  const { since, spanMs } = rangeWindow(options.range, now);
+  const { since } = rangeWindow(options.range, now);
   const rows = db
     .prepare(
       `SELECT status, duration_ms AS durationMs, COALESCE(started_at, created_at) AS ts
@@ -299,8 +312,10 @@ export function querySeries(
     )
     .all(params) as Array<{ status: string; durationMs: number | null; ts: number }>;
 
-  const bucketCount = Math.max(1, Math.ceil(spanMs / bucketMs));
+  // Align buckets to "now" on the right so the last point is the current period.
+  const endBucket = Math.floor(now / bucketMs) * bucketMs;
   const startBucket = Math.floor(since / bucketMs) * bucketMs;
+  const bucketCount = Math.max(1, Math.floor((endBucket - startBucket) / bucketMs) + 1);
   const buckets: SeriesPoint[] = [];
   const durationBuckets: number[][] = [];
   for (let i = 0; i < bucketCount; i += 1) {

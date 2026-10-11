@@ -98,11 +98,12 @@ describe('actions query', () => {
       commitSha: 'cccccccccccccccccccccccccccccccccccccccc',
       runNumber: 3,
       htmlUrl: 'https://git.darkavianlabs.com/Dark-Avian-Labs/Arsenal/actions/runs/3',
-      startedAt: now - 180_000,
-      stoppedAt: now - 170_000,
+      // Newer than Arsenal's failure — recovered, so rollup should drop Arsenal.
+      startedAt: now - 20_000,
+      stoppedAt: now - 10_000,
       durationMs: 10_000,
-      createdAt: now - 181_000,
-      updatedAt: now - 170_000,
+      createdAt: now - 21_000,
+      updatedAt: now - 10_000,
     });
     upsertRun(db, {
       owner: 'Dark-Avian-Labs',
@@ -159,8 +160,8 @@ describe('actions query', () => {
     expect(summary.successCount).toBe(1);
     expect(summary.failureCount).toBe(2);
     expect(summary.failurePercent).toBeCloseTo((2 / 3) * 100, 5);
-    expect(summary.repos).toHaveLength(2);
-    expect(summary.repos[0]?.repo).toBe('Arsenal');
+    expect(summary.repos).toHaveLength(1);
+    expect(summary.repos[0]?.repo).toBe('Homepage');
     expect(summary.repos[0]?.failedCount).toBe(1);
     expect(summary.medianDurationMs).toBe(10_000);
 
@@ -169,7 +170,8 @@ describe('actions query', () => {
       range: '24h',
       now,
     });
-    expect(series.length).toBe(24);
+    const hourMs = 60 * 60 * 1000;
+    expect(series[series.length - 1]?.ts).toBe(Math.floor(now / hourMs) * hourMs);
     const filled = series.filter((point) => point.total > 0);
     expect(filled.length).toBeGreaterThan(0);
     expect(filled.reduce((sum, point) => sum + point.total, 0)).toBe(4);
