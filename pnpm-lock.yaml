@@ -165,8 +165,8 @@ settings:
 catalogs:
   default:
     '@clerk/express':
-      specifier: ^2.1.77
-      version: 2.1.77
+      specifier: ^2.1.78
+      version: 2.1.78
     '@clerk/react':
       specifier: ^6.17.8
       version: 6.17.8
@@ -174,8 +174,8 @@ catalogs:
       specifier: ^2.2.45
       version: 2.2.45
     '@dotenvx/dotenvx':
-      specifier: ^2.34.1
-      version: 2.34.1
+      specifier: ^2.34.2
+      version: 2.34.2
     '@fontsource-variable/cascadia-mono':
       specifier: ^5.3.0
       version: 5.3.0
@@ -291,7 +291,7 @@ importers:
     dependencies:
       '@clerk/express':
         specifier: 'catalog:'
-        version: 2.1.77(express@5.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+        version: 2.1.78(express@5.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@dark-avian-labs/sentinel-agent':
         specifier: workspace:*
         version: link:../../packages/sentinel-agent
@@ -300,7 +300,7 @@ importers:
         version: link:../../packages/server-kit
       '@dotenvx/dotenvx':
         specifier: 'catalog:'
-        version: 2.34.1
+        version: 2.34.2
       better-sqlite3:
         specifier: 'catalog:'
         version: 13.0.3
@@ -400,7 +400,7 @@ importers:
     dependencies:
       '@clerk/express':
         specifier: 'catalog:'
-        version: 2.1.77(express@5.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+        version: 2.1.78(express@5.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@dark-avian-labs/sentinel-agent':
         specifier: workspace:*
         version: link:../../packages/sentinel-agent
@@ -412,7 +412,7 @@ importers:
         version: link:../../packages/warframe-catalog
       '@dotenvx/dotenvx':
         specifier: 'catalog:'
-        version: 2.34.1
+        version: 2.34.2
       better-sqlite3:
         specifier: 'catalog:'
         version: 13.0.3
@@ -521,7 +521,7 @@ importers:
     dependencies:
       '@clerk/express':
         specifier: 'catalog:'
-        version: 2.1.77(express@5.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+        version: 2.1.78(express@5.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@dark-avian-labs/sentinel-agent':
         specifier: workspace:*
         version: link:../../packages/sentinel-agent
@@ -530,7 +530,7 @@ importers:
         version: link:../../packages/server-kit
       '@dotenvx/dotenvx':
         specifier: 'catalog:'
-        version: 2.34.1
+        version: 2.34.2
       better-sqlite3:
         specifier: 'catalog:'
         version: 13.0.3
@@ -636,7 +636,7 @@ importers:
     dependencies:
       '@clerk/express':
         specifier: 'catalog:'
-        version: 2.1.77(express@5.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+        version: 2.1.78(express@5.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@dark-avian-labs/sentinel-agent':
         specifier: workspace:*
         version: link:../../packages/sentinel-agent
@@ -648,7 +648,7 @@ importers:
         version: link:../../packages/warframe-catalog
       '@dotenvx/dotenvx':
         specifier: 'catalog:'
-        version: 2.34.1
+        version: 2.34.2
       '@napi-rs/lzma':
         specifier: ^1.5.1
         version: 1.5.1
@@ -766,7 +766,7 @@ importers:
     dependencies:
       '@clerk/express':
         specifier: 'catalog:'
-        version: 2.1.77(express@5.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+        version: 2.1.78(express@5.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@dark-avian-labs/sentinel-agent':
         specifier: workspace:*
         version: link:../../packages/sentinel-agent
@@ -775,7 +775,7 @@ importers:
         version: link:../../packages/server-kit
       '@dotenvx/dotenvx':
         specifier: 'catalog:'
-        version: 2.34.1
+        version: 2.34.2
       better-sqlite3:
         specifier: 'catalog:'
         version: 13.0.3
@@ -875,7 +875,7 @@ importers:
     dependencies:
       '@clerk/express':
         specifier: 'catalog:'
-        version: 2.1.77(express@5.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+        version: 2.1.78(express@5.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@dark-avian-labs/sentinel-agent':
         specifier: workspace:*
         version: link:../../packages/sentinel-agent
@@ -884,7 +884,7 @@ importers:
         version: link:../../packages/server-kit
       '@dotenvx/dotenvx':
         specifier: 'catalog:'
-        version: 2.34.1
+        version: 2.34.2
       better-sqlite3:
         specifier: 'catalog:'
         version: 13.0.3
@@ -987,19 +987,19 @@ importers:
         version: 2.2.45(@playwright/test@1.64.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@dotenvx/dotenvx':
         specifier: 'catalog:'
-        version: 2.34.1
+        version: 2.34.2
       '@playwright/test':
         specifier: 'catalog:'
         version: 1.64.0
       '@tailwindcss/vite':
         specifier: 'catalog:'
-        version: 4.3.3(vite@8.3.4(@types/node@26.6.4)(jiti@2.7.0))
+        version: 4.3.3(vite@8.3.4(@types/node@26.6.5)(jiti@2.7.0))
       '@vitejs/plugin-react':
         specifier: 'catalog:'
-        version: 6.1.2(vite@8.3.4(@types/node@26.6.4)(jiti@2.7.0))
+        version: 6.1.2(vite@8.3.4(@types/node@26.6.5)(jiti@2.7.0))
       vite:
         specifier: 'catalog:'
-        version: 8.3.4(@types/node@26.6.4)(jiti@2.7.0)
+        version: 8.3.4(@types/node@26.6.5)(jiti@2.7.0)
 
   packages/sentinel-agent:
     dependencies:
@@ -1024,13 +1024,13 @@ importers:
     dependencies:
       '@clerk/express':
         specifier: 'catalog:'
-        version: 2.1.77(express@5.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+        version: 2.1.78(express@5.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@dark-avian-labs/sentinel-agent':
         specifier: workspace:*
         version: link:../sentinel-agent
       '@dotenvx/dotenvx':
         specifier: 'catalog:'
-        version: 2.34.1
+        version: 2.34.2
       better-sqlite3:
         specifier: 'catalog:'
         version: 13.0.3
@@ -1104,10 +1104,10 @@ importers:
         version: 7.0.2
       vite:
         specifier: 'catalog:'
-        version: 8.3.4(@types/node@26.6.4)(jiti@2.7.0)
+        version: 8.3.4(@types/node@26.6.5)(jiti@2.7.0)
       vitest:
         specifier: 'catalog:'
-        version: 5.0.3(@types/node@26.6.4)(@vitest/coverage-v8@5.0.3)(happy-dom@20.14.6)(vite@8.3.4(@types/node@26.6.4)(jiti@2.7.0))
+        version: 5.0.3(@types/node@26.6.5)(@vitest/coverage-v8@5.0.3)(happy-dom@20.14.6)(vite@8.3.4(@types/node@26.6.5)(jiti@2.7.0))
 
   packages/warframe-catalog:
     dependencies:
@@ -1167,16 +1167,12 @@ packages:
     resolution: {integrity: sha512-6zABk/ECA/QYSCQ1NGiVwwbQerUCZ+TQbp64Q3AgmfNvurHH0j8TtXa1qbShXA6qqkpAj4V5W8pP6mLe1mcMqA==}
     engines: {node: '>=18'}
 
-  '@clerk/backend@3.23.1':
-    resolution: {integrity: sha512-AKGCBBRWx2zZlwRFYInu7TNSE4tketIELYqbhuCzosEEFd8H2rMWXFFDPJw7mEkAMf5cXkSQc/0/L6tGdVQCOw==}
-    engines: {node: '>=20.9.0'}
-
   '@clerk/backend@3.23.2':
     resolution: {integrity: sha512-QW2qJPY7xQyn5SrNWJ+xO7o6va60X9/v4nX8y5zq8OJFS10X7GlEz8s5PDKTgo6W6SWb8L3APhrZH+LTp7yuNw==}
     engines: {node: '>=20.9.0'}
 
-  '@clerk/express@2.1.77':
-    resolution: {integrity: sha512-wtK88+30wlGTCNdz9fnTbPG7aiF9p4RvdM13oErOc6JMKjia7BHcgrBynANXHelO4ctA8eS1zX42iCu3nY5Q7w==}
+  '@clerk/express@2.1.78':
+    resolution: {integrity: sha512-+/cECJkpN/UybigBt2ateqy6oSP822KHkqgq/I8hPMR1pwfhFBDTaEmwL61d4X6GYEe42Yp3VMvgwI6b1ATeIQ==}
     engines: {node: '>=20.9.0'}
     peerDependencies:
       express: ^4.17.0 || ^5.0.0
@@ -1187,18 +1183,6 @@ packages:
     peerDependencies:
       react: ^18.0.0 || ~19.0.3 || ~19.1.4 || ~19.2.3 || ~19.3.0-0
       react-dom: ^18.0.0 || ~19.0.3 || ~19.1.4 || ~19.2.3 || ~19.3.0-0
-
-  '@clerk/shared@4.39.1':
-    resolution: {integrity: sha512-aOZQIJRZMzK3an7U2MGxV9DluYSV48vCfPDUP5/LmUk53arq1GXT0Qna61XtgLfDm+A2CrZUiWWEo1hQFguCjA==}
-    engines: {node: '>=20.9.0'}
-    peerDependencies:
-      react: ^18.0.0 || ~19.0.3 || ~19.1.4 || ~19.2.3 || ~19.3.0-0
-      react-dom: ^18.0.0 || ~19.0.3 || ~19.1.4 || ~19.2.3 || ~19.3.0-0
-    peerDependenciesMeta:
-      react:
-        optional: true
-      react-dom:
-        optional: true
 
   '@clerk/shared@4.40.0':
     resolution: {integrity: sha512-80KM/uw5ZseYTKwJjIhJj7jsHqX6rFem6cwcFJVCUriE3R4tpzkhXsfbhtdho6cG2pQD3NVqKspxTVbSjATzPg==}
@@ -1248,8 +1232,8 @@ packages:
   '@dnd-kit/state@0.5.0':
     resolution: {integrity: sha512-y7XbabQqjF58Lk8YmDQuR8l6QjN+Kh4qlGEjUvHuIeasLk1QP+9L5diXS98VMxQIivyMmUtX2//f+3N7qPJX4w==}
 
-  '@dotenvx/dotenvx@2.34.1':
-    resolution: {integrity: sha512-T1TmNwcToSojJra99elKF58W4St2Udvtk7oJXepNb4P1VDTF0vZRSzQhAjbnxGG8wZEeUPgcgCu83EsrtEkIGw==}
+  '@dotenvx/dotenvx@2.34.2':
+    resolution: {integrity: sha512-vU83L7W77P4LPpzbkicEraleqEwh6a1mcyRvzZA4D/786mYAQH3yad7be86jx9voAuyWx1QhDcJ8h+Dzzt++ng==}
     hasBin: true
 
   '@dotenvx/primitives@3.3.0':
@@ -1943,9 +1927,6 @@ packages:
   '@types/methods@1.1.4':
     resolution: {integrity: sha512-ymXWVrDiCxTBE3+RIrrP533E70eA+9qu7zdWoHuOmGujkYtzf4HQF96b8nwHLqhuf4ykX61IGRIB38CC6/sImQ==}
 
-  '@types/node@26.6.4':
-    resolution: {integrity: sha512-ldVPDCzj7fsaGZrLB0NuHuTvJcsNasysBAqMolr/cgxrLd1xbqxIr3XJiPnHHJUCxj5sNF1vnRj9aWnrVh5Jcg==}
-
   '@types/node@26.6.5':
     resolution: {integrity: sha512-uMzsv9stDdofIZBx4UGh4Z9ZgXnGC9seRDscilBcTHAeOFk67MZg/k9bWVfO+bk4qZmG+l52hRnLwUiH2LnJTg==}
 
@@ -2510,6 +2491,10 @@ packages:
   idb-keyval@6.3.0:
     resolution: {integrity: sha512-um+2dgAWmYsu615EXpWVwSmapJhON0G43t3Ka/EVaohzPQXSMqKEqeDK/oIW3Ow+BXaF2PvSc+oBTFp793A5Ow==}
 
+  imurmurhash@0.1.4:
+    resolution: {integrity: sha512-JmXMZ6wuvDmLiHEml9ykzqO6lwFbof0GG4IkcGaENdCRDDmMVnny7s5HsIgHCbaq0w2MyPhDqkhTUgS2LU2PHA==}
+    engines: {node: '>=0.8.19'}
+
   inherits@2.0.4:
     resolution: {integrity: sha512-k/vGaX4/Yla3WzyMCvTQOXYeIHvqOKtnqBduzTHpzpQZzAskKMhZ2K+EnBiSM9zGSoIFeMpXKxa4dYeZIQqewQ==}
 
@@ -2959,6 +2944,10 @@ packages:
     resolution: {integrity: sha512-6x6dK6zJdpTzF4sQeNYxwtvBzf6Eg4GtlesS94HOvTudUeyK2WXAaIfmDgsyslYrRBeFIlsi54AYsFGUuhmvrQ==}
     engines: {node: '>= 0.4'}
 
+  signal-exit@4.1.0:
+    resolution: {integrity: sha512-bzyZ1e88w9O1iNJbKnOlvYTrWPDl46O1bG0D3XInv+9tkPrxrN8jUUTiFlDkkmKWgn1M6CfIA13SuGqOa9Korw==}
+    engines: {node: '>=14'}
+
   source-map-js@1.2.2:
     resolution: {integrity: sha512-KGj/8Y43x35aZVDtt+J4mK1hoLGHULMYfSkODJNQjNDC3oW1PqPoxMwo0pLUsWM/UEGzON/NxeHywEfNXNP3Vw==}
     engines: {node: '>=0.10.0'}
@@ -3182,6 +3171,10 @@ packages:
   wrappy@1.0.2:
     resolution: {integrity: sha512-l4Sp/DRseor9wL6EvV2+TuQn63dMkPjZ/sp9XkghTEbV9KlPS1xUsZ3u7/IQO4wxtcFB4bgpQPRcR3QCvezPcQ==}
 
+  write-file-atomic@5.0.1:
+    resolution: {integrity: sha512-+QU2zd6OTD8XWIJCbffaiQeH9U73qIqafo1x6V1snCWYGJf6cVE0cDR4D8xRzcEnfI21IFrUPzPGtcPf8AC+Rw==}
+    engines: {node: ^14.17.0 || ^16.13.0 || >=18.0.0}
+
   ws@8.22.0:
     resolution: {integrity: sha512-Ydggc987+RO0AnWtZ/7Wq9FtNvcrL1b/RO0ud9mWjUPgDrsAAwQSF51sm2hm1XofbU/4jkpGEsLFsZZxU+1DOg==}
     engines: {node: '>=10.0.0'}
@@ -3237,15 +3230,6 @@ snapshots:
 
   '@bcoe/v8-coverage@1.0.2': {}
 
-  '@clerk/backend@3.23.1(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
-    dependencies:
-      '@clerk/shared': 4.39.1(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      standardwebhooks: 1.1.1
-      tslib: 2.8.1
-    transitivePeerDependencies:
-      - react
-      - react-dom
-
   '@clerk/backend@3.23.2(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
       '@clerk/shared': 4.40.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -3255,10 +3239,10 @@ snapshots:
       - react
       - react-dom
 
-  '@clerk/express@2.1.77(express@5.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
+  '@clerk/express@2.1.78(express@5.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
-      '@clerk/backend': 3.23.1(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      '@clerk/shared': 4.39.1(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      '@clerk/backend': 3.23.2(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      '@clerk/shared': 4.40.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       express: 5.3.0
       tslib: 2.8.1
     transitivePeerDependencies:
@@ -3271,16 +3255,6 @@ snapshots:
       react: 19.3.0
       react-dom: 19.3.0(react@19.3.0)
       tslib: 2.8.1
-
-  '@clerk/shared@4.39.1(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
-    dependencies:
-      '@tanstack/query-core': 5.104.1
-      dequal: 2.0.3
-      glob-to-regexp: 0.4.1
-      js-cookie: 3.0.8
-    optionalDependencies:
-      react: 19.3.0
-      react-dom: 19.3.0(react@19.3.0)
 
   '@clerk/shared@4.40.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
@@ -3347,12 +3321,13 @@ snapshots:
       '@preact/signals-core': 1.14.4
       tslib: 2.8.1
 
-  '@dotenvx/dotenvx@2.34.1':
+  '@dotenvx/dotenvx@2.34.2':
     dependencies:
       '@dotenvx/primitives': 3.3.0
       '@dotenvx/providers': 0.3.5
       '@dotenvx/tooling': 1.0.5
       undici: 6.29.0
+      write-file-atomic: 5.0.1
       yocto-spinner: 1.2.2
 
   '@dotenvx/primitives@3.3.0': {}
@@ -3733,13 +3708,6 @@ snapshots:
       '@tailwindcss/oxide-win32-arm64-msvc': 4.3.3
       '@tailwindcss/oxide-win32-x64-msvc': 4.3.3
 
-  '@tailwindcss/vite@4.3.3(vite@8.3.4(@types/node@26.6.4)(jiti@2.7.0))':
-    dependencies:
-      '@tailwindcss/node': 4.3.3
-      '@tailwindcss/oxide': 4.3.3
-      tailwindcss: 4.3.3
-      vite: 8.3.4(@types/node@26.6.4)(jiti@2.7.0)
-
   '@tailwindcss/vite@4.3.3(vite@8.3.4(@types/node@26.6.5)(jiti@2.7.0))':
     dependencies:
       '@tailwindcss/node': 4.3.3
@@ -3818,10 +3786,6 @@ snapshots:
 
   '@types/methods@1.1.4': {}
 
-  '@types/node@26.6.4':
-    dependencies:
-      undici-types: 8.9.0
-
   '@types/node@26.6.5':
     dependencies:
       undici-types: 8.9.0
@@ -3863,7 +3827,7 @@ snapshots:
 
   '@types/ws@8.18.2':
     dependencies:
-      '@types/node': 26.6.4
+      '@types/node': 26.6.5
 
   '@typescript/typescript-aix-ppc64@7.0.2':
     optional: true
@@ -3925,11 +3889,6 @@ snapshots:
   '@typescript/typescript-win32-x64@7.0.2':
     optional: true
 
-  '@vitejs/plugin-react@6.1.2(vite@8.3.4(@types/node@26.6.4)(jiti@2.7.0))':
-    dependencies:
-      '@rolldown/pluginutils': 1.0.1
-      vite: 8.3.4(@types/node@26.6.4)(jiti@2.7.0)
-
   '@vitejs/plugin-react@6.1.2(vite@8.3.4(@types/node@26.6.5)(jiti@2.7.0))':
     dependencies:
       '@rolldown/pluginutils': 1.0.1
@@ -3952,15 +3911,6 @@ snapshots:
   '@vitest/istanbul-lib-report@1.0.2':
     dependencies:
       '@vitest/istanbul-lib-coverage': 1.0.2
-
-  '@vitest/mocker@5.0.3(vite@8.3.4(@types/node@26.6.4)(jiti@2.7.0))':
-    dependencies:
-      '@jridgewell/trace-mapping': 0.3.31
-      '@vitest/spy': 5.0.3
-      estree-walker: 3.0.3
-      magic-string: 1.4.3
-    optionalDependencies:
-      vite: 8.3.4(@types/node@26.6.4)(jiti@2.7.0)
 
   '@vitest/mocker@5.0.3(vite@8.3.4(@types/node@26.6.5)(jiti@2.7.0))':
     dependencies:
@@ -4022,7 +3972,7 @@ snapshots:
 
   buffer-image-size@0.6.4:
     dependencies:
-      '@types/node': 26.6.4
+      '@types/node': 26.6.5
 
   bytes@3.1.2: {}
 
@@ -4306,7 +4256,7 @@ snapshots:
 
   happy-dom@20.14.6:
     dependencies:
-      '@types/node': 26.6.4
+      '@types/node': 26.6.5
       '@types/whatwg-mimetype': 3.0.2
       '@types/ws': 8.18.2
       buffer-image-size: 0.6.4
@@ -4361,6 +4311,8 @@ snapshots:
       safer-buffer: 2.1.2
 
   idb-keyval@6.3.0: {}
+
+  imurmurhash@0.1.4: {}
 
   inherits@2.0.4: {}
 
@@ -4778,6 +4730,8 @@ snapshots:
       side-channel-map: 1.0.1
       side-channel-weakmap: 1.0.2
 
+  signal-exit@4.1.0: {}
+
   source-map-js@1.2.2: {}
 
   standardwebhooks@1.1.1:
@@ -4905,18 +4859,6 @@ snapshots:
 
   vary@1.1.2: {}
 
-  vite@8.3.4(@types/node@26.6.4)(jiti@2.7.0):
-    dependencies:
-      lightningcss: 1.33.0
-      picomatch: 4.0.7
-      postcss: 8.5.29
-      rolldown: 1.2.13
-      tinyglobby: 0.2.17
-    optionalDependencies:
-      '@types/node': 26.6.4
-      fsevents: 2.3.3
-      jiti: 2.7.0
-
   vite@8.3.4(@types/node@26.6.5)(jiti@2.7.0):
     dependencies:
       lightningcss: 1.33.0
@@ -4928,29 +4870,6 @@ snapshots:
       '@types/node': 26.6.5
       fsevents: 2.3.3
       jiti: 2.7.0
-
-  vitest@5.0.3(@types/node@26.6.4)(@vitest/coverage-v8@5.0.3)(happy-dom@20.14.6)(vite@8.3.4(@types/node@26.6.4)(jiti@2.7.0)):
-    dependencies:
-      '@types/chai': 5.2.3
-      '@vitest/mocker': 5.0.3(vite@8.3.4(@types/node@26.6.4)(jiti@2.7.0))
-      chai: 6.3.0
-      es-module-lexer: 2.3.2
-      expect-type: 1.4.0
-      magic-string: 1.4.3
-      obug: 2.2.1
-      picomatch: 4.0.7
-      std-env: 4.3.0
-      tinybench: 6.2.1
-      tinyexec: 1.3.1
-      tinyglobby: 0.2.17
-      vite: 8.3.4(@types/node@26.6.4)(jiti@2.7.0)
-      why-is-node-running: 3.2.1
-    optionalDependencies:
-      '@types/node': 26.6.4
-      '@vitest/coverage-v8': 5.0.3(vitest@5.0.3)
-      happy-dom: 20.14.6
-    transitivePeerDependencies:
-      - msw
 
   vitest@5.0.3(@types/node@26.6.5)(@vitest/coverage-v8@5.0.3)(happy-dom@20.14.6)(vite@8.3.4(@types/node@26.6.5)(jiti@2.7.0)):
     dependencies:
@@ -4995,6 +4914,11 @@ snapshots:
   why-is-node-running@3.2.1: {}
 
   wrappy@1.0.2: {}
+
+  write-file-atomic@5.0.1:
+    dependencies:
+      imurmurhash: 0.1.4
+      signal-exit: 4.1.0
 
   ws@8.22.0: {}
 
