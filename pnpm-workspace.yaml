@@ -20,8 +20,8 @@ update:
 
 catalog:
   '@clerk/express': ^2.1.77
-  '@clerk/react': ^6.17.7
-  '@clerk/testing': ^2.2.44
+  '@clerk/react': ^6.17.8
+  '@clerk/testing': ^2.2.45
   '@dotenvx/dotenvx': ^2.34.1
   '@fontsource-variable/cascadia-mono': ^5.3.0
   '@fontsource-variable/geist': ^5.3.0
@@ -30,7 +30,7 @@ catalog:
   '@tailwindcss/vite': ^4.3.3
   '@types/better-sqlite3': ^9.6.0
   '@types/express': ^5.0.6
-  '@types/node': ^26.6.4
+  '@types/node': ^26.6.5
   '@types/react': ^19.3.0
   '@types/react-dom': ^19.3.0
   '@vitejs/plugin-react': ^6.1.2
