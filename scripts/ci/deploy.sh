@@ -38,6 +38,8 @@ $SSH "umask 007; set -e; rm -rf '$STAGE'; mkdir -p '$STAGE' '$SERVER_PATH/data';
 echo "==> link data and .env.keys into the release"
 printf 'DOTENV_PRIVATE_KEY_PRODUCTION=%s\n' "$DOTENV_PRIVATE_KEY_PRODUCTION" | $SSH "umask 027; cat > '$SERVER_PATH/.env.keys'"
 $SSH "set -e; ln -sfn ../../data '$STAGE/data'; ln -sfn ../../.env.keys '$STAGE/.env.keys'"
+# Secrets: owner deploy (rw), pm2-user read via ACL, nobody else (group web/caddy excluded).
+$SSH "set -e; for f in '$SERVER_PATH/.env.keys' '$STAGE/.env.production'; do if [ -f \"\$f\" ] && [ ! -L \"\$f\" ]; then setfacl -b \"\$f\"; chmod 600 \"\$f\"; setfacl -m u:pm2-user:r \"\$f\"; fi; done"
 $SSH "set -e
   if [ -d '$REL' ]; then
     rm -rf '${REL}.previous'
