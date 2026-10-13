@@ -13,13 +13,14 @@ printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
 chmod 600 ~/.ssh/deploy_key
 printf '%s\n' "$SERVER_KNOWN_HOST" >> ~/.ssh/known_hosts
 # Runner containers use a podman network; the host's sshd is reachable via host.containers.internal.
-# HostKeyAlias keeps checking against SERVER_KNOWN_HOST. Falls back to SERVER_HOST (host networking).
+# Trust the same SERVER_KNOWN_HOST key under that name. Falls back to SERVER_HOST (host networking).
+printf '%s\n' "$SERVER_KNOWN_HOST" | awk -v h="[host.containers.internal]:$SERVER_SSH_PORT" 'NF>=2 && $1 !~ /^@/ {$1=h; print}' >> ~/.ssh/known_hosts
 DEPLOY_HOST="$SERVER_HOST"
 if getent hosts host.containers.internal >/dev/null 2>&1 && timeout 5 bash -c "</dev/tcp/host.containers.internal/$SERVER_SSH_PORT" 2>/dev/null; then
   DEPLOY_HOST=host.containers.internal
 fi
 echo "==> deploy target: ${DEPLOY_HOST/#$SERVER_HOST/SERVER_HOST}"
-SSH="ssh -p $SERVER_SSH_PORT -i $HOME/.ssh/deploy_key -o StrictHostKeyChecking=yes -o HostKeyAlias=$SERVER_HOST -o UserKnownHostsFile=$HOME/.ssh/known_hosts $SERVER_USER@$DEPLOY_HOST"
+SSH="ssh -p $SERVER_SSH_PORT -i $HOME/.ssh/deploy_key -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$HOME/.ssh/known_hosts $SERVER_USER@$DEPLOY_HOST"
 
 SHORT=$(printf '%s' "$SHA" | cut -c1-7)
 case "$SHORT" in
