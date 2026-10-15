@@ -21,6 +21,7 @@ import { getCatalogDb, getUserDb } from './db/connection.ts';
 import { apiRouter } from './routes/api.ts';
 import { authRouter } from './routes/auth.ts';
 import { clerkWebhookRouter } from './routes/webhooks.ts';
+import { buildSharePreview } from './sharePreview.ts';
 
 export interface AppBundle {
   app: express.Express;
@@ -89,6 +90,13 @@ export function createApp(options: CreateAppOptions = {}): AppBundle {
       );
     },
     mount(app) {
+      app.get('/builder/:buildId', (req, res, next) => {
+        buildSharePreview(req, res, next, {
+          userDb: resolveUserDb,
+          catalogDb: resolveCatalogDb,
+        });
+      });
+
       app.use('/api', (req, res, next) => {
         const method = req.method.toUpperCase();
         if (method === 'POST' || method === 'PUT' || method === 'PATCH' || method === 'DELETE') {
