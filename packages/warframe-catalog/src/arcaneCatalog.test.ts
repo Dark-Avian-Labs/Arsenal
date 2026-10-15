@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { isUnreleasedArcane, resolveArcaneImportRarity, UNRELEASED_ARCANE_UNIQUE_NAMES } from './arcaneCatalog.ts';
+import {
+  ARCANE_PUBLIC_LIST_SQL,
+  isUnreleasedArcane,
+  resolveArcaneImportRarity,
+  UNRELEASED_ARCANE_UNIQUE_NAMES,
+} from './arcaneCatalog.ts';
 
 describe('arcaneCatalog', () => {
   it('defaults missing rarity to COMMON', () => {
@@ -13,6 +18,10 @@ describe('arcaneCatalog', () => {
   it('preserves export rarity when present', () => {
     expect(resolveArcaneImportRarity('LEGENDARY')).toBe('LEGENDARY');
     expect(resolveArcaneImportRarity('Rare')).toBe('Rare');
+  });
+
+  it('hides arcanes the export marks excludeFromCodex', () => {
+    expect(ARCANE_PUBLIC_LIST_SQL).toContain('COALESCE(exclude_from_codex, 0) = 0');
   });
 
   it('flags Arcane Survival as unreleased', () => {

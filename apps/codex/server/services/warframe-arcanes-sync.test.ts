@@ -104,6 +104,13 @@ function seedArmoryArcanes(armoryPath: string): void {
       'Virtuos Tempo',
       JSON.stringify([{}, {}, {}, {}]),
     );
+
+  armory
+    .prepare(
+      `INSERT INTO arcanes (unique_name, name, rarity, level_stats, exclude_from_codex)
+       VALUES (?, ?, 'RARE', NULL, 1)`,
+    )
+    .run('/Lotus/Upgrades/CosmeticEnhancers/Utility/NoCostCastChanceAbility1Listener', 'Arcane Steadfast Listener');
   armory.close();
 }
 
@@ -153,5 +160,6 @@ describeWithSqlite('warframe arcanes sync', () => {
     expect(rows[0]?.active).toBe(1);
     expect(rows.some((row) => row.item_name === 'Arcane')).toBe(false);
     expect(rows.some((row) => row.item_name === 'Arcane Survival')).toBe(false);
+    expect(rows.some((row) => row.item_name === 'Arcane Steadfast Listener')).toBe(false);
   });
 });

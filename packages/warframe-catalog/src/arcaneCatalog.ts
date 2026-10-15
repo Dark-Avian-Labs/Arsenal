@@ -14,6 +14,7 @@ export function resolveArcaneImportRarity(rarity: unknown): string {
 }
 
 export const ARCANE_PUBLIC_LIST_SQL = `unique_name NOT LIKE '%Sub'
+  AND COALESCE(exclude_from_codex, 0) = 0
   AND unique_name NOT IN (${UNRELEASED_ARCANE_UNIQUE_NAMES.map(() => '?').join(', ')})`;
 
 export function bindArcanePublicListParams(): string[] {

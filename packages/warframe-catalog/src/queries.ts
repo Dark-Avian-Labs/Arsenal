@@ -712,7 +712,8 @@ function processArcanes(data: Record<string, unknown[]>): number {
     (item) =>
       typeof item.uniqueName === 'string' &&
       item.uniqueName.includes('CosmeticEnhancer') &&
-      !isUnreleasedArcane(item.uniqueName),
+      !isUnreleasedArcane(item.uniqueName) &&
+      !item.excludeFromCodex,
   );
 
   const deleteUnreleased = db.prepare('DELETE FROM arcanes WHERE unique_name = ?');
@@ -741,8 +742,15 @@ function processArcanes(data: Record<string, unknown[]>): number {
     }
   });
   tx();
+  const removed = db
+    .prepare('DELETE FROM arcanes WHERE COALESCE(exclude_from_codex, 0) != 0')
+    .run();
 
-  log('info', 'Processed arcanes', { count: arcanes.length, sourceCount: items.length });
+  log('info', 'Processed arcanes', {
+    count: arcanes.length,
+    sourceCount: items.length,
+    excludedRemoved: removed.changes,
+  });
   return arcanes.length;
 }
 
