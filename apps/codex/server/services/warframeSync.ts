@@ -331,6 +331,7 @@ function loadArcaneCatalog(armoryDb: Database.Database): {
       `SELECT name, level_stats FROM arcanes
        WHERE unique_name NOT LIKE '%Sub'
          AND unique_name != ?
+         AND COALESCE(exclude_from_codex, 0) = 0
          AND name IS NOT NULL AND TRIM(name) <> ''
        ORDER BY name`,
     )
