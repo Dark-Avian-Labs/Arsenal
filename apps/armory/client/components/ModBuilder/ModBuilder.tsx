@@ -1605,6 +1605,7 @@ export function ModBuilder() {
   }, [draftRivenSlot, editingRivenSlot]);
 
   const [showSaveModal, setShowSaveModal] = useState(false);
+  const [saveMode, setSaveMode] = useState<'save' | 'copy' | 'save-as-copy'>('save');
   const [showShareModal, setShowShareModal] = useState(false);
   const [saveModalName, setSaveModalName] = useState('');
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -1635,7 +1636,17 @@ export function ModBuilder() {
 
   const openSaveModal = () => {
     if (!selectedEquipment) return;
+    setSaveMode(isOwnBuild ? 'save' : 'copy');
     setSaveModalName(buildName);
+    setSaveError(null);
+    setShowSaveModal(true);
+  };
+
+  const openSaveAsCopy = () => {
+    if (!selectedEquipment || !currentBuildId) return;
+    setSaveMode('save-as-copy');
+    const prefixed = `Copy of ${buildName.trim() || 'Build'}`;
+    setSaveModalName(prefixed.length > 255 ? prefixed.slice(0, 255) : prefixed);
     setSaveError(null);
     setShowSaveModal(true);
   };
@@ -1666,8 +1677,9 @@ export function ModBuilder() {
     try {
       const finalName = saveModalName.trim() || buildName;
       setBuildName(finalName);
+      const savingAsCopy = saveMode === 'save-as-copy';
 
-      if (!isOwnBuild && currentBuildId) {
+      if (!savingAsCopy && !isOwnBuild && currentBuildId) {
         const newId = await copyBuildFromId(currentBuildId, finalName);
         setCurrentBuildId(newId);
         setIsOwnBuild(true);
@@ -1686,7 +1698,7 @@ export function ModBuilder() {
       const warframeForSave = equipmentType === 'warframe' ? (selectedEquipment as Warframe) : null;
 
       const config: BuildConfig = {
-        id: isOwnBuild ? currentBuildId : undefined,
+        id: savingAsCopy || !isOwnBuild ? undefined : currentBuildId,
         name: finalName,
         equipment_type: equipmentType,
         equipment_unique_name: selectedEquipment.unique_name,
@@ -1735,6 +1747,18 @@ export function ModBuilder() {
           valenceBonus: effectiveValenceBonus,
         }),
       );
+
+      if (savingAsCopy && saved.id) {
+        allowNavigationBypassRef.current = true;
+        navigate(buildEditPath(saved.id), { replace: true });
+        queueMicrotask(() => {
+          if (allowNavigationBypassRef.current) {
+            allowNavigationBypassRef.current = false;
+          }
+        });
+        showSaveToast('success', 'Saved as a new build');
+        return;
+      }
 
       showSaveToast('success', 'Build saved successfully');
     } catch (error) {
@@ -2073,6 +2097,15 @@ export function ModBuilder() {
                 {!readOnly && isOwnBuild ? (
                   <>
                     <Show when="signed-in">
+                      {currentBuildId ? (
+                        <button
+                          type="button"
+                          className="btn btn-secondary"
+                          onClick={openSaveAsCopy}
+                        >
+                          Save as copy
+                        </button>
+                      ) : null}
                       <button type="button" className="btn btn-accent" onClick={openSaveModal}>
                         Save Build
                       </button>
@@ -2398,7 +2431,21 @@ export function ModBuilder() {
 
       <BuildSaveModal
         open={showSaveModal}
-        isCopy={!isOwnBuild}
+        title={
+          saveMode === 'save-as-copy'
+            ? 'Save as copy'
+            : saveMode === 'copy'
+              ? 'Copy Build'
+              : 'Save Build'
+        }
+        confirmLabel={
+          saveMode === 'save-as-copy' ? 'Save as copy' : saveMode === 'copy' ? 'Copy' : 'Save'
+        }
+        hint={
+          saveMode === 'save-as-copy'
+            ? 'The original build stays as it is. These edits are saved as a new build.'
+            : undefined
+        }
         name={saveModalName}
         error={saveError}
         onNameChange={setSaveModalName}
