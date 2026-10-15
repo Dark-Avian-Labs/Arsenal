@@ -3,7 +3,9 @@ import { memo } from 'react';
 
 type BuildSaveModalProps = {
   open: boolean;
-  isCopy: boolean;
+  title: string;
+  confirmLabel: string;
+  hint?: string;
   name: string;
   error: string | null;
   onNameChange: (name: string) => void;
@@ -13,7 +15,9 @@ type BuildSaveModalProps = {
 
 export const BuildSaveModal = memo(function BuildSaveModal({
   open,
-  isCopy,
+  title,
+  confirmLabel,
+  hint,
   name,
   error,
   onNameChange,
@@ -30,8 +34,9 @@ export const BuildSaveModal = memo(function BuildSaveModal({
       className="glass-modal-surface max-w-md"
     >
       <h3 id="save-build-title" className="text-foreground mb-4 text-lg font-semibold">
-        {isCopy ? 'Copy Build' : 'Save Build'}
+        {title}
       </h3>
+      {hint ? <p className="text-muted mb-3 text-sm">{hint}</p> : null}
       {error ? (
         <p className="error-msg mb-3" role="alert">
           {error}
@@ -61,7 +66,7 @@ export const BuildSaveModal = memo(function BuildSaveModal({
           Cancel
         </button>
         <button className="btn btn-accent" onClick={onConfirm} type="button">
-          {isCopy ? 'Copy' : 'Save'}
+          {confirmLabel}
         </button>
       </div>
     </Modal>
