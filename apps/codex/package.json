@@ -50,7 +50,7 @@
     "express": "catalog:",
     "express-rate-limit": "catalog:",
     "helmet": "catalog:",
-    "undici": "^8.11.2",
+    "undici": "^8.12.1",
     "zod": "catalog:"
   },
   "devDependencies": {
