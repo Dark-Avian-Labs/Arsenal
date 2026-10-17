@@ -19,10 +19,10 @@ update:
   githubActions: true
 
 catalog:
-  '@clerk/express': ^2.1.78
+  '@clerk/express': ^2.1.79
   '@clerk/react': ^6.17.8
-  '@clerk/testing': ^2.2.45
-  '@dotenvx/dotenvx': ^2.36.0
+  '@clerk/testing': ^2.2.46
+  '@dotenvx/dotenvx': ^2.37.0
   '@fontsource-variable/cascadia-mono': ^5.3.0
   '@fontsource-variable/geist': ^5.3.0
   '@fontsource-variable/geist-mono': ^5.3.0
