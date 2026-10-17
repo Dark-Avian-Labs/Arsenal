@@ -21,7 +21,7 @@ update:
 catalog:
   '@clerk/express': ^2.1.78
   '@clerk/react': ^6.17.8
-  '@clerk/testing': ^2.2.45
+  '@clerk/testing': ^2.2.46
   '@dotenvx/dotenvx': ^2.36.0
   '@fontsource-variable/cascadia-mono': ^5.3.0
   '@fontsource-variable/geist': ^5.3.0
@@ -34,20 +34,20 @@ catalog:
   '@types/react': ^19.3.0
   '@types/react-dom': ^19.3.0
   '@vitejs/plugin-react': ^6.1.2
-  '@vitest/coverage-v8': ^5.0.4
+  '@vitest/coverage-v8': ^5.0.5
   better-sqlite3: ^13.0.3
   express: ^5.3.0
   express-rate-limit: ^8.7.1
   helmet: ^8.3.0
   oxfmt: ^0.73.0
   oxlint: ^1.88.0
-  react: ^19.3.0
-  react-dom: ^19.3.0
+  react: ^19.3.1
+  react-dom: ^19.3.1
   react-router: ^8.4.0
   tailwindcss: ^4.3.3
   typescript: ^7.0.2
   vite: ^8.3.4
-  vitest: ^5.0.4
+  vitest: ^5.0.5
   zod: ^4.6.7
 
 minimumReleaseAgeExclude:
