@@ -1,6 +1,7 @@
 import { GEAR_SLOTS, type GearSlot } from './catalog.ts';
 import {
   attacksPerSecond,
+  BASE_CRIT_DMG,
   computeFinalStats,
   type FinalStats,
   type HeroBaseStats,
@@ -26,6 +27,40 @@ export const SCORE_STAT_KEYS = [
   'critDmgAfterUlt',
 ] as const;
 export type ScoreStatKey = (typeof SCORE_STAT_KEYS)[number];
+
+export type OutfitRoleId = 'damage' | 'tank' | 'support';
+
+export type OutfitRole = {
+  id: OutfitRoleId;
+  label: string;
+  classKey: 'fighter' | 'defender' | 'healer';
+  weights: Partial<Record<ScoreStatKey, number>>;
+  minimums: Partial<Record<ScoreStatKey, number>>;
+};
+
+export const OUTFIT_ROLES: readonly OutfitRole[] = [
+  {
+    id: 'damage',
+    label: 'Damage',
+    classKey: 'fighter',
+    weights: { atk: 10, critRate: 8, critDmg: 8, atkSpd: 5 },
+    minimums: { critRate: 100 },
+  },
+  {
+    id: 'tank',
+    label: 'Tank',
+    classKey: 'defender',
+    weights: { hp: 10, def: 3 },
+    minimums: {},
+  },
+  {
+    id: 'support',
+    label: 'Support',
+    classKey: 'healer',
+    weights: { atkSpd: 10, rageRegen: 8, healingEffect: 8, atk: 5, hp: 5 },
+    minimums: {},
+  },
+];
 
 export const SCORE_STAT_LABELS: Record<ScoreStatKey, string> = {
   atk: 'ATK',
@@ -54,7 +89,12 @@ export type OptimizerRequest = {
   desiredLeftSet?: string | null;
   desiredRightSet?: string | null;
   forceSets: boolean;
+  /** Equipped pieces on this slug stay in the pool. */
   includeEquippedHeroSlug?: string | null;
+  /** Equipped pieces on every hero except `heroSlug` stay in the pool. */
+  includeOthersEquipped?: boolean;
+  /** Hero being built. Keeps "others" from also pulling this hero when their own toggle is off. */
+  heroSlug?: string | null;
 };
 
 export type RankedLoadout = {
@@ -91,8 +131,12 @@ function bySlot(pieces: GearPieceInput[]): Record<GearSlot, GearPieceInput[]> {
 function filterInventory(request: OptimizerRequest): GearPieceInput[] {
   return request.pieces.filter((piece) => {
     if (piece.equippedHeroSlug) {
-      if (!request.includeEquippedHeroSlug) return false;
-      if (piece.equippedHeroSlug !== request.includeEquippedHeroSlug) return false;
+      const onThisHero =
+        request.includeEquippedHeroSlug != null &&
+        piece.equippedHeroSlug === request.includeEquippedHeroSlug;
+      const onAnotherHero =
+        request.includeOthersEquipped === true && piece.equippedHeroSlug !== request.heroSlug;
+      if (!onThisHero && !onAnotherHero) return false;
     }
     if (request.forceSets) {
       const isLeft = piece.slot === 'weapon' || piece.slot === 'armor';
@@ -105,44 +149,52 @@ function filterInventory(request: OptimizerRequest): GearPieceInput[] {
   });
 }
 
+function baseShare(value: number, base: number): number {
+  if (!(base > 0)) return 0;
+  return value / base;
+}
+
+// One weight point means the same 1% on every stat: ATK, HP, and DEF against the naked hero,
+// crit rate in points, crit damage against the 150% base. Speed is extra attacks. Healing keeps its curve.
+
 function scoreValue(stat: ScoreStatKey, stats: FinalStats, hero: HeroBaseStats): number {
   switch (stat) {
     case 'atk':
-      return stats.atk / 100;
+      return baseShare(stats.atk, hero.atk);
     case 'hp':
-      return stats.hp / 500;
+      return baseShare(stats.hp, hero.hp);
     case 'def':
-      return stats.def / 50;
+      return baseShare(stats.def, hero.def);
     case 'critRate':
-      return Math.min(stats.critRate, CRIT_RATE_SCORE_CAP);
+      return Math.min(stats.critRate, CRIT_RATE_SCORE_CAP) / 100;
     case 'critDmg':
-      return stats.critDmg;
+      return stats.critDmg / BASE_CRIT_DMG;
     case 'atkSpd': {
       const baseAps = attacksPerSecond(hero.atkInterval, 100);
       const aps = attacksPerSecond(hero.atkInterval, stats.atkSpd);
       if (baseAps <= 0) return 0;
-      return (aps / baseAps - 1) * 100;
+      return aps / baseAps - 1;
     }
     case 'healingEffect':
-      return (stats.healMultiplier - 1) * 100;
+      return stats.healMultiplier - 1;
     case 'rageRegen':
-      return stats.rageRegen;
+      return stats.rageRegen / 100;
     case 'rageRegenAuto':
-      return stats.rageRegenAuto;
+      return stats.rageRegenAuto / 100;
     case 'damageTaken':
-      return -stats.damageTaken;
+      return -stats.damageTaken / 100;
     case 'aoeDamage':
-      return stats.aoeDamage;
+      return stats.aoeDamage / 100;
     case 'stDamage':
-      return stats.stDamage;
+      return stats.stDamage / 100;
     case 'basicAtkDamage':
-      return stats.basicAtkDamage;
+      return stats.basicAtkDamage / 100;
     case 'damageAfterCrit':
-      return stats.damageAfterCrit;
+      return stats.damageAfterCrit / 100;
     case 'damageAfterUlt':
-      return stats.damageAfterUlt;
+      return stats.damageAfterUlt / 100;
     case 'critDmgAfterUlt':
-      return stats.critDmgAfterUlt;
+      return stats.critDmgAfterUlt / 100;
     default: {
       const _exhaustive: never = stat;
       return _exhaustive;

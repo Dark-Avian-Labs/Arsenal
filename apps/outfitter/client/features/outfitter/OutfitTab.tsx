@@ -1,6 +1,12 @@
-import { apiFetch, Button, Modal } from '@dark-avian-labs/ui';
+import { apiFetch, Button, MaterialSymbol, Modal, SelectDropdown } from '@dark-avian-labs/ui';
 import { gearSetBadgeSrc } from '@shared/catalog';
-import { SCORE_STAT_KEYS, SCORE_STAT_LABELS, type ScoreStatKey } from '@shared/optimizer';
+import {
+  OUTFIT_ROLES,
+  SCORE_STAT_KEYS,
+  SCORE_STAT_LABELS,
+  type OutfitRoleId,
+  type ScoreStatKey,
+} from '@shared/optimizer';
 import { LEFT_SETS, RIGHT_SETS, setsSortedByTier } from '@shared/sets';
 import { useEffect, useRef, useState } from 'react';
 
@@ -8,6 +14,38 @@ import { FieldSelect } from './FieldSelect';
 import { GearTile, type GearView } from './GearTile';
 import { OutfitStatsList, readOutfitCalculate } from './tabShared';
 import type { HeroRow, OutfitResult } from './types';
+import { WorIcon, classIconSrc } from './worIcons';
+
+const DAMAGE_ROLE = OUTFIT_ROLES[0];
+
+function OutfitCheck({
+  checked,
+  label,
+  onChange,
+}: {
+  checked: boolean;
+  label: string;
+  onChange: (checked: boolean) => void;
+}) {
+  return (
+    <button
+      type="button"
+      className="stats-bar-toggle"
+      aria-pressed={checked}
+      onClick={() => onChange(!checked)}
+    >
+      <span className={`stats-bar-toggle-indicator ${checked ? 'is-on' : ''}`} aria-hidden="true">
+        <MaterialSymbol
+          name={checked ? 'check' : 'close'}
+          filled={checked}
+          className="leading-none"
+          style={{ fontSize: 14 }}
+        />
+      </span>
+      <span>{label}</span>
+    </button>
+  );
+}
 
 export function OutfitTab({
   heroes,
@@ -19,16 +57,18 @@ export function OutfitTab({
   onSaved: () => Promise<void>;
 }) {
   const [outfitHero, setOutfitHero] = useState('');
+  const [roleId, setRoleId] = useState<OutfitRoleId>(DAMAGE_ROLE.id);
   const [weights, setWeights] = useState<Partial<Record<ScoreStatKey, number>>>({
-    atk: 100,
-    critDmg: 100,
-    atkSpd: 50,
+    ...DAMAGE_ROLE.weights,
   });
-  const [minimums, setMinimums] = useState<Partial<Record<ScoreStatKey, number>>>({ critRate: 95 });
+  const [minimums, setMinimums] = useState<Partial<Record<ScoreStatKey, number>>>({
+    ...DAMAGE_ROLE.minimums,
+  });
   const [desiredLeft, setDesiredLeft] = useState('');
   const [desiredRight, setDesiredRight] = useState('');
   const [forceSets, setForceSets] = useState(false);
-  const [includeEquipped, setIncludeEquipped] = useState(false);
+  const [includeEquipped, setIncludeEquipped] = useState(true);
+  const [includeOthersEquipped, setIncludeOthersEquipped] = useState(false);
   const [results, setResults] = useState<OutfitResult[]>([]);
   const [calcMessage, setCalcMessage] = useState<string | null>(null);
   const [calcProgress, setCalcProgress] = useState<number | null>(null);
@@ -41,6 +81,14 @@ export function OutfitTab({
   useEffect(() => {
     setHeroDraft(outfitHeroRow);
   }, [outfitHeroRow]);
+
+  function applyRole(id: OutfitRoleId): void {
+    const role = OUTFIT_ROLES.find((entry) => entry.id === id);
+    if (!role) return;
+    setRoleId(id);
+    setWeights({ ...role.weights });
+    setMinimums({ ...role.minimums });
+  }
 
   function cancelCalculate(): void {
     calcAbortRef.current?.abort();
@@ -69,6 +117,7 @@ export function OutfitTab({
           desired_right_set: desiredRight || null,
           force_sets: forceSets,
           include_equipped: includeEquipped,
+          include_others_equipped: includeOthersEquipped,
         }),
       });
       if (controller.signal.aborted) return;
@@ -208,24 +257,39 @@ export function OutfitTab({
                 onChange={setDesiredRight}
               />
             </div>
-            <label className="mt-3 flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={forceSets}
-                onChange={(event) => setForceSets(event.target.checked)}
-              />
-              Force sets only
-            </label>
-            <label className="mt-2 flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
+            <div className="outfit-checks">
+              <OutfitCheck checked={forceSets} label="Force sets only" onChange={setForceSets} />
+              <OutfitCheck
                 checked={includeEquipped}
-                onChange={(event) => setIncludeEquipped(event.target.checked)}
+                label="Include this hero's equipped gear"
+                onChange={setIncludeEquipped}
               />
-              Include this hero's equipped gear
-            </label>
+              <OutfitCheck
+                checked={includeOthersEquipped}
+                label="Include other heroes' equipped gear"
+                onChange={setIncludeOthersEquipped}
+              />
+            </div>
+            <h3 className="mt-5 text-sm font-semibold">Role</h3>
+            <div className="outfit-roles" role="group" aria-label="Role">
+              {OUTFIT_ROLES.map((role) => (
+                <button
+                  key={role.id}
+                  type="button"
+                  className={roleId === role.id ? 'outfit-role active' : 'outfit-role'}
+                  aria-pressed={roleId === role.id}
+                  onClick={() => applyRole(role.id)}
+                >
+                  <WorIcon src={classIconSrc(role.classKey)} alt="" size={28} />
+                  <span>{role.label}</span>
+                </button>
+              ))}
+            </div>
             <h3 className="mt-5 text-sm font-semibold">Weights</h3>
-            {SCORE_STAT_KEYS.map((key) => (
+            <p className="text-muted mt-1 text-xs">
+              0 ignores the stat. 10 is the strongest. Equal numbers treat a 10% gain the same.
+            </p>
+            {SCORE_STAT_KEYS.filter((key) => (weights[key] ?? 0) > 0).map((key) => (
               <label key={key} className="mt-2 block text-xs">
                 <span className="text-muted flex justify-between">
                   {SCORE_STAT_LABELS[key]}
@@ -235,22 +299,48 @@ export function OutfitTab({
                   className="w-full"
                   type="range"
                   min={0}
-                  max={100}
+                  max={10}
+                  step={1}
                   value={weights[key] ?? 0}
-                  onChange={(event) =>
-                    setWeights({ ...weights, [key]: Number(event.target.value) })
-                  }
+                  aria-label={SCORE_STAT_LABELS[key]}
+                  onChange={(event) => {
+                    const next = { ...weights };
+                    const value = Number(event.target.value);
+                    if (value <= 0) delete next[key];
+                    else next[key] = value;
+                    setWeights(next);
+                  }}
                 />
               </label>
             ))}
-            <h3 className="mt-5 text-sm font-semibold">Minimums (final stats)</h3>
-            {SCORE_STAT_KEYS.map((key) => (
+            <SelectDropdown
+              className="mt-2 w-full"
+              value=""
+              placeholder="Add a stat"
+              buttonAriaLabel="Add a stat"
+              preserveOrder
+              disabled={SCORE_STAT_KEYS.every((key) => (weights[key] ?? 0) > 0)}
+              options={SCORE_STAT_KEYS.filter((key) => (weights[key] ?? 0) <= 0).map((key) => ({
+                value: key,
+                label: SCORE_STAT_LABELS[key],
+              }))}
+              onChange={(value) => {
+                if (!value) return;
+                setWeights({ ...weights, [value as ScoreStatKey]: 5 });
+              }}
+            />
+            <h3 className="mt-5 text-sm font-semibold">Minimums</h3>
+            <p className="text-muted mt-1 text-xs">
+              Final stats. Builds under a minimum are dropped.
+            </p>
+            {SCORE_STAT_KEYS.filter((key) => minimums[key] != null).map((key) => (
               <label key={key} className="form-group mt-2 block text-sm">
                 <span>{SCORE_STAT_LABELS[key]}</span>
                 <input
                   className="form-input mt-1 w-full"
                   type="number"
-                  value={minimums[key] ?? ''}
+                  value={Number.isNaN(minimums[key]) ? '' : minimums[key]}
+                  aria-label={`${SCORE_STAT_LABELS[key]} minimum`}
                   onChange={(event) => {
                     const next = { ...minimums };
                     if (event.target.value === '') delete next[key];
@@ -260,6 +350,22 @@ export function OutfitTab({
                 />
               </label>
             ))}
+            <SelectDropdown
+              className="mt-2 w-full"
+              value=""
+              placeholder="Add a limit"
+              buttonAriaLabel="Add a limit"
+              preserveOrder
+              disabled={SCORE_STAT_KEYS.every((key) => minimums[key] != null)}
+              options={SCORE_STAT_KEYS.filter((key) => minimums[key] == null).map((key) => ({
+                value: key,
+                label: SCORE_STAT_LABELS[key],
+              }))}
+              onChange={(value) => {
+                if (!value) return;
+                setMinimums({ ...minimums, [value as ScoreStatKey]: Number.NaN });
+              }}
+            />
             <Button
               className="mt-4 w-full"
               variant="accent"

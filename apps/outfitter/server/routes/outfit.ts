@@ -59,6 +59,7 @@ outfitRouter.post(
       return;
     }
     const includeEquipped = req.body?.include_equipped === true;
+    const includeOthersEquipped = req.body?.include_others_equipped === true;
     res.status(200);
     res.setHeader('Content-Type', 'application/x-ndjson; charset=utf-8');
     res.setHeader('Cache-Control', 'no-cache');
@@ -90,6 +91,8 @@ outfitRouter.post(
             typeof req.body?.desired_right_set === 'string' ? req.body.desired_right_set : null,
           forceSets: req.body?.force_sets === true,
           includeEquippedHeroSlug: includeEquipped ? heroSlug : null,
+          includeOthersEquipped,
+          heroSlug,
         },
         (done, total) => {
           if (res.writableEnded) return;

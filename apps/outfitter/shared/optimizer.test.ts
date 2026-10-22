@@ -100,6 +100,28 @@ describe('optimizeLoadouts', () => {
       includeEquippedHeroSlug: 'other',
     });
     expect(included[0]?.pieces.some((entry) => entry.id === 1)).toBe(true);
+
+    const others = optimizeLoadouts({
+      hero,
+      pieces,
+      weights: { atk: 10 },
+      minimums: {},
+      forceSets: false,
+      includeOthersEquipped: true,
+      heroSlug: 'self',
+    });
+    expect(others[0]?.pieces.some((entry) => entry.id === 1)).toBe(true);
+
+    const skipSelf = optimizeLoadouts({
+      hero,
+      pieces: pieces.map((entry) => (entry.id === 1 ? { ...entry, equippedHeroSlug: 'self' } : entry)),
+      weights: { atk: 10 },
+      minimums: {},
+      forceSets: false,
+      includeOthersEquipped: true,
+      heroSlug: 'self',
+    });
+    expect(skipSelf[0]?.pieces.some((entry) => entry.id === 1)).toBe(false);
   });
 
   it('returns empty when Force sets cannot fill every slot from those sets', () => {
@@ -173,6 +195,42 @@ describe('optimizeLoadouts', () => {
     const results = optimizeLoadouts(request);
     expect(results[0]?.stats.critRate).toBeGreaterThanOrEqual(100);
     expect(results[0]?.pieces.find((entry) => entry.slot === 'weapon')?.id).toBe(1);
+  });
+
+  it('scores a 10% ATK gain the same as a 10% HP gain at equal weight', () => {
+    const shared = [
+      piece(3, 'armor', 'life_force', { mainValue: 0 }),
+      piece(4, 'bangle', 'hawk_eye', { mainStat: 'hpBonus', mainValue: 0 }),
+      piece(5, 'amulet', 'hawk_eye', { mainStat: 'hpBonus', mainValue: 0 }),
+      piece(6, 'ring', 'hawk_eye', { mainStat: 'hpBonus', mainValue: 0 }),
+    ];
+    const request = {
+      hero,
+      weights: { atk: 10, hp: 10 },
+      minimums: {},
+      forceSets: false,
+    };
+    const atk = optimizeLoadouts({
+      ...request,
+      pieces: [
+        piece(1, 'weapon', 'life_force', {
+          mainValue: 0,
+          substats: [{ stat: 'atk', value: hero.atk * 0.1 }],
+        }),
+        ...shared,
+      ],
+    });
+    const hp = optimizeLoadouts({
+      ...request,
+      pieces: [
+        piece(1, 'weapon', 'life_force', {
+          mainValue: 0,
+          substats: [{ stat: 'hp', value: hero.hp * 0.1 }],
+        }),
+        ...shared,
+      ],
+    });
+    expect(atk[0]?.score).toBeCloseTo(hp[0]?.score ?? Number.NaN, 6);
   });
 
   it('reports search progress from the async path', async () => {
