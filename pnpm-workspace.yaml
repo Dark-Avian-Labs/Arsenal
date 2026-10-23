@@ -19,9 +19,9 @@ update:
   githubActions: true
 
 catalog:
-  '@clerk/express': ^2.1.81
+  '@clerk/express': ^2.1.82
   '@clerk/react': ^6.17.8
-  '@clerk/testing': ^2.2.48
+  '@clerk/testing': ^2.2.49
   '@dotenvx/dotenvx': ^2.38.2
   '@fontsource-variable/cascadia-mono': ^5.3.0
   '@fontsource-variable/geist': ^5.3.0
@@ -46,7 +46,7 @@ catalog:
   react-router: ^8.5.0
   tailwindcss: ^4.3.3
   typescript: ^7.0.2
-  vite: ^8.3.4
+  vite: ^8.3.5
   vitest: ^5.0.5
   zod: ^4.6.7
 
