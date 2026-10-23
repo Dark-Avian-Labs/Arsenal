@@ -20,7 +20,7 @@ update:
 
 catalog:
   '@clerk/express': ^2.1.82
-  '@clerk/react': ^6.17.8
+  '@clerk/react': ^6.18.0
   '@clerk/testing': ^2.2.49
   '@dotenvx/dotenvx': ^2.38.2
   '@fontsource-variable/cascadia-mono': ^5.3.0
