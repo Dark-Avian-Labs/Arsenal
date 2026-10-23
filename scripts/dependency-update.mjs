@@ -4,7 +4,9 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 
 function packagePaths() {
+  // git pathspec **/package.json does not match package.json at the repo root.
   return [
+    'package.json',
     'pnpm-lock.yaml',
     'pnpm-workspace.yaml',
     ...git(['ls-files', '--', '**/package.json']).split('\n').filter(Boolean),
@@ -290,6 +292,7 @@ function selfCheck() {
   if (rebaseCommand('@actions rebase')) throw new Error('self-check failed');
   if (rebaseCommand('@dal rebase')) throw new Error('self-check failed');
   if (rebaseCommand('@dependabot rebase')) throw new Error('self-check failed');
+  if (!packagePaths().includes('package.json')) throw new Error('self-check failed');
   console.log('self-check ok');
 }
 
