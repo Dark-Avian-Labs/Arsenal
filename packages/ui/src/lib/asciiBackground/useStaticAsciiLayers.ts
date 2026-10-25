@@ -50,7 +50,7 @@ function solidBlockRowStep(
   const scratch = document.createElement('canvas');
   scratch.width = 32;
   scratch.height = 96;
-  const probe = scratch.getContext('2d');
+  const probe = scratch.getContext('2d', { willReadFrequently: true });
   if (!probe) return Math.ceil(lineHeightPx);
 
   probe.setTransform(dpiScale, 0, 0, dpiScale, 0, 0);
