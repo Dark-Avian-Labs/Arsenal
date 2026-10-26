@@ -19,7 +19,7 @@ update:
   githubActions: true
 
 catalog:
-  '@clerk/express': ^2.1.82
+  '@clerk/express': ^2.1.83
   '@clerk/react': ^6.18.1
   '@clerk/testing': ^2.2.50
   '@dotenvx/dotenvx': ^2.38.2
