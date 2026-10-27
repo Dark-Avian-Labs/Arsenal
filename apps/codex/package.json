@@ -46,7 +46,7 @@
     "@napi-rs/lzma": "^1.5.1",
     "better-sqlite3": "catalog:",
     "cheerio": "^1.2.0",
-    "cuimp": "^2.1.1",
+    "cuimp": "^2.1.2",
     "express": "catalog:",
     "express-rate-limit": "catalog:",
     "helmet": "catalog:",

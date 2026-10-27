@@ -659,8 +659,8 @@ importers:
         specifier: ^1.2.0
         version: 1.2.0
       cuimp:
-        specifier: ^2.1.1
-        version: 2.1.1
+        specifier: ^2.1.2
+        version: 2.1.2
       express:
         specifier: 'catalog:'
         version: 5.3.0
@@ -2248,8 +2248,8 @@ packages:
   csstype@3.2.3:
     resolution: {integrity: sha512-z1HGKcYy2xA8AGQfwrn0PAy+PB7X/GSj3UVJW9qKyn43xWa+gl5nXmU4qqLMRzWVLFC8KusUX8T/0kCiOYpAIQ==}
 
-  cuimp@2.1.1:
-    resolution: {integrity: sha512-Q1JTBYngJDwH6SjIeLv3UI74Tc8wxNJXdhQfCNPfZZyj5v9ShylHTI5jhL8xcwJlbyi8x7aveN7g0Yo/VxXpeA==}
+  cuimp@2.1.2:
+    resolution: {integrity: sha512-Rc63Xkm2aKWnb1uclCqPjAi1arv7BO3/gXQNFJBVY9RQUs5KoxsgSPHw+KI06sWv4Ssl44jxf3ui3pncufo9IQ==}
     engines: {node: '>=18.17'}
 
   debug@4.4.3:
@@ -4063,7 +4063,7 @@ snapshots:
 
   csstype@3.2.3: {}
 
-  cuimp@2.1.1:
+  cuimp@2.1.2:
     dependencies:
       tar: 7.5.22
 
