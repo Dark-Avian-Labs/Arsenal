@@ -100,6 +100,10 @@
       color 0.15s ease,
       background-color 0.15s ease;
   }
+
+  input[type='range'] {
+    accent-color: var(--color-accent);
+  }
 }
 
 html.ui-acrylic .table-container {
