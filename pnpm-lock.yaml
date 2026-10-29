@@ -165,14 +165,14 @@ settings:
 catalogs:
   default:
     '@clerk/express':
-      specifier: ^2.1.84
-      version: 2.1.84
+      specifier: ^2.1.85
+      version: 2.1.85
     '@clerk/react':
       specifier: ^6.18.1
       version: 6.18.1
     '@clerk/testing':
-      specifier: ^2.2.51
-      version: 2.2.51
+      specifier: ^2.2.52
+      version: 2.2.52
     '@dotenvx/dotenvx':
       specifier: ^2.38.2
       version: 2.38.2
@@ -291,7 +291,7 @@ importers:
     dependencies:
       '@clerk/express':
         specifier: 'catalog:'
-        version: 2.1.84(express@5.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+        version: 2.1.85(express@5.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@dark-avian-labs/sentinel-agent':
         specifier: workspace:*
         version: link:../../packages/sentinel-agent
@@ -319,7 +319,7 @@ importers:
         version: 6.18.1(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@clerk/testing':
         specifier: 'catalog:'
-        version: 2.2.51(@playwright/test@1.64.1)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+        version: 2.2.52(@playwright/test@1.64.1)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@dark-avian-labs/config':
         specifier: workspace:*
         version: link:../../packages/config
@@ -400,7 +400,7 @@ importers:
     dependencies:
       '@clerk/express':
         specifier: 'catalog:'
-        version: 2.1.84(express@5.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+        version: 2.1.85(express@5.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@dark-avian-labs/sentinel-agent':
         specifier: workspace:*
         version: link:../../packages/sentinel-agent
@@ -434,7 +434,7 @@ importers:
         version: 6.18.1(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@clerk/testing':
         specifier: 'catalog:'
-        version: 2.2.51(@playwright/test@1.64.1)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+        version: 2.2.52(@playwright/test@1.64.1)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@dark-avian-labs/config':
         specifier: workspace:*
         version: link:../../packages/config
@@ -521,7 +521,7 @@ importers:
     dependencies:
       '@clerk/express':
         specifier: 'catalog:'
-        version: 2.1.84(express@5.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+        version: 2.1.85(express@5.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@dark-avian-labs/sentinel-agent':
         specifier: workspace:*
         version: link:../../packages/sentinel-agent
@@ -552,7 +552,7 @@ importers:
         version: 6.18.1(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@clerk/testing':
         specifier: 'catalog:'
-        version: 2.2.51(@playwright/test@1.64.1)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+        version: 2.2.52(@playwright/test@1.64.1)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@dark-avian-labs/config':
         specifier: workspace:*
         version: link:../../packages/config
@@ -636,7 +636,7 @@ importers:
     dependencies:
       '@clerk/express':
         specifier: 'catalog:'
-        version: 2.1.84(express@5.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+        version: 2.1.85(express@5.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@dark-avian-labs/sentinel-agent':
         specifier: workspace:*
         version: link:../../packages/sentinel-agent
@@ -682,7 +682,7 @@ importers:
         version: 6.18.1(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@clerk/testing':
         specifier: 'catalog:'
-        version: 2.2.51(@playwright/test@1.64.1)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+        version: 2.2.52(@playwright/test@1.64.1)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@dark-avian-labs/config':
         specifier: workspace:*
         version: link:../../packages/config
@@ -766,7 +766,7 @@ importers:
     dependencies:
       '@clerk/express':
         specifier: 'catalog:'
-        version: 2.1.84(express@5.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+        version: 2.1.85(express@5.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@dark-avian-labs/sentinel-agent':
         specifier: workspace:*
         version: link:../../packages/sentinel-agent
@@ -797,7 +797,7 @@ importers:
         version: 6.18.1(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@clerk/testing':
         specifier: 'catalog:'
-        version: 2.2.51(@playwright/test@1.64.1)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+        version: 2.2.52(@playwright/test@1.64.1)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@dark-avian-labs/config':
         specifier: workspace:*
         version: link:../../packages/config
@@ -875,7 +875,7 @@ importers:
     dependencies:
       '@clerk/express':
         specifier: 'catalog:'
-        version: 2.1.84(express@5.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+        version: 2.1.85(express@5.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@dark-avian-labs/sentinel-agent':
         specifier: workspace:*
         version: link:../../packages/sentinel-agent
@@ -984,7 +984,7 @@ importers:
     dependencies:
       '@clerk/testing':
         specifier: 'catalog:'
-        version: 2.2.51(@playwright/test@1.64.1)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+        version: 2.2.52(@playwright/test@1.64.1)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@dotenvx/dotenvx':
         specifier: 'catalog:'
         version: 2.38.2
@@ -1024,7 +1024,7 @@ importers:
     dependencies:
       '@clerk/express':
         specifier: 'catalog:'
-        version: 2.1.84(express@5.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+        version: 2.1.85(express@5.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@dark-avian-labs/sentinel-agent':
         specifier: workspace:*
         version: link:../sentinel-agent
@@ -1167,12 +1167,12 @@ packages:
     resolution: {integrity: sha512-6zABk/ECA/QYSCQ1NGiVwwbQerUCZ+TQbp64Q3AgmfNvurHH0j8TtXa1qbShXA6qqkpAj4V5W8pP6mLe1mcMqA==}
     engines: {node: '>=18'}
 
-  '@clerk/backend@3.26.3':
-    resolution: {integrity: sha512-hgCEEVloVYe+QPusZoDp3d/V9vVlFKGufdfvjSGimadD4Ii7K16dgxXB/5/lSvc0KgQLmD54Nh8zRMKez7ZSrA==}
+  '@clerk/backend@3.26.4':
+    resolution: {integrity: sha512-zvXqCfOKhgkY7LonpE1p8tLO+XOciHKTJ9K3e3KykxuiSPwnxKeKVltJMO8xu4LPhF/joFRY/B1cPQM06/f6AQ==}
     engines: {node: '>=20.9.0'}
 
-  '@clerk/express@2.1.84':
-    resolution: {integrity: sha512-P/ZJry0cbG/na1iAXMPPZFIO34qvEaMq50lASeIeV5j6ARaD/vZx0cJTuoRCKkmIND22KxhGR7NLrGmeS0e5ew==}
+  '@clerk/express@2.1.85':
+    resolution: {integrity: sha512-Tqj58WaWe7ADM6u5bwQnFbRxYhHJQhMOWA6qglmMG0Jz+83/5dB5KrhD1EUuQsFi4704Nyzq3F8JWLK9Qz7lWA==}
     engines: {node: '>=20.9.0'}
     peerDependencies:
       express: ^4.17.0 || ^5.0.0
@@ -1196,8 +1196,8 @@ packages:
       react-dom:
         optional: true
 
-  '@clerk/shared@4.42.0':
-    resolution: {integrity: sha512-IuTwYNEWtuI1zKfEcqbl41z/PToqNdfoFH33CM4XDYQ7G/DCT9vf/zSKECqldnuDknfzKJxCKT/Ku8o/Y/qnkQ==}
+  '@clerk/shared@4.43.0':
+    resolution: {integrity: sha512-EtFANpM+o5pt4zeTh1ww+oYk8qg53Plofl5jA67gi1HYVxsiVvkKmfPU0BFAf54vOcTyzvpZxRvffEGTI0hsiw==}
     engines: {node: '>=20.9.0'}
     peerDependencies:
       react: ^18.0.0 || ~19.0.3 || ~19.1.4 || ~19.2.3 || ~19.3.0-0
@@ -1208,8 +1208,8 @@ packages:
       react-dom:
         optional: true
 
-  '@clerk/testing@2.2.51':
-    resolution: {integrity: sha512-bxwmAYty/37eTkx+998A4E28bm6zCqRtgoThgybB0Q6Su7tmu22NKKrQh9qyd4LBOk1bxuF95O74/pH8pB8KvA==}
+  '@clerk/testing@2.2.52':
+    resolution: {integrity: sha512-WCcreX3ol2I7TBf68jXFU8zI0MYgqsZsT4/h+IJE4spebmTLStBy229KwgbOn3Y4JppyEUuxuuWOA9HTpA2bGQ==}
     engines: {node: '>=20.9.0'}
     peerDependencies:
       '@playwright/test': ^1
@@ -3258,19 +3258,19 @@ snapshots:
 
   '@bcoe/v8-coverage@1.0.2': {}
 
-  '@clerk/backend@3.26.3(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
+  '@clerk/backend@3.26.4(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
     dependencies:
-      '@clerk/shared': 4.42.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      '@clerk/shared': 4.43.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       standardwebhooks: 1.1.1
       tslib: 2.8.1
     transitivePeerDependencies:
       - react
       - react-dom
 
-  '@clerk/express@2.1.84(express@5.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
+  '@clerk/express@2.1.85(express@5.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
     dependencies:
-      '@clerk/backend': 3.26.3(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
-      '@clerk/shared': 4.42.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      '@clerk/backend': 3.26.4(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      '@clerk/shared': 4.43.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       express: 5.3.0
       tslib: 2.8.1
     transitivePeerDependencies:
@@ -3294,7 +3294,7 @@ snapshots:
       react: 19.3.1
       react-dom: 19.3.1(react@19.3.1)
 
-  '@clerk/shared@4.42.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
+  '@clerk/shared@4.43.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
     dependencies:
       '@tanstack/query-core': 5.104.1
       dequal: 2.0.3
@@ -3304,10 +3304,10 @@ snapshots:
       react: 19.3.1
       react-dom: 19.3.1(react@19.3.1)
 
-  '@clerk/testing@2.2.51(@playwright/test@1.64.1)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
+  '@clerk/testing@2.2.52(@playwright/test@1.64.1)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
     dependencies:
-      '@clerk/backend': 3.26.3(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
-      '@clerk/shared': 4.42.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      '@clerk/backend': 3.26.4(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      '@clerk/shared': 4.43.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       dotenv: 17.2.2
     optionalDependencies:
       '@playwright/test': 1.64.1
