@@ -20,7 +20,7 @@
     "postinstall": "pnpm --filter @dark-avian-labs/sentinel-agent --filter @dark-avian-labs/server-kit --filter @dark-avian-labs/warframe-catalog run --if-present build"
   },
   "devDependencies": {
-    "@material-symbols/svg-400": "^0.48.1",
+    "@material-symbols/svg-400": "^0.48.2",
     "@playwright/test": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "better-sqlite3": "catalog:",
