@@ -20,7 +20,7 @@ update:
 
 catalog:
   '@clerk/express': ^2.1.85
-  '@clerk/react': ^6.18.1
+  '@clerk/react': ^6.18.3
   '@clerk/testing': ^2.2.52
   '@dotenvx/dotenvx': ^2.38.2
   '@fontsource-variable/cascadia-mono': ^5.3.0
@@ -39,11 +39,11 @@ catalog:
   express: ^5.3.0
   express-rate-limit: ^8.7.1
   helmet: ^8.3.0
-  oxfmt: ^0.74.0
-  oxlint: ^1.89.0
+  oxfmt: ^0.75.0
+  oxlint: ^1.90.0
   react: ^19.3.1
   react-dom: ^19.3.1
-  react-router: ^8.5.0
+  react-router: ^8.5.1
   tailwindcss: ^4.3.3
   typescript: ^7.0.2
   vite: ^8.3.5
