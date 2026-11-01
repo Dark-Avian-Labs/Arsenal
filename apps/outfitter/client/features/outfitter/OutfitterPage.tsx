@@ -8,6 +8,7 @@ import { EquipmentTab } from './EquipmentTab';
 import { GearFormModal, type GearDraft } from './GearFormModal';
 import { GearTab } from './GearTab';
 import { type GearView } from './GearTile';
+import { ImportModal } from './ImportModal';
 import { OutfitTab } from './OutfitTab';
 import { RerollTab } from './RerollTab';
 import type { ArtifactView, CatalogArtifact, GameAccount, HeroRow } from './types';
@@ -28,6 +29,7 @@ export function OutfitterPage() {
   const [artifactFormOpen, setArtifactFormOpen] = useState(false);
   const [editingArtifact, setEditingArtifact] = useState<ArtifactView | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
 
   const loadAccounts = useCallback(async () => {
     const response = await apiFetch('/api/accounts');
@@ -179,7 +181,15 @@ export function OutfitterPage() {
             </button>
           ))}
         </div>
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-2">
+          <button
+            type="button"
+            className="header-link"
+            disabled={currentAccountId == null}
+            onClick={() => setImportOpen(true)}
+          >
+            Import
+          </button>
           <AccountBar accounts={accounts} currentId={currentAccountId} onChange={reload} />
         </div>
       </div>
@@ -205,6 +215,7 @@ export function OutfitterPage() {
       ) : null}
       {tab === 'outfit' ? <OutfitTab heroes={heroes} gear={gear} onSaved={reload} /> : null}
 
+      <ImportModal open={importOpen} onClose={() => setImportOpen(false)} onImported={reload} />
       <GearFormModal
         open={gearFormOpen}
         gear={editingGear}

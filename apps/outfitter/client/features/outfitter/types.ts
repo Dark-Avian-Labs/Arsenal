@@ -63,6 +63,7 @@ export type ArtifactView = {
   atk_bonus: number;
   secondary_stat: ArtifactSecondaryStat | null;
   secondary_value: number | null;
+  game_uid?: string | null;
   equipped_hero_slug: string | null;
   equipped_hero_name: string | null;
   equipped_hero_portrait: string | null;

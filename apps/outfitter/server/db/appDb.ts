@@ -70,6 +70,7 @@ export function createAppSchema(db: Database.Database): void {
       exclusive_hero_slug TEXT,
       exclusive_faction TEXT,
       equipped_hero_slug TEXT,
+      game_uid TEXT,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       FOREIGN KEY (account_id) REFERENCES game_accounts(id) ON DELETE CASCADE
     );
@@ -100,6 +101,7 @@ export function createAppSchema(db: Database.Database): void {
       secondary_stat TEXT,
       secondary_value REAL,
       equipped_hero_slug TEXT,
+      game_uid TEXT,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       FOREIGN KEY (account_id) REFERENCES game_accounts(id) ON DELETE CASCADE,
       FOREIGN KEY (catalog_slug) REFERENCES catalog_artifacts(slug)
@@ -123,6 +125,20 @@ export function createAppSchema(db: Database.Database): void {
       ON artifact_pieces(account_id, equipped_hero_slug)
       WHERE equipped_hero_slug IS NOT NULL;
   `);
+  ensureColumn(db, 'gear_pieces', 'game_uid', 'TEXT');
+  ensureColumn(db, 'artifact_pieces', 'game_uid', 'TEXT');
+  db.exec(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_gear_game_uid
+      ON gear_pieces(account_id, game_uid) WHERE game_uid IS NOT NULL;
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_artifact_game_uid
+      ON artifact_pieces(account_id, game_uid) WHERE game_uid IS NOT NULL;
+  `);
+}
+
+function ensureColumn(db: Database.Database, table: string, column: string, type: string): void {
+  const columns = db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
+  if (columns.some((entry) => entry.name === column)) return;
+  db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`);
 }
 
 function repairDuplicateActiveAccounts(db: Database.Database): void {

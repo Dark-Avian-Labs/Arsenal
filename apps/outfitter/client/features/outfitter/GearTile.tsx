@@ -38,6 +38,7 @@ export type GearView = {
   sub4_value: number | null;
   exclusive_hero_slug: string | null;
   exclusive_faction: string | null;
+  game_uid?: string | null;
   exclusive_hero_name: string | null;
   exclusive_hero_portrait: string | null;
   equipped_hero_slug: string | null;
