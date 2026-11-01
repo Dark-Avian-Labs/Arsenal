@@ -90,8 +90,8 @@ describe('auth endpoints (Clerk not configured in tests)', () => {
 });
 
 describe('body limits', () => {
-  it('rejects JSON bodies over 100kb', async () => {
-    const bigPayload = { data: 'x'.repeat(150 * 1024) };
+  it('rejects JSON bodies over 2mb', async () => {
+    const bigPayload = { data: 'x'.repeat(3 * 1024 * 1024) };
     const res = await request(bundle.app).post('/api/anything').send(bigPayload);
     expect(res.status).toBe(413);
   });

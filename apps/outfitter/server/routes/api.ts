@@ -6,6 +6,7 @@ import { artifactsRouter } from './artifacts.ts';
 import { authRouter } from './auth.ts';
 import { gearRouter } from './gear.ts';
 import { heroesRouter } from './heroes.ts';
+import { importRouter } from './import.ts';
 import { outfitRouter } from './outfit.ts';
 
 export const apiRouter = Router();
@@ -21,3 +22,4 @@ apiRouter.use('/gear', gearRouter);
 apiRouter.use('/artifacts', artifactsRouter);
 apiRouter.use('/heroes', heroesRouter);
 apiRouter.use('/outfit', outfitRouter);
+apiRouter.use('/import', importRouter);

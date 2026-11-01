@@ -660,6 +660,22 @@ HP Bonus 66%
     });
   });
 
+  it('fills the set for Ezryn, Dolores, and Beatrix', () => {
+    expect(
+      parseGearOcr('Mythic Gear\nEzryn Amulet\nEZRYN\nExclusive\nATK Bonus 66%', [{ slug: 'ezryn', name: 'Ezryn' }]),
+    ).toMatchObject({ slot: 'amulet', set_key: 'wings_of_grace', exclusive_hero_slug: 'ezryn' });
+    expect(
+      parseGearOcr('Mythic Gear\nDolores Amulet\nDOLORES\nExclusive\nATK Bonus 66%', [
+        { slug: 'dolores', name: 'Dolores' },
+      ]),
+    ).toMatchObject({ slot: 'amulet', set_key: 'wings_of_grace', exclusive_hero_slug: 'dolores' });
+    expect(
+      parseGearOcr('Mythic Gear\nBeatrix Amulet\nBEATRIX\nExclusive\nATK Bonus 66%', [
+        { slug: 'beatrix', name: 'Beatrix' },
+      ]),
+    ).toMatchObject({ slot: 'amulet', set_key: 'cataclysm', exclusive_hero_slug: 'beatrix' });
+  });
+
   const exclusiveRing = `
 Mythic Gear
 The Chaos Dominion Ring

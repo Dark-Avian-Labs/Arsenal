@@ -324,13 +324,13 @@ const EXCLUSIVE_HERO_SETS: readonly {
   heroes: readonly string[];
 }[] = [
   { set: 'wings_of_grace', slot: 'bangle', heroes: ['Beelzebub'] },
-  { set: 'wings_of_grace', slot: 'amulet', heroes: ['Gwendolyn'] },
+  { set: 'wings_of_grace', slot: 'amulet', heroes: ['Gwendolyn', 'Ezryn', 'Dolores'] },
   {
     set: 'cataclysm',
     slot: 'bangle',
-    heroes: ['Zelus', 'Vierna', 'Alaura', 'Aracha', 'Hatssut'],
+    heroes: ['Zelus', 'Vierna', 'Alaura', 'Aracha', 'Hatssut', 'Ajax'],
   },
-  { set: 'cataclysm', slot: 'amulet', heroes: ['Rygar', 'Boreas'] },
+  { set: 'cataclysm', slot: 'amulet', heroes: ['Rygar', 'Boreas', 'Beatrix'] },
   { set: 'tempered_will', slot: 'amulet', heroes: ['King Harz'] },
   { set: 'hells_lament', slot: 'bangle', heroes: ['Silas', 'Magmus'] },
   {

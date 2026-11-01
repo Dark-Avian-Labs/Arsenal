@@ -37,6 +37,7 @@ export function createApp(options: CreateAppOptions = {}): AppBundle {
     trustProxy: TRUST_PROXY,
     secureCookies: SECURE_COOKIES,
     legalPageUrl: LEGAL_PAGE_URL,
+    jsonLimit: '2mb',
     metricsMiddleware: options.metricsMiddleware,
     helmet: options.helmet,
     readiness: () => {

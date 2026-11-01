@@ -66,12 +66,47 @@ export type GearPieceRow = {
   sub4_value: number | null;
   exclusive_hero_slug: string | null;
   exclusive_faction: string | null;
+  game_uid: string | null;
   equipped_hero_slug: string | null;
   equipped_hero_name: string | null;
   equipped_hero_portrait: string | null;
   exclusive_hero_name: string | null;
   exclusive_hero_portrait: string | null;
 };
+
+export function deleteAccountGear(db: Database.Database, accountId: number): void {
+  db.prepare(`DELETE FROM gear_pieces WHERE account_id = ?`).run(accountId);
+}
+
+export function deleteAccountArtifacts(db: Database.Database, accountId: number): void {
+  db.prepare(`DELETE FROM artifact_pieces WHERE account_id = ?`).run(accountId);
+}
+
+export function setGearGameUid(
+  db: Database.Database,
+  accountId: number,
+  gearId: number,
+  gameUid: string,
+): void {
+  db.prepare(`UPDATE gear_pieces SET game_uid = ? WHERE id = ? AND account_id = ?`).run(
+    gameUid,
+    gearId,
+    accountId,
+  );
+}
+
+export function setArtifactGameUid(
+  db: Database.Database,
+  accountId: number,
+  artifactId: number,
+  gameUid: string,
+): void {
+  db.prepare(`UPDATE artifact_pieces SET game_uid = ? WHERE id = ? AND account_id = ?`).run(
+    gameUid,
+    artifactId,
+    accountId,
+  );
+}
 
 export function listAccounts(db: Database.Database, clerkUserId: string): AccountRow[] {
   return db
@@ -277,6 +312,7 @@ export type GearWrite = {
   substats: GearSubstat[];
   exclusive_hero_slug: string | null;
   exclusive_faction: string | null;
+  game_uid?: string | null;
 };
 
 function subFields(substats: GearSubstat[]): Record<string, string | number | null> {
@@ -298,11 +334,11 @@ export function insertGear(db: Database.Database, accountId: number, write: Gear
       `INSERT INTO gear_pieces (
          account_id, slot, set_key, prefix, main_stat, main_value, main_bonus,
          sub1_stat, sub1_value, sub2_stat, sub2_value, sub3_stat, sub3_value, sub4_stat, sub4_value,
-         exclusive_hero_slug, exclusive_faction
+         exclusive_hero_slug, exclusive_faction, game_uid
        ) VALUES (
          @account_id, @slot, @set_key, @prefix, @main_stat, @main_value, @main_bonus,
          @sub1_stat, @sub1_value, @sub2_stat, @sub2_value, @sub3_stat, @sub3_value, @sub4_stat, @sub4_value,
-         @exclusive_hero_slug, @exclusive_faction
+         @exclusive_hero_slug, @exclusive_faction, @game_uid
        )`,
     )
     .run({
@@ -315,6 +351,7 @@ export function insertGear(db: Database.Database, accountId: number, write: Gear
       main_bonus: write.main_bonus,
       exclusive_hero_slug: write.exclusive_hero_slug,
       exclusive_faction: write.exclusive_faction,
+      game_uid: write.game_uid ?? null,
       ...subFields(write.substats),
     });
   return Number(result.lastInsertRowid);
@@ -537,6 +574,7 @@ export type ArtifactPieceRow = {
   atk_bonus: number;
   secondary_stat: ArtifactSecondaryStat | null;
   secondary_value: number | null;
+  game_uid: string | null;
   equipped_hero_slug: string | null;
   equipped_hero_name: string | null;
   equipped_hero_portrait: string | null;
@@ -548,7 +586,7 @@ function artifactSelectSql(): string {
   return `SELECT
       a.id, a.account_id, a.catalog_slug, a.level, a.promotion,
       a.hp_base, a.hp_bonus, a.atk_base, a.atk_bonus,
-      a.secondary_stat, a.secondary_value, a.equipped_hero_slug,
+      a.secondary_stat, a.secondary_value, a.equipped_hero_slug, a.game_uid,
       c.name, c.class, c.rarity, c.star_rating, c.exclusive_hero_slug,
       c.is_universal, c.portrait_path,
       eh.name AS equipped_hero_name,
@@ -620,6 +658,7 @@ export type ArtifactWrite = {
   atk_bonus: number;
   secondary_stat: ArtifactSecondaryStat | null;
   secondary_value: number | null;
+  game_uid?: string | null;
 };
 
 export function insertArtifact(
@@ -631,13 +670,13 @@ export function insertArtifact(
     .prepare(
       `INSERT INTO artifact_pieces (
          account_id, catalog_slug, level, promotion,
-         hp_base, hp_bonus, atk_base, atk_bonus, secondary_stat, secondary_value
+         hp_base, hp_bonus, atk_base, atk_bonus, secondary_stat, secondary_value, game_uid
        ) VALUES (
          @account_id, @catalog_slug, @level, @promotion,
-         @hp_base, @hp_bonus, @atk_base, @atk_bonus, @secondary_stat, @secondary_value
+         @hp_base, @hp_bonus, @atk_base, @atk_bonus, @secondary_stat, @secondary_value, @game_uid
        )`,
     )
-    .run({ account_id: accountId, ...write });
+    .run({ account_id: accountId, ...write, game_uid: write.game_uid ?? null });
   return Number(result.lastInsertRowid);
 }
 
