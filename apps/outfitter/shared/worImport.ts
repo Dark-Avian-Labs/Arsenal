@@ -107,7 +107,10 @@ export type ImportOptions = {
   gearMode: ImportMode;
   artifactMode: ImportMode;
   plus16Only: boolean;
+  heroes?: CatalogHeroRef[];
 };
+
+export type CatalogHeroRef = { slug: string; name: string };
 
 export type StashGear = GearIdentitySource & { id: number; game_uid: string | null };
 export type StashArtifact = {
@@ -149,10 +152,13 @@ export type ImportReject = { uid: string; reason: string };
 export type ImportMissing = { id: number; label: string };
 export type ImportLink = { id: number; game_uid: string };
 
+export type ImportEquip = { id: number | null; game_uid: string; hero_slug: string };
+
 export type ImportBucket<T> = {
   add: T[];
   update: T[];
   links: ImportLink[];
+  equips: ImportEquip[];
   unchanged: number;
   rejected: ImportReject[];
   missing: ImportMissing[];
@@ -171,6 +177,7 @@ const EMPTY = <T>(): ImportBucket<T> => ({
   add: [],
   update: [],
   links: [],
+  equips: [],
   unchanged: 0,
   rejected: [],
   missing: [],
@@ -246,11 +253,40 @@ function suitName(raw: Record<string, unknown>): string | null {
   return null;
 }
 
-type ReadyGear = { uid: string; label: string; hero_id: number | null; write: GearBody['write'] };
+function wearer(
+  heroes: CatalogHeroRef[],
+  raw: Record<string, unknown>,
+): { id: number | null; slug: string | null } {
+  const id = typeof raw.hero_id === 'number' && raw.hero_id > 0 ? raw.hero_id : null;
+  if (!id) return { id: null, slug: null };
+  const name = typeof raw.hero_name === 'string' ? raw.hero_name.trim().toLowerCase() : '';
+  if (!name) return { id, slug: null };
+  const found = heroes.find((hero) => hero.name.toLowerCase() === name);
+  return { id, slug: found?.slug ?? null };
+}
+
+function noteEquip(
+  equips: ImportEquip[],
+  uid: string,
+  heroSlug: string | null,
+  matchId: number | null,
+): void {
+  if (!heroSlug) return;
+  equips.push({ id: matchId, game_uid: uid, hero_slug: heroSlug });
+}
+
+type ReadyGear = {
+  uid: string;
+  label: string;
+  hero_id: number | null;
+  hero_slug: string | null;
+  write: GearBody['write'];
+};
 
 function prepareGear(
   raw: Record<string, unknown>,
   uid: string,
+  heroes: CatalogHeroRef[],
 ): { ready: ReadyGear } | { reason: string } {
   const subs = namedStats(raw.sub_stats);
   if (typeof raw.main_stat !== 'string' || !subs || subs.length !== 4) {
@@ -277,12 +313,13 @@ function prepareGear(
     equipped_hero_slug: null,
   });
   if (typeof parsed === 'string') return { reason: parsed };
-  const hero = raw.hero_id;
+  const worn = wearer(heroes, raw);
   return {
     ready: {
       uid,
       label: `${set.name} ${slot}`,
-      hero_id: typeof hero === 'number' && hero ? hero : null,
+      hero_id: worn.id,
+      hero_slug: worn.slug,
       write: parsed.write,
     },
   };
@@ -306,6 +343,7 @@ function planGear(
   pieces: unknown[],
   stash: StashGear[],
   options: ImportOptions,
+  catalogHeroes: CatalogHeroRef[],
 ): { bucket: ImportBucket<PlannedGear>; heroes: number[]; skipped: number } {
   const bucket = EMPTY<PlannedGear>();
   const heroes: number[] = [];
@@ -329,13 +367,13 @@ function planGear(
       skipped += 1;
       continue;
     }
-    const prepared = prepareGear(raw, uid);
+    const prepared = prepareGear(raw, uid, catalogHeroes);
     if ('reason' in prepared) {
       bucket.rejected.push({ uid, reason: prepared.reason });
       continue;
     }
     ready.push(prepared.ready);
-    if (prepared.ready.hero_id) heroes.push(prepared.ready.hero_id);
+    if (prepared.ready.hero_id && !prepared.ready.hero_slug) heroes.push(prepared.ready.hero_id);
   }
 
   if (options.gearMode === 'skip') return { bucket, heroes: [], skipped };
@@ -348,6 +386,7 @@ function planGear(
       match_id: null,
       write: piece.write,
     }));
+    for (const piece of ready) noteEquip(bucket.equips, piece.uid, piece.hero_slug, null);
     return { bucket, heroes, skipped };
   }
 
@@ -362,10 +401,12 @@ function planGear(
         match_id: null,
         write: piece.write,
       });
+      noteEquip(bucket.equips, piece.uid, piece.hero_slug, null);
       continue;
     }
     used.add(match.id);
     const same = gearIdentityKey(identityFromGearRow(match)) === key;
+    noteEquip(bucket.equips, piece.uid, piece.hero_slug, match.id);
     if (same) {
       bucket.unchanged += 1;
       if (!match.game_uid) bucket.links.push({ id: match.id, game_uid: piece.uid });
@@ -392,6 +433,7 @@ type ReadyArtifact = {
   uid: string;
   label: string;
   hero_id: number | null;
+  hero_slug: string | null;
   basesKnown: boolean;
   write: ArtifactBody;
 };
@@ -447,6 +489,7 @@ function prepareArtifact(
   raw: Record<string, unknown>,
   uid: string,
   catalog: CatalogArtifactRef[],
+  heroes: CatalogHeroRef[],
 ): { ready: ReadyArtifact } | { reason: string } {
   const name = typeof raw.name === 'string' ? raw.name.trim() : '';
   const found = catalogArtifact(catalog, name);
@@ -476,12 +519,13 @@ function prepareArtifact(
     new Set(catalog.map((entry) => entry.slug)),
   );
   if (typeof parsed === 'string') return { reason: parsed };
-  const hero = raw.hero_id;
+  const worn = wearer(heroes, raw);
   return {
     ready: {
       uid,
       label: found.name,
-      hero_id: typeof hero === 'number' && hero ? hero : null,
+      hero_id: worn.id,
+      hero_slug: worn.slug,
       basesKnown: bases != null,
       write: parsed,
     },
@@ -514,6 +558,7 @@ function planArtifacts(
   stash: StashArtifact[],
   catalog: CatalogArtifactRef[],
   mode: ImportMode,
+  catalogHeroes: CatalogHeroRef[],
 ): { bucket: ImportBucket<PlannedArtifact>; heroes: number[]; unknownBases: number } {
   const bucket = EMPTY<PlannedArtifact>();
   const heroes: number[] = [];
@@ -533,14 +578,14 @@ function planArtifacts(
       continue;
     }
     seen.add(uid);
-    const prepared = prepareArtifact(raw, uid, catalog);
+    const prepared = prepareArtifact(raw, uid, catalog, catalogHeroes);
     if ('reason' in prepared) {
       bucket.rejected.push({ uid, reason: prepared.reason });
       continue;
     }
     ready.push(prepared.ready);
     if (!prepared.ready.basesKnown) unknownBases += 1;
-    if (prepared.ready.hero_id) heroes.push(prepared.ready.hero_id);
+    if (prepared.ready.hero_id && !prepared.ready.hero_slug) heroes.push(prepared.ready.hero_id);
   }
 
   if (mode === 'skip') return { bucket, heroes: [], unknownBases };
@@ -553,6 +598,7 @@ function planArtifacts(
       match_id: null,
       write: piece.write,
     }));
+    for (const piece of ready) noteEquip(bucket.equips, piece.uid, piece.hero_slug, null);
     return { bucket, heroes, unknownBases };
   }
 
@@ -566,12 +612,14 @@ function planArtifacts(
     }
     if (!match) {
       bucket.add.push({ game_uid: piece.uid, label: piece.label, match_id: null, write });
+      noteEquip(bucket.equips, piece.uid, piece.hero_slug, null);
       continue;
     }
     used.add(match.id);
     const same =
       artifactIdentityKey(identityFromArtifact(write)) ===
       artifactIdentityKey(identityFromArtifact(match));
+    noteEquip(bucket.equips, piece.uid, piece.hero_slug, match.id);
     if (same) {
       bucket.unchanged += 1;
       if (!match.game_uid) bucket.links.push({ id: match.id, game_uid: piece.uid });
@@ -600,8 +648,15 @@ export function planWorImport(
     return { error: 'This file still uses numeric stat ids. Run the extractor again.' };
   }
   const artifacts = Array.isArray(root.artifacts) ? root.artifacts : [];
-  const gear = planGear(root.gear, stashGearRows, options);
-  const arts = planArtifacts(artifacts, stashArtifactRows, catalog, options.artifactMode);
+  const catalogHeroes = options.heroes ?? [];
+  const gear = planGear(root.gear, stashGearRows, options, catalogHeroes);
+  const arts = planArtifacts(
+    artifacts,
+    stashArtifactRows,
+    catalog,
+    options.artifactMode,
+    catalogHeroes,
+  );
   const warnings: string[] = [];
   const incomplete = gear.bucket.rejected.filter((row) => row.reason.startsWith('Missing a main'));
   if (incomplete.length) {

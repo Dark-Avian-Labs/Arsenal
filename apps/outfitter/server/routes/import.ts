@@ -3,6 +3,7 @@ import { Router } from 'express';
 
 import {
   planWorImport,
+  type ImportEquip,
   type ImportMode,
   type PlannedArtifact,
   type PlannedGear,
@@ -72,13 +73,17 @@ function buildPlan(accountId: number, body: Record<string, unknown>) {
     rarity: row.rarity,
     star_rating: row.star_rating,
   }));
-  return planWorImport(body.file, gear, artifacts, catalog, options);
+  return planWorImport(body.file, gear, artifacts, catalog, {
+    ...options,
+    heroes: q.listHeroNames(db),
+  });
 }
 
 function applyGear(
   accountId: number,
   rows: PlannedGear[],
   links: { id: number; game_uid: string }[],
+  equips: ImportEquip[],
   mode: ImportMode,
   missing: number[],
   deleteMissing: boolean,
@@ -86,15 +91,28 @@ function applyGear(
   const db = getAppDb();
   if (mode === 'skip') return;
   if (mode === 'restore') q.deleteAccountGear(db, accountId);
+  const idByUid = new Map<string, number>();
   for (const row of rows) {
     if (row.match_id == null) {
-      q.insertGear(db, accountId, { ...row.write, game_uid: row.game_uid });
+      idByUid.set(
+        row.game_uid,
+        q.insertGear(db, accountId, { ...row.write, game_uid: row.game_uid }),
+      );
       continue;
     }
     q.updateGear(db, accountId, row.match_id, row.write);
     q.setGearGameUid(db, accountId, row.match_id, row.game_uid);
+    idByUid.set(row.game_uid, row.match_id);
   }
-  for (const link of links) q.setGearGameUid(db, accountId, link.id, link.game_uid);
+  for (const link of links) {
+    q.setGearGameUid(db, accountId, link.id, link.game_uid);
+    idByUid.set(link.game_uid, link.id);
+  }
+  for (const equip of equips) {
+    const id = equip.id ?? idByUid.get(equip.game_uid);
+    if (id == null) continue;
+    q.equipGearSlot(db, accountId, id, equip.hero_slug);
+  }
   if (deleteMissing) {
     for (const id of missing) q.deleteGear(db, accountId, id);
   }
@@ -104,6 +122,7 @@ function applyArtifacts(
   accountId: number,
   rows: PlannedArtifact[],
   links: { id: number; game_uid: string }[],
+  equips: ImportEquip[],
   mode: ImportMode,
   missing: number[],
   deleteMissing: boolean,
@@ -111,15 +130,28 @@ function applyArtifacts(
   const db = getAppDb();
   if (mode === 'skip') return;
   if (mode === 'restore') q.deleteAccountArtifacts(db, accountId);
+  const idByUid = new Map<string, number>();
   for (const row of rows) {
     if (row.match_id == null) {
-      q.insertArtifact(db, accountId, { ...row.write, game_uid: row.game_uid });
+      idByUid.set(
+        row.game_uid,
+        q.insertArtifact(db, accountId, { ...row.write, game_uid: row.game_uid }),
+      );
       continue;
     }
     q.updateArtifact(db, accountId, row.match_id, row.write);
     q.setArtifactGameUid(db, accountId, row.match_id, row.game_uid);
+    idByUid.set(row.game_uid, row.match_id);
   }
-  for (const link of links) q.setArtifactGameUid(db, accountId, link.id, link.game_uid);
+  for (const link of links) {
+    q.setArtifactGameUid(db, accountId, link.id, link.game_uid);
+    idByUid.set(link.game_uid, link.id);
+  }
+  for (const equip of equips) {
+    const id = equip.id ?? idByUid.get(equip.game_uid);
+    if (id == null) continue;
+    q.equipArtifact(db, accountId, equip.hero_slug, id);
+  }
   if (deleteMissing) {
     for (const id of missing) q.deleteArtifact(db, accountId, id);
   }
@@ -170,6 +202,7 @@ importRouter.post(
         accountId,
         gearRows,
         planned.plan.gear.links,
+        planned.plan.gear.equips,
         options.gearMode,
         planned.plan.gear.missing.map((row) => row.id),
         deleteMissing && options.gearMode === 'sync',
@@ -178,6 +211,7 @@ importRouter.post(
         accountId,
         artifactRows,
         planned.plan.artifacts.links,
+        planned.plan.artifacts.equips,
         options.artifactMode,
         planned.plan.artifacts.missing.map((row) => row.id),
         deleteMissing && options.artifactMode === 'sync',
