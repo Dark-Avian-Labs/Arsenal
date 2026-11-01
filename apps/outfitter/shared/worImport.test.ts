@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest';
 
 import { planWorImport, type CatalogArtifactRef, type StashArtifact, type StashGear } from './worImport.ts';
 
-const catalog: CatalogArtifactRef[] = [{ slug: 'absolution', name: 'Absolution', rarity: 'mythic', star_rating: 6 }];
+const catalog: CatalogArtifactRef[] = [
+  { slug: 'absolution', name: 'Absolution', rarity: 'mythic', star_rating: 6 },
+  { slug: 'idrils-gaze', name: "Idril's Gaze", rarity: 'legendary', star_rating: 5 },
+];
 
 function gear(uid: number, level = 16, hero?: number) {
   return {
@@ -162,16 +165,16 @@ describe('planWorImport', () => {
     expect(result.plan.warnings.some((line) => line.includes('deletes all 1'))).toBe(true);
   });
 
-  it('uses mythic caps at +25 stage 5 and keeps typed bases below that', () => {
-    const low: StashArtifact = {
+  it('fills mythic white bases for every level and keeps a legendary below 25', () => {
+    const unread: StashArtifact = {
       id: 3,
       game_uid: null,
-      catalog_slug: 'absolution',
+      catalog_slug: 'idrils-gaze',
       level: 10,
       promotion: 0,
-      hp_base: 2200,
+      hp_base: 500,
       hp_bonus: 0,
-      atk_base: 777,
+      atk_base: 150,
       atk_bonus: 0,
       secondary_stat: null,
       secondary_value: null,
@@ -182,19 +185,31 @@ describe('planWorImport', () => {
         artifacts: [
           { uid: 5, name: 'Absolution', level: 25, stage: 5, refine_stats: [{ stat: 'hp', value: 100 }] },
           { uid: 6, name: 'Absolution', level: 10, stage: 0, refine_stats: [], dark_stats: [] },
+          { uid: 7, name: 'Absolution', level: 12, stage: 1, refine_stats: [], dark_stats: [] },
+          { uid: 8, name: 'Absolution', level: 23, stage: 5, refine_stats: [], dark_stats: [] },
+          { uid: 9, name: "Idril's Gaze", level: 25, stage: 5, refine_stats: [], dark_stats: [] },
+          { uid: 10, name: "Idril's Gaze", level: 10, stage: 0, refine_stats: [], dark_stats: [] },
         ],
       },
       [],
-      [low],
+      [unread],
       catalog,
       { gearMode: 'skip', artifactMode: 'sync', plus16Only: false },
     );
     if ('error' in result) throw new Error(result.error);
-    const added = result.plan.artifacts.add[0];
-    expect(added?.write.hp_base).toBe(4650);
-    expect(added?.write.atk_base).toBe(1497);
-    expect(added?.write.hp_bonus).toBe(100);
-    expect(result.plan.artifacts.links).toEqual([{ id: 3, game_uid: '6' }]);
+    const write = (uid: string) => result.plan.artifacts.add.find((row) => row.game_uid === uid)?.write;
+    expect(write('5')?.hp_base).toBe(4650);
+    expect(write('5')?.atk_base).toBe(1497);
+    expect(write('5')?.hp_bonus).toBe(100);
+    expect(write('6')?.hp_base).toBe(3100);
+    expect(write('6')?.atk_base).toBe(1047);
+    expect(write('7')?.hp_base).toBe(3300);
+    expect(write('7')?.atk_base).toBe(1107);
+    expect(write('8')?.hp_base).toBe(4400);
+    expect(write('8')?.atk_base).toBe(1437);
+    expect(write('9')?.hp_base).toBe(1950);
+    expect(write('9')?.atk_base).toBe(623);
+    expect(result.plan.artifacts.links).toEqual([{ id: 3, game_uid: '10' }]);
     expect(result.plan.warnings.some((line) => line.includes('saved as 0'))).toBe(true);
   });
 });

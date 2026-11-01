@@ -1,5 +1,5 @@
 import { artifactIdentityKey, identityFromArtifact } from './artifactDuplicate.ts';
-import { artifactBaseStatRange, ARTIFACT_SECONDARY_STATS, GEAR_SLOTS } from './catalog.ts';
+import { ARTIFACT_SECONDARY_STATS, GEAR_SLOTS } from './catalog.ts';
 import { gearIdentityKey, identityFromGearRow, type GearIdentitySource } from './gearDuplicate.ts';
 import { parseArtifactBody, parseGearBody, type ArtifactBody, type GearBody } from './schemas.ts';
 import { ALL_SETS } from './sets.ts';
@@ -400,6 +400,25 @@ function bonus(stats: { stat: string; value: number }[] | null, stat: string): n
   return stats?.find((entry) => entry.stat === stat)?.value ?? 0;
 }
 
+// Mythic ATK is +30 a level from 777. HP is +100 a level from 2200, and the step into 25 is +150.
+// ponytail: levels 23 and 24 put that extra 50 HP on level 25. A tooltip for either level replaces this.
+function whiteBase(
+  rarity: string,
+  starRating: number,
+  level: unknown,
+): { hp: number; atk: number } | null {
+  if (typeof level !== 'number' || !Number.isInteger(level) || level < 1 || level > 25) return null;
+  const key = rarity.trim().toLowerCase();
+  if (key === 'mythic' || starRating >= 6) {
+    return {
+      hp: level === 25 ? 4650 : 2200 + (level - 1) * 100,
+      atk: 777 + (level - 1) * 30,
+    };
+  }
+  if ((key === 'legendary' || starRating === 5) && level === 25) return { hp: 1950, atk: 623 };
+  return null;
+}
+
 function prepareArtifact(
   raw: Record<string, unknown>,
   uid: string,
@@ -417,16 +436,15 @@ function prepareArtifact(
   const secondary = dark.find((entry) => SECONDARY.has(entry.stat));
   const level = raw.level;
   const promotion = raw.stage;
-  const basesKnown = level === 25 && promotion === 5;
-  const range = artifactBaseStatRange(found.rarity, found.star_rating);
+  const bases = whiteBase(found.rarity, found.star_rating, level);
   const parsed = parseArtifactBody(
     {
       catalog_slug: found.slug,
       level,
       promotion,
-      hp_base: basesKnown ? range.hp.max : 0,
+      hp_base: bases?.hp ?? 0,
       hp_bonus: bonus(refine, 'hp'),
-      atk_base: basesKnown ? range.atk.max : 0,
+      atk_base: bases?.atk ?? 0,
       atk_bonus: bonus(refine, 'atk'),
       secondary_stat: secondary?.stat ?? null,
       secondary_value: secondary?.value ?? null,
@@ -440,7 +458,7 @@ function prepareArtifact(
       uid,
       label: found.name,
       hero_id: typeof hero === 'number' && hero ? hero : null,
-      basesKnown,
+      basesKnown: bases != null,
       write: parsed,
     },
   };
@@ -582,7 +600,7 @@ export function planWorImport(
   }
   if (arts.unknownBases && options.artifactMode !== 'skip') {
     warnings.push(
-      `${arts.unknownBases} artifacts are below +25 stage 5, so their white HP and ATK were saved as 0.`,
+      `${arts.unknownBases} artifacts have no white HP and ATK for their level, so those were saved as 0.`,
     );
   }
   const unknown = [...new Set([...gear.heroes, ...arts.heroes])].sort((a, b) => a - b);
