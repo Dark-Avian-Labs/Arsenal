@@ -67,7 +67,7 @@ Acrylic is the signed-off Windows 11 flyout: `blur(40px) saturate(200%) contrast
 
 Layout width is `max-w-[2000px]` on the header, main, and footer. A mobile-first app may use `max-w-3xl` and an `h-14` header. Keep the feather mark and the `vX.Y.Z` badge either way.
 
-Use the classes and components in `@dark-avian-labs/ui`. App stylesheets import `@dark-avian-labs/ui/styles.css` and keep only their own rules. The feather mark is `@dark-avian-labs/ui/feathers.svg`. Game-domain colors `--color-dmg-*` and `--color-riven*` belong in Armory.
+Use the classes and components in `@dark-avian-labs/ui`. App stylesheets import `@dark-avian-labs/ui/styles.css` and keep only their own rules. A choice list is `SelectDropdown` from that package. A native `<select>` opens the browser menu, which ignores the theme. That menu is white, with a blue highlight, and it does not match the shell. The feather mark is `@dark-avian-labs/ui/feathers.svg`. Game-domain colors `--color-dmg-*` and `--color-riven*` belong in Armory.
 
 The shell background is `HexSideBackground` plus `AsciiWaveBackground`. 4K is 1× for `--hex-cluster-scale`. Geist and Geist Mono load from the ui stylesheet. Cascadia Mono loads from the canvas hook.
 
