@@ -214,6 +214,16 @@ describe('planWorImport', () => {
     expect(result.plan.warnings.some((line) => line.includes('saved as 0'))).toBe(true);
   });
 
+  it('equips a piece when the file names the wearer', () => {
+    const result = planWorImport({ gear: [{ ...gear(2, 16, 200400000), hero_name: 'Salazar' }] }, [], [], catalog, {
+      ...options,
+      heroes: [{ slug: 'salazar', name: 'Salazar' }],
+    });
+    if ('error' in result) throw new Error(result.error);
+    expect(result.plan.unknown_hero_ids).toEqual([]);
+    expect(result.plan.gear.equips).toEqual([{ id: null, game_uid: '2', hero_slug: 'salazar' }]);
+  });
+
   it('uses the file white bases and the game name for Thunderer', () => {
     const result = planWorImport(
       {
