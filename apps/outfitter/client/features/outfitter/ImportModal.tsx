@@ -1,4 +1,4 @@
-import { apiFetch, Button, Modal } from '@dark-avian-labs/ui';
+import { apiFetch, Button, Modal, SelectDropdown } from '@dark-avian-labs/ui';
 import type { ImportMode, ImportPlan } from '@shared/worImport';
 import { useState } from 'react';
 
@@ -123,40 +123,34 @@ export function ImportModal({ open, onClose, onImported }: Props) {
       </label>
       {fileName ? <p className="text-muted mt-1 text-sm">{fileName}</p> : null}
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        <label className="form-group block">
+        <div className="form-group block">
           <span>Gear</span>
-          <select
-            className="form-input mt-1 w-full"
+          <SelectDropdown
+            className="mt-1 w-full"
             value={gearMode}
-            onChange={(event) => {
-              setGearMode(event.target.value as ImportMode);
+            buttonAriaLabel="Gear import mode"
+            preserveOrder
+            options={MODES}
+            onChange={(value) => {
+              setGearMode(value as ImportMode);
               resetPlan();
             }}
-          >
-            {MODES.map((item) => (
-              <option key={item.value} value={item.value}>
-                {item.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="form-group block">
+          />
+        </div>
+        <div className="form-group block">
           <span>Artifacts</span>
-          <select
-            className="form-input mt-1 w-full"
+          <SelectDropdown
+            className="mt-1 w-full"
             value={artifactMode}
-            onChange={(event) => {
-              setArtifactMode(event.target.value as ImportMode);
+            buttonAriaLabel="Artifact import mode"
+            preserveOrder
+            options={MODES}
+            onChange={(value) => {
+              setArtifactMode(value as ImportMode);
               resetPlan();
             }}
-          >
-            {MODES.map((item) => (
-              <option key={item.value} value={item.value}>
-                {item.label}
-              </option>
-            ))}
-          </select>
-        </label>
+          />
+        </div>
       </div>
       <label className="mt-3 flex items-center gap-2 text-sm">
         <input

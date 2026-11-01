@@ -5,6 +5,7 @@ import { planWorImport, type CatalogArtifactRef, type StashArtifact, type StashG
 const catalog: CatalogArtifactRef[] = [
   { slug: 'absolution', name: 'Absolution', rarity: 'mythic', star_rating: 6 },
   { slug: 'idrils-gaze', name: "Idril's Gaze", rarity: 'legendary', star_rating: 5 },
+  { slug: 'm1877-thunder', name: 'M1877 \u201cThunder\u201d', rarity: 'mythic', star_rating: 6 },
 ];
 
 function gear(uid: number, level = 16, hero?: number) {
@@ -211,5 +212,35 @@ describe('planWorImport', () => {
     expect(write('9')?.atk_base).toBe(623);
     expect(result.plan.artifacts.links).toEqual([{ id: 3, game_uid: '10' }]);
     expect(result.plan.warnings.some((line) => line.includes('saved as 0'))).toBe(true);
+  });
+
+  it('uses the file white bases and the game name for Thunderer', () => {
+    const result = planWorImport(
+      {
+        gear: [],
+        artifacts: [
+          {
+            uid: 11,
+            name: 'M1877 "Thunderer"',
+            level: 10,
+            stage: 0,
+            hp_base: 3100,
+            atk_base: 1047,
+            refine_stats: [],
+            dark_stats: [],
+          },
+        ],
+      },
+      [],
+      [],
+      catalog,
+      { gearMode: 'skip', artifactMode: 'sync', plus16Only: false },
+    );
+    if ('error' in result) throw new Error(result.error);
+    const added = result.plan.artifacts.add[0];
+    expect(added?.write.catalog_slug).toBe('m1877-thunder');
+    expect(added?.write.hp_base).toBe(3100);
+    expect(added?.write.atk_base).toBe(1047);
+    expect(result.plan.artifacts.rejected).toEqual([]);
   });
 });

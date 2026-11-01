@@ -419,13 +419,37 @@ function whiteBase(
   return null;
 }
 
+// Game name to the catalog's spelling. The catalog row is the same artifact.
+const ARTIFACT_NAME_ALIASES: Record<string, string> = {
+  'blaze of talkiel': 'blade of talkiel',
+  'heart of the mountain': 'heart of the mouintain',
+  'aureate pledge': 'aurate pledge',
+  'm1877 "thunderer"': 'm1877 \u201cthunder\u201d',
+};
+
+function catalogArtifact(
+  catalog: CatalogArtifactRef[],
+  name: string,
+): CatalogArtifactRef | undefined {
+  const key = name.trim().toLowerCase();
+  const wanted = ARTIFACT_NAME_ALIASES[key] ?? key;
+  return catalog.find((entry) => entry.name.toLowerCase() === wanted);
+}
+
+function fileBase(raw: Record<string, unknown>): { hp: number; atk: number } | null {
+  const hp = raw.hp_base;
+  const atk = raw.atk_base;
+  if (typeof hp !== 'number' || typeof atk !== 'number' || hp <= 0 || atk <= 0) return null;
+  return { hp, atk };
+}
+
 function prepareArtifact(
   raw: Record<string, unknown>,
   uid: string,
   catalog: CatalogArtifactRef[],
 ): { ready: ReadyArtifact } | { reason: string } {
   const name = typeof raw.name === 'string' ? raw.name.trim() : '';
-  const found = catalog.find((entry) => entry.name.toLowerCase() === name.toLowerCase());
+  const found = catalogArtifact(catalog, name);
   if (!found) return { reason: name ? `Unknown artifact ${name}.` : 'Missing artifact name.' };
   const refine = namedStats(raw.refine_stats) ?? [];
   const dark = namedStats(raw.dark_stats) ?? [];
@@ -436,7 +460,7 @@ function prepareArtifact(
   const secondary = dark.find((entry) => SECONDARY.has(entry.stat));
   const level = raw.level;
   const promotion = raw.stage;
-  const bases = whiteBase(found.rarity, found.star_rating, level);
+  const bases = fileBase(raw) ?? whiteBase(found.rarity, found.star_rating, level);
   const parsed = parseArtifactBody(
     {
       catalog_slug: found.slug,
