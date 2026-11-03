@@ -3,6 +3,7 @@ import { log } from '@dark-avian-labs/server-kit';
 import { FORGEJO_OWNERS } from '../config.ts';
 import {
   ForgejoApiError,
+  ForgejoTransportError,
   getActionRun,
   isForgejoConfigured,
   listActionRuns,
@@ -32,7 +33,7 @@ async function syncRepo(
   owner: string,
   repo: string,
   options: { bootstrap: boolean },
-): Promise<{ ok: true } | { ok: false; error: string }> {
+): Promise<{ ok: true } | { ok: false; error: string; transport: boolean }> {
   const db = getActionsDb();
   const since = Date.now() - BOOTSTRAP_LOOKBACK_MS;
   const maxPages = options.bootstrap ? BOOTSTRAP_MAX_PAGES : 1;
@@ -57,15 +58,17 @@ async function syncRepo(
     recordSyncOk(db, owner, repo);
     return { ok: true };
   } catch (err) {
-    const message =
-      err instanceof ForgejoApiError
+    const transport = err instanceof ForgejoTransportError;
+    const message = transport
+      ? err.message
+      : err instanceof ForgejoApiError
         ? `HTTP ${err.status}: ${err.message}`
         : err instanceof Error
           ? err.message
           : String(err);
     recordSyncError(db, owner, repo, message);
     log('warn', 'actions_repo_sync_failed', { owner, repo, error: message });
-    return { ok: false, error: message };
+    return { ok: false, error: message, transport };
   }
 }
 
@@ -84,6 +87,7 @@ async function refreshOpenRuns(): Promise<void> {
         runId: item.runId,
         error: message,
       });
+      if (err instanceof ForgejoTransportError) break;
     }
   }
 }
@@ -97,6 +101,7 @@ export async function pollActionsOnce(): Promise<void> {
     const bootstrapped = getPollerMeta(db, 'bootstrapped') === '1';
     let clean = true;
     let lastError = '';
+    let hostDown = false;
     for (const owner of FORGEJO_OWNERS) {
       let repos;
       try {
@@ -106,6 +111,8 @@ export async function pollActionsOnce(): Promise<void> {
         clean = false;
         lastError = message;
         log('warn', 'actions_owner_list_failed', { owner, error: message });
+        if (err instanceof ForgejoTransportError) hostDown = true;
+        if (hostDown) break;
         continue;
       }
 
@@ -115,11 +122,16 @@ export async function pollActionsOnce(): Promise<void> {
         if (!result.ok) {
           clean = false;
           lastError = result.error;
+          if (result.transport) {
+            hostDown = true;
+            break;
+          }
         }
       }
+      if (hostDown) break;
     }
 
-    if (bootstrapped) {
+    if (bootstrapped && !hostDown) {
       await refreshOpenRuns();
     }
 

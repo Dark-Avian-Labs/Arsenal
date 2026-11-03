@@ -30,6 +30,51 @@ export class ForgejoApiError extends Error {
   }
 }
 
+export class ForgejoTransportError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ForgejoTransportError';
+  }
+}
+
+type ErrorFields = Error & {
+  code?: unknown;
+  syscall?: unknown;
+  address?: unknown;
+  port?: unknown;
+  cause?: unknown;
+};
+
+function errorBits(err: Error): string[] {
+  const extra = err as ErrorFields;
+  const bits: string[] = [];
+  if (err.name !== 'Error' && err.name !== 'TypeError') bits.push(err.name);
+  if (err.message) bits.push(err.message);
+  if (typeof extra.code === 'string') bits.push(extra.code);
+  if (typeof extra.syscall === 'string') bits.push(extra.syscall);
+  if (typeof extra.address === 'string') {
+    bits.push(typeof extra.port === 'number' ? `${extra.address}:${extra.port}` : extra.address);
+  }
+  return bits;
+}
+
+export function describeTransportError(err: unknown): string {
+  const seen = new Set<unknown>();
+  const walk = (value: unknown): string[] => {
+    if (value == null || seen.has(value)) return [];
+    seen.add(value);
+    if (value instanceof AggregateError) {
+      return [...errorBits(value), ...value.errors.flatMap((item) => walk(item))];
+    }
+    if (value instanceof Error) {
+      return [...errorBits(value), ...walk((value as ErrorFields).cause)];
+    }
+    return [String(value)];
+  };
+  const text = walk(err).filter(Boolean).join(' ');
+  return text || String(err);
+}
+
 export function isForgejoConfigured(): boolean {
   return Boolean(FORGEJO_TOKEN);
 }
@@ -38,14 +83,18 @@ const FETCH_TIMEOUT_MS = 15_000;
 
 async function forgejoFetch(path: string): Promise<Response> {
   const url = `${FORGEJO_BASE_URL}${path.startsWith('/') ? path : `/${path}`}`;
-  const res = await fetch(url, {
-    headers: {
-      Accept: 'application/json',
-      Authorization: `token ${FORGEJO_TOKEN}`,
-    },
-    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-  });
-  return res;
+  try {
+    return await fetch(url, {
+      headers: {
+        Accept: 'application/json',
+        Authorization: `token ${FORGEJO_TOKEN}`,
+      },
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
+  } catch (err) {
+    const host = new URL(url).host;
+    throw new ForgejoTransportError(`${describeTransportError(err)} (${host})`);
+  }
 }
 
 async function listOwnerRepos(owner: string, kind: 'orgs' | 'users'): Promise<ForgejoRepoRef[]> {
