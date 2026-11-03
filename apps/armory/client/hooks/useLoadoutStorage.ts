@@ -1,4 +1,4 @@
-import { apiFetch } from '@dark-avian-labs/ui';
+import { apiFetch, useAuth } from '@dark-avian-labs/ui';
 import { useState, useEffect, useCallback } from 'react';
 
 import type { BuildVisibility } from '../types/warframe';
@@ -38,6 +38,7 @@ function mapVisibility(raw: unknown): BuildVisibility {
 
 export function useLoadoutStorage(options?: { enabled?: boolean }) {
   const enabled = options?.enabled ?? true;
+  const { auth } = useAuth();
   const [loadouts, setLoadouts] = useState<Loadout[]>([]);
   const [loading, setLoading] = useState(enabled);
   const [loadoutError, setLoadoutError] = useState<string | null>(null);
@@ -84,9 +85,16 @@ export function useLoadoutStorage(options?: { enabled?: boolean }) {
   }, []);
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled || auth.status === 'unauthenticated' || auth.status === 'error') {
+      setLoadouts([]);
+      setLoadoutError(null);
+      setLoading(false);
+      return;
+    }
+    if (auth.status !== 'authenticated') return;
+    setLoading(true);
     void refresh();
-  }, [refresh, enabled]);
+  }, [auth.status, enabled, refresh]);
 
   const createLoadout = useCallback(
     async (name: string): Promise<Loadout> => {

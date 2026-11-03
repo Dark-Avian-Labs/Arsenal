@@ -57,18 +57,51 @@ function activeWorAccountId(db: WorDatabase, clerkUserId: string): number | null
   return accounts.find((account) => account.is_active === 1)?.id ?? null;
 }
 
+const EMPTY_COLLECTION_STATS = { total: 0, owned: 0, maxed: 0 };
+
+function readAccountId(db: WorDatabase, req: Request): number | null {
+  return activeWorAccountId(db, requireClerkUserId(req));
+}
+
 async function requireAccountId(
   db: WorDatabase,
   req: Request,
   res: Response,
 ): Promise<number | null> {
-  const clerkUserId = requireClerkUserId(req);
-  const accountId = activeWorAccountId(db, clerkUserId);
+  const accountId = readAccountId(db, req);
   if (!accountId) {
     err(res, 'No game account selected. Please create one first.');
     return null;
   }
   return accountId;
+}
+
+function jsonEmptyRoster(req: Request, res: Response): void {
+  const include = parseRosterInclude(req.query.include);
+  const payload: {
+    account: null;
+    stats: {
+      heroes: typeof EMPTY_COLLECTION_STATS;
+      artifacts: typeof EMPTY_COLLECTION_STATS;
+      demons: typeof EMPTY_COLLECTION_STATS;
+    };
+    heroes?: [];
+    artifacts?: [];
+    demons?: [];
+    gauge_max: { heroes: number; artifacts: number };
+  } = {
+    account: null,
+    stats: {
+      heroes: EMPTY_COLLECTION_STATS,
+      artifacts: EMPTY_COLLECTION_STATS,
+      demons: EMPTY_COLLECTION_STATS,
+    },
+    gauge_max: { heroes: HERO_AWAKENING_MAX, artifacts: ARTIFACT_PROMOTION_MAX },
+  };
+  if (include.has('heroes')) payload.heroes = [];
+  if (include.has('artifacts')) payload.artifacts = [];
+  if (include.has('demons')) payload.demons = [];
+  json(res, payload);
 }
 
 function runWithDb(res: Response, fn: (db: WorDatabase) => void | Promise<void>): void {
@@ -112,8 +145,11 @@ worApiRouter.get('/worksheets', (_req, res) => {
 
 worApiRouter.get('/heroes', (req, res) => {
   runWithDb(res, async (db) => {
-    const accountId = await requireAccountId(db, req, res);
-    if (!accountId) return;
+    const accountId = readAccountId(db, req);
+    if (!accountId) {
+      json(res, { heroes: [], stats: EMPTY_COLLECTION_STATS, gauge_max: HERO_AWAKENING_MAX });
+      return;
+    }
     const classFilter = String(req.query.class ?? '').trim();
     const factionFilter = String(req.query.faction ?? '').trim();
     const rarityRaw = String(req.query.rarity ?? '').trim();
@@ -128,8 +164,15 @@ worApiRouter.get('/heroes', (req, res) => {
 
 worApiRouter.get('/artifacts', (req, res) => {
   runWithDb(res, async (db) => {
-    const accountId = await requireAccountId(db, req, res);
-    if (!accountId) return;
+    const accountId = readAccountId(db, req);
+    if (!accountId) {
+      json(res, {
+        artifacts: [],
+        stats: EMPTY_COLLECTION_STATS,
+        gauge_max: ARTIFACT_PROMOTION_MAX,
+      });
+      return;
+    }
     const artifacts = q.getArtifacts(db, accountId);
     const stats = q.getArtifactStats(db, accountId);
     json(res, { artifacts, stats, gauge_max: ARTIFACT_PROMOTION_MAX });
@@ -138,8 +181,11 @@ worApiRouter.get('/artifacts', (req, res) => {
 
 worApiRouter.get('/demons', (req, res) => {
   runWithDb(res, async (db) => {
-    const accountId = await requireAccountId(db, req, res);
-    if (!accountId) return;
+    const accountId = readAccountId(db, req);
+    if (!accountId) {
+      json(res, { demons: [], stats: EMPTY_COLLECTION_STATS });
+      return;
+    }
     const demons = q.getDemons(db, accountId);
     const stats = q.getDemonStats(db, accountId);
     json(res, { demons, stats });
@@ -148,8 +194,11 @@ worApiRouter.get('/demons', (req, res) => {
 
 worApiRouter.get('/roster', (req, res) => {
   runWithDb(res, async (db) => {
-    const accountId = await requireAccountId(db, req, res);
-    if (!accountId) return;
+    const accountId = readAccountId(db, req);
+    if (!accountId) {
+      jsonEmptyRoster(req, res);
+      return;
+    }
     const ownedFilter = parseRosterOwnedFilter(req.query.owned);
     const include = parseRosterInclude(req.query.include);
     const classFilter = String(req.query.class ?? '').trim();

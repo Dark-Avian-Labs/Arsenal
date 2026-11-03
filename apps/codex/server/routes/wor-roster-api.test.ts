@@ -109,11 +109,29 @@ describeWithSqlite('WoR roster API', () => {
     expect(res.body).toEqual({ error: 'Unauthorized' });
   });
 
-  it('returns 400 when the user has no game account', async () => {
+  it('returns an empty collection when the user has no game account', async () => {
     authState.userId = 'user_empty';
-    const res = await createSessionAgent(createTestApp()).get('/api/wor/roster');
-    expect(res.status).toBe(400);
-    expect(res.body.error).toMatch(/No game account/i);
+    const agent = createSessionAgent(createTestApp());
+    const heroes = await agent.get('/api/wor/heroes');
+    expect(heroes.status).toBe(200);
+    expect(heroes.body).toEqual({
+      heroes: [],
+      stats: { total: 0, owned: 0, maxed: 0 },
+      gauge_max: 5,
+    });
+    const artifacts = await agent.get('/api/wor/artifacts');
+    expect(artifacts.status).toBe(200);
+    expect(artifacts.body.artifacts).toEqual([]);
+    const demons = await agent.get('/api/wor/demons');
+    expect(demons.status).toBe(200);
+    expect(demons.body.demons).toEqual([]);
+    const roster = await agent.get('/api/wor/roster');
+    expect(roster.status).toBe(200);
+    expect(roster.body.account).toBeNull();
+    expect(roster.body.heroes).toEqual([]);
+    expect(roster.body.artifacts).toEqual([]);
+    expect(roster.body.demons).toEqual([]);
+    expect(roster.body.stats.heroes).toEqual({ total: 0, owned: 0, maxed: 0 });
   });
 
   it('returns owned rows only by default, without portrait fields', async () => {
