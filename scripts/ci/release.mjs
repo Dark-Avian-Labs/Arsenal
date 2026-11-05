@@ -2,6 +2,46 @@ import { spawnSync } from 'node:child_process';
 import { appendFileSync, existsSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
+function releaseSummary(app, version, previous, release, notes) {
+  if (!release) return `**${app}** \`${version}\` redeploy, no new commits.`;
+  const heading = previous
+    ? `**${app}** \`${previous}\` → \`${version}\``
+    : `**${app}** \`${version}\``;
+  const lines = String(notes)
+    .split('\n')
+    .filter((line) => line.trim());
+  // ponytail: first 12 notes. The Forgejo release body keeps the full list.
+  const shown = lines.slice(0, 12);
+  const extra = lines.length - shown.length;
+  const body = extra ? [...shown, `- ${extra} more commits`] : shown;
+  return [heading, '', ...body].join('\n');
+}
+
+function writeStepSummary(text) {
+  const file = process.env.FORGEJO_STEP_SUMMARY || process.env.GITHUB_STEP_SUMMARY;
+  if (!file || !text) return;
+  appendFileSync(file, text.endsWith('\n') ? text : `${text}\n`);
+}
+
+if (process.argv.includes('--self-check')) {
+  const redeploy = releaseSummary('armory', '1.2.3', '1.2.3', false, '- Redeploy\n');
+  if (redeploy !== '**armory** `1.2.3` redeploy, no new commits.') throw new Error(redeploy);
+  const bumped = releaseSummary('armory', '1.3.0', '1.2.3', true, '- feat: x (#4) abc1234\n');
+  if (!bumped.startsWith('**armory** `1.2.3` → `1.3.0`')) throw new Error(bumped);
+  if (!bumped.includes('- feat: x (#4) abc1234')) throw new Error(bumped);
+  const many = releaseSummary(
+    'codex',
+    '1.0.0',
+    null,
+    true,
+    Array.from({ length: 14 }, (_, index) => `- c${index}`).join('\n'),
+  );
+  if (!many.startsWith('**codex** `1.0.0`')) throw new Error(many);
+  if (!many.includes('- 2 more commits')) throw new Error(many);
+  console.log('self-check ok');
+  process.exit(0);
+}
+
 const app = process.argv[2];
 if (!app || !/^[\w.-]+$/.test(app)) throw new Error('app required');
 if (!existsSync(path.join('apps', app, 'package.json'))) throw new Error(`unknown app ${app}`);
@@ -68,6 +108,7 @@ const notes =
     .join('\n') || '- Redeploy, no new commits for this app.';
 const notesPath = path.join(process.env.RUNNER_TEMP ?? '.', `notes-${app}.md`);
 writeFileSync(notesPath, `${notes}\n`);
+writeStepSummary(releaseSummary(app, version, previous, release, notes));
 
 const out = [
   `version=${version}`,
