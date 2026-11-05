@@ -135,12 +135,30 @@ jobs:
     timeout-minutes: 5
     needs: [changes, armory, budget-planner, codex, sentinel, outfitter]
     if: always()
+    defaults:
+      run:
+        shell: sh
     steps:
-      - uses: iShark5060/actions-discord-status@66f6681ff19536b7787feecc4fdc20c506de365b # v1.2.1
+      - name: Install git
+        run: apk add --no-cache git
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Describe deploy
+        id: note
+        env:
+          CHANGES: ${{ needs.changes.result }}
+          ARMORY: ${{ needs.armory.result }}
+          BUDGET: ${{ needs['budget-planner'].result }}
+          CODEX: ${{ needs.codex.result }}
+          SENTINEL: ${{ needs.sentinel.result }}
+          OUTFITTER: ${{ needs.outfitter.result }}
+        run: node scripts/ci/deploy-note.mjs
+      - name: Send Discord status
+        uses: iShark5060/actions-discord-status@66f6681ff19536b7787feecc4fdc20c506de365b # v1.2.1
         with:
           webhook: ${{ secrets.DISCORD_WEBHOOK }}
           job_results: ${{ join(needs.*.result, ',') }}
           mention_on: failure
           content: '<@${{ secrets.DISCORD_USERID }}>'
           title: ${{ github.workflow }}
-          description: ${{ contains(needs.*.result, 'failure') && 'Deploy failed. Check the logs before redeploying.' || contains(needs.*.result, 'cancelled') && 'Deploy was cancelled.' || 'Deploy finished. Skipped apps had no deployable changes.' }}
+          description: ${{ steps.note.outputs.description }}

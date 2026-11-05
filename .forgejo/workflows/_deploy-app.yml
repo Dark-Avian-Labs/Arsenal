@@ -80,6 +80,17 @@ jobs:
           SERVER_SSH_PORT: ${{ secrets.SERVER_SSH_PORT }}
         run: bash scripts/ci/deploy.sh
 
+      - name: Summarize deploy
+        if: success()
+        env:
+          APP: ${{ inputs.app }}
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          target="${FORGEJO_STEP_SUMMARY:-${GITHUB_STEP_SUMMARY:-}}"
+          if [ -n "$target" ]; then
+            printf '\nDeployed **%s** `%s`.\n' "$APP" "$VERSION" >> "$target"
+          fi
+
       - name: Create Forgejo release
         if: steps.release.outputs.release == 'true'
         env:
