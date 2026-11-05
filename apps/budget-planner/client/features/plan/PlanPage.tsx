@@ -384,27 +384,29 @@ function PlanPageInner() {
         </div>
       </div>
 
-      <section
-        className={`glass-surface grid grid-cols-3 gap-2 p-4 text-center ${viewMode === 'print' ? 'no-print' : ''}`}
-      >
-        <div>
-          <div className="text-muted text-xs">{t('plan.income')}</div>
-          <div className="text-success mt-1 text-sm font-semibold tabular-nums sm:text-base">
-            {formatMoney(data.totals.incomeCents, currency, locale)}
-          </div>
-        </div>
-        <div>
-          <div className="text-muted text-xs">{t('plan.expenses')}</div>
-          <div className="text-danger mt-1 text-sm font-semibold tabular-nums sm:text-base">
-            {formatMoney(data.totals.expenseCents, currency, locale)}
-          </div>
-        </div>
-        <div>
-          <div className="text-muted text-xs">{t('plan.net')}</div>
-          <div className="text-foreground mt-1 text-sm font-semibold tabular-nums sm:text-base">
-            {formatMoney(data.totals.netCents, currency, locale, true)}
-          </div>
-        </div>
+      <section className={`statement-figure ${viewMode === 'print' ? 'no-print' : ''}`}>
+        <p className="text-muted text-sm">{t('plan.net')}</p>
+        <p
+          className={`statement-figure__net tabular-nums ${
+            data.totals.netCents >= 0 ? 'text-success' : 'text-danger'
+          }`}
+        >
+          {formatMoney(data.totals.netCents, currency, locale, true)}
+        </p>
+        <p className="text-muted mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm">
+          <span>
+            <span className="text-success tabular-nums">
+              {formatMoney(data.totals.incomeCents, currency, locale)}
+            </span>{' '}
+            {t('plan.income')}
+          </span>
+          <span>
+            <span className="tabular-nums">
+              {formatMoney(data.totals.expenseCents, currency, locale)}
+            </span>{' '}
+            {t('plan.expenses')}
+          </span>
+        </p>
       </section>
 
       {error && sheet === 'closed' && !pendingDelete ? (
@@ -455,7 +457,7 @@ function PlanPageInner() {
       {editable && viewMode === 'list' ? (
         <button
           type="button"
-          className="btn btn-accent fixed right-4 bottom-20 z-40 !rounded-full !px-4 shadow-lg sm:right-8"
+          className="btn btn-accent fixed right-4 bottom-20 z-40 px-4 shadow-lg sm:right-8"
           onClick={openCreate}
           aria-label={t('plan.newEntry')}
         >

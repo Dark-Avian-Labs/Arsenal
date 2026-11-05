@@ -21,17 +21,9 @@
 }
 
 :root {
-  --header-offset: 280px;
+  --header-offset: 160px;
 
-  --app-chrome-height: 220px;
-}
-
-html.ui-shadow:not(.dark) {
-  --color-glass: oklch(100% 0 0 / 0.38);
-
-  --color-glass-hover: oklch(100% 0 0 / 0.58);
-
-  --color-glass-active: oklch(100% 0 0 / 0.72);
+  --app-chrome-height: 120px;
 }
 
 @layer components {
@@ -152,7 +144,7 @@ html.ui-shadow:not(.dark) {
     right: 0;
     padding: 0;
     overflow: hidden;
-    border-radius: 10px;
+    border-radius: var(--radius-ui);
     border: 1px solid var(--color-glass-border);
     background: var(--color-surface-modal);
     -webkit-backdrop-filter: blur(16px) saturate(1.15);
@@ -163,7 +155,7 @@ html.ui-shadow:not(.dark) {
 
   .select-dropdown-menu--floating {
     margin-top: 4px;
-    border-radius: 10px;
+    border-radius: var(--radius-ui);
   }
 
   .select-dropdown-trigger--open {
@@ -216,34 +208,9 @@ html.ui-shadow:not(.dark) {
     background: color-mix(in oklab, var(--color-glass-hover) 85%, transparent);
   }
 
-  .brand-lockup {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    min-width: 0;
-    font-size: clamp(1.35rem, 2.4vw, 2.25rem);
-  }
-
-  .brand-lockup__icon {
-    width: 42px;
-    height: 42px;
-    object-fit: contain;
-    flex: 0 0 auto;
-    display: block;
-    filter: drop-shadow(0.07em 0.1em 0 #000);
-  }
-
-  .brand-lockup img {
-    width: 42px;
-    height: 42px;
-    object-fit: contain;
-    flex: 0 0 auto;
-    display: block;
-    filter: drop-shadow(0.07em 0.1em 0 #000);
-  }
-
   .brand-lockup__title.brand-lockup__title_small {
-    font-weight: 200;
+    font-weight: 450;
+    color: var(--color-muted);
   }
 
   select.header-link {
@@ -1570,14 +1537,6 @@ html.ui-shadow:not(.dark) {
   }
 }
 
-html.ui-shadow thead th {
-  background: color-mix(in oklab, var(--color-glass-hover) 50%, transparent);
-
-  border-bottom: 1px solid var(--color-glass-divider);
-
-  padding: 10px 16px;
-}
-
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   html.ui-acrylic .glass-shell,
   html.ui-acrylic .glass-surface,
@@ -1598,6 +1557,108 @@ html.ui-shadow thead th {
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
+}
+
+.wf-checklist thead,
+.wf-checklist colgroup {
+  display: none;
+}
+
+.table-container.wf-checklist,
+html.ui-acrylic .table-container.wf-checklist {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.table-container.wf-checklist::before {
+  content: none;
+}
+
+.wf-checklist table,
+.wf-checklist tbody {
+  display: block;
+  width: 100%;
+}
+
+.wf-checklist tbody {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+  gap: 0.5rem;
+  padding: 0;
+}
+
+.wf-checklist tr {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.45rem 0.65rem;
+  min-width: 0;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--color-glass-border);
+  border-radius: var(--radius-ui);
+  background: var(--color-glass);
+}
+
+.wf-checklist tr.warframe-completed-row {
+  background:
+    linear-gradient(
+      color-mix(in oklab, var(--color-success) 18%, transparent),
+      color-mix(in oklab, var(--color-success) 18%, transparent)
+    ),
+    var(--color-glass);
+}
+
+.wf-checklist tr.warframe-completed-row:hover {
+  background:
+    linear-gradient(
+      color-mix(in oklab, var(--color-success) 26%, transparent),
+      color-mix(in oklab, var(--color-success) 26%, transparent)
+    ),
+    var(--color-glass);
+}
+
+.wf-checklist .item-name {
+  flex: 1 0 100%;
+  padding: 0;
+}
+
+.wf-checklist td {
+  width: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.wf-checklist .status-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+}
+
+.wf-check__label {
+  color: var(--color-muted);
+  font-size: 0.7rem;
+}
+
+.name-with-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.name-with-mark img,
+.name-with-mark .wor-portrait,
+.name-with-mark .wor-portrait img,
+.name-with-mark .wor-portrait-placeholder {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
 }
 
 @media (prefers-reduced-motion: reduce) {

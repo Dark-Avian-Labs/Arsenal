@@ -1,9 +1,32 @@
 import { CLASS_DISPLAY_NAMES, outOfRangeArtifactLabels } from '@shared/catalog';
 import { useMemo } from 'react';
 
+import { AnchoredHover, WearerMark } from './GearTile';
 import { ArtifactPortrait, artifactStatLines } from './tabShared';
 import type { ArtifactView } from './types';
-import { WorIcon, classIconSrc } from './worIcons';
+import { classIconSrc } from './worIcons';
+
+function ArtifactMark({ row }: { row: ArtifactView }) {
+  if (row.exclusive_hero_portrait) {
+    return (
+      <img
+        className="gear-tile__overlay gear-tile__overlay--tl"
+        src={row.exclusive_hero_portrait}
+        alt={row.exclusive_hero_name ?? 'Exclusive'}
+      />
+    );
+  }
+  const classKey = row.class;
+  const src = classKey ? classIconSrc(classKey) : undefined;
+  if (!classKey || !src) return null;
+  return (
+    <img
+      className="gear-tile__overlay gear-tile__overlay--tl gear-tile__overlay--class invert-on-light"
+      src={src}
+      alt={CLASS_DISPLAY_NAMES[classKey] ?? classKey}
+    />
+  );
+}
 
 export function ArtifactsTab({
   artifacts,
@@ -39,107 +62,76 @@ export function ArtifactsTab({
           </button>
         </div>
       </div>
-      <div className="table-container">
-        <div className="table-scroll">
-          <table className="gear-table artifact-table">
-            <colgroup>
-              <col className="col-icon" />
-              <col className="col-name" />
-              <col className="col-limit" />
-              <col className="col-stats" />
-              <col className="col-equipped" />
-            </colgroup>
-            <thead>
-              <tr>
-                <th className="col-icon" />
-                <th className="col-name">Name</th>
-                <th className="col-limit">Limit</th>
-                <th className="stats-col">Stats</th>
-                <th className="col-equipped">Equipped</th>
-              </tr>
-            </thead>
-            <tbody>
-              {artifactsByName.map((row) => {
-                const illegalLabels = outOfRangeArtifactLabels(row);
-                return (
-                  <tr
-                    key={row.id}
-                    className={`cursor-pointer${illegalLabels.length > 0 ? ' gear-row--illegal' : ''}`}
-                    title={
-                      illegalLabels.length > 0
-                        ? `Out of range: ${illegalLabels.join(', ')}`
-                        : undefined
-                    }
-                    onClick={() => {
-                      onEdit(row);
-                    }}
-                  >
-                    <td className="col-icon">
+      <div className="artifact-stamps">
+        {artifactsByName.map((row) => {
+          const illegalLabels = outOfRangeArtifactLabels(row);
+          return (
+            <button
+              key={row.id}
+              type="button"
+              className={`artifact-stamp${illegalLabels.length > 0 ? ' artifact-stamp--illegal' : ''}`}
+              title={
+                illegalLabels.length > 0 ? `Out of range: ${illegalLabels.join(', ')}` : row.name
+              }
+              onClick={() => {
+                onEdit(row);
+              }}
+            >
+              <AnchoredHover
+                captureClick={false}
+                className="artifact-stamp__body"
+                card={
+                  <>
+                    <div className="gear-hover-card__icon">
                       <ArtifactPortrait
                         src={row.portrait_path}
-                        size={40}
-                        title={row.name}
+                        size={72}
                         promotion={row.promotion}
                         rarity={row.rarity}
                         starRating={row.star_rating}
+                        mark={<ArtifactMark row={row} />}
                       />
-                    </td>
-                    <td className="col-name" title={row.name}>
-                      {row.name}
-                    </td>
-                    <td className="col-limit">
-                      {row.exclusive_hero_portrait ? (
-                        <img
-                          className="gear-table__hero"
-                          src={row.exclusive_hero_portrait}
-                          alt=""
-                          title={row.exclusive_hero_name ?? undefined}
+                      {row.equipped_hero_name || row.equipped_hero_portrait ? (
+                        <WearerMark
+                          label="Equipped on"
+                          name={row.equipped_hero_name}
+                          portrait={row.equipped_hero_portrait}
                         />
-                      ) : row.class ? (
-                        <WorIcon
-                          className="invert-on-light mx-auto"
-                          src={classIconSrc(row.class)}
-                          alt={CLASS_DISPLAY_NAMES[row.class] ?? row.class}
-                          size={28}
-                        />
-                      ) : (
-                        <span>—</span>
-                      )}
-                    </td>
-                    <td className="stats-col">
-                      <div className="artifact-stat-lines">
-                        {artifactStatLines(row).map((line) => (
-                          <div
-                            key={line.key}
-                            className={
-                              line.illegal ? 'artifact-stat-lines__line is-illegal' : undefined
-                            }
-                          >
-                            {line.text}
-                          </div>
-                        ))}
-                      </div>
-                    </td>
-                    <td className="col-equipped">
-                      {row.equipped_hero_portrait ? (
-                        <img
-                          className="gear-table__hero"
-                          src={row.equipped_hero_portrait}
-                          alt=""
-                          title={row.equipped_hero_name ?? undefined}
-                        />
-                      ) : (
-                        <span title={row.equipped_hero_name ?? undefined}>—</span>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                      ) : null}
+                    </div>
+                    <div className="artifact-stat-lines">
+                      {artifactStatLines(row).map((line) => (
+                        <span
+                          key={line.key}
+                          className={
+                            line.illegal ? 'artifact-stat-lines__line is-illegal' : undefined
+                          }
+                        >
+                          {line.text}
+                        </span>
+                      ))}
+                    </div>
+                  </>
+                }
+              >
+                <ArtifactPortrait
+                  src={row.portrait_path}
+                  size={96}
+                  title={row.name}
+                  promotion={row.promotion}
+                  rarity={row.rarity}
+                  starRating={row.star_rating}
+                  mark={<ArtifactMark row={row} />}
+                />
+                <span className="artifact-stamp__name" title={row.name}>
+                  {row.name}
+                </span>
+              </AnchoredHover>
+            </button>
+          );
+        })}
         {artifacts.length === 0 ? (
-          <p className="text-muted px-4 pb-4 text-sm">
+          <p className="text-muted text-sm">
             No artifacts yet. Add one, or Ctrl+V a screenshot in the add dialog.
           </p>
         ) : null}

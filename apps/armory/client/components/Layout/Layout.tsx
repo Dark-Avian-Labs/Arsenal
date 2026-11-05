@@ -1,8 +1,6 @@
 import { useClerk, useUser } from '@clerk/react';
 import {
-  AsciiWaveBackground,
   DalAppNav,
-  HexSideBackground,
   MaterialSymbol,
   Menu,
   Modal,
@@ -26,13 +24,7 @@ import {
 } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate, useSearchParams } from 'react-router';
 
-import {
-  APP_DISPLAY_NAME,
-  APP_ID,
-  APP_VERSION,
-  LEGAL_ENTITY_NAME,
-  LEGAL_PAGE_URL,
-} from '../../app/config';
+import { APP_DISPLAY_NAME, APP_ID, APP_VERSION, LEGAL_PAGE_URL } from '../../app/config';
 import { APP_PATHS, buildNewPath } from '../../app/paths';
 import { ChunkErrorBoundary, RouteFallback } from '../../app/routes';
 import { useCompare } from '../../context/CompareContext';
@@ -90,7 +82,6 @@ export function Layout() {
   const { isLoaded: clerkUserLoaded, user: clerkUser } = useUser();
   const showSentinel = clerkUserLoaded && isSentinelAdmin(clerkUser?.publicMetadata);
   const compareBarVisible = snapshots.length > 0;
-  const currentYear = new Date().getFullYear();
   const isLoggedIn = auth.status === 'authenticated';
   const isAdmin = auth.status === 'authenticated' && auth.isAdmin;
   const compactModBuilderUi =
@@ -240,12 +231,10 @@ export function Layout() {
       <a href="#main-content" className="skip-link">
         Skip to main content
       </a>
-      <HexSideBackground />
-      <AsciiWaveBackground />
       <DalAppNav currentAppId={APP_ID} showSentinel={showSentinel} />
-      <header className="relative z-30 h-[100px] px-6">
-        <div className="mx-auto grid h-full w-full max-w-[2000px] grid-cols-[1fr_auto_1fr] items-center gap-4">
-          <div className="flex w-fit max-w-full min-w-0 flex-col gap-0.5 justify-self-start">
+      <header className="relative z-30 min-h-14 px-6">
+        <div className="mx-auto grid min-h-14 w-full max-w-[2000px] grid-cols-[1fr_auto_1fr] items-center gap-4">
+          <div className="flex w-fit max-w-full min-w-0 items-baseline gap-2 justify-self-start">
             <Link
               to={APP_PATHS.home}
               className="brand-lockup w-fit"
@@ -269,16 +258,14 @@ export function Layout() {
                 alt="Dark Avian Labs feather mark"
                 className="brand-lockup__icon"
               />
-              <span className="brand-lockup__title brand-lockup--fx">{APP_DISPLAY_NAME}</span>
+              <span className="brand-lockup__title">{APP_DISPLAY_NAME}</span>
             </Link>
-            <div className="flex flex-wrap items-center justify-end gap-x-2 gap-y-0.5">
-              <span
-                className="text-muted font-mono text-[10px] leading-none tracking-wide opacity-70"
-                title={`Client ${APP_VERSION}`}
-              >
-                v{APP_VERSION}
-              </span>
-            </div>
+            <span
+              className="text-muted font-mono text-[11px] leading-none"
+              title={`Client ${APP_VERSION}`}
+            >
+              v{APP_VERSION}
+            </span>
           </div>
 
           <div className="justify-self-center">{isLoggedIn ? <SearchBar /> : null}</div>
@@ -377,6 +364,15 @@ export function Layout() {
                         </button>
                         <div className="user-menu-divider" role="separator" />
                         <UiStyleSelector />
+                        <a
+                          href={LEGAL_PAGE_URL}
+                          className="user-menu-item"
+                          role="menuitem"
+                          target={LEGAL_PAGE_URL.startsWith('http') ? '_blank' : undefined}
+                          rel={LEGAL_PAGE_URL.startsWith('http') ? 'noreferrer' : undefined}
+                        >
+                          Legal
+                        </a>
                         <AtragraphModsToggle />
                         {isAdmin ? (
                           <Link
@@ -412,6 +408,15 @@ export function Layout() {
                         </Link>
                         <div className="user-menu-divider" role="separator" />
                         <UiStyleSelector />
+                        <a
+                          href={LEGAL_PAGE_URL}
+                          className="user-menu-item"
+                          role="menuitem"
+                          target={LEGAL_PAGE_URL.startsWith('http') ? '_blank' : undefined}
+                          rel={LEGAL_PAGE_URL.startsWith('http') ? 'noreferrer' : undefined}
+                        >
+                          Legal
+                        </a>
                         <AtragraphModsToggle />
                       </>
                     )}
@@ -448,19 +453,6 @@ export function Layout() {
           />
         </Suspense>
       ) : null}
-      <footer className="relative z-10 flex h-[50px] items-center justify-center px-6">
-        <div className="mx-auto w-full max-w-[2000px] text-center">
-          <a
-            href={LEGAL_PAGE_URL}
-            className="text-muted hover:text-foreground text-sm"
-            target={LEGAL_PAGE_URL.startsWith('http') ? '_blank' : undefined}
-            rel={LEGAL_PAGE_URL.startsWith('http') ? 'noreferrer' : undefined}
-          >
-            ©{currentYear} {LEGAL_ENTITY_NAME}
-          </a>
-        </div>
-      </footer>
-
       <StaleClientUpdateBanner appVersion={APP_VERSION} />
       {sessionNotice ? (
         <SessionExpiredModal message={sessionNotice} onClose={() => setSessionNotice(null)} />

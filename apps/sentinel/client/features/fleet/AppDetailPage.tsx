@@ -1,5 +1,5 @@
-import { apiFetch, GlassCard, useAuth } from '@dark-avian-labs/ui';
-import { useEffect, useState } from 'react';
+import { apiFetch, useAuth } from '@dark-avian-labs/ui';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router';
 
 import { SentinelTabs } from '../shell/SentinelTabs';
@@ -49,6 +49,115 @@ type DetailPayload = {
 
 function formatTs(ts: number): string {
   return new Date(ts).toLocaleString();
+}
+
+type ChartPoint = { ts: number; value: number | null };
+
+function hasSeries(points: ChartPoint[]): boolean {
+  return points.some((point) => point.value != null && Number.isFinite(point.value));
+}
+
+function ChartStrip({
+  charts,
+}: {
+  charts: Array<{ title: string; unit: string; points: ChartPoint[]; colorVar?: string }>;
+}) {
+  const visible = charts.filter((chart) => hasSeries(chart.points));
+  if (visible.length === 0) return null;
+  return (
+    <div className="metric-strip">
+      {visible.map((chart) => (
+        <MetricSparkline
+          key={chart.title}
+          title={chart.title}
+          unit={chart.unit}
+          points={chart.points}
+          colorVar={chart.colorVar}
+        />
+      ))}
+    </div>
+  );
+}
+
+type RangeTone = 'empty' | 'low' | 'steady' | 'high' | 'bad';
+
+function RangeMap({ data }: { data: DetailPayload }) {
+  const cells = useMemo(() => {
+    const useCpu = data.points.some((point) => point.cpu != null);
+    const samples = data.points.filter((point) => (useCpu ? point.cpu : point.rssMb) != null);
+    if (samples.length === 0) return [];
+    const start = data.points[0]!.ts;
+    const end = data.points[data.points.length - 1]!.ts;
+    const count = Math.min(36, Math.max(12, Math.round(samples.length / 2)));
+    const span = Math.max(end - start, 1);
+    const bucket = span / count;
+    const draft = Array.from({ length: count }, (_, index) => {
+      const from = start + index * bucket;
+      const to = index === count - 1 ? end + 1 : from + bucket;
+      const cpus = data.points
+        .filter((point) => point.ts >= from && point.ts < to)
+        .map((point) => (useCpu ? point.cpu : point.rssMb))
+        .filter((value): value is number => value != null);
+      const bad =
+        data.http.some(
+          (point) => point.ts >= from && point.ts < to && (point.errorRate ?? 0) > 0,
+        ) ||
+        data.events.some(
+          (event) =>
+            event.ts >= from && event.ts < to && event.kind.toLowerCase().includes('crash'),
+        );
+      const cpu = cpus.length ? cpus.reduce((sum, value) => sum + value, 0) / cpus.length : null;
+      return { from, cpu, bad };
+    });
+    const low = useCpu ? 10 : 128;
+    const high = useCpu ? 40 : 512;
+    return draft.map((cell) => {
+      let tone: RangeTone = 'empty';
+      if (cell.bad) tone = 'bad';
+      else if (cell.cpu == null) tone = 'empty';
+      else if (cell.cpu >= high) tone = 'high';
+      else if (cell.cpu >= low) tone = 'steady';
+      else tone = 'low';
+      const when = new Date(cell.from).toLocaleString(undefined, {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+      const label = useCpu ? 'CPU' : 'Memory';
+      const unit = useCpu ? '%' : ' MB';
+      const title =
+        cell.cpu == null
+          ? when
+          : `${when}, ${label} ${cell.cpu.toFixed(1)}${unit}${cell.bad ? ', errors' : ''}`;
+      return { from: cell.from, tone, title };
+    });
+  }, [data]);
+
+  if (cells.length === 0) return null;
+  const start = new Date(data.points[0]!.ts);
+  const end = new Date(data.points[data.points.length - 1]!.ts);
+  const time = (date: Date) =>
+    date.toLocaleString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+
+  return (
+    <div className="range-map">
+      <div className="range-map__cells" role="img" aria-label="Usage and errors across this range">
+        {cells.map((cell) => (
+          <span key={cell.from} className={`range-map__cell is-${cell.tone}`} title={cell.title} />
+        ))}
+      </div>
+      <div className="range-map__scale">
+        <span>{time(start)}</span>
+        <span>{time(end)}</span>
+      </div>
+    </div>
+  );
 }
 
 export function AppDetailPage() {
@@ -144,106 +253,112 @@ export function AppDetailPage() {
 
       {data ? (
         <>
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <RangeMap data={data} />
+          {hasSeries(data.points.map((p) => ({ ts: p.ts, value: p.cpu }))) ? (
             <MetricSparkline
+              variant="hero"
               title="CPU"
               unit="%"
               points={data.points.map((p) => ({ ts: p.ts, value: p.cpu }))}
             />
-            <MetricSparkline
-              title="RSS"
-              unit="MB"
-              points={data.points.map((p) => ({ ts: p.ts, value: p.rssMb }))}
-            />
-            <MetricSparkline
-              title="Heap used"
-              unit="MB"
-              points={data.points.map((p) => ({ ts: p.ts, value: p.heapMb }))}
-            />
-            <MetricSparkline
-              title="Heap total"
-              unit="MB"
-              points={data.points.map((p) => ({ ts: p.ts, value: p.heapTotalMb }))}
-            />
-            <MetricSparkline
-              title="Heap external"
-              unit="MB"
-              points={data.points.map((p) => ({ ts: p.ts, value: p.heapExternalMb }))}
-            />
-            <MetricSparkline
-              title="Event loop utilization"
-              unit="%"
-              points={data.points.map((p) => ({
-                ts: p.ts,
-                value: p.elu == null ? null : p.elu * 100,
-              }))}
-            />
-            <MetricSparkline
-              title="Event loop lag p95"
-              unit="ms"
-              points={data.points.map((p) => ({ ts: p.ts, value: p.lagP95Ms }))}
-            />
-            <MetricSparkline
-              title="GC pause p95"
-              unit="ms"
-              points={data.points.map((p) => ({ ts: p.ts, value: p.gcP95Ms }))}
-            />
-            <MetricSparkline
-              title="Request rate"
-              unit="req/s"
-              points={data.http.map((p) => ({ ts: p.ts, value: p.reqPerSec }))}
-            />
-            <MetricSparkline
-              title="Error rate"
-              unit="%"
-              points={data.http.map((p) => ({
-                ts: p.ts,
-                value: p.errorRate == null ? null : p.errorRate * 100,
-              }))}
-            />
-            <MetricSparkline
-              title="HTTP latency p95"
-              unit="ms"
-              points={data.http.map((p) => ({ ts: p.ts, value: p.latencyP95Ms }))}
-            />
-            <MetricSparkline
-              title="Restarts (graceful)"
-              unit="count"
-              points={data.eventRates.map((p) => ({ ts: p.ts, value: p.graceful }))}
-            />
-            <MetricSparkline
-              title="Crashes"
-              unit="count"
-              points={data.eventRates.map((p) => ({ ts: p.ts, value: p.crash }))}
-            />
-          </div>
+          ) : null}
+          <ChartStrip
+            charts={[
+              {
+                title: 'Memory',
+                unit: 'MB',
+                points: data.points.map((p) => ({ ts: p.ts, value: p.rssMb })),
+              },
+              {
+                title: 'Event loop lag p95',
+                unit: 'ms',
+                points: data.points.map((p) => ({ ts: p.ts, value: p.lagP95Ms })),
+              },
+              {
+                title: 'Request rate',
+                unit: 'req/s',
+                points: data.http.map((p) => ({ ts: p.ts, value: p.reqPerSec })),
+              },
+              {
+                title: 'Error rate',
+                unit: '%',
+                colorVar: 'var(--color-danger)',
+                points: data.http.map((p) => ({
+                  ts: p.ts,
+                  value: p.errorRate == null ? null : p.errorRate * 100,
+                })),
+              },
+              {
+                title: 'HTTP latency p95',
+                unit: 'ms',
+                points: data.http.map((p) => ({ ts: p.ts, value: p.latencyP95Ms })),
+              },
+            ]}
+          />
 
-          <GlassCard className="p-6">
+          <section className="space-y-3">
+            <h2 className="text-foreground text-lg font-semibold">Process</h2>
+            <ChartStrip
+              charts={[
+                {
+                  title: 'Heap used',
+                  unit: 'MB',
+                  points: data.points.map((p) => ({ ts: p.ts, value: p.heapMb })),
+                },
+                {
+                  title: 'Heap total',
+                  unit: 'MB',
+                  points: data.points.map((p) => ({ ts: p.ts, value: p.heapTotalMb })),
+                },
+                {
+                  title: 'Heap external',
+                  unit: 'MB',
+                  points: data.points.map((p) => ({ ts: p.ts, value: p.heapExternalMb })),
+                },
+                {
+                  title: 'Event loop utilization',
+                  unit: '%',
+                  points: data.points.map((p) => ({
+                    ts: p.ts,
+                    value: p.elu == null ? null : p.elu * 100,
+                  })),
+                },
+                {
+                  title: 'GC pause p95',
+                  unit: 'ms',
+                  points: data.points.map((p) => ({ ts: p.ts, value: p.gcP95Ms })),
+                },
+              ]}
+            />
+          </section>
+
+          <section>
             <h2 className="text-foreground text-lg font-semibold">Events</h2>
-            <p className="text-muted mt-1 text-sm">Graceful restarts vs crashes in this range.</p>
             {data.events.length === 0 ? (
-              <p className="text-muted mt-4 text-sm">No events in range.</p>
+              <p className="text-muted mt-3 text-sm">No events in range.</p>
             ) : (
-              <ul className="mt-4 space-y-2">
-                {data.events.map((event) => (
-                  <li
-                    key={event.id}
-                    className="border-glass-border flex flex-wrap items-baseline justify-between gap-2 border-b py-2 text-sm last:border-0"
-                  >
-                    <span className="text-foreground font-medium">
-                      {event.kind}
-                      {event.signal ? ` (${event.signal})` : ''}
-                      {event.exitCode != null ? ` exit ${event.exitCode}` : ''}
-                    </span>
-                    <span className="text-muted text-xs">{formatTs(event.ts)}</span>
-                    {event.message ? (
-                      <p className="text-muted w-full text-xs">{event.message}</p>
-                    ) : null}
-                  </li>
-                ))}
+              <ul className="event-log">
+                {data.events.map((event) => {
+                  const crash = event.kind.toLowerCase().includes('crash');
+                  return (
+                    <li key={event.id}>
+                      <time dateTime={new Date(event.ts).toISOString()}>{formatTs(event.ts)}</time>
+                      <span>
+                        <span className={crash ? 'text-danger font-medium' : 'font-medium'}>
+                          {event.kind}
+                          {event.signal ? ` (${event.signal})` : ''}
+                          {event.exitCode != null ? ` exit ${event.exitCode}` : ''}
+                        </span>
+                        {event.message ? (
+                          <p className="text-muted text-xs">{event.message}</p>
+                        ) : null}
+                      </span>
+                    </li>
+                  );
+                })}
               </ul>
             )}
-          </GlassCard>
+          </section>
         </>
       ) : null}
     </div>

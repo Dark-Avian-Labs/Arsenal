@@ -6,7 +6,6 @@ import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { amountForMonth, isDueInMonth } from '../../../shared/dueThisMonth';
-import { FrequencyBadge } from '../../components/budget/FrequencyBadge';
 import { formatDueDay, formatDueMonthDay, formatMoney } from '../../lib/format';
 import type { Account, Category, Entry } from '../../lib/types';
 
@@ -41,6 +40,18 @@ function sortableBoard(categories: Category[], entries: Entry[]) {
       .map((entry) => entryKey(entry.id));
   }
   return { sortedCategories, board };
+}
+
+function categoryDueNet(entries: Entry[], year: number, month: number): number | null {
+  let net = 0;
+  let due = false;
+  for (const entry of entries) {
+    const amount = amountForMonth(entry, year, month);
+    if (amount == null) continue;
+    due = true;
+    net += entry.kind === 'income' ? amount : -amount;
+  }
+  return due ? net : null;
 }
 
 function listsEqual(left: string[], right: string[]): boolean {
@@ -98,11 +109,17 @@ function SortableCategory({
   category,
   index,
   organizeMode,
+  dueNet,
+  currency,
+  locale,
   children,
 }: {
   category: Category;
   index: number;
   organizeMode: boolean;
+  dueNet: number | null;
+  currency: string;
+  locale: string;
   children: ReactNode;
 }) {
   const { t } = useTranslation();
@@ -121,9 +138,14 @@ function SortableCategory({
         {organizeMode ? (
           <SortableHandle handleRef={handleRef} label={t('plan.dragCategory')} />
         ) : null}
-        <h2 className="text-muted text-xs font-semibold tracking-wide uppercase">
-          {category.name}
-        </h2>
+        <h2 className="text-foreground min-w-0 flex-1 text-sm font-semibold">{category.name}</h2>
+        {dueNet != null ? (
+          <span
+            className={`shrink-0 text-sm tabular-nums ${dueNet >= 0 ? 'text-success' : 'text-danger'}`}
+          >
+            {formatMoney(dueNet, currency, locale, true)}
+          </span>
+        ) : null}
       </div>
       {children}
     </section>
@@ -181,7 +203,6 @@ function SortableEntryRow({
     <li
       ref={ref}
       className={`${due ? 'entry-row' : 'entry-row entry-row--inactive'}${isDragging ? ' opacity-70' : ''}`}
-      {...(accountColor ? { 'data-account-color': accountColor } : null)}
     >
       <div className="flex items-stretch gap-0">
         {organizeMode ? <SortableHandle handleRef={handleRef} label={t('plan.dragEntry')} /> : null}
@@ -193,49 +214,49 @@ function SortableEntryRow({
           }}
           disabled={organizeMode}
         >
-          <div className="flex items-baseline justify-between gap-3">
-            <span className="entry-row__name truncate font-medium">{entry.name}</span>
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-3 gap-y-0.5 sm:grid-cols-[minmax(8rem,1fr)_auto_7rem_6rem]">
+            <span className="entry-row__name col-start-1 row-start-1 min-w-0 truncate font-medium">
+              {entry.name}
+            </span>
             <span
-              className={`entry-row__amount shrink-0 tabular-nums ${
-                entry.kind === 'income' ? 'text-success' : 'text-foreground'
+              className={`entry-row__amount col-start-2 row-start-1 text-right tabular-nums sm:col-start-4 ${
+                displayAmount === 0 ? 'text-muted' : entry.kind === 'income' ? 'text-success' : ''
               }`}
             >
-              {formatMoney(signed, currency, locale, entry.kind === 'income')}
+              {formatMoney(signed, currency, locale, true)}
             </span>
-          </div>
-          <div className="text-muted flex min-w-0 items-center gap-x-3 text-xs">
-            <FrequencyBadge frequency={entry.frequency} />
-            <span className="inline-flex shrink-0 items-center gap-1">
-              <MaterialSymbol name="event" className="text-[1rem]" />
-              {entry.frequency === 'monthly'
-                ? formatDueDay(entry.due_day, locale)
-                : formatDueMonthDay(
-                    due ? month : (entry.due_month ?? month),
-                    entry.due_day,
-                    locale,
-                  )}
-            </span>
-            {accountName ? (
-              <span className="inline-flex min-w-0 shrink items-center gap-1 truncate">
-                <MaterialSymbol name="account_balance_wallet" className="text-[1rem]" />
+            <span className="text-muted col-span-2 col-start-1 row-start-2 flex min-w-0 gap-3 text-xs sm:contents">
+              <span className="shrink-0 tabular-nums sm:col-start-2 sm:row-start-1">
+                {entry.frequency === 'monthly'
+                  ? formatDueDay(entry.due_day, locale)
+                  : formatDueMonthDay(
+                      due ? month : (entry.due_month ?? month),
+                      entry.due_day,
+                      locale,
+                    )}
+                {entry.frequency === 'quarterly' ? ` ${t('entry.quarterly')}` : null}
+                {entry.frequency === 'halfyearly' ? ` ${t('entry.halfyearly')}` : null}
+                {entry.frequency === 'yearly' ? ` ${t('entry.yearly')}` : null}
+                {entry.frequency === 'once' ? ` ${t('entry.once')}` : null}
+              </span>
+              <span className="flex min-w-0 items-center gap-1 truncate sm:col-start-3 sm:row-start-1">
+                {accountColor ? (
+                  <span
+                    className={`account-swatch account-swatch--${accountColor}`}
+                    aria-hidden="true"
+                  />
+                ) : null}
                 <span className="truncate">{accountName}</span>
               </span>
-            ) : null}
-            {entry.kind === 'credit' ? (
-              <span className="inline-flex shrink-0 items-center gap-1">
-                <MaterialSymbol name="credit_score" className="text-[1rem]" />
-                {t('entry.credit')}
-              </span>
-            ) : null}
-            {!due ? (
-              <span className="entry-row__skip-badge shrink-0">{t('plan.notThisMonth')}</span>
-            ) : null}
-            {entry.comment ? (
-              <span className="entry-row__comment ml-auto max-w-[45%] min-w-0 truncate text-right">
-                {entry.comment}
-              </span>
-            ) : null}
+            </span>
           </div>
+          {entry.comment || !due || entry.kind === 'credit' ? (
+            <p className="entry-row__comment text-xs">
+              {!due ? <span>{t('plan.notThisMonth')}</span> : null}
+              {entry.kind === 'credit' ? <span>{t('entry.credit')}</span> : null}
+              {entry.comment ? <span>{entry.comment}</span> : null}
+            </p>
+          ) : null}
         </button>
       </div>
     </li>
@@ -300,6 +321,9 @@ export function PlanListView({
             category={category}
             index={index}
             organizeMode={organizeMode}
+            dueNet={categoryDueNet(catEntries, year, month)}
+            currency={currency}
+            locale={locale}
           >
             <ul className="glass-surface divide-glass-divider divide-y overflow-hidden">
               {catEntries.map((entry, entryIndex) => (

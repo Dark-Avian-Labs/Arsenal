@@ -45,16 +45,19 @@
     root.classList.remove('dark');
     if (theme === 'dark') root.classList.add('dark');
 
-    var uiStyles = ['prism', 'shadow', 'clear', 'acrylic'];
+    var uiStyles = ['ink', 'acrylic', 'plate', 'folio', 'bronze'];
+    var legacyUi = { prism: 'ink', shadow: 'ink', clear: 'ink' };
     function isUiStyle(value) {
       return uiStyles.indexOf(value) !== -1;
     }
     var ui = readCookie('dal.ui.style').trim();
-    if (!isUiStyle(ui)) ui = readCookie('bp.ui.style').trim();
-    if (!isUiStyle(ui)) ui = readStorage(['dal.ui.style', 'bp.ui.style']);
-    if (!isUiStyle(ui)) ui = 'prism';
-    for (var i = 0; i < uiStyles.length; i++) {
-      root.classList.remove('ui-' + uiStyles[i]);
+    if (!isUiStyle(ui) && !legacyUi[ui]) ui = readCookie('bp.ui.style').trim();
+    if (!isUiStyle(ui) && !legacyUi[ui]) ui = readStorage(['dal.ui.style', 'bp.ui.style']);
+    if (legacyUi[ui]) ui = legacyUi[ui];
+    if (!isUiStyle(ui)) ui = 'ink';
+    var known = uiStyles.concat(['prism', 'shadow', 'clear']);
+    for (var i = 0; i < known.length; i++) {
+      root.classList.remove('ui-' + known[i]);
     }
     root.classList.add('ui-' + ui);
   } catch {}

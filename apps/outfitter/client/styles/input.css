@@ -17,7 +17,7 @@
     color: var(--color-foreground);
     background: var(--color-glass-hover);
     border: 1px solid var(--color-glass-active);
-    border-radius: 10px;
+    border-radius: var(--radius-ui);
     font-family: inherit;
     outline: none;
   }
@@ -63,7 +63,7 @@
     box-sizing: border-box;
     height: 40px;
     border: 1px solid var(--color-glass-border);
-    border-radius: 10px;
+    border-radius: var(--radius-ui);
     padding: 8px 10px;
     background: var(--color-glass-hover);
     color: var(--color-foreground);
@@ -143,7 +143,7 @@ html.ui-acrylic .table-container {
   align-items: center;
   background: var(--color-glass);
   border: 1px solid var(--color-glass-border);
-  border-radius: 1rem;
+  border-radius: var(--radius-ui);
   padding: 4px 12px;
   font-size: 14px;
 }
@@ -173,7 +173,7 @@ html.ui-acrylic .table-container {
   width: 32px;
   height: 32px;
   padding: 4px;
-  border-radius: 6px;
+  border-radius: var(--radius-ui-sm);
   cursor: pointer;
   opacity: 0.5;
   display: flex;
@@ -597,10 +597,28 @@ html.ui-acrylic .table-container {
   top: 2px;
   left: 2px;
   z-index: 3;
-  width: max(18px, 40%);
-  height: max(18px, 40%);
+  width: max(18px, 50%);
+  height: max(18px, 50%);
   border: 1px solid var(--color-rarity-gold);
   background: color-mix(in oklab, var(--color-surface-500) 80%, transparent);
+}
+
+.gear-tile__overlay--faction {
+  top: 0;
+  left: 0;
+  border: none;
+  background: none;
+}
+
+.gear-tile__overlay--class {
+  border: none;
+  background: none;
+  object-fit: contain;
+  filter: drop-shadow(0 0 1px #000) drop-shadow(0 1px 1px #000);
+}
+
+html:not(.dark) .gear-tile__overlay--class.invert-on-light {
+  filter: invert(1) drop-shadow(0 0 1px #fff) drop-shadow(0 1px 1px #fff);
 }
 
 .gear-tile__overlay--bl {
@@ -804,7 +822,42 @@ html .gear-hover-card.glass-surface {
 }
 
 .gear-hover-card__icon {
+  display: flex;
   flex: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.gear-hover-card__wearer {
+  display: flex;
+  max-width: 5.5rem;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.gear-hover-card__wearer-label {
+  color: var(--color-muted);
+  font-size: 0.65rem;
+  line-height: 1.2;
+}
+
+.gear-hover-card__wearer img {
+  width: 40px;
+  height: 40px;
+  border-radius: 4px;
+  object-fit: cover;
+}
+
+.gear-hover-card__wearer-name {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 0.7rem;
+  line-height: 1.2;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .gear-hover-card__stats {
@@ -928,22 +981,142 @@ html .gear-hover-card.glass-surface {
   gap: 0.75rem;
 }
 
-.equipment-hero-card {
-  border-radius: var(--radius-ui);
-  padding: 1rem;
-  text-align: left;
+.equipment-wall {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr));
+  gap: 0.85rem 0.65rem;
+}
+
+.equipment-figure {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: center;
   cursor: pointer;
 }
 
-.equipment-hero-card:hover {
-  background: var(--color-glass-hover);
+.equipment-figure:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
 }
 
-.equipment-hero-card__gear {
+.equipment-card {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 74 / 110;
+  overflow: hidden;
+  border-radius: 0.45rem;
+  background: color-mix(in oklab, var(--color-foreground) 8%, var(--color-glass));
+}
+
+.equipment-card__art {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top;
+}
+
+.equipment-card__stars {
+  position: absolute;
+  right: 0;
+  bottom: 0.35rem;
+  left: 0;
+  z-index: 2;
+  display: flex;
+  justify-content: center;
+  filter: drop-shadow(0 1px 1px #000) drop-shadow(0 0 3px #000);
+  pointer-events: none;
+}
+
+.equipment-card__set {
+  position: absolute;
+  bottom: 1.65rem;
+  z-index: 2;
+  width: 30%;
+  aspect-ratio: 1;
+  object-fit: contain;
+  transform: translateX(-50%);
+  filter: drop-shadow(0 1px 2px #000) drop-shadow(0 0 3px #000);
+  pointer-events: none;
+}
+
+.equipment-card__set.is-left {
+  left: 25%;
+}
+
+.equipment-card__set.is-right {
+  left: 75%;
+}
+
+.equipment-figure:hover .equipment-card {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.equipment-figure__name {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 0.95rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.equipment-figure__body {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.equipment-hover {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.4rem;
-  margin-top: 0.75rem;
+  gap: 0.35rem;
+  max-width: 14rem;
+}
+
+.equipment-doll {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(12rem, 16rem) minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: start;
+  margin-top: 0.25rem;
+}
+
+.equipment-doll__figure {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.equipment-doll__portrait {
+  width: 11rem;
+  height: 14.5rem;
+  object-fit: cover;
+  object-position: top;
+  border-radius: var(--radius-ui-lg);
+  background: var(--color-surface-200, var(--color-glass));
+}
+
+.equipment-doll__figure h2 {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
 }
 
 .equipment-loadout {
@@ -1003,7 +1176,127 @@ html .gear-piece-card.glass-surface {
   min-width: 0;
 }
 
+.gear-stamps {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(7.25rem, 1fr));
+  gap: 1.25rem 0.75rem;
+}
+
+.gear-stamp {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+}
+
+.gear-stamp:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+}
+
+.gear-stamp__face {
+  position: relative;
+  margin-bottom: 0.35rem;
+}
+
+.gear-stamp__face .gear-tile__overlay--br {
+  width: 30%;
+  height: 30%;
+}
+
+.gear-stamp__rank {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  z-index: 2;
+  padding: 0.12rem 0.28rem 0.14rem;
+  border-radius: 0.3rem;
+  background: oklch(12% 0.02 260 / 0.92);
+  font-size: 1.15rem;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.gear-stamp--illegal .gear-tile {
+  box-shadow: 0 0 0 2px var(--color-danger);
+}
+
+.gear-stamp__caption {
+  max-width: 100%;
+  font-size: 0.75rem;
+  line-height: 1.25;
+}
+
+.gear-stamp__set {
+  overflow: hidden;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gear-stamp__main {
+  color: var(--color-muted);
+}
+
+.artifact-stamps {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
+  gap: 1.25rem 0.75rem;
+}
+
+.artifact-stamp__body {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.artifact-stamp {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+}
+
+.artifact-stamp:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+}
+
+.artifact-stamp--illegal .gear-tile,
+.artifact-stamp--illegal .artifact-portrait {
+  box-shadow: 0 0 0 2px var(--color-danger);
+}
+
+.artifact-stamp__name {
+  max-width: 100%;
+  overflow: hidden;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 @media (max-width: 48rem) {
+  .equipment-doll,
   .equipment-loadout {
     grid-template-columns: 1fr;
   }

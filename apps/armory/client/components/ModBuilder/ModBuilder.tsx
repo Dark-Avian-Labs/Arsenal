@@ -1993,7 +1993,9 @@ export function ModBuilder() {
           )}
         </div>
 
-        <div className="flex min-h-0 w-full shrink-0 flex-col gap-4 2xl:w-[820px]">
+        <div
+          className={`flex min-h-0 w-full flex-col gap-4 ${readOnly ? 'min-w-0 flex-1' : 'shrink-0 2xl:w-[820px]'}`}
+        >
           <div className="glass-shell shrink-0 p-4 sm:p-5">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div className="min-w-0 space-y-1">
@@ -2124,29 +2126,6 @@ export function ModBuilder() {
           </div>
 
           <div className="shrink-0">
-            <CapacityBar
-              capacity={capacity}
-              formaCost={formaCost}
-              formaMode={formaMode}
-              onFormaToggle={readOnly ? undefined : () => setFormaMode((p) => !p)}
-              orokinReactor={orokinReactor}
-              onOrokinReactorToggle={
-                !readOnly && isOwnBuild ? () => setOrokinReactor((p) => !p) : undefined
-              }
-              incarnonEnabled={incarnonEnabled}
-              onIncarnonToggle={
-                !readOnly && isOwnBuild && hasIncarnon ? handleIncarnonToggle : undefined
-              }
-              incarnonAvailable={hasIncarnon}
-              buildIsPublic={buildIsPublic}
-              onBuildIsPublicChange={
-                !readOnly && isOwnBuild ? (next) => setBuildIsPublic(next) : undefined
-              }
-              readOnly={readOnly}
-            />
-          </div>
-
-          <div className="shrink-0">
             {selectedEquipment ? (
               <ModSlotGrid
                 slots={hydratedSlots}
@@ -2196,6 +2175,29 @@ export function ModBuilder() {
             )}
           </div>
 
+          <div className="shrink-0">
+            <CapacityBar
+              capacity={capacity}
+              formaCost={formaCost}
+              formaMode={formaMode}
+              onFormaToggle={readOnly ? undefined : () => setFormaMode((p) => !p)}
+              orokinReactor={orokinReactor}
+              onOrokinReactorToggle={
+                !readOnly && isOwnBuild ? () => setOrokinReactor((p) => !p) : undefined
+              }
+              incarnonEnabled={incarnonEnabled}
+              onIncarnonToggle={
+                !readOnly && isOwnBuild && hasIncarnon ? handleIncarnonToggle : undefined
+              }
+              incarnonAvailable={hasIncarnon}
+              buildIsPublic={buildIsPublic}
+              onBuildIsPublicChange={
+                !readOnly && isOwnBuild ? (next) => setBuildIsPublic(next) : undefined
+              }
+              readOnly={readOnly}
+            />
+          </div>
+
           {selectedEquipment && (
             <div className="glass-shell shrink-0 p-4">
               <div className="flex min-h-[136px] items-start justify-between gap-3 overflow-visible">
@@ -2243,13 +2245,12 @@ export function ModBuilder() {
               className="min-h-0"
             />
           ) : null}
+          {readOnly && buildId ? <BuildLoadoutsPanel buildId={buildId} /> : null}
         </div>
 
-        <div className="min-w-0 flex-1">
-          <div className="glass-shell p-4 sm:p-5">
-            {readOnly && buildId ? (
-              <BuildLoadoutsPanel buildId={buildId} />
-            ) : (
+        {!readOnly ? (
+          <div className="min-w-0 flex-1">
+            <div className="glass-shell p-4 sm:p-5">
               <div>
                 <div className={rightPanelMode !== 'mods' ? 'hidden' : ''}>
                   {mountFilterPanel ? (
@@ -2392,9 +2393,9 @@ export function ModBuilder() {
                   </Suspense>
                 ) : null}
               </div>
-            )}
+            </div>
           </div>
-        </div>
+        ) : null}
       </div>
 
       {navigationBlocker.state === 'blocked' ? (

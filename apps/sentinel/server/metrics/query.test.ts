@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { closeMetricsDb, getMetricsDb } from './db.ts';
 import { coalesceLatestSampleFields, listFleet } from './query.ts';
-import { writeProcessSample } from './writer.ts';
+import { writeHttpSample, writeProcessSample } from './writer.ts';
 
 describe('coalesceLatestSampleFields', () => {
   it('fills status and cpu from an older PM2 row when the newest is agent-only', () => {
@@ -110,5 +110,56 @@ describe('listFleet', () => {
       ['armory', false],
       ['pm2-logrotate', true],
     ]);
+  });
+
+  it('marks the hour that returned errors', () => {
+    const db = getMetricsDb();
+    const now = 1_700_000_000_000;
+    writeProcessSample(db, {
+      kind: 'process',
+      appId: 'armory',
+      displayName: 'Armory',
+      ts: now,
+      rssMb: 120,
+      status: 'online',
+    });
+    writeHttpSample(db, {
+      kind: 'http',
+      appId: 'armory',
+      ts: now,
+      method: 'GET',
+      routePattern: '/api/builds',
+      statusClass: '5xx',
+      count: 4,
+    });
+
+    const [app] = listFleet(db, now);
+    expect(app.hours).toHaveLength(24);
+    expect(app.hours.at(-1)).toMatchObject({ bad: true, errorRate: 1 });
+  });
+
+  it('does not treat 4xx as a bad hour', () => {
+    const db = getMetricsDb();
+    const now = 1_700_000_000_000;
+    writeProcessSample(db, {
+      kind: 'process',
+      appId: 'armory',
+      displayName: 'Armory',
+      ts: now,
+      rssMb: 120,
+      status: 'online',
+    });
+    writeHttpSample(db, {
+      kind: 'http',
+      appId: 'armory',
+      ts: now,
+      method: 'GET',
+      routePattern: '/api/builds',
+      statusClass: '4xx',
+      count: 9,
+    });
+
+    const [app] = listFleet(db, now);
+    expect(app.hours.at(-1)).toMatchObject({ bad: false, errorRate: 0 });
   });
 });

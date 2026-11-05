@@ -32,14 +32,14 @@
   --font-mono:
     'Geist Mono Variable', 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
-  --color-foreground: oklch(98.4% 0.004 264);
-  --color-muted: oklch(82% 0.015 286);
+  --color-foreground: oklch(96% 0.006 260);
+  --color-muted: oklch(78% 0.014 260);
 
-  --color-primary-500: oklch(56% 0.24 278);
-  --color-primary-400: oklch(61% 0.22 278);
-  --color-primary-300: oklch(65% 0.19 278);
-  --color-primary-200: oklch(69% 0.16 278);
-  --color-primary-100: oklch(73% 0.13 278);
+  --color-primary-500: oklch(62% 0.19 286);
+  --color-primary-400: oklch(70% 0.15 286);
+  --color-primary-300: oklch(78% 0.11 286);
+  --color-primary-200: oklch(84% 0.07 286);
+  --color-primary-100: oklch(90% 0.04 286);
 
   --color-accent: var(--color-primary-500);
   --color-accent-weak: color-mix(in oklab, var(--color-accent) 10%, transparent);
@@ -51,27 +51,26 @@
   --color-info: oklch(55% 0.14 264);
   --color-unavailable: oklch(51% 0.02 260);
 
-  --color-surface-500: oklch(18% 0.02 286);
-  --color-surface-400: oklch(25% 0.02 286);
-  --color-surface-300: oklch(32% 0.02 286);
-  --color-surface-200: oklch(40% 0.015 286);
-  --color-surface-100: oklch(48% 0.012 286);
+  --color-surface-500: oklch(16.5% 0.012 260);
+  --color-surface-400: oklch(21% 0.014 260);
+  --color-surface-300: oklch(27% 0.016 260);
+  --color-surface-200: oklch(36% 0.016 260);
+  --color-surface-100: oklch(48% 0.014 260);
 
-  --color-glass: oklch(100% 0 0 / 0.024);
-  --color-glass-border: oklch(100% 0 0 / 0.08);
-  --color-glass-border-hover: oklch(100% 0 0 / 0.2);
-  --color-glass-hover: oklch(100% 0 0 / 0.05);
-  --color-glass-active: oklch(100% 0 0 / 0.12);
-  --color-glass-divider: oklch(100% 0 0 / 0.06);
+  --color-glass: oklch(22.5% 0.014 260);
+  --color-glass-border: oklch(34% 0.014 260);
+  --color-glass-border-hover: oklch(48% 0.02 286);
+  --color-glass-hover: oklch(27% 0.016 260);
+  --color-glass-active: oklch(32% 0.02 286);
+  --color-glass-divider: oklch(30% 0.012 260);
 
-  --color-surface-modal: oklch(100% 0 0 / 0.024);
-  --color-surface-thead: oklch(18% 0.03 286 / 0.88);
+  --color-surface-modal: oklch(20% 0.014 260);
+  --color-surface-thead: oklch(19% 0.014 260);
 
-  --color-bg-start: oklch(0% 0 0);
-  --color-bg-end: oklch(21% 0.04 266);
-  --color-bg-glow: oklch(55% 0.04 252 / 0.2);
+  --color-bg-start: oklch(16.5% 0.012 260);
+  --color-bg-end: oklch(16.5% 0.012 260);
 
-  --shadow-panel: 0 8px 32px oklch(0% 0 0 / 0.25);
+  --shadow-panel: none;
 
   --color-rarity-gray: oklch(72% 0.015 260);
   --color-rarity-white: oklch(88% 0.005 264);
@@ -99,110 +98,45 @@
   --font-brand:
     'Geist Variable', Geist, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
   --theme-mode: dark;
-  --font-cascadia-mono: 'Cascadia Mono Variable', ui-monospace, monospace;
-  --bg-art-font-size: 11px;
-  --bg-art-line-height: 13px;
   --hex-side-fill: color-mix(in oklab, var(--color-foreground) 30%, transparent);
-  --hex-design-panel-width: 335;
-  --hex-design-cluster-height: 658;
-  --hex-reference-viewport-width: 3840px;
-  --hex-reference-viewport-height: 2160px;
-  --hex-cluster-scale: clamp(
-    0.35,
-    min(100vw / var(--hex-reference-viewport-width), 100vh / var(--hex-reference-viewport-height)),
-    1
-  );
-  --radius-ui: 16px;
-  --radius-ui-lg: 20px;
-  --radius-ui-sm: 14px;
+  --radius-ui: 10px;
+  --radius-ui-lg: 12px;
+  --radius-ui-sm: 8px;
 }
 
 html:not(.dark) {
   color-scheme: light;
   --theme-mode: light;
-  --color-foreground: oklch(0% 0 0);
-  --color-muted: oklch(45% 0.02 260);
-  --color-glass: oklch(100% 0 0 / 0.5);
-  --color-glass-border: oklch(25% 0.02 280 / 0.2);
-  --color-glass-border-hover: oklch(25% 0.02 280 / 0.32);
-  --color-glass-hover: oklch(100% 0 0 / 0.65);
-  --color-glass-active: oklch(100% 0 0 / 0.75);
-  --color-glass-divider: oklch(10% 0.01 280 / 0.12);
-  --color-surface-modal: oklch(100% 0 0 / 0.56);
-  --color-surface-thead: oklch(94% 0.01 264 / 0.88);
-  --color-bg-start: oklch(91% 0.02 264);
-  --color-bg-end: oklch(98.4% 0.004 264);
-  --color-bg-glow: oklch(68% 0.03 252 / 0.28);
-  --shadow-panel: 0 8px 28px oklch(21% 0.04 266 / 0.16);
+  --color-foreground: oklch(21% 0.02 260);
+  --color-muted: oklch(38% 0.02 260);
+  --color-primary-500: oklch(46% 0.17 286);
+  --color-accent: var(--color-primary-500);
+  --color-success: oklch(40% 0.13 145);
+  --color-warning: oklch(46% 0.11 75);
+  --color-danger: oklch(46% 0.17 25);
+  --color-info: oklch(42% 0.13 264);
+  --color-surface-500: oklch(94% 0.006 260);
+  --color-surface-400: oklch(100% 0 0);
+  --color-surface-300: oklch(92% 0.008 260);
+  --color-surface-200: oklch(84% 0.012 260);
+  --color-surface-100: oklch(72% 0.014 260);
+  --color-glass: oklch(100% 0 0);
+  --color-glass-border: oklch(78% 0.012 260);
+  --color-glass-border-hover: oklch(62% 0.04 286);
+  --color-glass-hover: oklch(95% 0.008 260);
+  --color-glass-active: oklch(91% 0.016 286);
+  --color-glass-divider: oklch(88% 0.008 260);
+  --color-surface-modal: oklch(100% 0 0);
+  --color-surface-thead: oklch(96% 0.006 260);
+  --color-bg-start: oklch(96.5% 0.006 260);
+  --color-bg-end: oklch(96.5% 0.006 260);
+  --shadow-panel: 0 1px 2px oklch(21% 0.02 260 / 0.06);
   --hex-side-fill: color-mix(in oklab, var(--color-foreground) 24%, transparent);
 }
 
 html.dark {
   color-scheme: dark;
   --theme-mode: dark;
-}
-
-html.dark.ui-shadow {
-  --color-glass: oklch(0% 0 0 / 0.75);
-  --color-glass-border: oklch(100% 0 0 / 0.1);
-  --color-glass-border-hover: oklch(100% 0 0 / 0.2);
-  --color-glass-hover: oklch(100% 0 0 / 0.08);
-  --color-glass-active: oklch(100% 0 0 / 0.15);
-  --color-glass-divider: oklch(100% 0 0 / 0.08);
-  --color-surface-modal: oklch(0% 0 0 / 0.78);
-  --color-surface-thead: oklch(0% 0 0 / 0.88);
-  --shadow-panel: 0 12px 48px oklch(0% 0 0 / 0.55);
-  --color-bg-start: oklch(1% 0.01 264);
-  --color-bg-end: oklch(8% 0.02 270);
-  --color-bg-glow: oklch(35% 0.04 270 / 0.14);
-}
-
-html.ui-shadow:not(.dark) {
-  --color-glass: oklch(100% 0 0 / 0.36);
-  --color-glass-border: oklch(21% 0.04 266 / 0.14);
-  --color-glass-border-hover: oklch(21% 0.04 266 / 0.24);
-  --color-glass-hover: oklch(100% 0 0 / 0.55);
-  --color-glass-active: oklch(100% 0 0 / 0.7);
-  --color-glass-divider: oklch(21% 0.04 266 / 0.1);
-  --color-surface-modal: oklch(100% 0 0 / 0.9);
-  --color-surface-thead: oklch(98.4% 0.004 264 / 0.92);
-  --shadow-panel: 0 12px 40px oklch(21% 0.04 266 / 0.14);
-}
-
-html.dark.ui-clear {
-  --color-glass: var(--color-surface-400);
-  --color-glass-border: var(--color-surface-200);
-  --color-glass-border-hover: var(--color-surface-100);
-  --color-glass-hover: var(--color-surface-300);
-  --color-glass-active: var(--color-surface-200);
-  --color-glass-divider: var(--color-surface-200);
-  --color-surface-modal: var(--color-surface-400);
-  --color-surface-thead: var(--color-surface-500);
-  --shadow-panel: 0 1px 2px oklch(0% 0 0 / 0.24);
-  --color-bg-start: var(--color-surface-500);
-  --color-bg-end: oklch(14% 0.02 286);
-  --color-bg-glow: transparent;
-  --radius-ui: 4px;
-  --radius-ui-lg: 6px;
-  --radius-ui-sm: 3px;
-}
-
-html.ui-clear:not(.dark) {
-  --color-glass: oklch(100% 0 0);
-  --color-glass-border: oklch(82% 0.015 286 / 0.45);
-  --color-glass-border-hover: oklch(65% 0.02 286 / 0.55);
-  --color-glass-hover: oklch(96% 0.005 264);
-  --color-glass-active: oklch(92% 0.01 264);
-  --color-glass-divider: oklch(82% 0.015 286 / 0.35);
-  --color-surface-modal: oklch(100% 0 0);
-  --color-surface-thead: oklch(94% 0.01 264);
-  --shadow-panel: 0 1px 2px oklch(21% 0.04 266 / 0.12);
-  --color-bg-start: oklch(94% 0.01 264);
-  --color-bg-end: oklch(98.4% 0.004 264);
-  --color-bg-glow: transparent;
-  --radius-ui: 4px;
-  --radius-ui-lg: 6px;
-  --radius-ui-sm: 3px;
 }
 
 html.ui-acrylic {
@@ -244,6 +178,221 @@ html.ui-acrylic:not(.dark) {
   --acrylic-fallback: #f3f3f3;
 }
 
+html.dark body {
+  background:
+    radial-gradient(ellipse at 0% 0%, oklch(40% 0 0 / 0.45), transparent 48%),
+    radial-gradient(ellipse at 100% 8%, oklch(46% 0 0 / 0.28), transparent 42%),
+    linear-gradient(165deg, oklch(20% 0 0), oklch(13% 0 0));
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+html:not(.dark) body {
+  background:
+    radial-gradient(ellipse at 0% 0%, oklch(78% 0 0 / 0.7), transparent 48%),
+    radial-gradient(ellipse at 100% 0%, oklch(90% 0 0 / 0.85), transparent 42%),
+    linear-gradient(165deg, oklch(93% 0 0), oklch(98% 0 0));
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+html.dark.ui-acrylic body {
+  background:
+    radial-gradient(ellipse at 0% 0%, oklch(40% 0.09 286 / 0.45), transparent 48%),
+    radial-gradient(ellipse at 100% 8%, oklch(46% 0.06 220 / 0.28), transparent 42%),
+    linear-gradient(165deg, oklch(20% 0.02 276), oklch(13% 0.014 260));
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+html.ui-acrylic:not(.dark) body {
+  background:
+    radial-gradient(ellipse at 0% 0%, oklch(78% 0.08 286 / 0.7), transparent 48%),
+    radial-gradient(ellipse at 100% 0%, oklch(90% 0.04 220 / 0.85), transparent 42%),
+    linear-gradient(165deg, oklch(93% 0.02 276), oklch(98% 0.004 260));
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+html.dark.ui-plate {
+  --color-foreground: oklch(94% 0.01 250);
+  --color-muted: oklch(78% 0.015 250);
+  --color-glass: oklch(23% 0.012 250);
+  --color-glass-border: oklch(40% 0.02 250);
+  --color-glass-border-hover: oklch(52% 0.025 250);
+  --color-glass-hover: oklch(27% 0.014 250);
+  --color-glass-active: oklch(31% 0.016 250);
+  --color-glass-divider: oklch(40% 0.02 250);
+  --color-surface-modal: oklch(23% 0.012 250);
+  --color-surface-thead: oklch(20% 0.012 250);
+  --color-bg-start: oklch(16% 0.012 250);
+  --color-bg-end: oklch(16% 0.012 250);
+  --shadow-panel: inset 0 1px 0 oklch(100% 0 0 / 0.16), 0 8px 18px oklch(0% 0 0 / 0.28);
+}
+
+html.ui-plate:not(.dark) {
+  --color-foreground: oklch(22% 0.02 250);
+  --color-muted: oklch(36% 0.02 250);
+  --color-glass: oklch(94% 0.01 250);
+  --color-glass-border: oklch(70% 0.025 250);
+  --color-glass-border-hover: oklch(58% 0.03 250);
+  --color-glass-hover: oklch(90% 0.012 250);
+  --color-glass-active: oklch(86% 0.014 250);
+  --color-glass-divider: oklch(76% 0.02 250);
+  --color-surface-modal: oklch(94% 0.01 250);
+  --color-surface-thead: oklch(91% 0.012 250);
+  --color-bg-start: oklch(86% 0.014 250);
+  --color-bg-end: oklch(86% 0.014 250);
+  --shadow-panel: inset 0 1px 0 oklch(100% 0 0 / 0.95), inset 0 -1px 0 oklch(60% 0.02 250 / 0.45);
+}
+
+html.dark.ui-plate body {
+  background: oklch(16% 0.012 250);
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+html.ui-plate:not(.dark) body {
+  background: oklch(86% 0.014 250);
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+html.ui-plate:not(.dark)
+  :is(
+    .glass-shell,
+    .glass-surface,
+    .glass-modal-surface,
+    .glass-panel,
+    .glass-light,
+    .modal,
+    .user-menu,
+    .select-dropdown-menu,
+    .search-results
+  ) {
+  background: linear-gradient(180deg, oklch(94% 0.01 250), oklch(89% 0.014 250));
+}
+
+html.dark.ui-folio {
+  --radius-ui: 2px;
+  --radius-ui-lg: 2px;
+  --radius-ui-sm: 2px;
+  --color-foreground: oklch(93% 0.012 95);
+  --color-muted: oklch(76% 0.016 95);
+  --color-glass: oklch(28% 0.016 95);
+  --color-glass-border: oklch(42% 0.02 95);
+  --color-glass-border-hover: oklch(52% 0.025 95);
+  --color-glass-hover: oklch(32% 0.018 95);
+  --color-glass-active: oklch(36% 0.02 95);
+  --color-glass-divider: oklch(42% 0.02 95);
+  --color-surface-modal: oklch(28% 0.016 95);
+  --color-surface-thead: oklch(26% 0.015 95);
+  --color-bg-start: oklch(24% 0.014 95);
+  --color-bg-end: oklch(24% 0.014 95);
+  --shadow-panel: none;
+}
+
+html.ui-folio:not(.dark) {
+  --radius-ui: 2px;
+  --radius-ui-lg: 2px;
+  --radius-ui-sm: 2px;
+  --color-foreground: oklch(24% 0.02 90);
+  --color-muted: oklch(38% 0.02 95);
+  --color-glass: oklch(93% 0.012 115);
+  --color-glass-border: oklch(46% 0.02 100);
+  --color-glass-border-hover: oklch(36% 0.025 100);
+  --color-glass-hover: oklch(90% 0.014 115);
+  --color-glass-active: oklch(87% 0.016 115);
+  --color-glass-divider: oklch(46% 0.02 100);
+  --color-surface-modal: oklch(93% 0.012 115);
+  --color-surface-thead: oklch(93% 0.012 115);
+  --color-bg-start: oklch(93% 0.012 115);
+  --color-bg-end: oklch(93% 0.012 115);
+  --shadow-panel: none;
+}
+
+html.dark.ui-folio body {
+  background: oklch(24% 0.014 95);
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+html.ui-folio:not(.dark) body {
+  background: oklch(93% 0.012 115);
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+html.dark.ui-bronze {
+  --color-foreground: oklch(94% 0.02 85);
+  --color-muted: oklch(78% 0.03 75);
+  --color-glass: oklch(22% 0.035 58);
+  --color-glass-border: oklch(42% 0.06 70);
+  --color-glass-border-hover: oklch(52% 0.07 72);
+  --color-glass-hover: oklch(26% 0.04 60);
+  --color-glass-active: oklch(30% 0.045 62);
+  --color-glass-divider: oklch(40% 0.05 65);
+  --color-surface-modal: oklch(22% 0.035 58);
+  --color-surface-thead: oklch(18% 0.03 55);
+  --color-bg-start: oklch(12% 0.02 45);
+  --color-bg-end: oklch(18% 0.03 55);
+  --shadow-panel: inset 0 1px 0 oklch(80% 0.06 85 / 0.35);
+}
+
+html.ui-bronze:not(.dark) {
+  --color-foreground: oklch(28% 0.05 45);
+  --color-muted: oklch(40% 0.06 50);
+  --color-glass: oklch(94% 0.04 78);
+  --color-glass-border: oklch(62% 0.1 65);
+  --color-glass-border-hover: oklch(52% 0.11 62);
+  --color-glass-hover: oklch(90% 0.05 75);
+  --color-glass-active: oklch(86% 0.055 72);
+  --color-glass-divider: oklch(78% 0.06 70);
+  --color-surface-modal: oklch(94% 0.04 78);
+  --color-surface-thead: oklch(90% 0.045 75);
+  --color-bg-start: oklch(90% 0.045 78);
+  --color-bg-end: oklch(82% 0.06 62);
+  --shadow-panel: inset 0 1px 0 oklch(96% 0.05 95 / 0.9);
+}
+
+html.dark.ui-bronze body {
+  background:
+    radial-gradient(ellipse at 0% 0%, oklch(42% 0.08 55 / 0.5), transparent 52%),
+    linear-gradient(165deg, oklch(18% 0.03 55), oklch(12% 0.02 45));
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+html.ui-bronze:not(.dark) body {
+  background:
+    radial-gradient(ellipse at 0% 0%, oklch(78% 0.09 62 / 0.85), transparent 46%),
+    linear-gradient(165deg, oklch(90% 0.045 78), oklch(82% 0.06 62));
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: url('./page-noise.svg');
+  background-size: 180px 180px;
+  opacity: 0.4;
+  mix-blend-mode: overlay;
+}
+
+html.dark body::before {
+  opacity: 0.7;
+}
+
+@media print {
+  body::before {
+    content: none;
+  }
+}
+
 @layer base {
   *,
   *::before,
@@ -260,18 +409,15 @@ html.ui-acrylic:not(.dark) {
     font-family: var(--font-sans);
     margin: 0;
     color: var(--color-foreground);
-    background:
-      radial-gradient(circle at 10% 10%, var(--color-bg-glow), transparent 40%),
-      radial-gradient(circle at 85% 15%, var(--color-bg-glow), transparent 45%),
-      linear-gradient(to bottom, var(--color-bg-start) 0%, var(--color-bg-end) 100%);
-    background-size: 100% 100%;
-    background-repeat: no-repeat;
+    background: var(--color-bg-end);
     background-attachment: fixed;
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
   }
 
   #root {
+    position: relative;
+    z-index: 1;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
@@ -311,11 +457,6 @@ html.ui-acrylic:not(.dark) {
 }
 
 @layer components {
-  body.modal-open #root {
-    filter: blur(4px);
-    transition: filter 0.2s ease;
-  }
-
   .glass-shell,
   .glass-surface,
   .glass-modal-surface,
@@ -327,40 +468,7 @@ html.ui-acrylic:not(.dark) {
     border-radius: var(--radius-ui);
     background: var(--color-glass);
     border: 1px solid var(--color-glass-border);
-    box-shadow:
-      var(--shadow-panel),
-      inset 0 1px 0 oklch(100% 0 0 / 0.14),
-      inset 0 -1px 0 oklch(0% 0 0 / 0.12);
-    -webkit-backdrop-filter: blur(12px) saturate(1.2);
-    backdrop-filter: blur(12px) saturate(1.2);
-  }
-
-  .glass-shell::before,
-  .glass-surface::before,
-  .glass-modal-surface::before,
-  .glass-tooltip-surface::before,
-  .glass-panel::before,
-  .glass-light::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    pointer-events: none;
-    background:
-      linear-gradient(
-          90deg,
-          transparent,
-          color-mix(in oklab, var(--color-foreground) 16%, transparent),
-          transparent
-        )
-        top center/80% 1px no-repeat,
-      linear-gradient(
-          transparent 0%,
-          color-mix(in oklab, var(--color-foreground) 16%, transparent) 14%,
-          color-mix(in oklab, var(--color-foreground) 8%, transparent) 60%,
-          transparent 100%
-        )
-        left center/1px 86% no-repeat;
+    box-shadow: var(--shadow-panel);
   }
 
   .glass-shell {
@@ -369,7 +477,7 @@ html.ui-acrylic:not(.dark) {
 
   .glass-modal-surface {
     border-radius: var(--radius-ui-lg);
-    background: color-mix(in oklab, var(--color-glass) 75%, transparent);
+    background: var(--color-surface-modal);
   }
 
   .glass-tooltip-surface {
@@ -392,13 +500,9 @@ html.ui-acrylic:not(.dark) {
     line-height: 1.25;
     white-space: nowrap;
     color: var(--color-foreground);
-    background: color-mix(in oklab, var(--color-glass) 88%, transparent);
+    background: var(--color-surface-modal);
     border: 1px solid var(--color-glass-border);
-    box-shadow:
-      var(--shadow-panel),
-      inset 0 1px 0 oklch(100% 0 0 / 0.14);
-    -webkit-backdrop-filter: blur(16px) saturate(1.3);
-    backdrop-filter: blur(16px) saturate(1.3);
+    box-shadow: var(--shadow-panel);
     animation: toast-pill-in 0.25s ease-out;
     pointer-events: none;
   }
@@ -456,18 +560,17 @@ html.ui-acrylic:not(.dark) {
   .brand-lockup {
     display: inline-flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     min-width: 0;
     margin: 0;
-    font-size: clamp(1.35rem, 2.4vw, 2.25rem);
+    font-size: 1.05rem;
   }
 
   .brand-lockup__icon {
-    width: 42px;
-    height: 42px;
+    width: 28px;
+    height: 28px;
     object-fit: contain;
     flex: 0 0 auto;
-    filter: drop-shadow(0.07em 0.1em 0 #000);
   }
 
   .brand-lockup__title {
@@ -475,16 +578,10 @@ html.ui-acrylic:not(.dark) {
     min-width: 0;
     font-family: var(--font-brand);
     font-size: 1em;
-    line-height: 1.05;
-    font-weight: 900;
-    letter-spacing: 0.01em;
-    color: #fff;
-  }
-
-  .brand-lockup--fx {
-    -webkit-text-stroke: 0.045em #000;
-    paint-order: stroke fill;
-    text-shadow: 0.07em 0.1em 0 #000;
+    line-height: 1.1;
+    font-weight: 650;
+    letter-spacing: -0.01em;
+    color: var(--color-foreground);
   }
 
   .btn {
@@ -674,12 +771,9 @@ html.ui-acrylic:not(.dark) {
     gap: 10px;
     justify-content: flex-start;
     background: var(--color-glass);
-    box-shadow:
-      var(--shadow-panel),
-      inset 0 1px 0 oklch(100% 0 0 / 0.14),
-      inset 0 -1px 0 oklch(0% 0 0 / 0.12);
-    -webkit-backdrop-filter: var(--dal-nav-link-blur, blur(12px) saturate(1.2));
-    backdrop-filter: var(--dal-nav-link-blur, blur(12px) saturate(1.2));
+    box-shadow: var(--shadow-panel);
+    -webkit-backdrop-filter: var(--dal-nav-link-blur, none);
+    backdrop-filter: var(--dal-nav-link-blur, none);
   }
 
   .dal-app-nav__link .material-symbol {
@@ -708,7 +802,7 @@ html.ui-acrylic:not(.dark) {
     padding: 5px 10px;
     font-size: 12px;
     height: auto;
-    border-radius: 6px;
+    border-radius: var(--radius-ui-sm);
   }
 
   .btn:disabled {
@@ -730,8 +824,6 @@ html.ui-acrylic:not(.dark) {
       color 0.2s ease,
       background-color 0.2s ease,
       border-color 0.2s ease;
-    -webkit-backdrop-filter: blur(12px);
-    backdrop-filter: blur(12px);
   }
 
   .icon-toggle-btn:hover {
@@ -775,7 +867,7 @@ html.ui-acrylic:not(.dark) {
     color: var(--color-foreground);
     background: var(--color-glass-hover);
     border: 1px solid var(--color-glass-active);
-    border-radius: 8px;
+    border-radius: var(--radius-ui);
     font-family: inherit;
     outline: none;
   }
@@ -815,8 +907,6 @@ html.ui-acrylic:not(.dark) {
     border: 1px solid var(--color-glass-border);
     border-radius: var(--radius-ui);
     outline: none;
-    -webkit-backdrop-filter: blur(12px);
-    backdrop-filter: blur(12px);
     font-family: inherit;
   }
 
@@ -837,8 +927,6 @@ html.ui-acrylic:not(.dark) {
     border: 1px solid var(--color-glass-border);
     border-radius: var(--radius-ui);
     padding: 6px;
-    -webkit-backdrop-filter: blur(12px);
-    backdrop-filter: blur(12px);
   }
 
   .tab {
@@ -847,7 +935,7 @@ html.ui-acrylic:not(.dark) {
     color: var(--color-muted);
     background: transparent;
     border: none;
-    border-radius: 0.75rem;
+    border-radius: var(--radius-ui-sm);
     cursor: pointer;
     transition:
       color 0.2s,
@@ -868,9 +956,7 @@ html.ui-acrylic:not(.dark) {
   .modal-overlay {
     position: fixed;
     inset: 0;
-    background: oklch(0% 0 0 / 0.7);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
+    background: oklch(8% 0.01 260 / 0.62);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -896,11 +982,7 @@ html.ui-acrylic:not(.dark) {
     max-height: 90vh;
     overflow-y: auto;
     overscroll-behavior: contain;
-    box-shadow:
-      var(--shadow-panel),
-      inset 0 1px 0 oklch(100% 0 0 / 0.12);
-    -webkit-backdrop-filter: blur(14px);
-    backdrop-filter: blur(14px);
+    box-shadow: var(--shadow-panel);
   }
 
   .modal.modal--popover-host {
@@ -931,7 +1013,7 @@ html.ui-acrylic:not(.dark) {
   .modal-actions button {
     padding: 10px 20px;
     font-size: 14px;
-    border-radius: 8px;
+    border-radius: var(--radius-ui);
     cursor: pointer;
     transition: opacity 0.2s;
   }
@@ -942,7 +1024,7 @@ html.ui-acrylic:not(.dark) {
     border: 1px solid var(--color-glass-border);
     background: var(--color-glass);
     color: var(--color-foreground);
-    border-radius: 0.75rem;
+    border-radius: var(--radius-ui);
     padding: 0.5rem 0.85rem;
     line-height: 1.2;
     transition:
@@ -972,7 +1054,7 @@ html.ui-acrylic:not(.dark) {
     border: 1px solid color-mix(in oklab, var(--color-danger) 30%, transparent);
     color: var(--color-danger);
     padding: 12px;
-    border-radius: 8px;
+    border-radius: var(--radius-ui);
     font-size: 14px;
   }
 
@@ -981,7 +1063,7 @@ html.ui-acrylic:not(.dark) {
     border: 1px solid color-mix(in oklab, var(--color-success) 30%, transparent);
     color: var(--color-success);
     padding: 12px;
-    border-radius: 8px;
+    border-radius: var(--radius-ui);
     font-size: 14px;
   }
 
@@ -991,10 +1073,9 @@ html.ui-acrylic:not(.dark) {
     top: calc(100% + 8px);
     min-width: 180px;
     padding: 6px;
-    border-radius: 12px;
+    border-radius: var(--radius-ui);
     border: 1px solid var(--color-glass-border);
     background: var(--color-surface-modal);
-    backdrop-filter: blur(12px);
     z-index: 60;
     display: flex;
     flex-direction: column;
@@ -1014,7 +1095,7 @@ html.ui-acrylic:not(.dark) {
     text-align: left;
     border: none;
     background: transparent;
-    border-radius: 10px;
+    border-radius: var(--radius-ui-sm);
     padding: 10px 12px;
     color: var(--color-muted);
     text-decoration: none;
@@ -1048,15 +1129,14 @@ html.ui-acrylic:not(.dark) {
     margin-bottom: 6px;
     font-size: 11px;
     font-weight: 500;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
+    letter-spacing: 0;
     color: var(--color-muted);
   }
 
   .user-menu-select-trigger {
     width: 100%;
     border: 1px solid var(--color-glass-border);
-    border-radius: 10px;
+    border-radius: var(--radius-ui);
     padding: 8px 10px;
     background: var(--color-glass-hover);
     color: var(--color-foreground);
@@ -1074,30 +1154,26 @@ html.ui-acrylic:not(.dark) {
 
   .select-dropdown-trigger {
     border: 1px solid var(--color-glass-border);
-    border-radius: 10px;
+    border-radius: var(--radius-ui);
   }
 
   .select-dropdown-menu,
   .search-results {
     padding: 0;
     overflow: hidden;
-    border-radius: 10px;
+    border-radius: var(--radius-ui);
     border: 1px solid var(--color-glass-border);
     background: var(--color-surface-modal);
-    box-shadow:
-      0 12px 28px oklch(0% 0 0 / 0.35),
-      inset 0 1px 0 oklch(100% 0 0 / 0.12);
-    -webkit-backdrop-filter: blur(16px) saturate(1.15);
-    backdrop-filter: blur(16px) saturate(1.15);
+    box-shadow: 0 12px 28px oklch(0% 0 0 / 0.28);
     isolation: isolate;
   }
 
   .select-dropdown-menu--attached {
-    border-radius: 10px;
+    border-radius: var(--radius-ui);
   }
 
   .select-dropdown-menu--floating {
-    border-radius: 10px;
+    border-radius: var(--radius-ui);
   }
 
   .select-dropdown-trigger--open {
@@ -1178,172 +1254,6 @@ html.ui-acrylic:not(.dark) {
     color: var(--color-foreground);
     background: var(--color-glass-hover);
   }
-}
-
-html.dark.ui-shadow .glass-shell,
-html.dark.ui-shadow .glass-surface,
-html.dark.ui-shadow .glass-modal-surface,
-html.dark.ui-shadow .glass-tooltip-surface,
-html.dark.ui-shadow .glass-panel,
-html.dark.ui-shadow .glass-light {
-  -webkit-backdrop-filter: blur(10px) saturate(1.1);
-  backdrop-filter: blur(10px) saturate(1.1);
-  box-shadow:
-    var(--shadow-panel),
-    inset 0 1px 0 oklch(100% 0 0 / 0.06),
-    inset 0 -1px 0 oklch(0% 0 0 / 0.4);
-}
-
-html.dark.ui-shadow .glass-shell::before,
-html.dark.ui-shadow .glass-surface::before,
-html.dark.ui-shadow .glass-modal-surface::before,
-html.dark.ui-shadow .glass-tooltip-surface::before,
-html.dark.ui-shadow .glass-panel::before,
-html.dark.ui-shadow .glass-light::before {
-  opacity: 0.38;
-}
-
-html.dark.ui-shadow .icon-toggle-btn,
-html.dark.ui-shadow .search-box {
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
-}
-
-html.dark.ui-shadow {
-  --dal-nav-link-blur: blur(10px);
-}
-
-html.dark.ui-shadow .modal-overlay {
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
-}
-
-html.dark.ui-shadow .modal {
-  -webkit-backdrop-filter: blur(10px) saturate(1.1);
-  backdrop-filter: blur(10px) saturate(1.1);
-}
-
-html.dark.ui-shadow .glass-button,
-html.dark.ui-shadow .glass-button-secondary {
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
-}
-
-html.ui-shadow:not(.dark) .glass-shell,
-html.ui-shadow:not(.dark) .glass-surface,
-html.ui-shadow:not(.dark) .glass-modal-surface,
-html.ui-shadow:not(.dark) .glass-tooltip-surface,
-html.ui-shadow:not(.dark) .glass-panel,
-html.ui-shadow:not(.dark) .glass-light {
-  -webkit-backdrop-filter: blur(14px) saturate(1.15);
-  backdrop-filter: blur(14px) saturate(1.15);
-}
-
-html.ui-shadow:not(.dark) {
-  --dal-nav-link-blur: blur(14px) saturate(1.15);
-}
-
-html.ui-shadow:not(.dark) .icon-toggle-btn,
-html.ui-shadow:not(.dark) .search-box,
-html.ui-shadow:not(.dark) .modal,
-html.ui-shadow:not(.dark) .glass-button,
-html.ui-shadow:not(.dark) .glass-button-secondary,
-html.ui-shadow:not(.dark) .user-menu,
-html.ui-shadow:not(.dark) .select-dropdown-menu,
-html.ui-shadow:not(.dark) .search-results {
-  -webkit-backdrop-filter: blur(14px) saturate(1.15);
-  backdrop-filter: blur(14px) saturate(1.15);
-}
-
-html.ui-shadow:not(.dark) .modal-overlay {
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
-}
-
-html.ui-clear .glass-shell,
-html.ui-clear .glass-surface,
-html.ui-clear .glass-modal-surface,
-html.ui-clear .glass-tooltip-surface,
-html.ui-clear .glass-panel,
-html.ui-clear .glass-light {
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-  box-shadow: var(--shadow-panel);
-}
-
-html.ui-clear .glass-shell::before,
-html.ui-clear .glass-surface::before,
-html.ui-clear .glass-modal-surface::before,
-html.ui-clear .glass-tooltip-surface::before,
-html.ui-clear .glass-panel::before,
-html.ui-clear .glass-light::before {
-  display: none;
-}
-
-html.ui-clear .toast-pill {
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-  box-shadow: var(--shadow-panel);
-}
-
-html.ui-clear {
-  --dal-nav-link-blur: none;
-}
-
-html.ui-clear .icon-toggle-btn,
-html.ui-clear .search-box,
-html.ui-clear .glass-button,
-html.ui-clear .glass-button-secondary,
-html.ui-clear .modal,
-html.ui-clear .user-menu,
-html.ui-clear .tabs,
-html.ui-clear .btn {
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-}
-
-html.ui-clear .modal-overlay {
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-  background: oklch(0% 0 0 / 0.55);
-}
-
-html.ui-clear:not(.dark) .modal-overlay {
-  background: oklch(21% 0.04 266 / 0.35);
-}
-
-html.ui-clear .select-dropdown-menu,
-html.ui-clear .search-results {
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-  background: var(--color-glass);
-  box-shadow: var(--shadow-panel);
-}
-
-html.ui-clear .form-input,
-html.ui-clear .form-group input,
-html.ui-clear .form-group select,
-html.ui-clear .form-group textarea,
-html.ui-clear .select-dropdown-trigger,
-html.ui-clear .select-dropdown-menu,
-html.ui-clear .select-dropdown-menu--attached,
-html.ui-clear .select-dropdown-menu--floating,
-html.ui-clear .search-results,
-html.ui-clear .user-menu-select-trigger,
-html.ui-clear .user-menu,
-html.ui-clear .glass-button,
-html.ui-clear .glass-button-secondary,
-html.ui-clear .modal-actions button,
-html.ui-clear .error-msg,
-html.ui-clear .success-msg,
-html.ui-clear .panel {
-  border-radius: var(--radius-ui);
-}
-
-html.ui-clear .btn-sm,
-html.ui-clear .tab,
-html.ui-clear .user-menu-item {
-  border-radius: var(--radius-ui-sm);
 }
 
 html.ui-acrylic .glass-shell,
@@ -1469,10 +1379,6 @@ html.ui-acrylic .user-menu-item {
   border-radius: var(--radius-ui-sm);
 }
 
-html.ui-acrylic body.modal-open #root {
-  filter: none;
-}
-
 html.ui-acrylic .modal-overlay {
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
@@ -1522,8 +1428,6 @@ html:not(.dark) {
   border-radius: var(--radius-ui);
   background: var(--color-glass);
   border: 1px solid var(--color-glass-border);
-  -webkit-backdrop-filter: blur(12px) saturate(1.15);
-  backdrop-filter: blur(12px) saturate(1.15);
   border-color: var(--stale-banner-border) !important;
   animation: stale-update-banner-glow 2.4s ease-in-out infinite;
   box-shadow:
@@ -1657,73 +1561,6 @@ html:not(.dark) .invert-on-light {
   filter: invert(1);
 }
 
-.hex-side-panel {
-  position: fixed;
-  top: 0;
-  width: calc(var(--hex-design-panel-width) * 1px * var(--hex-cluster-scale));
-  height: 100vh;
-  overflow: hidden;
-  z-index: 0;
-  pointer-events: none;
-  user-select: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.hex-side-panel--left {
-  left: 0;
-}
-
-.hex-side-panel--right {
-  right: 0;
-}
-
-.hex-side-cluster-wrap {
-  position: relative;
-  width: calc(var(--hex-design-panel-width) * 1px * var(--hex-cluster-scale));
-  height: calc(var(--hex-design-cluster-height) * 1px * var(--hex-cluster-scale));
-  flex-shrink: 0;
-}
-
-.hex-side-cluster {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: calc(var(--hex-design-panel-width) * 1px);
-  height: calc(var(--hex-design-cluster-height) * 1px);
-  transform: scale(var(--hex-cluster-scale));
-  transform-origin: top left;
-}
-
-.hex-prism {
-  position: absolute;
-  width: var(--hex-width);
-  height: var(--hex-height);
-  background-color: var(--hex-side-fill);
-  clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
-}
-
-.bg-art {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 0;
-  pointer-events: none;
-  user-select: none;
-}
-
-.bg-art canvas {
-  display: block;
-}
-
-.bg-art .ascii-layer-front {
-  position: absolute;
-  top: 0;
-  left: 0;
-}
-
 @keyframes slide-up {
   from {
     transform: translateY(100%);
@@ -1737,21 +1574,4 @@ html:not(.dark) .invert-on-light {
 
 .animate-slide-up {
   animation: slide-up 0.25s ease-out;
-}
-
-html.dark.ui-shadow .user-menu,
-html.dark.ui-shadow .select-dropdown-menu,
-html.dark.ui-shadow .search-results {
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
-}
-
-html.ui-clear .stale-update-banner {
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-}
-
-html.ui-clear .stale-update-banner::before,
-html.ui-clear .stale-update-banner::after {
-  display: none;
 }

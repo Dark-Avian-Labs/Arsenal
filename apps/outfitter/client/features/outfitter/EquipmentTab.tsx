@@ -13,15 +13,17 @@ import {
   FILTER_STAR_RATINGS,
   GEAR_SLOTS,
   HERO_CLASSES,
+  gearSetBadgeSrc,
   type GearSlot,
 } from '@shared/catalog';
 import { computeFinalStats, type FinalStats } from '@shared/formulas';
 import { loadoutStatBag } from '@shared/pieceStats';
-import { useMemo, useState } from 'react';
+import { SET_BY_KEY } from '@shared/sets';
+import { useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
 import { FilterIconButton } from '../../components/ui/FilterIconButton';
 import { FieldSelect } from './FieldSelect';
-import { EmptySlotTile, GearTile, type GearView } from './GearTile';
+import { AnchoredHover, GearTile, type GearView } from './GearTile';
 import {
   ArtifactPortrait,
   GearPieceCard,
@@ -33,6 +35,89 @@ import {
 } from './tabShared';
 import type { ArtifactView, HeroRow } from './types';
 import { STAR_ICONS, WorIcon, classIconSrc, factionIconSrc, renderStars } from './worIcons';
+
+function dominantSet(
+  loadout: Partial<Record<GearSlot, GearView>> | undefined,
+  side: 'left' | 'right',
+): { key: string; name: string } | null {
+  const counts = new Map<string, number>();
+  for (const slot of GEAR_SLOTS) {
+    const key = loadout?.[slot]?.set_key;
+    const def = key ? SET_BY_KEY[key] : undefined;
+    if (!key || def?.side !== side) continue;
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  let best: string | null = null;
+  let bestCount = 0;
+  for (const [key, count] of counts) {
+    if (count > bestCount) {
+      best = key;
+      bestCount = count;
+    }
+  }
+  if (!best) return null;
+  return { key: best, name: SET_BY_KEY[best]?.name ?? best };
+}
+
+function EquipmentCard({
+  src,
+  stars,
+  leftSet,
+  rightSet,
+}: {
+  src: string | null;
+  stars: ReactNode;
+  leftSet: { key: string; name: string } | null;
+  rightSet: { key: string; name: string } | null;
+}) {
+  const ref = useRef<HTMLImageElement>(null);
+  const [failed, setFailed] = useState(!src);
+  useLayoutEffect(() => {
+    const img = ref.current;
+    if (!src || (img?.complete && img.naturalWidth === 0)) setFailed(true);
+  }, [src]);
+  return (
+    <div className={`equipment-card${failed ? ' is-empty' : ''}`}>
+      {!failed && src ? (
+        <img
+          ref={ref}
+          className="equipment-card__art"
+          src={src}
+          alt=""
+          onError={() => setFailed(true)}
+        />
+      ) : null}
+      {leftSet ? (
+        <img
+          className="equipment-card__set is-left"
+          src={gearSetBadgeSrc(leftSet.key)}
+          alt=""
+          title={leftSet.name}
+        />
+      ) : null}
+      {rightSet ? (
+        <img
+          className="equipment-card__set is-right"
+          src={gearSetBadgeSrc(rightSet.key)}
+          alt=""
+          title={rightSet.name}
+        />
+      ) : null}
+      <span className="equipment-card__stars">{stars}</span>
+    </div>
+  );
+}
+
+function HeroPortrait({ src, className }: { src: string | null; className: string }) {
+  const ref = useRef<HTMLImageElement>(null);
+  const [failed, setFailed] = useState(false);
+  useLayoutEffect(() => {
+    const img = ref.current;
+    if (img?.complete && img.naturalWidth === 0) setFailed(true);
+  }, [src]);
+  if (!src || failed) return null;
+  return <img ref={ref} className={className} src={src} alt="" onError={() => setFailed(true)} />;
+}
 
 export function EquipmentTab({
   heroes,
@@ -217,79 +302,61 @@ export function EquipmentTab({
           ))}
         </div>
       </div>
-      <div className="table-container">
-        <div className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredEquipmentHeroes.map((hero) => {
-            const loadout = equippedGearByHero.get(hero.slug);
-            const artifact = equippedArtifactByHero.get(hero.slug);
-            return (
-              <article
-                key={hero.slug}
-                className="equipment-hero-card"
-                tabIndex={0}
-                onClick={() => void openHero(hero)}
-                onKeyDown={(event) => {
-                  if (event.key !== 'Enter' && event.key !== ' ') return;
-                  event.preventDefault();
-                  void openHero(hero);
-                }}
-              >
-                <div className="flex items-center gap-3">
-                  {hero.portrait_path ? (
-                    <img
-                      src={hero.portrait_path}
-                      alt=""
-                      className="h-12 w-12 rounded object-cover"
-                    />
-                  ) : null}
-                  <div>
-                    <div className="flex items-center gap-2">
-                      {renderStars(hero.star_rating, hero.is_lord ? 'star6' : undefined)}
-                      <div className="font-semibold">{hero.name}</div>
-                    </div>
-                    <div className="text-muted text-xs">
-                      {CLASS_DISPLAY_NAMES[hero.class]} · {FACTION_DISPLAY_NAMES[hero.faction]}
-                    </div>
-                  </div>
-                </div>
-                <div className="equipment-hero-card__gear">
-                  {GEAR_SLOTS.map((slot) => {
-                    const piece = loadout?.[slot];
-                    return piece ? (
-                      <GearTile
-                        key={slot}
-                        gear={piece}
+      <div className="equipment-wall">
+        {filteredEquipmentHeroes.map((hero) => {
+          const loadout = equippedGearByHero.get(hero.slug);
+          const artifact = equippedArtifactByHero.get(hero.slug);
+          return (
+            <button
+              key={hero.slug}
+              type="button"
+              className="equipment-figure"
+              onClick={() => void openHero(hero)}
+            >
+              <AnchoredHover
+                captureClick={false}
+                className="equipment-figure__body"
+                card={
+                  <div className="equipment-hover">
+                    {GEAR_SLOTS.map((slot) => {
+                      const piece = loadout?.[slot];
+                      if (!piece) return null;
+                      return (
+                        <GearTile
+                          key={slot}
+                          gear={piece}
+                          size={48}
+                          showEquipped={false}
+                          hover={false}
+                        />
+                      );
+                    })}
+                    {artifact ? (
+                      <ArtifactPortrait
+                        src={artifact.portrait_path}
                         size={48}
-                        showEquipped={false}
-                        hover={false}
+                        title={artifact.name}
+                        promotion={artifact.promotion}
+                        rarity={artifact.rarity}
+                        starRating={artifact.star_rating}
                       />
-                    ) : (
-                      <EmptySlotTile key={slot} slot={slot} size={48} />
-                    );
-                  })}
-                  {artifact ? (
-                    <ArtifactPortrait
-                      src={artifact.portrait_path}
-                      size={48}
-                      title={artifact.name}
-                      promotion={artifact.promotion}
-                      rarity={artifact.rarity}
-                      starRating={artifact.star_rating}
-                    />
-                  ) : (
-                    <div
-                      className="gear-tile gear-tile--empty"
-                      style={{ width: 48, height: 48 }}
-                      title="Artifact"
-                    />
-                  )}
-                </div>
-              </article>
-            );
-          })}
-        </div>
+                    ) : null}
+                  </div>
+                }
+              >
+                <EquipmentCard
+                  src={hero.portrait_path}
+                  stars={renderStars(hero.star_rating, hero.is_lord ? 'star6' : undefined)}
+                  leftSet={dominantSet(loadout, 'left')}
+                  rightSet={dominantSet(loadout, 'right')}
+                />
+                <span className="equipment-figure__name">{hero.name}</span>
+              </AnchoredHover>
+            </button>
+          );
+        })}
         {filteredEquipmentHeroes.length === 0 ? (
-          <p className="text-muted px-4 pb-4 text-sm">
+          <p className="text-muted text-sm">
             No saved loadouts yet. Calculate one on the Outfit tab.
           </p>
         ) : null}
@@ -301,8 +368,7 @@ export function EquipmentTab({
       >
         {selectedHero ? (
           <>
-            <h2>{selectedHero.name}</h2>
-            <div className="equipment-loadout">
+            <div className="equipment-doll">
               <div className="equipment-loadout__col">
                 {LOADOUT_LEFT_SLOTS.map((slot) => (
                   <GearPieceCard
@@ -311,7 +377,22 @@ export function EquipmentTab({
                     piece={heroLoadout?.gear.find((row) => row.slot === slot)}
                   />
                 ))}
-                <div className="gear-piece-card glass-surface">
+              </div>
+              <div className="equipment-doll__figure">
+                <HeroPortrait
+                  key={selectedHero.slug}
+                  className="equipment-doll__portrait"
+                  src={selectedHero.portrait_path}
+                />
+                <h2>{selectedHero.name}</h2>
+                <div className="equipment-loadout-stats glass-surface w-full text-left">
+                  {previewLoadoutStats ? (
+                    <OutfitStatsList stats={previewLoadoutStats} hero={selectedHero} />
+                  ) : (
+                    <p className="text-muted text-sm">No stats yet.</p>
+                  )}
+                </div>
+                <div className="gear-piece-card glass-surface w-full text-left">
                   <div className="gear-piece-card__head">
                     {selectedEquipmentArtifact ? (
                       <ArtifactPortrait
@@ -349,13 +430,6 @@ export function EquipmentTab({
                     </div>
                   </div>
                 </div>
-              </div>
-              <div className="equipment-loadout-stats glass-surface">
-                {previewLoadoutStats ? (
-                  <OutfitStatsList stats={previewLoadoutStats} hero={selectedHero} />
-                ) : (
-                  <p className="text-muted text-sm">No stats yet.</p>
-                )}
               </div>
               <div className="equipment-loadout__col">
                 {LOADOUT_RIGHT_SLOTS.map((slot) => (

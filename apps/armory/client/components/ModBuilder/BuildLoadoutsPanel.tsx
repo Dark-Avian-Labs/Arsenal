@@ -41,16 +41,13 @@ export function BuildLoadoutsPanel({ buildId }: { buildId: string }) {
     };
   }, [buildId]);
 
+  if (loading) return null;
+  if (!error && loadouts.length === 0) return null;
+
   return (
-    <div>
-      <h3 className="text-muted mb-3 text-xs font-semibold tracking-[0.2em] uppercase">
-        Loadouts using this build
-      </h3>
-      {loading ? <p className="text-muted text-sm">Loading...</p> : null}
+    <div className="glass-shell p-4">
+      <h3 className="text-foreground mb-3 text-sm font-semibold">Loadouts</h3>
       {error ? <p className="text-danger text-sm">{error}</p> : null}
-      {!loading && !error && loadouts.length === 0 ? (
-        <p className="text-muted text-sm">No loadouts reference this build yet.</p>
-      ) : null}
       <ul className="space-y-2">
         {loadouts.map((l) => (
           <li key={l.id}>
@@ -64,7 +61,7 @@ export function BuildLoadoutsPanel({ buildId }: { buildId: string }) {
                 <span className="text-muted ml-2 text-xs">({l.owner_username})</span>
               ) : null}
               {l.is_own ? (
-                <span className="text-accent ml-2 text-[10px] font-semibold uppercase">Yours</span>
+                <span className="text-accent ml-2 text-xs font-semibold">Yours</span>
               ) : null}
             </button>
           </li>

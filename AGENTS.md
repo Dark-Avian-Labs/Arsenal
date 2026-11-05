@@ -61,15 +61,15 @@ On the host, `SERVER_PATH` contains `data/`, `.env.keys`, `releases/<version>/`,
 
 ## Shell
 
-Two axes. Color mode is `light` or `dark`, class `html.dark`, default dark. UI style is `prism`, `shadow`, `clear`, or `acrylic`, default prism. Shared cookies are `dal.theme.mode` and `dal.ui.style`. An app may also keep a local fallback key. `packages/ui/public/theme-init.js` runs before React. `defineAppVite` serves that file and the shared favicons. Do not copy them into an app. `VITE_SHARED_THEME_COOKIE_DOMAIN` syncs the choice across subdomains.
+Two axes. Color mode is `light` or `dark`, class `html.dark`, default dark. UI style is `ink`, `acrylic`, `plate`, `folio`, or `bronze`, default ink. A stored `prism`, `shadow`, or `clear` value loads as ink. Shared cookies are `dal.theme.mode` and `dal.ui.style`. An app may also keep a local fallback key. `packages/ui/public/theme-init.js` runs before React. `defineAppVite` serves that file and the shared favicons. Do not copy them into an app. `VITE_SHARED_THEME_COOKIE_DOMAIN` syncs the choice across subdomains.
 
 Acrylic is the signed-off Windows 11 flyout: `blur(40px) saturate(200%) contrast(1.08)`, a 55% tint, exclusion grain, and tiled noise. Do not add `brightness()`. A parent with opacity below 1, or with `filter`, `mask`, `clip-path`, or its own `backdrop-filter`, kills the blur. Acrylic skips `#root` blur and the overlay `backdrop-filter` while a modal is open.
 
-Layout width is `max-w-[2000px]` on the header, main, and footer. A mobile-first app may use `max-w-3xl` and an `h-14` header. Keep the feather mark and the `vX.Y.Z` badge either way.
+Layout width is `max-w-[2000px]` on the header and main. A mobile-first app may use `max-w-3xl` and an `h-14` header. Keep the feather mark and the `vX.Y.Z` badge either way. The legal link lives in the user menu.
 
 Use the classes and components in `@dark-avian-labs/ui`. App stylesheets import `@dark-avian-labs/ui/styles.css` and keep only their own rules. A choice list is `SelectDropdown` from that package. A native `<select>` opens the browser menu, which ignores the theme. That menu is white, with a blue highlight, and it does not match the shell. The feather mark is `@dark-avian-labs/ui/feathers.svg`. Game-domain colors `--color-dmg-*` and `--color-riven*` belong in Armory.
 
-The shell background is `HexSideBackground` plus `AsciiWaveBackground`. 4K is 1× for `--hex-cluster-scale`. Geist and Geist Mono load from the ui stylesheet. Cascadia Mono loads from the canvas hook.
+Ink paints a fixed monochrome wash. Plate is cool steel with a bright top edge. Folio is matte paper with a hairline and no shadow. Bronze is warm metal with a copper edge and a small wash. Acrylic uses the Ink wash with color, and it is the only style that blurs. The wash sits behind the panels so the blur has something to catch. A fixed generated grain sits on the wash at low opacity. Geist and Geist Mono load from the ui stylesheet. The rarity and primary color steps stay in the shared stylesheet.
 
 ## Tests
 

@@ -111,53 +111,41 @@
   color: var(--color-foreground);
 }
 
-.entry-row[data-account-color] {
-  box-shadow: inset 3px 0 0 var(--account-token);
-}
-
-.entry-row[data-account-color='red'],
 .account-swatch--red,
 .account-color-swatch--red {
   --account-token: var(--color-rarity-red);
 }
 
-.entry-row[data-account-color='orange'],
 .account-swatch--orange,
 .account-color-swatch--orange {
   --account-token: var(--color-rarity-orange);
 }
 
-.entry-row[data-account-color='gold'],
 .account-swatch--gold,
 .account-color-swatch--gold {
   --account-token: var(--color-rarity-gold);
 }
 
-.entry-row[data-account-color='green'],
 .account-swatch--green,
 .account-color-swatch--green {
   --account-token: var(--color-rarity-green);
 }
 
-.entry-row[data-account-color='teal'],
 .account-swatch--teal,
 .account-color-swatch--teal {
   --account-token: var(--color-rarity-teal);
 }
 
-.entry-row[data-account-color='blue'],
 .account-swatch--blue,
 .account-color-swatch--blue {
   --account-token: var(--color-rarity-blue);
 }
 
-.entry-row[data-account-color='purple'],
 .account-swatch--purple,
 .account-color-swatch--purple {
   --account-token: var(--color-rarity-purple);
 }
 
-.entry-row[data-account-color='pink'],
 .account-swatch--pink,
 .account-color-swatch--pink {
   --account-token: var(--color-rarity-pink);
@@ -167,15 +155,6 @@
   opacity: 0.5;
   filter: grayscale(0.55);
   background: color-mix(in oklab, var(--color-muted) 8%, transparent);
-}
-
-.entry-row--inactive:not([data-account-color]) {
-  box-shadow: inset 3px 0 0 color-mix(in oklab, var(--color-muted) 55%, transparent);
-}
-
-.entry-row--inactive .entry-row__amount {
-  text-decoration: line-through;
-  text-decoration-thickness: 1px;
 }
 
 .account-swatch,
@@ -204,18 +183,18 @@
   transform: scale(1.08);
 }
 
-.entry-row__skip-badge {
-  border: 1px solid color-mix(in oklab, var(--color-muted) 45%, transparent);
-  border-radius: 4px;
-  padding: 0 0.35rem;
-  font-size: 0.65rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+.entry-row__comment {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
   color: var(--color-muted);
 }
 
-.entry-row__comment {
-  color: var(--color-muted);
+.statement-figure__net {
+  font-size: 2.5rem;
+  font-weight: 650;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
 }
 
 .month-selector {

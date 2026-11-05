@@ -1,9 +1,7 @@
 import { useAuth, useClerk, useUser } from '@clerk/react';
 import {
-  AsciiWaveBackground,
   ChunkErrorBoundary,
   DalAppNav,
-  HexSideBackground,
   MaterialSymbol,
   Menu,
   StaleClientUpdateBanner,
@@ -23,13 +21,29 @@ import {
   APP_ID,
   APP_VERSION,
   CLERK_PUBLISHABLE_KEY,
-  LEGAL_ENTITY_NAME,
   LEGAL_PAGE_URL,
 } from '../../app/config';
 import { APP_PATHS } from '../../app/paths';
 import { LanguageSelector } from '../../components/ui/LanguageSelector';
 import { bindLocaleOwner, syncLocaleFromServer } from '../../lib/locale';
 import { PlanSwitcher } from './PlanSwitcher';
+
+function LegalMenuItem() {
+  const { t } = useTranslation();
+  const external = LEGAL_PAGE_URL.startsWith('http');
+  return (
+    <a
+      href={LEGAL_PAGE_URL}
+      className="user-menu-item"
+      role="menuitem"
+      tabIndex={-1}
+      target={external ? '_blank' : undefined}
+      rel={external ? 'noreferrer' : undefined}
+    >
+      {t('app.legal')}
+    </a>
+  );
+}
 
 function ClerkDalAppNav() {
   const { isLoaded, user } = useUser();
@@ -77,6 +91,7 @@ function ClerkSessionMenu({ onClose }: { onClose: () => void }) {
         <div className="user-menu-divider" role="separator" />
         <LanguageSelector syncRemote={false} />
         <UiStyleSelector />
+        <LegalMenuItem />
       </>
     );
   }
@@ -100,6 +115,7 @@ function ClerkSessionMenu({ onClose }: { onClose: () => void }) {
       <div className="user-menu-divider" role="separator" />
       <LanguageSelector syncRemote />
       <UiStyleSelector />
+      <LegalMenuItem />
       <button
         type="button"
         className="user-menu-item text-left"
@@ -121,7 +137,6 @@ export function Layout() {
   const location = useLocation();
   const { t } = useTranslation();
   const { mode, toggleMode } = useTheme();
-  const currentYear = new Date().getFullYear();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const { menuRef, triggerRef, onMenuKeyDown } = useRovingMenu(userMenuOpen, setUserMenuOpen);
   const clerkEnabled = Boolean(CLERK_PUBLISHABLE_KEY);
@@ -133,8 +148,6 @@ export function Layout() {
         Skip to main content
       </a>
       {clerkEnabled ? <ClerkTokenBridge /> : null}
-      <HexSideBackground />
-      <AsciiWaveBackground />
       {clerkEnabled ? <ClerkDalAppNav /> : <DalAppNav currentAppId={APP_ID} />}
       <header className="no-print relative z-30 px-4 pt-4 pb-2 sm:px-6">
         <div className="mx-auto flex h-14 w-full max-w-3xl items-center justify-between gap-3">
@@ -162,7 +175,7 @@ export function Layout() {
                 alt="Dark Avian Labs feather mark"
                 className="brand-lockup__icon"
               />
-              <span className="brand-lockup__title brand-lockup--fx">{APP_DISPLAY_NAME}</span>
+              <span className="brand-lockup__title">{APP_DISPLAY_NAME}</span>
             </Link>
             <span
               className="text-muted shrink-0 font-mono text-[10px] leading-none tracking-wide opacity-70"
@@ -211,6 +224,7 @@ export function Layout() {
                       <>
                         <LanguageSelector syncRemote={false} />
                         <UiStyleSelector />
+                        <LegalMenuItem />
                       </>
                     )}
                   </div>
@@ -235,18 +249,6 @@ export function Layout() {
           </ChunkErrorBoundary>
         </div>
       </main>
-      <footer className="no-print relative z-10 flex h-12 items-center justify-center px-4">
-        <div className="mx-auto w-full max-w-3xl text-center">
-          <a
-            href={LEGAL_PAGE_URL}
-            className="text-muted hover:text-foreground text-sm"
-            target={LEGAL_PAGE_URL.startsWith('http') ? '_blank' : undefined}
-            rel={LEGAL_PAGE_URL.startsWith('http') ? 'noreferrer' : undefined}
-          >
-            ©{currentYear} {LEGAL_ENTITY_NAME}
-          </a>
-        </div>
-      </footer>
       <StaleClientUpdateBanner appVersion={APP_VERSION} />
     </div>
   );
