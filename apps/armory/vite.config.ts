@@ -7,5 +7,6 @@ const rootDir = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineAppVite({
   rootDir,
+  proxyPaths: ['/api', '/images'],
   defines: { VITE_APP_ID: 'armory' },
 });

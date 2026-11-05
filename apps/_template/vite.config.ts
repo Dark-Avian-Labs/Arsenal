@@ -7,6 +7,4 @@ const rootDir = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineAppVite({
   rootDir,
-  devApiTarget: 'http://127.0.0.1:3000',
-  devPort: 5173,
 });
