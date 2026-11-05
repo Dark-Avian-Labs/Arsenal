@@ -43,7 +43,7 @@
     "@dark-avian-labs/server-kit": "workspace:*",
     "@dark-avian-labs/warframe-catalog": "workspace:*",
     "@dotenvx/dotenvx": "catalog:",
-    "@napi-rs/lzma": "^1.5.1",
+    "@napi-rs/lzma": "^1.5.3",
     "better-sqlite3": "catalog:",
     "cheerio": "^1.2.0",
     "cuimp": "^2.1.2",
