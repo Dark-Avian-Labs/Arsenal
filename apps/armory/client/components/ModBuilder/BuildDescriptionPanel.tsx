@@ -22,18 +22,14 @@ export function BuildDescriptionPanel({
     </p>
   );
 
+  if (readOnly && !value.trim()) return null;
+
   return (
     <div className={`glass-shell flex min-h-0 flex-1 flex-col gap-2 p-4 ${className}`.trim()}>
-      <h3 className="text-muted shrink-0 text-xs font-semibold tracking-wider uppercase">
-        Description
-      </h3>
+      <h3 className="text-foreground shrink-0 text-sm font-semibold">Notes</h3>
       {readOnly ? (
         <div className="text-foreground/90 min-h-[4.5rem] flex-1 overflow-auto text-sm leading-relaxed break-words whitespace-pre-wrap">
-          {value.trim() ? (
-            formatDescriptionText(value)
-          ) : (
-            <span className="text-muted/80">No description.</span>
-          )}
+          {formatDescriptionText(value)}
         </div>
       ) : (
         <textarea
@@ -42,7 +38,7 @@ export function BuildDescriptionPanel({
           placeholder="Notes for this build…"
           spellCheck
           className="border-glass-border bg-glass/40 text-foreground placeholder:text-muted/50 focus:border-accent/50 focus:ring-accent/30 min-h-[6rem] flex-1 resize-none rounded-lg border px-3 py-2 text-sm leading-relaxed outline-none focus:ring-1"
-          aria-label="Build description"
+          aria-label="Notes"
         />
       )}
       {footer}

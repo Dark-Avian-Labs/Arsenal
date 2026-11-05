@@ -10,6 +10,7 @@ import {
 } from '@shared/catalog';
 import { BASE_CRIT_DMG, type FinalStats } from '@shared/formulas';
 import { type GearPieceInput } from '@shared/pieceStats';
+import type { ReactNode } from 'react';
 
 import {
   EmptySlotTile,
@@ -130,6 +131,7 @@ export function ArtifactPortrait({
   promotion = 0,
   rarity = '',
   starRating = 0,
+  mark = null,
 }: {
   src: string | null;
   size: number;
@@ -137,6 +139,7 @@ export function ArtifactPortrait({
   promotion?: number;
   rarity?: string;
   starRating?: number;
+  mark?: ReactNode;
 }) {
   const filled = Math.max(0, Math.min(ARTIFACT_PROMOTION_MAX, Math.trunc(promotion)));
   const pip = Math.max(5, Math.floor((size - 2) / 5));
@@ -150,6 +153,7 @@ export function ArtifactPortrait({
       <div className="gear-tile__clip">
         {src ? <img className="gear-tile__art" src={src} alt="" /> : null}
       </div>
+      {mark}
       <div className="artifact-pips" style={{ fontSize: pip, color }} aria-hidden>
         {ARTIFACT_PIP_DIP.map((dip, index) => (
           <span

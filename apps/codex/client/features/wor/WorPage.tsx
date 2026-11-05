@@ -689,7 +689,6 @@ export function WorPage() {
             <table className="wor-table" style={{ tableLayout: 'fixed' }}>
               <thead>
                 <tr>
-                  <th className="wor-portrait-cell" aria-label="Portrait" />
                   <th>Name</th>
                   {tab === 'heroes' ? (
                     <>
@@ -710,7 +709,7 @@ export function WorPage() {
                 {loading ? (
                   <tr>
                     <td
-                      colSpan={tab === 'heroes' ? 7 : tab === 'artifacts' ? 6 : 5}
+                      colSpan={tab === 'heroes' ? 6 : tab === 'artifacts' ? 5 : 4}
                       className="text-muted text-center"
                     >
                       Loading…

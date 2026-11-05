@@ -671,8 +671,6 @@ export function Epic7Page() {
               {tab === 'heroes' ? (
                 <colgroup>
                   <col style={{ width: 'auto' }} />
-                  <col style={{ width: '150px' }} />
-                  <col style={{ width: '150px' }} />
                   <col style={{ width: '200px' }} />
                   <col style={{ width: '150px' }} />
                   {editMode ? <col style={{ width: '120px' }} /> : null}
@@ -680,7 +678,6 @@ export function Epic7Page() {
               ) : (
                 <colgroup>
                   <col style={{ width: 'auto' }} />
-                  <col style={{ width: '150px' }} />
                   <col style={{ width: '200px' }} />
                   <col style={{ width: '150px' }} />
                   {editMode ? <col style={{ width: '120px' }} /> : null}
@@ -690,8 +687,6 @@ export function Epic7Page() {
                 {tab === 'heroes' ? (
                   <tr>
                     <th>Name</th>
-                    <th className="icon-cell text-center">Class</th>
-                    <th className="icon-cell text-center">Element</th>
                     <th className="text-center">Stars</th>
                     <th className="text-center">Imprint</th>
                     {editMode ? <th className="text-center">Actions</th> : null}
@@ -699,7 +694,6 @@ export function Epic7Page() {
                 ) : (
                   <tr>
                     <th>Name</th>
-                    <th className="icon-cell text-center">Class</th>
                     <th className="text-center">Stars</th>
                     <th className="text-center">Limit Break</th>
                     {editMode ? <th className="text-center">Actions</th> : null}

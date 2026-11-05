@@ -103,10 +103,14 @@ export function AccountBreakdownView({
             <span className="text-success text-right tabular-nums">
               {formatMoney(row.incomeCents, currency, locale)}
             </span>
-            <span className="text-danger text-right tabular-nums">
+            <span className="text-right tabular-nums">
               {formatMoney(row.expenseCents, currency, locale)}
             </span>
-            <span className="text-right font-medium tabular-nums">
+            <span
+              className={`text-right font-medium tabular-nums ${
+                row.netCents < 0 ? 'text-danger' : row.netCents > 0 ? 'text-success' : ''
+              }`}
+            >
               {formatMoney(row.netCents, currency, locale, true)}
             </span>
           </li>

@@ -710,12 +710,16 @@ export function WarframePage() {
                 void handleHideCompletedChange(!hideCompleted);
               }}
               aria-pressed={hideCompleted}
-              className="stats-bar-toggle"
+              className="border-glass-border text-muted hover:border-glass-border-hover hover:bg-glass-hover hover:text-foreground inline-flex cursor-pointer items-center gap-2 rounded-lg border px-2.5 py-1.5 text-sm transition-[color,background-color,border-color,box-shadow] duration-200"
               title='Toggle "Hide completed"'
             >
               <span>Hide completed</span>
               <span
-                className={`stats-bar-toggle-indicator ${hideCompleted ? 'is-on' : ''}`}
+                className={`inline-flex h-5 w-5 items-center justify-center rounded text-xs font-bold transition-colors ${
+                  hideCompleted
+                    ? 'bg-success/20 text-success hover:bg-success/30'
+                    : 'bg-muted/10 text-muted/40 hover:bg-muted/20'
+                }`}
                 aria-hidden="true"
               >
                 {hideCompleted ? (
@@ -723,10 +727,10 @@ export function WarframePage() {
                     name="check"
                     filled
                     className="leading-none"
-                    style={{ fontSize: 14 }}
+                    style={{ fontSize: 15 }}
                   />
                 ) : (
-                  <MaterialSymbol name="close" className="leading-none" style={{ fontSize: 14 }} />
+                  <MaterialSymbol name="close" className="leading-none" style={{ fontSize: 15 }} />
                 )}
               </span>
             </button>
@@ -843,7 +847,7 @@ export function WarframePage() {
         role="tabpanel"
         aria-labelledby={worksheetId === null ? undefined : `warframe-tab-${worksheetId}`}
       >
-        <div className="table-container">
+        <div className={`table-container${advancedMode ? '' : ' wf-checklist'}`}>
           <div className="table-scroll">
             <table style={{ tableLayout: 'fixed' }}>
               <colgroup>
@@ -934,6 +938,7 @@ export function WarframePage() {
                     onHoldStart={startHoldStep}
                     onHoldStop={stopHoldStep}
                     updateAdvancedProgressLocal={updateAdvancedProgressLocal}
+                    checklist={!advancedMode}
                   />
                 ))}
               </tbody>

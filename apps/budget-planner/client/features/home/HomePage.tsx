@@ -60,20 +60,13 @@ function HomeInner() {
 
   return (
     <div className="flex flex-col gap-6 py-4">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">{t('app.name')}</h1>
-        <p className="text-muted mt-1 text-sm">{t('auth.signInSubtitle')}</p>
-      </div>
-
       {error ? <p className="text-danger text-sm">{error}</p> : null}
 
       {loading ? <p className="text-muted text-sm">{t('app.loading')}</p> : null}
 
       {!loading && plans.length > 0 ? (
         <section className="flex flex-col gap-2">
-          <h2 className="text-muted text-xs font-semibold tracking-wide uppercase">
-            {t('app.plans')}
-          </h2>
+          <h2 className="text-muted text-sm font-medium">{t('app.plans')}</h2>
           <ul className="glass-surface divide-glass-divider divide-y overflow-hidden">
             {plans.map((plan) => (
               <li key={plan.id}>

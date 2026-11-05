@@ -1,8 +1,6 @@
 import { useClerk, useUser } from '@clerk/react';
 import {
-  AsciiWaveBackground,
   DalAppNav,
-  HexSideBackground,
   MaterialSymbol,
   Menu,
   StaleClientUpdateBanner,
@@ -26,13 +24,7 @@ import {
 } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router';
 
-import {
-  APP_DISPLAY_NAME,
-  APP_ID,
-  APP_VERSION,
-  LEGAL_ENTITY_NAME,
-  LEGAL_PAGE_URL,
-} from '../../app/config';
+import { APP_DISPLAY_NAME, APP_ID, APP_VERSION, LEGAL_PAGE_URL } from '../../app/config';
 import { APP_PATHS } from '../../app/paths';
 import epic7Favicon from '../../assets/games/epic7/favicon.svg';
 import warframeFavicon from '../../assets/games/warframe/favicon.svg';
@@ -63,16 +55,15 @@ export function Layout() {
   const menuItemNodeMap = useRef<Record<string, HTMLElement | null>>({});
   const prevMenuOpenRef = useRef(menuOpen);
   const userMenuId = 'codex-user-menu';
-  const currentYear = new Date().getFullYear();
   const [headerCenter, setHeaderCenter] = useState<ReactNode | null>(null);
   const [headerActions, setHeaderActions] = useState<ReactNode | null>(null);
   const [subheaderTarget, setSubheaderTarget] = useState<HTMLDivElement | null>(null);
   const [collectionFill, setCollectionFill] = useState(false);
   const menuItemIds = useMemo(() => {
     if (!isLoggedIn) {
-      return ['login'];
+      return ['login', 'legal'];
     }
-    return isAdmin ? ['profile', 'admin', 'logout'] : ['profile', 'logout'];
+    return isAdmin ? ['profile', 'admin', 'legal', 'logout'] : ['profile', 'legal', 'logout'];
   }, [isAdmin, isLoggedIn]);
   const menuItemIndexById = useMemo(() => {
     return new Map(menuItemIds.map((id, index) => [id, index]));
@@ -236,31 +227,27 @@ export function Layout() {
       <a href="#main-content" className="skip-link">
         Skip to main content
       </a>
-      <HexSideBackground />
-      <AsciiWaveBackground />
       <DalAppNav currentAppId={APP_ID} showSentinel={showSentinel} />
-      <header className="relative z-30 h-[100px] shrink-0 px-6">
-        <div className="mx-auto grid h-full w-full max-w-[2000px] grid-cols-[1fr_auto_1fr] items-center gap-4">
-          <div className="flex w-fit max-w-full min-w-0 flex-col gap-0.5 justify-self-start">
+      <header className="relative z-30 min-h-14 shrink-0 px-6">
+        <div className="mx-auto grid min-h-14 w-full max-w-[2000px] grid-cols-[1fr_auto_1fr] items-center gap-4">
+          <div className="flex w-fit max-w-full min-w-0 items-baseline gap-2 justify-self-start">
             <Link to={APP_PATHS.selector} className="brand-lockup w-fit">
               <img
                 src={feathers}
                 alt="Dark Avian Labs feather mark"
                 className="brand-lockup__icon"
               />
-              <span className="brand-lockup__title brand-lockup--fx">{baseTitle}</span>
+              <span className="brand-lockup__title">{baseTitle}</span>
               {brandTitle.length > 0 ? (
                 <span className="brand-lockup__title brand-lockup__title_small">{brandTitle}</span>
               ) : null}
             </Link>
-            <div className="flex flex-wrap items-center justify-end gap-x-2 gap-y-0.5">
-              <span
-                className="text-muted font-mono text-[10px] leading-none tracking-wide opacity-70"
-                title={`Client ${APP_VERSION}`}
-              >
-                v{APP_VERSION}
-              </span>
-            </div>
+            <span
+              className="text-muted font-mono text-[11px] leading-none"
+              title={`Client ${APP_VERSION}`}
+            >
+              v{APP_VERSION}
+            </span>
           </div>
 
           <div className="justify-self-center">{headerCenter}</div>
@@ -316,6 +303,17 @@ export function Layout() {
                         </Link>
                         <div className="user-menu-divider" role="separator" />
                         <UiStyleSelector />
+                        <a
+                          ref={nextMenuItemRef('legal')}
+                          href={LEGAL_PAGE_URL}
+                          className="user-menu-item"
+                          role="menuitem"
+                          tabIndex={-1}
+                          target={LEGAL_PAGE_URL.startsWith('http') ? '_blank' : undefined}
+                          rel={LEGAL_PAGE_URL.startsWith('http') ? 'noreferrer' : undefined}
+                        >
+                          Legal
+                        </a>
                       </>
                     ) : (
                       <>
@@ -336,6 +334,17 @@ export function Layout() {
                         </button>
                         <div className="user-menu-divider" role="separator" />
                         <UiStyleSelector />
+                        <a
+                          ref={nextMenuItemRef('legal')}
+                          href={LEGAL_PAGE_URL}
+                          className="user-menu-item"
+                          role="menuitem"
+                          tabIndex={-1}
+                          target={LEGAL_PAGE_URL.startsWith('http') ? '_blank' : undefined}
+                          rel={LEGAL_PAGE_URL.startsWith('http') ? 'noreferrer' : undefined}
+                        >
+                          Legal
+                        </a>
                         {isAdmin ? (
                           <NavLink
                             ref={nextMenuItemRef('admin')}
@@ -382,7 +391,7 @@ export function Layout() {
         id="main-content"
         className={
           collectionFill
-            ? 'collection-fill relative z-10 -mb-12 flex min-h-0 flex-1 flex-col overflow-hidden px-6 pb-14'
+            ? 'collection-fill relative z-10 flex min-h-0 flex-1 flex-col overflow-hidden px-6 pb-4'
             : 'relative z-10 min-h-0 flex-1 overflow-y-auto px-6 pb-6'
         }
       >
@@ -414,21 +423,6 @@ export function Layout() {
           </ChunkErrorBoundary>
         </div>
       </main>
-
-      <footer
-        className={`relative flex h-[50px] shrink-0 items-center justify-center bg-transparent px-6 ${collectionFill ? 'z-20' : 'z-10'}`}
-      >
-        <div className="mx-auto w-full max-w-[2000px] text-center">
-          <a
-            href={LEGAL_PAGE_URL}
-            className="text-muted hover:text-foreground text-sm"
-            target={LEGAL_PAGE_URL.startsWith('http') ? '_blank' : undefined}
-            rel={LEGAL_PAGE_URL.startsWith('http') ? 'noreferrer' : undefined}
-          >
-            ©{currentYear} {LEGAL_ENTITY_NAME}
-          </a>
-        </div>
-      </footer>
 
       <StaleClientUpdateBanner appVersion={APP_VERSION} />
     </div>

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useId, useMemo, useState } from 'react';
 
 import { smoothLinePath, smoothLineY } from '../forgejo/chartPath';
 
@@ -9,6 +9,7 @@ type SparklineProps = {
   unit: string;
   points: Point[];
   colorVar?: string;
+  variant?: 'hero' | 'strip';
 };
 
 type Plotted = { ts: number; value: number; x: number; y: number };
@@ -24,26 +25,34 @@ function formatHoverTime(ts: number): string {
   });
 }
 
+function axisLabel(ts: number, span: number): string {
+  const date = new Date(ts);
+  if (span > 2 * 86_400_000) {
+    return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  }
+  return date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+}
+
 export function MetricSparkline({
   title,
   unit,
   points,
   colorVar = 'var(--color-accent)',
+  variant = 'strip',
 }: SparklineProps) {
   const width = 560;
-  const height = 140;
-  const pad = 12;
+  const height = 180;
+  const top = variant === 'hero' ? 78 : 64;
+  const fillId = useId().replace(/:/g, '');
   const [hover, setHover] = useState<Hover | null>(null);
 
-  const { plotted, linePath } = useMemo(() => {
+  const { plotted, linePath, areaPath, ticks } = useMemo(() => {
     const values = points
       .map((p) => p.value)
       .filter((v): v is number => v != null && Number.isFinite(v));
-    const minVal = values.length ? Math.min(...values) : 0;
-    const maxVal = values.length ? Math.max(...values) : 1;
-    const span = maxVal - minVal || 1;
+    const maxVal = values.length ? Math.max(...values) : 0;
+    const peak = Math.max(maxVal * 1.4, maxVal > 0 ? maxVal : 1);
     const denom = Math.max(points.length - 1, 1);
-
     const next: Plotted[] = [];
     for (let i = 0; i < points.length; i++) {
       const point = points[i];
@@ -51,16 +60,35 @@ export function MetricSparkline({
       next.push({
         ts: point.ts,
         value: point.value,
-        x: pad + (i / denom) * (width - pad * 2),
-        y: height - pad - ((point.value - minVal) / span) * (height - pad * 2),
+        x: (i / denom) * width,
+        y: height - (point.value / peak) * (height - top),
       });
     }
 
+    let line = smoothLinePath(next);
+    if (next.length === 1) {
+      const y = next[0]!.y;
+      line = `M 0 ${y} L ${width} ${y}`;
+    }
+    const first = next[0];
+    const last = next[next.length - 1];
+    const area =
+      first && last && line
+        ? `${line} L ${last.x} ${height} L ${next.length === 1 ? 0 : first.x} ${height} Z`
+        : '';
+    const span = first && last ? last.ts - first.ts : 0;
+    const tickPoints =
+      variant === 'hero' && next.length > 1
+        ? [next[0]!, next[Math.floor((next.length - 1) / 2)]!, next[next.length - 1]!]
+        : [];
+
     return {
       plotted: next,
-      linePath: smoothLinePath(next),
+      linePath: line,
+      areaPath: area,
+      ticks: tickPoints.map((point) => ({ x: point.x, label: axisLabel(point.ts, span) })),
     };
-  }, [points]);
+  }, [points, top, variant]);
 
   const latest = plotted.length ? plotted[plotted.length - 1].value : null;
   const sample = hover != null ? plotted[hover.index] : null;
@@ -88,92 +116,88 @@ export function MetricSparkline({
   }
 
   return (
-    <section className="glass-surface p-5">
-      <div className="flex items-baseline justify-between gap-3">
-        <h3 className="text-foreground text-sm font-semibold">{title}</h3>
-        <p className="text-muted text-xs">
-          {headerValue == null ? '-' : `${headerValue.toFixed(1)} ${unit}`}
-          {sample ? <span className="ml-2 opacity-80">{formatHoverTime(sample.ts)}</span> : null}
-        </p>
-      </div>
-      <div className="relative mt-3">
-        <svg
-          viewBox={`0 0 ${width} ${height}`}
-          className="h-36 w-full"
-          role="img"
-          aria-label={`${title} chart`}
-          onMouseMove={(event) => {
-            setHover(pointerAt(event.clientX, event.currentTarget));
-          }}
-          onMouseLeave={() => setHover(null)}
-        >
-          <line
-            x1={pad}
-            y1={height - pad}
-            x2={width - pad}
-            y2={height - pad}
-            stroke="var(--color-glass-border)"
-            strokeWidth="1"
-          />
-          {plotted.length > 1 ? (
-            <path
-              d={linePath}
-              fill="none"
-              stroke={colorVar}
-              strokeWidth="1.5"
-              strokeLinejoin="round"
-              strokeLinecap="round"
+    <section className={`metric-chart metric-chart--${variant}`}>
+      <svg
+        viewBox={`0 0 ${width} ${height}`}
+        className="metric-chart__plot"
+        preserveAspectRatio="none"
+        role="img"
+        aria-label={`${title} chart`}
+        onMouseMove={(event) => {
+          setHover(pointerAt(event.clientX, event.currentTarget));
+        }}
+        onMouseLeave={() => setHover(null)}
+      >
+        <defs>
+          <linearGradient id={fillId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={colorVar} stopOpacity="0.55" />
+            <stop offset="100%" stopColor={colorVar} stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        {[0.35, 0.68].map((step) => {
+          const y = top + (height - top) * step;
+          return (
+            <line
+              key={step}
+              x1="0"
+              x2={width}
+              y1={y}
+              y2={y}
+              stroke="var(--color-foreground)"
+              strokeOpacity="0.08"
             />
-          ) : (
-            <text
-              x={width / 2}
-              y={height / 2}
-              textAnchor="middle"
-              fill="var(--color-muted)"
-              fontSize="12"
-            >
-              No data in range
-            </text>
-          )}
-          {hover && sample && markerY != null ? (
-            <>
-              <line
-                x1={hover.x}
-                y1={pad}
-                x2={hover.x}
-                y2={height - pad}
-                stroke="var(--color-muted)"
-                strokeWidth="1"
-                opacity="0.6"
-              />
-              <circle
-                cx={hover.x}
-                cy={markerY}
-                r="4"
-                fill={colorVar}
-                stroke="var(--color-foreground)"
-                strokeWidth="1.5"
-              />
-            </>
-          ) : null}
-        </svg>
-        {hover && sample ? (
-          <div
-            className="pointer-events-none absolute top-2 rounded-md px-2 py-1 text-[11px] leading-snug"
-            style={{
-              left: `clamp(0px, calc(${(hover.x / width) * 100}% - 4rem), calc(100% - 8rem))`,
-              background: 'var(--color-glass)',
-              border: '1px solid var(--color-glass-border)',
-              color: 'var(--color-foreground)',
-              backdropFilter: 'blur(8px)',
-            }}
-          >
-            <div className="font-medium">
-              {sample.value.toFixed(2)} {unit}
-            </div>
-            <div className="text-muted">{formatHoverTime(sample.ts)}</div>
-          </div>
+          );
+        })}
+        {areaPath ? <path d={areaPath} fill={`url(#${fillId})`} stroke="none" /> : null}
+        {linePath ? (
+          <path
+            d={linePath}
+            fill="none"
+            stroke={colorVar}
+            strokeWidth="2"
+            strokeLinejoin="round"
+            strokeLinecap="round"
+            vectorEffect="non-scaling-stroke"
+          />
         ) : null}
+        {hover && markerY != null ? (
+          <line
+            x1={hover.x}
+            y1={top}
+            x2={hover.x}
+            y2={height}
+            stroke="var(--color-foreground)"
+            strokeOpacity="0.35"
+            strokeWidth="1"
+            vectorEffect="non-scaling-stroke"
+          />
+        ) : null}
+      </svg>
+      {!linePath ? <p className="metric-chart__empty">No data in range</p> : null}
+      {ticks.length > 0 ? (
+        <div className="metric-chart__axis">
+          {ticks.map((tick) => (
+            <span key={`${tick.x}-${tick.label}`}>{tick.label}</span>
+          ))}
+        </div>
+      ) : null}
+      {hover && markerY != null ? (
+        <span
+          className="metric-chart__marker"
+          style={{
+            left: `${(hover.x / width) * 100}%`,
+            top: `${(markerY / height) * 100}%`,
+            background: colorVar,
+          }}
+        />
+      ) : null}
+      <div className="metric-chart__head">
+        <h3 className="text-muted text-sm font-medium">{title}</h3>
+        <p className="metric-chart__value">
+          {headerValue == null ? '-' : headerValue.toFixed(1)}
+          <span className="metric-chart__unit">{unit}</span>
+          {sample ? <span className="metric-chart__when">{formatHoverTime(sample.ts)}</span> : null}
+        </p>
       </div>
     </section>
   );

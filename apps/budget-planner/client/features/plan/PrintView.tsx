@@ -100,12 +100,20 @@ export function PrintView({
                         {entry.kind === 'credit' ? ` (${t('entry.credit')})` : ''}
                       </td>
                       <td className="print-sheet__amount">
-                        {formatMoney(signed, currency, locale, entry.kind === 'income')}
+                        {formatMoney(signed, currency, locale, true)}
                       </td>
                       <td className="print-sheet__day">
                         {entry.frequency === 'monthly'
                           ? formatDueDay(entry.due_day, locale)
-                          : formatDueMonthDay(month, entry.due_day, locale)}
+                          : `${formatDueMonthDay(month, entry.due_day, locale)} ${t(
+                              entry.frequency === 'quarterly'
+                                ? 'entry.quarterly'
+                                : entry.frequency === 'halfyearly'
+                                  ? 'entry.halfyearly'
+                                  : entry.frequency === 'yearly'
+                                    ? 'entry.yearly'
+                                    : 'entry.once',
+                            )}`}
                       </td>
                       <td>{entry.account_id ? (accountMap.get(entry.account_id) ?? '') : ''}</td>
                       <td>{entry.comment ?? ''}</td>

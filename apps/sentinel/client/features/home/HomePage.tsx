@@ -1,8 +1,9 @@
 import { apiFetch, useAuth } from '@dark-avian-labs/ui';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 
 import { appDetailPath } from '../../app/paths';
+import { smoothLinePath } from '../forgejo/chartPath';
 import { SentinelTabs } from '../shell/SentinelTabs';
 
 type FleetApp = {
@@ -19,7 +20,17 @@ type FleetApp = {
   reqPerSec1h: number | null;
   errorRate1h: number | null;
   pmxModule: boolean;
+  hours?: FleetHour[];
+  levelMetric?: 'cpu' | 'rss';
 };
+
+type FleetHour = {
+  level: number | null;
+  bad: boolean;
+  errorRate: number | null;
+};
+
+type GlanceTone = 'empty' | 'low' | 'steady' | 'high' | 'bad';
 
 type HostSnapshot = {
   ts: number;
@@ -43,81 +54,170 @@ function isOnline(status: string | null): boolean {
   return status === 'online';
 }
 
-function FleetTable({ apps, emptyMessage }: { apps: FleetApp[]; emptyMessage?: string }) {
+function hourTones(hours: FleetHour[], metric: 'cpu' | 'rss'): GlanceTone[] {
+  const low = metric === 'cpu' ? 10 : 128;
+  const high = metric === 'cpu' ? 40 : 512;
+  return hours.map((hour) => {
+    if (hour.bad) return 'bad';
+    if (hour.level == null) return 'empty';
+    if (hour.level >= high) return 'high';
+    if (hour.level >= low) return 'steady';
+    return 'low';
+  });
+}
+
+function ErrorTrace({ rates }: { rates: Array<number | null> }) {
+  const width = 160;
+  const height = 36;
+  const padX = 4;
+  const padY = 3;
+  const finite = rates.filter((value): value is number => value != null);
+  const peak = Math.max(...finite.map((value) => value * 100), 0);
+  const scale = Math.max(peak * 1.4, peak > 0 ? peak : 1);
+  const denom = Math.max(rates.length - 1, 1);
+  const plotted = rates.map((rate, index) => ({
+    x: padX + (index / denom) * (width - padX * 2),
+    y: height - padY - (((rate ?? 0) * 100) / scale) * (height - padY * 2),
+  }));
+  const line = smoothLinePath(plotted);
+  const first = plotted[0];
+  const last = plotted[plotted.length - 1];
+  const area =
+    first && last && line
+      ? `${line} L ${last.x} ${height - padY} L ${first.x} ${height - padY} Z`
+      : '';
+  if (!area) return null;
+  return (
+    <svg
+      className="process-rail__trace"
+      viewBox={`0 0 ${width} ${height}`}
+      preserveAspectRatio="none"
+      aria-hidden="true"
+    >
+      <path d={area} fill="var(--color-danger)" opacity="0.35" />
+      <path
+        d={line}
+        fill="none"
+        stroke="var(--color-danger)"
+        strokeWidth="1.5"
+        vectorEffect="non-scaling-stroke"
+      />
+    </svg>
+  );
+}
+
+function CommitGraph({ hours, metric }: { hours: FleetHour[]; metric: 'cpu' | 'rss' }) {
+  const tones = useMemo(() => hourTones(hours, metric), [hours, metric]);
+  return (
+    <span className="commit-graph-wrap">
+      <span className="commit-graph">
+        {hours.map((hour, index) => (
+          <span
+            key={index}
+            className={`commit-graph__cell is-${tones[index]}`}
+            title={hour.bad ? 'Errors in this hour' : undefined}
+          />
+        ))}
+      </span>
+      <span className="commit-graph__scale">
+        <span>24h ago</span>
+        <span>now</span>
+      </span>
+    </span>
+  );
+}
+
+function metricText(value: number | null, digits: number, suffix: string): string {
+  if (value == null || !Number.isFinite(value)) return '-';
+  return `${value.toFixed(digits)}${suffix}`;
+}
+
+function ProcessList({
+  apps,
+  title,
+  emptyMessage,
+}: {
+  apps: FleetApp[];
+  title?: string;
+  emptyMessage?: string;
+}) {
   const navigate = useNavigate();
 
   return (
-    <div className="table-container glass-surface">
-      <div className="table-scroll">
-        <table className="fleet-table">
-          <thead>
-            <tr>
-              <th className="col-status" scope="col" aria-label="Status" />
-              <th scope="col">App</th>
-              <th scope="col">CPU</th>
-              <th scope="col">RSS</th>
-              <th scope="col">ELU</th>
-              <th scope="col">Uptime</th>
-              <th scope="col">RPS</th>
-              <th scope="col">Errors</th>
-              <th scope="col">Lag p95</th>
-              <th scope="col">24h events</th>
-            </tr>
-          </thead>
-          <tbody>
-            {apps.length === 0 ? (
-              <tr>
-                <td colSpan={10} className="text-muted py-8 text-center text-sm">
-                  {emptyMessage}
-                </td>
-              </tr>
-            ) : null}
-            {apps.map((app) => {
-              const online = isOnline(app.status);
-              return (
-                <tr
-                  key={app.id}
-                  className="fleet-row"
-                  tabIndex={0}
-                  role="link"
-                  aria-label={`${app.displayName}, ${online ? 'online' : 'offline'}`}
-                  onClick={() => navigate(appDetailPath(app.id))}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter' || event.key === ' ') {
-                      event.preventDefault();
-                      navigate(appDetailPath(app.id));
-                    }
-                  }}
-                >
-                  <td className="col-status">
-                    <span
-                      className={
-                        online ? 'fleet-status-dot is-online' : 'fleet-status-dot is-offline'
-                      }
-                      title={app.status ?? 'unknown'}
-                      aria-hidden="true"
-                    />
-                  </td>
-                  <td className="text-foreground font-medium">{app.displayName}</td>
-                  <td>{app.cpu == null ? '-' : `${app.cpu.toFixed(1)}%`}</td>
-                  <td>{app.rssMb == null ? '-' : `${app.rssMb.toFixed(0)} MB`}</td>
-                  <td>{app.elu == null ? '-' : `${(app.elu * 100).toFixed(0)}%`}</td>
-                  <td>{formatUptime(app.uptimeSec)}</td>
-                  <td>{app.reqPerSec1h == null ? '-' : app.reqPerSec1h.toFixed(2)}</td>
-                  <td>
-                    {app.errorRate1h == null ? '-' : `${(app.errorRate1h * 100).toFixed(1)}%`}
-                  </td>
-                  <td>{app.lagP95Ms == null ? '-' : `${app.lagP95Ms.toFixed(1)} ms`}</td>
-                  <td>
-                    {app.restartCount24h} / {app.crashCount24h}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-    </div>
+    <section className="space-y-2">
+      {title ? <h2 className="text-foreground text-sm font-medium">{title}</h2> : null}
+      {apps.length === 0 ? <p className="text-muted text-sm">{emptyMessage}</p> : null}
+      <ul className="process-list">
+        {apps.map((app) => {
+          const online = isOnline(app.status);
+          return (
+            <li key={app.id}>
+              <button
+                type="button"
+                className={`process-rail ${online ? 'is-up' : 'is-down'}`}
+                aria-label={`${app.displayName}, ${online ? 'up' : 'down'}`}
+                onClick={() => navigate(appDetailPath(app.id))}
+              >
+                <span className="process-rail__body">
+                  <span className="process-rail__top">
+                    {app.hours && app.hours.length > 0 ? (
+                      <CommitGraph hours={app.hours} metric={app.levelMetric ?? 'cpu'} />
+                    ) : null}
+                    <span className="process-rail__id">
+                      <span className="process-rail__name">{app.displayName}</span>
+                      <span className="process-rail__meta">
+                        <span className={online ? 'is-up' : 'is-down'}>
+                          {online ? 'Up' : 'Down'}
+                        </span>
+                        <span>{formatUptime(app.uptimeSec)}</span>
+                      </span>
+                    </span>
+                    <span className="process-rail__metrics">
+                      <span>
+                        <span className="process-rail__value">{metricText(app.cpu, 1, '%')}</span>
+                        <span className="process-rail__label">CPU</span>
+                      </span>
+                      <span>
+                        <span className="process-rail__value">
+                          {app.rssMb == null ? '-' : `${app.rssMb.toFixed(0)}`}
+                        </span>
+                        <span className="process-rail__label">MB</span>
+                      </span>
+                      <span>
+                        <span className="process-rail__value">
+                          {app.lagP95Ms == null ? '-' : app.lagP95Ms.toFixed(1)}
+                        </span>
+                        <span className="process-rail__label">ms lag</span>
+                      </span>
+                    </span>
+                    <span className="process-rail__aside">
+                      <span>{app.elu == null ? '-' : `${(app.elu * 100).toFixed(0)}% loop`}</span>
+                      <span>
+                        {app.reqPerSec1h == null ? '-' : `${app.reqPerSec1h.toFixed(2)} req/s`}
+                      </span>
+                      <span>
+                        {app.errorRate1h == null
+                          ? '-'
+                          : `${(app.errorRate1h * 100).toFixed(1)}% 5xx`}
+                      </span>
+                      <span>
+                        {app.restartCount24h} restarts, {app.crashCount24h} crashes
+                      </span>
+                    </span>
+                  </span>
+                </span>
+                <span className="process-rail__chart">
+                  <span className="process-rail__chart-label">5xx</span>
+                  {app.hours && app.hours.some((hour) => hour.errorRate != null) ? (
+                    <ErrorTrace rates={app.hours.map((hour) => hour.errorRate)} />
+                  ) : null}
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 }
 
@@ -189,24 +289,10 @@ export function HomePage() {
         trailing={
           <>
             {updatedAt ? (
-              <span className="text-muted ml-4 text-xs">
+              <span className="text-muted ml-auto text-xs">
                 Updated {new Date(updatedAt).toLocaleTimeString()}
               </span>
             ) : null}
-            <dl className="text-muted ml-auto flex flex-wrap items-center gap-x-5 gap-y-1 px-2 text-sm">
-              <div>
-                Load{' '}
-                <span className="text-foreground font-medium">
-                  {host?.load1 == null ? '-' : host.load1.toFixed(2)}
-                </span>
-              </div>
-              <div>
-                RAM{' '}
-                <span className="text-foreground font-medium">
-                  {host?.memUsedPct == null ? '-' : `${host.memUsedPct.toFixed(0)}%`}
-                </span>
-              </div>
-            </dl>
           </>
         }
       />
@@ -217,18 +303,37 @@ export function HomePage() {
         </div>
       ) : null}
 
+      {host ? (
+        <section className="host-readout">
+          <div>
+            <p className="text-muted text-sm">Load</p>
+            <p className="host-readout__value">
+              {host.load1 == null ? '-' : host.load1.toFixed(2)}
+            </p>
+          </div>
+          <div>
+            <p className="text-muted text-sm">Memory</p>
+            <p className="host-readout__value">
+              {host.memUsedPct == null ? '-' : `${host.memUsedPct.toFixed(0)}%`}
+            </p>
+          </div>
+        </section>
+      ) : null}
+
       {!error && apps === null ? <p className="text-muted text-sm">Loading fleet…</p> : null}
 
       {!error && apps && apps.length === 0 ? (
-        <FleetTable
+        <ProcessList
           apps={[]}
           emptyMessage="No samples yet. Start the PM2 bridge on the server host, or point an in-app agent at /api/ingest."
         />
       ) : null}
       {!error && apps && apps.length > 0 ? (
         <>
-          {appRows.length > 0 ? <FleetTable apps={appRows} /> : null}
-          {moduleRows.length > 0 ? <FleetTable apps={moduleRows} /> : null}
+          {appRows.length > 0 ? (
+            <ProcessList apps={appRows} title={moduleRows.length > 0 ? 'Apps' : undefined} />
+          ) : null}
+          {moduleRows.length > 0 ? <ProcessList apps={moduleRows} title="Host" /> : null}
         </>
       ) : null}
     </div>

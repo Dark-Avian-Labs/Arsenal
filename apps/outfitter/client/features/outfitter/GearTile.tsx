@@ -117,6 +117,7 @@ function GearTileFace({
   const pieceSrc = gearPieceArtSrc(gear.set_key, gear.slot);
   const emptySrc = gearEmptySlotSrc(gear.slot);
   const [src, setSrc] = useState(pieceSrc);
+  const [equippedFailed, setEquippedFailed] = useState(false);
   useEffect(() => {
     setSrc(pieceSrc);
   }, [pieceSrc]);
@@ -137,18 +138,19 @@ function GearTileFace({
     />
   ) : factionSrc ? (
     <img
-      className="gear-tile__overlay gear-tile__overlay--tl"
+      className="gear-tile__overlay gear-tile__overlay--tl gear-tile__overlay--faction"
       src={factionSrc}
       alt={FACTION_DISPLAY_NAMES[gear.exclusive_faction as FactionKey] ?? gear.exclusive_faction}
     />
   ) : null;
   const equipped =
-    showEquipped && size >= 64 && gear.equipped_hero_portrait ? (
+    showEquipped && size >= 64 && gear.equipped_hero_portrait && !equippedFailed ? (
       <img
         className="gear-tile__overlay gear-tile__overlay--br"
         src={gear.equipped_hero_portrait}
         alt={gear.equipped_hero_name ?? 'Equipped'}
         title={gear.equipped_hero_name ?? undefined}
+        onError={() => setEquippedFailed(true)}
       />
     ) : null;
 
@@ -173,13 +175,45 @@ function GearTileFace({
   );
 }
 
-function GearHoverCard({ gear, children }: { gear: GearView; children: ReactNode }) {
+export function WearerMark({
+  name,
+  portrait,
+  label = 'Equipped by',
+}: {
+  name: string | null;
+  portrait: string | null;
+  label?: string;
+}) {
+  const [failed, setFailed] = useState(false);
+  return (
+    <div className="gear-hover-card__wearer">
+      <span className="gear-hover-card__wearer-label">{label}</span>
+      {portrait && !failed ? <img src={portrait} alt="" onError={() => setFailed(true)} /> : null}
+      {name ? <span className="gear-hover-card__wearer-name">{name}</span> : null}
+    </div>
+  );
+}
+
+export function AnchoredHover({
+  captureClick = true,
+  className = 'inline-block cursor-pointer',
+  card,
+  children,
+}: {
+  captureClick?: boolean;
+  className?: string;
+  card: ReactNode;
+  children: ReactNode;
+}) {
   const triggerRef = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
   const [hovered, setHovered] = useState(false);
   const [pinned, setPinned] = useState(false);
   const [pos, setPos] = useState<TooltipPos | null>(null);
   const open = hovered || pinned;
+  const pinnedRef = useRef(pinned);
+  pinnedRef.current = pinned;
+  const suppressClick = useRef(false);
 
   const updatePosition = useCallback(() => {
     const trigger = triggerRef.current;
@@ -248,15 +282,58 @@ function GearHoverCard({ gear, children }: { gear: GearView; children: ReactNode
     };
   }, [pinned]);
 
+  useEffect(() => {
+    const node = triggerRef.current;
+    if (!node) return undefined;
+    const host = node.closest('button');
+    if (!host) return undefined;
+    const show = () => setHovered(true);
+    const hide = (event: FocusEvent) => {
+      const next = event.relatedTarget;
+      if (next instanceof Node && host.contains(next)) return;
+      if (!pinnedRef.current) setHovered(false);
+    };
+    host.addEventListener('focusin', show);
+    host.addEventListener('focusout', hide);
+    return () => {
+      host.removeEventListener('focusin', show);
+      host.removeEventListener('focusout', hide);
+    };
+  }, []);
+
   return (
     <div
       ref={triggerRef}
-      className="inline-block cursor-pointer"
+      className={className}
+      tabIndex={captureClick ? 0 : undefined}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => {
         if (!pinned) setHovered(false);
       }}
+      onFocus={() => setHovered(true)}
+      onBlur={(event) => {
+        const next = event.relatedTarget;
+        if (next instanceof Node && event.currentTarget.contains(next)) return;
+        if (!pinned) setHovered(false);
+      }}
+      onPointerUp={(event) => {
+        if (captureClick || pinned || event.pointerType !== 'touch') return;
+        suppressClick.current = true;
+        event.preventDefault();
+        setPinned(true);
+      }}
       onClick={(event) => {
+        if (suppressClick.current) {
+          suppressClick.current = false;
+          event.preventDefault();
+          event.stopPropagation();
+          return;
+        }
+        if (!captureClick) {
+          setPinned(false);
+          setHovered(false);
+          return;
+        }
         event.stopPropagation();
         setPinned((current) => !current);
       }}
@@ -279,21 +356,7 @@ function GearHoverCard({ gear, children }: { gear: GearView; children: ReactNode
                     : 'translateY(-100%)',
               }}
             >
-              <div className="gear-hover-card__icon">
-                <GearTileFace gear={gear} size={72} showEquipped />
-              </div>
-              <div className="gear-hover-card__stats">
-                <div className="gear-hover-card__main">
-                  <GearMainStat
-                    stat={gear.main_stat}
-                    value={gear.main_value}
-                    bonus={gear.main_bonus}
-                  />
-                </div>
-                {gearSubstats(gear).map((entry, index) => (
-                  <StatGauge key={`${gear.id}-${index}`} stat={entry.stat} value={entry.value} />
-                ))}
-              </div>
+              {card}
             </div>,
             document.body,
           )
@@ -302,16 +365,54 @@ function GearHoverCard({ gear, children }: { gear: GearView; children: ReactNode
   );
 }
 
+function GearHoverCard({
+  gear,
+  captureClick,
+  children,
+}: {
+  gear: GearView;
+  captureClick: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <AnchoredHover
+      captureClick={captureClick}
+      card={
+        <>
+          <div className="gear-hover-card__icon">
+            <GearTileFace gear={gear} size={72} showEquipped={false} />
+            {gear.equipped_hero_name || gear.equipped_hero_portrait ? (
+              <WearerMark name={gear.equipped_hero_name} portrait={gear.equipped_hero_portrait} />
+            ) : null}
+          </div>
+          <div className="gear-hover-card__stats">
+            <div className="gear-hover-card__main">
+              <GearMainStat stat={gear.main_stat} value={gear.main_value} bonus={gear.main_bonus} />
+            </div>
+            {gearSubstats(gear).map((entry, index) => (
+              <StatGauge key={`${gear.id}-${index}`} stat={entry.stat} value={entry.value} />
+            ))}
+          </div>
+        </>
+      }
+    >
+      {children}
+    </AnchoredHover>
+  );
+}
+
 export function GearTile({
   gear,
   size = 72,
   showEquipped = true,
   hover = true,
+  captureClick = true,
 }: {
   gear: GearView;
   size?: number;
   showEquipped?: boolean;
   hover?: boolean;
+  captureClick?: boolean;
 }) {
   const mainLabel = formatMainStatText(gear.main_stat, gear.main_value, gear.main_bonus);
   const face = (
@@ -320,7 +421,11 @@ export function GearTile({
     </div>
   );
   if (!hover) return face;
-  return <GearHoverCard gear={gear}>{face}</GearHoverCard>;
+  return (
+    <GearHoverCard gear={gear} captureClick={captureClick}>
+      {face}
+    </GearHoverCard>
+  );
 }
 
 export function GearMainStat({

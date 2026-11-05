@@ -22,9 +22,11 @@ export function formatMoney(
 }
 
 export function formatDueDay(day: number, locale: string): string {
-  const padded = String(day).padStart(2, '0');
-  if (locale.startsWith('de')) return `${padded}.`;
-  return padded;
+  if (locale.startsWith('de')) return `${day}.`;
+  const mod100 = day % 100;
+  const suffix =
+    mod100 >= 11 && mod100 <= 13 ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' }[day % 10] ?? 'th');
+  return `${day}${suffix}`;
 }
 
 export function formatDueMonthDay(month: number, day: number, locale: string): string {

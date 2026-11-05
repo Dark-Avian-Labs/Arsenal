@@ -113,11 +113,11 @@ function statusClass(status: string): string {
 
 function MetricCard({ label, value, hint }: { label: string; value: string; hint: string }) {
   return (
-    <section className="glass-surface p-4">
-      <p className="text-muted text-xs tracking-wide uppercase">{label}</p>
-      <p className="text-foreground mt-2 text-2xl font-semibold tracking-tight">{value}</p>
+    <div>
+      <p className="text-muted text-sm">{label}</p>
+      <p className="summary-readout__value">{value}</p>
       <p className="text-muted mt-1 text-xs">{hint}</p>
-    </section>
+    </div>
   );
 }
 
@@ -315,13 +315,13 @@ export function ForgejoPage() {
         </div>
       ) : null}
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="summary-readout">
         <MetricCard
           label="Runs"
           value={summary ? String(summary.runCount) : '-'}
           hint={
             summary
-              ? `${summary.successCount} ok · ${summary.failureCount} fail`
+              ? `${summary.successCount} ok, ${summary.failureCount} failed`
               : 'Matching the filters'
           }
         />

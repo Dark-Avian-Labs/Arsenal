@@ -20,7 +20,7 @@ import { useMemo, useState } from 'react';
 
 import { FilterIconButton } from '../../components/ui/FilterIconButton';
 import { FieldSelect } from './FieldSelect';
-import { GearMainStat, GearTile, StatGauge, gearSubstats, type GearView } from './GearTile';
+import { GearMainStat, GearTile, type GearView } from './GearTile';
 
 export function GearTab({
   gear,
@@ -150,105 +150,43 @@ export function GearTab({
           </button>
         </div>
       </div>
-      <div className="table-container">
-        <div className="table-scroll">
-          <table className="gear-table">
-            <colgroup>
-              <col className="col-icon" />
-              <col className="col-type" />
-              <col className="col-set" />
-              <col className="col-main" />
-              <col className="col-stats" />
-              <col className="col-rating" />
-              <col className="col-equipped" />
-            </colgroup>
-            <thead>
-              <tr>
-                <th className="col-icon" />
-                <th className="col-type">Type</th>
-                <th className="col-set">Set</th>
-                <th className="col-main">Main</th>
-                <th className="stats-col">Stats</th>
-                <th className="col-rating">Rating</th>
-                <th className="col-equipped">Equipped</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredGear.map((piece) => {
-                const setName = SET_BY_KEY[piece.set_key]?.name ?? piece.set_key;
-                const mainLabel = formatMainStatText(
-                  piece.main_stat,
-                  piece.main_value,
-                  piece.main_bonus,
-                );
-                const illegalLabels = outOfRangeGearLabels(piece);
-                const rating = rateGear(piece);
-                return (
-                  <tr
-                    key={piece.id}
-                    className={`cursor-pointer${illegalLabels.length > 0 ? ' gear-row--illegal' : ''}`}
-                    title={
-                      illegalLabels.length > 0
-                        ? `Out of range: ${illegalLabels.join(', ')}`
-                        : undefined
-                    }
-                    onClick={() => {
-                      onEdit(piece);
-                    }}
-                  >
-                    <td className="col-icon">
-                      <GearTile gear={piece} size={40} />
-                    </td>
-                    <td className="col-type">{SLOT_LABELS[piece.slot]}</td>
-                    <td className="col-set" title={setName}>
-                      {setName}
-                    </td>
-                    <td className="col-main" title={mainLabel}>
-                      <GearMainStat
-                        stat={piece.main_stat}
-                        value={piece.main_value}
-                        bonus={piece.main_bonus}
-                      />
-                    </td>
-                    <td className="stats-col">
-                      <div className="flex flex-col gap-1">
-                        {gearSubstats(piece).map((entry, index) => (
-                          <StatGauge
-                            key={`${piece.id}-${index}`}
-                            stat={entry.stat}
-                            value={entry.value}
-                          />
-                        ))}
-                      </div>
-                    </td>
-                    <td className="col-rating">
-                      <div className="gear-rating">
-                        <span className="gear-rating__rank" data-rank={rating.rank}>
-                          {rating.rank}
-                        </span>
-                        <span className="gear-rating__fit" title={rating.ruleName ?? undefined}>
-                          {rating.ruleName ?? '-'}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="col-equipped">
-                      {piece.equipped_hero_portrait ? (
-                        <img
-                          className="gear-table__hero"
-                          src={piece.equipped_hero_portrait}
-                          alt=""
-                          title={piece.equipped_hero_name ?? undefined}
-                        />
-                      ) : (
-                        <span title={piece.equipped_hero_name ?? undefined}>—</span>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+      <div className="gear-stamps">
+        {filteredGear.map((piece) => {
+          const setName = SET_BY_KEY[piece.set_key]?.name ?? piece.set_key;
+          const mainLabel = formatMainStatText(piece.main_stat, piece.main_value, piece.main_bonus);
+          const illegalLabels = outOfRangeGearLabels(piece);
+          const rating = rateGear(piece);
+          return (
+            <button
+              key={piece.id}
+              type="button"
+              className={`gear-stamp${illegalLabels.length > 0 ? ' gear-stamp--illegal' : ''}`}
+              title={
+                illegalLabels.length > 0 ? `Out of range: ${illegalLabels.join(', ')}` : mainLabel
+              }
+              onClick={() => {
+                onEdit(piece);
+              }}
+            >
+              <span className="gear-stamp__face">
+                <GearTile gear={piece} size={88} showEquipped captureClick={false} />
+                <span className="gear-rating__rank gear-stamp__rank" data-rank={rating.rank}>
+                  {rating.rank}
+                </span>
+              </span>
+              <span className="gear-stamp__caption gear-stamp__set" title={setName}>
+                {setName}
+              </span>
+              <span className="gear-stamp__caption gear-stamp__main" title={mainLabel}>
+                <GearMainStat
+                  stat={piece.main_stat}
+                  value={piece.main_value}
+                  bonus={piece.main_bonus}
+                />
+              </span>
+            </button>
+          );
+        })}
       </div>
     </>
   );

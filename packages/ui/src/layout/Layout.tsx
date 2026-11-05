@@ -13,9 +13,7 @@ import { MaterialSymbol } from '../icons';
 import { isSentinelAdmin } from '../lib/dalAppNav';
 import { useAppShell } from '../shell/appShell';
 import { useTheme } from '../theme/ThemeContext';
-import { AsciiWaveBackground } from './AsciiWaveBackground';
 import { DalAppNav } from './DalAppNav';
-import { HexSideBackground } from './HexSideBackground';
 import { SearchBar } from './SearchBar';
 import { StaleClientUpdateBanner } from './StaleClientUpdateBanner';
 
@@ -25,12 +23,35 @@ export interface LayoutProps {
   subheaderSlot?: ReactNode;
   width?: 'wide' | 'narrow';
   showSearch?: boolean;
-  footerLinks?: ReactNode;
   adminPath?: string;
   reloadHome?: boolean;
 }
 
-function ClerkUserMenuItems({ onClose, adminPath }: { onClose: () => void; adminPath?: string }) {
+function LegalMenuItem({ href }: { href: string }) {
+  const external = href.startsWith('http');
+  return (
+    <a
+      href={href}
+      className="user-menu-item"
+      role="menuitem"
+      tabIndex={-1}
+      target={external ? '_blank' : undefined}
+      rel={external ? 'noreferrer' : undefined}
+    >
+      Legal
+    </a>
+  );
+}
+
+function ClerkUserMenuItems({
+  onClose,
+  adminPath,
+  legalPageUrl,
+}: {
+  onClose: () => void;
+  adminPath?: string;
+  legalPageUrl: string;
+}) {
   const { paths } = useAppShell();
   const { mode } = useTheme();
   const { auth } = useAuth();
@@ -51,6 +72,7 @@ function ClerkUserMenuItems({ onClose, adminPath }: { onClose: () => void; admin
         </Link>
         <div className="user-menu-divider" role="separator" />
         <UiStyleSelector />
+        <LegalMenuItem href={legalPageUrl} />
       </>
     );
   }
@@ -73,6 +95,7 @@ function ClerkUserMenuItems({ onClose, adminPath }: { onClose: () => void; admin
       </button>
       <div className="user-menu-divider" role="separator" />
       <UiStyleSelector />
+      <LegalMenuItem href={legalPageUrl} />
       {adminPath && auth.status === 'authenticated' && auth.isAdmin === true ? (
         <Link
           to={adminPath}
@@ -116,15 +139,12 @@ export function Layout({
   subheaderSlot,
   width = 'wide',
   showSearch = true,
-  footerLinks,
   adminPath,
   reloadHome = true,
 }: LayoutProps = {}) {
   const location = useLocation();
-  const { appName, appId, version, clerkEnabled, legalPageUrl, legalEntityName, paths } =
-    useAppShell();
+  const { appName, appId, version, clerkEnabled, legalPageUrl, paths } = useAppShell();
   const { mode, toggleMode } = useTheme();
-  const currentYear = new Date().getFullYear();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const frame = width === 'narrow' ? 'max-w-3xl' : 'max-w-[2000px]';
   const { menuRef, triggerRef, onMenuKeyDown } = useRovingMenu(userMenuOpen, setUserMenuOpen);
@@ -135,14 +155,12 @@ export function Layout({
       <a href="#main-content" className="skip-link">
         Skip to main content
       </a>
-      <HexSideBackground />
-      <AsciiWaveBackground />
       {clerkEnabled ? <ClerkDalAppNav currentAppId={appId} /> : <DalAppNav currentAppId={appId} />}
-      <header className="relative z-30 h-[100px] px-6">
+      <header className="relative z-30 min-h-14 px-6">
         <div
-          className={`mx-auto grid h-full w-full ${frame} grid-cols-[1fr_auto_1fr] items-center gap-4`}
+          className={`mx-auto grid min-h-14 w-full ${frame} grid-cols-[1fr_auto_1fr] items-center gap-4`}
         >
-          <div className="flex w-fit max-w-full min-w-0 flex-col gap-0.5 justify-self-start">
+          <div className="flex w-fit max-w-full min-w-0 items-baseline gap-2 justify-self-start">
             <Link
               to={paths.home}
               className="brand-lockup w-fit"
@@ -167,17 +185,15 @@ export function Layout({
                 alt="Dark Avian Labs feather mark"
                 className="brand-lockup__icon"
               />
-              <span className="brand-lockup__title brand-lockup--fx">{appName}</span>
+              <span className="brand-lockup__title">{appName}</span>
             </Link>
+            <span
+              className="text-muted font-mono text-[11px] leading-none"
+              title={`Client ${version}`}
+            >
+              v{version}
+            </span>
             {navItems}
-            <div className="flex flex-wrap items-center justify-end gap-x-2 gap-y-0.5">
-              <span
-                className="text-muted font-mono text-[10px] leading-none tracking-wide opacity-70"
-                title={`Client ${version}`}
-              >
-                v{version}
-              </span>
-            </div>
           </div>
 
           <div className="justify-self-center">
@@ -222,10 +238,14 @@ export function Layout({
                     {clerkEnabled ? (
                       <ClerkUserMenuItems
                         adminPath={adminPath}
+                        legalPageUrl={legalPageUrl}
                         onClose={() => setUserMenuOpen(false)}
                       />
                     ) : (
-                      <UiStyleSelector />
+                      <>
+                        <UiStyleSelector />
+                        <LegalMenuItem href={legalPageUrl} />
+                      </>
                     )}
                   </div>
                 </Menu>
@@ -250,20 +270,6 @@ export function Layout({
           </ChunkErrorBoundary>
         </div>
       </main>
-      <footer className="relative z-10 flex h-[50px] items-center justify-center px-6">
-        <div className={`mx-auto w-full ${frame} text-center`}>
-          {footerLinks ?? (
-            <a
-              href={legalPageUrl}
-              className="text-muted hover:text-foreground text-sm"
-              target={legalPageUrl.startsWith('http') ? '_blank' : undefined}
-              rel={legalPageUrl.startsWith('http') ? 'noreferrer' : undefined}
-            >
-              ©{currentYear} {legalEntityName}
-            </a>
-          )}
-        </div>
-      </footer>
       <StaleClientUpdateBanner appVersion={version} />
     </div>
   );

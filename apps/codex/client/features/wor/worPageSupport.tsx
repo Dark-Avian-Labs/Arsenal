@@ -394,15 +394,17 @@ export const WorRow = memo(function WorRow({
   const gaugeDisabled = owned !== 1 || awakeningLocked;
   return (
     <tr className={owned === 1 ? 'wor-completed-row' : undefined}>
-      <td className="wor-portrait-cell">
-        <WorPortrait
-          portraitPath={portraitPath}
-          name={name}
-          summonPool={summonPool}
-          isLimited={isLimited}
-        />
+      <td className="item-name">
+        <span className="name-with-mark">
+          <WorPortrait
+            portraitPath={portraitPath}
+            name={name}
+            summonPool={summonPool}
+            isLimited={isLimited}
+          />
+          <span className="truncate">{name}</span>
+        </span>
       </td>
-      <td className="item-name">{name}</td>
       {extraCells}
       <td className="stars-cell">{renderStars(starRating, starIconKey)}</td>
       <td className="status-cell">

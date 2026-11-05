@@ -256,32 +256,26 @@ export const Epic7TableRow = memo(function Epic7TableRow({
 }: Epic7TableRowProps) {
   return (
     <tr>
-      <td className="item-name">{row.name}</td>
-      <td className="icon-cell">
-        {row.class && ICONS[row.class] ? (
-          <img
-            className="invert-on-light"
-            src={ICONS[row.class]}
-            alt={row.class ? (CLASS_NAMES[row.class as ClassKey] ?? row.class) : '-'}
-            title={row.class ? (CLASS_NAMES[row.class as ClassKey] ?? row.class) : '-'}
-          />
-        ) : (
-          row.class || '-'
-        )}
-      </td>
-      {isHero(row) ? (
-        <td className="icon-cell">
-          {row.element && ICONS[row.element] ? (
+      <td className="item-name">
+        <span className="name-with-mark">
+          {row.class && ICONS[row.class] ? (
+            <img
+              className="invert-on-light"
+              src={ICONS[row.class]}
+              alt={CLASS_NAMES[row.class as ClassKey] ?? row.class}
+              title={CLASS_NAMES[row.class as ClassKey] ?? row.class}
+            />
+          ) : null}
+          {isHero(row) && row.element && ICONS[row.element] ? (
             <img
               src={ICONS[row.element]}
-              alt={row.element ? (ELEMENT_NAMES[row.element as ElementKey] ?? row.element) : '-'}
-              title={row.element ? (ELEMENT_NAMES[row.element as ElementKey] ?? row.element) : '-'}
+              alt={ELEMENT_NAMES[row.element as ElementKey] ?? row.element}
+              title={ELEMENT_NAMES[row.element as ElementKey] ?? row.element}
             />
-          ) : (
-            row.element || '-'
-          )}
-        </td>
-      ) : null}
+          ) : null}
+          <span className="truncate">{row.name}</span>
+        </span>
+      </td>
       <td className="stars-cell">{renderStars(row.star_rating)}</td>
       <td className={isHero(row) ? 'rating-cell' : 'level-cell'}>
         {isHero(row) ? (

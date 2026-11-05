@@ -18,7 +18,18 @@ export type FleetAppRow = {
   restartCount24h: number;
   reqPerSec1h: number | null;
   errorRate1h: number | null;
+  hours: FleetHour[];
+  levelMetric: 'cpu' | 'rss';
 };
+
+export type FleetHour = {
+  level: number | null;
+  bad: boolean;
+  errorRate: number | null;
+};
+
+const GLANCE_HOURS = 24;
+const HOUR_MS = 3_600_000;
 
 const FLEET_SAMPLE_FRESH_MS = 60_000;
 
@@ -91,9 +102,50 @@ export function listFleet(db: Database.Database, now = Date.now()): FleetAppRow[
   const http1h = db.prepare(
     `SELECT
        COALESCE(SUM(count), 0) AS total,
-       COALESCE(SUM(CASE WHEN status_class IN ('4xx', '5xx') THEN count ELSE 0 END), 0) AS errors
+       COALESCE(SUM(CASE WHEN status_class = '5xx' THEN count ELSE 0 END), 0) AS errors
      FROM http_raw WHERE app_id = ? AND ts >= ?`,
   );
+  // Groups the last 24h of samples, http, and events on every poll. Cache this if the fleet poll gets slow.
+  const sampleHours = db
+    .prepare(
+      `SELECT app_id AS appId,
+              (CAST(ts AS INTEGER) / CAST(? AS INTEGER)) * CAST(? AS INTEGER) AS hour,
+              AVG(cpu) AS cpu, AVG(rss_mb) AS rss
+       FROM samples_raw WHERE ts >= ? GROUP BY app_id, hour`,
+    )
+    .all(HOUR_MS, HOUR_MS, since24h) as Array<{
+    appId: string;
+    hour: number;
+    cpu: number | null;
+    rss: number | null;
+  }>;
+  const httpHours = db
+    .prepare(
+      `SELECT app_id AS appId,
+              (CAST(ts AS INTEGER) / CAST(? AS INTEGER)) * CAST(? AS INTEGER) AS hour,
+              SUM(count) AS total,
+              SUM(CASE WHEN status_class = '5xx' THEN count ELSE 0 END) AS errors
+       FROM http_raw WHERE ts >= ? GROUP BY app_id, hour`,
+    )
+    .all(HOUR_MS, HOUR_MS, since24h) as Array<{
+    appId: string;
+    hour: number;
+    total: number;
+    errors: number;
+  }>;
+  const crashHours = db
+    .prepare(
+      `SELECT app_id AS appId,
+              (CAST(ts AS INTEGER) / CAST(? AS INTEGER)) * CAST(? AS INTEGER) AS hour,
+              COUNT(*) AS crashes
+       FROM events WHERE kind = 'crash' AND ts >= ? GROUP BY app_id, hour`,
+    )
+    .all(HOUR_MS, HOUR_MS, since24h) as Array<{ appId: string; hour: number; crashes: number }>;
+
+  const sampleByHour = new Map(sampleHours.map((row) => [`${row.appId}:${row.hour}`, row]));
+  const httpByHour = new Map(httpHours.map((row) => [`${row.appId}:${row.hour}`, row]));
+  const crashByHour = new Map(crashHours.map((row) => [`${row.appId}:${row.hour}`, row.crashes]));
+  const endHour = Math.floor(now / HOUR_MS) * HOUR_MS;
 
   return apps.map((app) => {
     const rows = recentSamples.all(app.id, sinceFresh) as SampleFields[];
@@ -105,6 +157,22 @@ export function listFleet(db: Database.Database, now = Date.now()): FleetAppRow[
     const http = http1h.get(app.id, since1h) as { total: number; errors: number };
     const reqPerSec1h = http.total > 0 ? http.total / 3600 : null;
     const errorRate1h = http.total > 0 ? http.errors / http.total : null;
+    const useCpu = Array.from({ length: GLANCE_HOURS }, (_, index) => {
+      const hour = endHour - (GLANCE_HOURS - 1 - index) * HOUR_MS;
+      return sampleByHour.get(`${app.id}:${hour}`)?.cpu ?? null;
+    }).some((value) => value != null);
+    const hours: FleetHour[] = Array.from({ length: GLANCE_HOURS }, (_, index) => {
+      const hour = endHour - (GLANCE_HOURS - 1 - index) * HOUR_MS;
+      const key = `${app.id}:${hour}`;
+      const sample = sampleByHour.get(key);
+      const httpHour = httpByHour.get(key);
+      const crashes = crashByHour.get(key) ?? 0;
+      return {
+        level: useCpu ? (sample?.cpu ?? null) : (sample?.rss ?? null),
+        bad: (httpHour?.errors ?? 0) > 0 || crashes > 0,
+        errorRate: httpHour && httpHour.total > 0 ? httpHour.errors / httpHour.total : null,
+      };
+    });
     return {
       id: app.id,
       displayName: app.displayName,
@@ -123,6 +191,8 @@ export function listFleet(db: Database.Database, now = Date.now()): FleetAppRow[
       restartCount24h: restarts.c,
       reqPerSec1h,
       errorRate1h,
+      hours,
+      levelMetric: useCpu ? 'cpu' : 'rss',
     };
   });
 }
@@ -230,7 +300,7 @@ export function queryHttpSeries(
          (ts / ?) * ? AS ts,
          SUM(count) AS count,
          AVG(latency_p95_ms) AS latencyP95Ms,
-         SUM(CASE WHEN status_class IN ('4xx', '5xx') THEN count ELSE 0 END) AS errors
+         SUM(CASE WHEN status_class = '5xx' THEN count ELSE 0 END) AS errors
        FROM http_raw
        WHERE app_id = ? AND ts >= ? AND ts <= ?
        GROUP BY (ts / ?) * ?

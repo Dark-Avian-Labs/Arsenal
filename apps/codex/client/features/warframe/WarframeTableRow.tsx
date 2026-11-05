@@ -16,6 +16,20 @@ import {
   statusClass,
 } from './warframeUtils.js';
 
+const stepperMark = 'block h-0 w-0 border-x-[3px] border-x-transparent';
+
+function StepperArrows({ className }: { className: string }) {
+  return (
+    <span
+      className={`inline-flex shrink-0 flex-col items-center gap-1 ${className}`}
+      aria-hidden="true"
+    >
+      <span className={`${stepperMark} border-b-[4px] border-b-current`} />
+      <span className={`${stepperMark} border-t-[4px] border-t-current`} />
+    </span>
+  );
+}
+
 export type AdvancedPatch = Partial<{
   level: number;
   level_prime: number;
@@ -61,6 +75,7 @@ interface WarframeTableRowProps {
   ) => void;
   onHoldStop: (commitFinal?: boolean) => void;
   updateAdvancedProgressLocal: (rowId: number, patch: AdvancedLocalPatch) => void;
+  checklist?: boolean;
 }
 
 export const WarframeTableRow = memo(function WarframeTableRow({
@@ -79,6 +94,7 @@ export const WarframeTableRow = memo(function WarframeTableRow({
   onHoldStart,
   onHoldStop,
   updateAdvancedProgressLocal,
+  checklist = false,
 }: WarframeTableRowProps) {
   const isCompletedRow = isRowCompleted(row, columns, advancedMode, showAllVariants);
   const rowClassName = `${isCompletedRow ? 'warframe-completed-row ' : ''}${
@@ -148,14 +164,7 @@ export const WarframeTableRow = memo(function WarframeTableRow({
                   >
                     <span className="flex w-full min-w-0 items-center justify-between gap-1">
                       <span className="tabular-nums">{current}</span>
-                      <span
-                        className={`inline-flex shrink-0 flex-col text-[9px] leading-[0.7] ${
-                          levelMaxed ? 'opacity-90' : 'opacity-80'
-                        }`}
-                      >
-                        <span>▲</span>
-                        <span>▼</span>
-                      </span>
+                      <StepperArrows className={levelMaxed ? 'opacity-90' : 'opacity-80'} />
                     </span>
                   </button>
                   {effectiveMarketLinks ? (
@@ -258,14 +267,7 @@ export const WarframeTableRow = memo(function WarframeTableRow({
                     >
                       <span className="flex w-full min-w-0 items-center justify-between gap-1">
                         <span className="tabular-nums">{current}</span>
-                        <span
-                          className={`inline-flex shrink-0 flex-col text-[9px] leading-[0.7] ${
-                            levelMaxed ? 'opacity-90' : 'opacity-80'
-                          }`}
-                        >
-                          <span>▲</span>
-                          <span>▼</span>
-                        </span>
+                        <StepperArrows className={levelMaxed ? 'opacity-90' : 'opacity-80'} />
                       </span>
                     </button>
                   );
@@ -319,14 +321,7 @@ export const WarframeTableRow = memo(function WarframeTableRow({
                     >
                       <span className="flex w-full min-w-0 items-center justify-between gap-1">
                         <span className="tabular-nums">{current}</span>
-                        <span
-                          className={`inline-flex shrink-0 flex-col text-[9px] leading-[0.7] ${
-                            valenceMaxed ? 'opacity-90' : 'opacity-80'
-                          }`}
-                        >
-                          <span>▲</span>
-                          <span>▼</span>
-                        </span>
+                        <StepperArrows className={valenceMaxed ? 'opacity-90' : 'opacity-80'} />
                       </span>
                     </button>
                   );
@@ -430,6 +425,7 @@ export const WarframeTableRow = memo(function WarframeTableRow({
 
           return (
             <td key={`${row.id}-${column.id}`} className="status-cell">
+              {checklist ? <span className="wf-check__label">{column.name}</span> : null}
               {showInlineMarket ? (
                 <div className="status-cell-inner">
                   {statusButton}
@@ -472,6 +468,7 @@ export const WarframeTableRow = memo(function WarframeTableRow({
       )}
       {effectiveMarketLinks && !inlineMarketLayout ? (
         <td className="status-cell">
+          {checklist ? <span className="wf-check__label">Market</span> : null}
           {row.market_href ? (
             <a
               href={row.market_href}

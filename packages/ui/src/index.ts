@@ -30,9 +30,7 @@ export { useRovingMenu } from './components/useRovingMenu';
 export { useStaleBundlePrompt } from './hooks/useStaleBundlePrompt';
 export { isSentinelAdmin, visibleDalAppNavApps } from './lib/dalAppNav';
 export { Layout, type LayoutProps } from './layout/Layout';
-export { AsciiWaveBackground } from './layout/AsciiWaveBackground';
 export { DalAppNav } from './layout/DalAppNav';
-export { HexSideBackground } from './layout/HexSideBackground';
 export { StaleClientUpdateBanner } from './layout/StaleClientUpdateBanner';
 export { NotFoundPage } from './pages/NotFoundPage';
 export {

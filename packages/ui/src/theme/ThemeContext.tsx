@@ -10,16 +10,19 @@ import {
 
 export type ThemeMode = 'light' | 'dark';
 
-export const UI_STYLES = ['prism', 'shadow', 'clear', 'acrylic'] as const;
+export const UI_STYLES = ['ink', 'acrylic', 'plate', 'folio', 'bronze'] as const;
 
 export type UiStyle = (typeof UI_STYLES)[number];
 
 export const UI_STYLE_LABELS: Record<UiStyle, string> = {
-  prism: 'Prism',
-  shadow: 'Shadow',
-  clear: 'Clear',
+  ink: 'Ink',
   acrylic: 'Acrylic',
+  plate: 'Plate',
+  folio: 'Folio',
+  bronze: 'Bronze',
 };
+
+const LEGACY_UI_STYLE_CLASSES = ['ui-prism', 'ui-shadow', 'ui-clear'] as const;
 
 interface ThemeContextValue {
   mode: ThemeMode;
@@ -66,6 +69,7 @@ function isUiStyle(raw: string): raw is UiStyle {
 
 function normalizeUiStyle(raw: string | null | undefined): UiStyle | null {
   if (!raw) return null;
+  if (raw === 'prism' || raw === 'shadow' || raw === 'clear') return 'ink';
   return isUiStyle(raw) ? raw : null;
 }
 
@@ -96,14 +100,14 @@ function resolveInitialMode(appStorageKey: string, legacyKeys: string[]): ThemeM
 }
 
 function resolveInitialUiStyle(legacyUiStyleKeys: string[]): UiStyle {
-  if (typeof window === 'undefined') return 'prism';
+  if (typeof window === 'undefined') return 'ink';
   const fromCookie = parseUiStyleCookie();
   if (fromCookie) return fromCookie;
   for (const key of [UI_STYLE_STORAGE_KEY, ...legacyUiStyleKeys]) {
     const stored = normalizeUiStyle(safeReadStorage(key));
     if (stored) return stored;
   }
-  return 'prism';
+  return 'ink';
 }
 
 function writeThemeCookie(mode: ThemeMode): void {
@@ -167,6 +171,9 @@ export function ThemeProvider({
     for (const style of UI_STYLES) {
       root.classList.remove(`ui-${style}`);
     }
+    for (const legacy of LEGACY_UI_STYLE_CLASSES) {
+      root.classList.remove(legacy);
+    }
     root.classList.add(`ui-${uiStyle}`);
     if (!hasMountedRef.current) {
       return;
@@ -193,7 +200,7 @@ export function ThemeProvider({
       cycleUiStyle: () =>
         setUiStyle((prev) => {
           const index = UI_STYLES.indexOf(prev);
-          return UI_STYLES[(index + 1) % UI_STYLES.length] ?? 'prism';
+          return UI_STYLES[(index + 1) % UI_STYLES.length] ?? 'ink';
         }),
     }),
     [mode, uiStyle],

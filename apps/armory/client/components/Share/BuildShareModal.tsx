@@ -52,8 +52,7 @@ const MAX_DESCRIPTION_LENGTH = 900;
 const TRUNCATED_DESCRIPTION_LENGTH = MAX_DESCRIPTION_LENGTH - 3;
 
 const MAIN_PAGE_BACKGROUND_STYLE: CSSProperties = {
-  backgroundImage:
-    'radial-gradient(circle at 10% 10%, var(--color-bg-glow), transparent 40%), radial-gradient(circle at 85% 15%, var(--color-bg-glow), transparent 45%), linear-gradient(to bottom, var(--color-bg-start) 0%, var(--color-bg-end) 100%)',
+  backgroundImage: 'linear-gradient(to bottom, var(--color-bg-start) 0%, var(--color-bg-end) 100%)',
   backgroundSize: '100% 100%',
   backgroundRepeat: 'no-repeat',
 };

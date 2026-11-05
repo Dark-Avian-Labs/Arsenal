@@ -4,9 +4,7 @@ import { useState } from 'react';
 import { APP_DISPLAY_NAME } from '../../app/config';
 
 const SAMPLE_OPTIONS = [
-  { value: 'prism', label: 'Prism' },
-  { value: 'shadow', label: 'Shadow' },
-  { value: 'clear', label: 'Clear' },
+  { value: 'ink', label: 'Ink' },
   { value: 'acrylic', label: 'Acrylic' },
 ];
 
@@ -14,7 +12,7 @@ export function HomePage() {
   const [toast, setToast] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [tab, setTab] = useState('one');
-  const [selectValue, setSelectValue] = useState('prism');
+  const [selectValue, setSelectValue] = useState('ink');
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
