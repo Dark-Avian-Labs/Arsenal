@@ -83,9 +83,10 @@ export function defineAppVite(options: AppViteOptions) {
       alias[key] = path.resolve(options.rootDir, value);
     }
 
-    const devApiTarget = options.devApiTarget
-      ? read('VITE_DEV_API_TARGET', options.devApiTarget)
-      : '';
+    const fromEnv = read('VITE_DEV_API_TARGET', options.devApiTarget ?? '');
+    const port = process.env.PORT?.trim();
+    const devApiTarget =
+      fromEnv || (options.proxyPaths?.length && port ? `http://127.0.0.1:${port}` : '');
     const fallbackPort = options.devPort ?? 5173;
     const devPort = Number.parseInt(read('VITE_DEV_PORT', String(fallbackPort)), 10);
     const proxyPaths = options.proxyPaths ?? (devApiTarget ? ['/api'] : []);
