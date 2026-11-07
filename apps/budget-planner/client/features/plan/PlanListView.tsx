@@ -97,7 +97,7 @@ function SortableHandle({
     <button
       type="button"
       ref={handleRef}
-      className="text-muted hover:text-foreground flex h-10 w-8 shrink-0 cursor-grab items-center justify-center active:cursor-grabbing"
+      className="text-muted hover:text-foreground flex h-11 w-11 shrink-0 cursor-grab items-center justify-center active:cursor-grabbing"
       aria-label={label}
     >
       <MaterialSymbol name="drag_indicator" />

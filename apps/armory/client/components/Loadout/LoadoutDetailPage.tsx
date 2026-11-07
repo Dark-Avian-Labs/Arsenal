@@ -1,9 +1,10 @@
 import { MaterialSymbol } from '@dark-avian-labs/ui';
 import { apiFetch } from '@dark-avian-labs/ui';
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router';
 
-import { APP_PATHS, buildReadOnlyPath } from '../../app/paths';
+import { APP_PATHS, buildLoadoutPath, buildReadOnlyPath } from '../../app/paths';
+import { useModCatalog } from '../../hooks/useModCatalog';
 import type { Warframe, Weapon, ModSlot, EquipmentType, StoredBuild } from '../../types/warframe';
 import { extractArchonShardBonuses } from '../../utils/archonShardBonuses';
 import {
@@ -11,8 +12,10 @@ import {
   getLoadoutSlotDisplayLabel,
 } from '../../utils/buildCatalogCategory';
 import { calculateWeaponDps } from '../../utils/damageCalc';
+import { getModTypesForEquipment, NO_MOD_TYPES_FOR_EQUIPMENT } from '../../utils/equipmentModTypes';
 import { linkifyPlainText } from '../../utils/linkifyText';
 import { loadEquipmentLookup } from '../../utils/loadEquipmentLookup';
+import { hydrateSlotsWithModCatalog } from '../../utils/modCatalogHydration';
 import { parseStoredBuildFromApi } from '../../utils/parseStoredBuildFromApi';
 import { calculateWarframeStats } from '../../utils/warframeCalc';
 
@@ -38,11 +41,14 @@ function isWeaponLike(t: EquipmentType): boolean {
 
 export function LoadoutDetailPage() {
   const { loadoutId } = useParams<{ loadoutId: string }>();
+  const shareTokenParam = useSearchParams()[0].get('token');
   const navigate = useNavigate();
   const [loadoutName, setLoadoutName] = useState('');
   const [loadoutDescription, setLoadoutDescription] = useState('');
   const [visibility, setVisibility] = useState<string>('private');
   const [isOwn, setIsOwn] = useState(false);
+  const [shareToken, setShareToken] = useState<string | null>(null);
+  const [linkCopied, setLinkCopied] = useState<boolean | null>(null);
   const [entries, setEntries] = useState<Array<{ slot_type: string; build: StoredBuild }>>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -67,7 +73,8 @@ export function LoadoutDetailPage() {
       setLoading(true);
       setError(null);
       try {
-        const res = await apiFetch(`/api/loadouts/${encodeURIComponent(loadoutId)}`);
+        const tokenQuery = shareTokenParam ? `?token=${encodeURIComponent(shareTokenParam)}` : '';
+        const res = await apiFetch(`/api/loadouts/${encodeURIComponent(loadoutId)}${tokenQuery}`);
         if (!res.ok) {
           const errBody = (await res.json().catch(() => null)) as { error?: string } | null;
           throw new Error(errBody?.error ?? `Failed to load loadout (${res.status})`);
@@ -76,6 +83,7 @@ export function LoadoutDetailPage() {
           loadout?: {
             name?: string;
             visibility?: string;
+            share_token?: string | null;
             description?: string | null;
             builds?: Array<{ slot_type: string; build?: Record<string, unknown> }>;
           };
@@ -92,6 +100,7 @@ export function LoadoutDetailPage() {
         setLoadoutDescription(typeof lo.description === 'string' ? lo.description : '');
         setVisibility(typeof lo.visibility === 'string' ? lo.visibility : 'private');
         setIsOwn(body.is_own === true);
+        setShareToken(typeof lo.share_token === 'string' ? lo.share_token : null);
         const raw = Array.isArray(lo.builds) ? lo.builds : [];
         const parsed = raw
           .map((row) => {
@@ -114,7 +123,7 @@ export function LoadoutDetailPage() {
     return () => {
       alive = false;
     };
-  }, [loadoutId]);
+  }, [loadoutId, shareTokenParam]);
 
   const lookupRows = equipmentLookup as Record<string, EquipmentLookupRow>;
 
@@ -142,6 +151,21 @@ export function LoadoutDetailPage() {
             · {entries.length} linked build{entries.length === 1 ? '' : 's'}
           </p>
         </div>
+        {isOwn && visibility === 'unlisted' && shareToken && loadoutId ? (
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            onClick={() => {
+              const url = `${window.location.origin}${buildLoadoutPath(loadoutId)}?token=${encodeURIComponent(shareToken)}`;
+              navigator.clipboard.writeText(url).then(
+                () => setLinkCopied(true),
+                () => setLinkCopied(false),
+              );
+            }}
+          >
+            {linkCopied === null ? 'Copy share link' : linkCopied ? 'Link copied' : 'Copy failed'}
+          </button>
+        ) : null}
         {isOwn ? (
           <Link className="btn btn-secondary btn-sm" to={APP_PATHS.myBuilds}>
             Manage on My Builds
@@ -173,6 +197,12 @@ export function LoadoutDetailPage() {
                 key={`${slot_type}:${build.id}`}
                 build={build}
                 slotLabel={getLoadoutSlotDisplayLabel(build, slot_type, lookupRows)}
+                buildHref={
+                  buildReadOnlyPath(build.id) +
+                  (shareTokenParam && loadoutId
+                    ? `&loadout=${encodeURIComponent(loadoutId)}&token=${encodeURIComponent(shareTokenParam)}`
+                    : '')
+                }
                 equipmentRow={equipmentLookup[build.equipment_unique_name]}
               />
             ))}
@@ -186,14 +216,29 @@ export function LoadoutDetailPage() {
 function LoadoutBuildSummaryCard({
   build,
   slotLabel,
+  buildHref,
   equipmentRow,
 }: {
   build: StoredBuild;
   slotLabel: string;
+  buildHref: string;
   equipmentRow?: Record<string, unknown>;
 }) {
   const navigate = useNavigate();
-  const slots = (Array.isArray(build.slots) ? build.slots : []) as ModSlot[];
+  const modTypes = getModTypesForEquipment(build.equipment_type);
+  const { data: modCatalog } = useModCatalog(
+    modTypes !== NO_MOD_TYPES_FOR_EQUIPMENT
+      ? `/api/mods?types=${encodeURIComponent(modTypes)}`
+      : null,
+  );
+  const slots = useMemo(
+    () =>
+      hydrateSlotsWithModCatalog(
+        (Array.isArray(build.slots) ? build.slots : []) as ModSlot[],
+        new Map((modCatalog?.items ?? []).map((mod) => [mod.unique_name, mod])),
+      ),
+    [build.slots, modCatalog],
+  );
   const wfLike = isWarframeLike(build.equipment_type);
   const wpnLike = isWeaponLike(build.equipment_type);
   const isCompanion = build.equipment_type === 'companion';
@@ -342,7 +387,7 @@ function LoadoutBuildSummaryCard({
       <button
         type="button"
         className="btn btn-accent btn-sm mt-auto self-start"
-        onClick={() => navigate(buildReadOnlyPath(build.id))}
+        onClick={() => navigate(buildHref)}
       >
         Open build
       </button>

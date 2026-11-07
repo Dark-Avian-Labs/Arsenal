@@ -1,4 +1,10 @@
-import { ConfirmModal, LoadErrorBanner, MaterialSymbol, Modal } from '@dark-avian-labs/ui';
+import {
+  ConfirmModal,
+  LoadErrorBanner,
+  MaterialSymbol,
+  Modal,
+  SelectDropdown,
+} from '@dark-avian-labs/ui';
 import { apiFetch } from '@dark-avian-labs/ui';
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router';
@@ -8,6 +14,7 @@ import { useBuildFavorites } from '../../hooks/useBuildFavorites';
 import { useBuildStorage } from '../../hooks/useBuildStorage';
 import { useLoadoutStorage, type Loadout } from '../../hooks/useLoadoutStorage';
 import { type BuildVisibility, type StoredBuild } from '../../types/warframe';
+import { readApiErrorMessage } from '../../utils/apiError';
 import {
   formatLoadoutSlotTypeLabel,
   getBuildPickerCategory,
@@ -34,8 +41,11 @@ interface BuildsByCategory {
   builds: StoredBuild[];
 }
 
-const OVERVIEW_METRIC_CHIP_CLASS =
-  'bg-glass flex h-10 min-w-14 items-center justify-center gap-1.5 rounded-lg px-2';
+const LOADOUT_VISIBILITY_OPTIONS = [
+  { value: 'private', label: 'Private' },
+  { value: 'unlisted', label: 'Unlisted' },
+  { value: 'public', label: 'Public' },
+];
 
 const OVERVIEW_ROW_ACTIONS_CLASS =
   'flex w-[4.25rem] shrink-0 items-center justify-end gap-1 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100';
@@ -67,6 +77,7 @@ export function BuildOverview({
   const {
     builds: ownBuilds,
     loading: ownLoading,
+    error: ownError,
     deleteBuild,
     refresh: refreshBuilds,
   } = useBuildStorage({ enabled: ownDataEnabled });
@@ -74,9 +85,11 @@ export function BuildOverview({
   const [favoriteBuildsLoading, setFavoriteBuildsLoading] = useState(favoritesMode);
   const [userBuilds, setUserBuilds] = useState<StoredBuild[]>([]);
   const [userBuildsLoading, setUserBuildsLoading] = useState(viewingUserBuilds);
+  const [userBuildsError, setUserBuildsError] = useState<string | null>(null);
   const [userLoadouts, setUserLoadouts] = useState<PublicLoadout[]>([]);
   const [ownerUsername, setOwnerUsername] = useState<string | null>(null);
   const builds = favoritesMode ? favoriteBuilds : viewingUserBuilds ? userBuilds : ownBuilds;
+  const listError = viewingUserBuilds ? userBuildsError : ownDataEnabled ? ownError : null;
   const loading = favoritesMode
     ? favoriteBuildsLoading
     : viewingUserBuilds
@@ -130,6 +143,7 @@ export function BuildOverview({
     if (!viewingUserBuilds || !slug) return undefined;
     let alive = true;
     setUserBuildsLoading(true);
+    setUserBuildsError(null);
     void (async () => {
       try {
         const isClerkId = isClerkUserId(slug);
@@ -138,10 +152,12 @@ export function BuildOverview({
           : `/api/users/${encodeURIComponent(slug)}/builds?limit=500`;
         const res = await apiFetch(url);
         if (!res.ok) {
+          const message = await readApiErrorMessage(res, 'Failed to load builds');
           if (alive) {
             setUserBuilds([]);
             setUserLoadouts([]);
             setOwnerUsername(null);
+            setUserBuildsError(message);
           }
           return;
         }
@@ -174,11 +190,12 @@ export function BuildOverview({
             visibility: 'public',
           })) as PublicLoadout[],
         );
-      } catch {
+      } catch (error) {
         if (alive) {
           setUserBuilds([]);
           setUserLoadouts([]);
           setOwnerUsername(null);
+          setUserBuildsError(error instanceof Error ? error.message : 'Failed to load builds');
         }
       } finally {
         if (alive) setUserBuildsLoading(false);
@@ -355,6 +372,7 @@ export function BuildOverview({
   return (
     <div className="mx-auto flex max-w-[2000px] flex-col gap-4">
       {actionError ? <LoadErrorBanner message={actionError} /> : null}
+      {listError ? <LoadErrorBanner message={listError} /> : null}
       <ConfirmModal
         open={pendingDelete !== null}
         title={pendingDelete?.kind === 'loadout' ? 'Delete loadout' : 'Delete build'}
@@ -840,13 +858,11 @@ function LoadoutRow({
       .filter((b) => b.visibility !== 'public' && b.visibility !== 'unlisted');
   }, [loadout.builds, getBuildById]);
 
-  const isPublic = loadout.visibility === 'public';
-
-  const handlePublicToggle = async (next: boolean) => {
-    if (!next) {
+  const handleVisibilityChange = async (next: BuildVisibility) => {
+    if (next !== 'public') {
       setPublicBusy(true);
       try {
-        await updateLoadout(loadout.id, { visibility: 'private' });
+        await updateLoadout(loadout.id, { visibility: next });
       } catch (e) {
         setRowError(e instanceof Error ? e.message : 'Failed to update loadout');
       } finally {
@@ -931,24 +947,18 @@ function LoadoutRow({
               onClick={(e) => e.stopPropagation()}
               onKeyDown={(e) => e.stopPropagation()}
             >
-              <button
-                type="button"
-                disabled={publicBusy}
-                aria-pressed={isPublic}
-                aria-label={isPublic ? 'Public loadout' : 'Private loadout'}
-                title={isPublic ? 'Public loadout' : 'Private loadout'}
-                className={`${OVERVIEW_METRIC_CHIP_CLASS} hover:bg-glass-hover disabled:hover:bg-glass transition-[color,background-color,transform] duration-200 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100 ${
-                  isPublic ? 'text-success' : 'text-danger'
-                }`}
-                onClick={() => {
-                  void handlePublicToggle(!isPublic);
+              <SelectDropdown
+                className="w-28"
+                triggerClassName="form-input select-dropdown-trigger flex w-full cursor-pointer items-center justify-between gap-2 py-1.5 text-left text-xs disabled:cursor-not-allowed disabled:opacity-50"
+                value={loadout.visibility}
+                options={LOADOUT_VISIBILITY_OPTIONS}
+                onChange={(v) => {
+                  void handleVisibilityChange(v as BuildVisibility);
                 }}
-              >
-                <MaterialSymbol
-                  name={isPublic ? 'public' : 'public_off'}
-                  style={{ fontSize: 24 }}
-                />
-              </button>
+                disabled={publicBusy}
+                buttonAriaLabel="Loadout visibility"
+                preserveOrder
+              />
             </div>
             <div className={OVERVIEW_ROW_ACTIONS_CLASS}>
               <button

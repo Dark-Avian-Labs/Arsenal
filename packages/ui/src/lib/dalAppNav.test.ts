@@ -1,6 +1,39 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { appIdsMatch, isSentinelAdmin, parseDalAppNavDocument, visibleDalAppNavApps } from './dalAppNav.js';
+import {
+  appIdsMatch,
+  isSentinelAdmin,
+  loadDalAppNav,
+  parseDalAppNavDocument,
+  visibleDalAppNavApps,
+} from './dalAppNav.js';
+
+describe('loadDalAppNav cache', () => {
+  const doc = { version: 1, updatedAt: 'x', apps: [] };
+
+  function stubStorage(fetchedAt: number) {
+    const store = new Map([['dal.app-nav.cache.v2', JSON.stringify({ fetchedAt, document: doc })]]);
+    vi.stubGlobal('localStorage', {
+      getItem: (key: string) => store.get(key) ?? null,
+      setItem: (key: string, value: string) => store.set(key, value),
+    });
+  }
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('skips the network while fresh and refreshes in the background when stale', async () => {
+    const fetchMock = vi.fn(async () => Response.json({ ...doc, updatedAt: 'y' }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    stubStorage(Date.now() - 60_000);
+    expect(await loadDalAppNav()).toEqual(doc);
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    stubStorage(Date.now() - 25 * 60 * 60 * 1000);
+    expect(await loadDalAppNav()).toEqual(doc);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+});
 
 describe('parseDalAppNavDocument', () => {
   it('accepts a valid catalog', () => {

@@ -1,4 +1,5 @@
 import { ClerkProvider } from '@clerk/react';
+import { ui } from '@clerk/ui';
 import { AppShellProvider, AuthProvider, DisabledAuthProvider } from '@dark-avian-labs/ui';
 import { Outlet } from 'react-router';
 
@@ -32,6 +33,7 @@ export function App() {
     </DisabledAuthProvider>
   ) : (
     <ClerkProvider
+      ui={ui}
       publishableKey={CLERK_PUBLISHABLE_KEY}
       signInUrl={APP_PATHS.signIn}
       signUpUrl={APP_PATHS.signUp}

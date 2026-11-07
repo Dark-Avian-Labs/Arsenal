@@ -44,6 +44,7 @@
   },
   "devDependencies": {
     "@clerk/react": "catalog:",
+    "@clerk/ui": "catalog:",
     "@dark-avian-labs/config": "workspace:*",
     "@dark-avian-labs/ui": "workspace:*",
     "@fontsource-variable/cascadia-mono": "catalog:",

@@ -149,7 +149,7 @@ describe('signed-in account content', () => {
     expect(theirs.body.current_account_id).toBeNull();
 
     const stolen = await request(app).post('/api/accounts/switch').send({ account_id: created.body.account.id });
-    expect(stolen.status).toBe(500);
+    expect(stolen.status).toBe(404);
 
     authState.userId = 'user_a';
     const stillMine = await request(app).get('/api/accounts');
@@ -187,7 +187,7 @@ describe('signed-in account content', () => {
     expect(hidden.body.gear).toEqual([]);
 
     const removed = await request(app).delete(`/api/gear/${second.body.gear.id}`);
-    expect(removed.status).toBe(500);
+    expect(removed.status).toBe(404);
 
     authState.userId = 'user_a';
     const stillThere = await request(app).get('/api/gear');
@@ -222,7 +222,7 @@ describe('signed-in account content', () => {
     expect(hidden.body.artifacts).toEqual([]);
 
     const removed = await request(app).delete(`/api/artifacts/${created.body.artifact.id}`);
-    expect(removed.status).toBe(500);
+    expect(removed.status).toBe(404);
 
     authState.userId = 'user_a';
     const stillThere = await request(app).get('/api/artifacts');

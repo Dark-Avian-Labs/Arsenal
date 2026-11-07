@@ -26,6 +26,7 @@ interface AuthContextValue {
 }
 
 const UNAUTHENTICATED: AuthState = { status: 'unauthenticated', userId: null, isAdmin: false };
+const AUTH_LOADING_TIMEOUT_MS = 10_000;
 
 const AuthContext = createContext<AuthContextValue>({
   auth: UNAUTHENTICATED,
@@ -87,7 +88,16 @@ export function AuthProvider({
   }, [refresh]);
 
   useEffect(() => {
-    const handleUnauthorized = (): void => {
+    if (auth.status !== 'loading') return undefined;
+    const timer = setTimeout(() => {
+      setAuth((prev) => (prev.status === 'loading' ? { ...prev, status: 'error' } : prev));
+    }, AUTH_LOADING_TIMEOUT_MS);
+    return () => clearTimeout(timer);
+  }, [auth.status]);
+
+  useEffect(() => {
+    const handleUnauthorized = (event: Event): void => {
+      if ((event as CustomEvent<{ url?: string }>).detail?.url === '/api/auth/me') return;
       void refresh();
     };
     window.addEventListener(API_UNAUTHORIZED_EVENT, handleUnauthorized);

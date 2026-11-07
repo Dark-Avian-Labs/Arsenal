@@ -123,12 +123,16 @@ export function createGameAccount(
   accountName: string,
   isFirst: boolean,
 ): number {
-  const r = db
-    .prepare('INSERT INTO game_accounts (clerk_user_id, account_name, is_active) VALUES (?, ?, ?)')
-    .run(clerkUserId, accountName, isFirst ? 1 : 0);
-  const accountId = Number(r.lastInsertRowid);
-  seedAccountFromCatalog(db, accountId);
-  return accountId;
+  return db.transaction(() => {
+    const r = db
+      .prepare(
+        'INSERT INTO game_accounts (clerk_user_id, account_name, is_active) VALUES (?, ?, ?)',
+      )
+      .run(clerkUserId, accountName, isFirst ? 1 : 0);
+    const accountId = Number(r.lastInsertRowid);
+    seedAccountFromCatalog(db, accountId);
+    return accountId;
+  })();
 }
 
 export function getAccountByNameAndUser(

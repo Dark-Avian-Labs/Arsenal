@@ -36,8 +36,29 @@ export function formatDueMonthDay(month: number, day: number, locale: string): s
   return `${d}/${m}`;
 }
 
-export function parseAmountToCents(raw: string): number | null {
-  const normalized = raw.trim().replace(/\s/g, '').replace(',', '.');
+function separators(locale: string): { group: string; decimal: string } {
+  const parts = new Intl.NumberFormat(locale).formatToParts(1234.5);
+  return {
+    group: parts.find((p) => p.type === 'group')?.value ?? ',',
+    decimal: parts.find((p) => p.type === 'decimal')?.value ?? '.',
+  };
+}
+
+export function formatIsoDate(iso: string, locale: string): string {
+  const date = new Date(`${iso}T00:00:00Z`);
+  if (Number.isNaN(date.getTime())) return iso;
+  return new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeZone: 'UTC' }).format(date);
+}
+
+export function parseAmountToCents(raw: string, locale = 'en'): number | null {
+  const { group, decimal } = separators(locale);
+  // A group separator only counts before exactly three digits, so "12.50" stays 12.50 in German.
+  const normalized = raw
+    .trim()
+    .replace(/\s/g, '')
+    .replace(new RegExp(`\\${group}(?=\\d{3}(?!\\d))`, 'g'), '')
+    .replace(decimal, '.')
+    .replace(',', '.');
   if (!normalized) return null;
   if (!/^\d+(\.\d{1,2})?$/.test(normalized)) return null;
   const [whole, fraction = ''] = normalized.split('.');
@@ -48,6 +69,6 @@ export function parseAmountToCents(raw: string): number | null {
   return Number.isSafeInteger(total) ? total : null;
 }
 
-export function centsToInput(amountCents: number): string {
-  return (amountCents / 100).toFixed(2);
+export function centsToInput(amountCents: number, locale = 'en'): string {
+  return (amountCents / 100).toFixed(2).replace('.', separators(locale).decimal);
 }

@@ -10,7 +10,7 @@ packages/*/dist/
 # persistent app data
 data/
 apps/*/data/
-import/
+/import/
 apps/*/import/
 
 # secrets and local overrides
@@ -43,6 +43,9 @@ Thumbs.db
 # design sources, not shipped
 _resources/
 _Resources/
+
+#Extractor for Watcher of Realms
+WoR Extractor/
 
 # generated or unused local dumps
 apps/budget-planner/assets/inter/

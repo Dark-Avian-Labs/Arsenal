@@ -1,3 +1,4 @@
+import { timingSafeEqualString } from '@dark-avian-labs/server-kit';
 import type { NextFunction, Request, Response } from 'express';
 import { Router } from 'express';
 
@@ -8,11 +9,7 @@ import { writeIngestSamples } from './writer.ts';
 
 export const ingestRouter = Router();
 
-function requireIngestToken(req: Request, res: Response, next: NextFunction): void {
-  if (!SENTINEL_INGEST_TOKEN) {
-    res.status(503).json({ error: 'Ingest token not configured' });
-    return;
-  }
+export function hasIngestToken(req: Request): boolean {
   const header = req.headers.authorization;
   const bearer =
     typeof header === 'string' && header.startsWith('Bearer ')
@@ -21,7 +18,15 @@ function requireIngestToken(req: Request, res: Response, next: NextFunction): vo
   const alt =
     typeof req.headers['x-sentinel-token'] === 'string' ? req.headers['x-sentinel-token'] : '';
   const token = bearer || alt;
-  if (!token || token !== SENTINEL_INGEST_TOKEN) {
+  return Boolean(token) && timingSafeEqualString(token, SENTINEL_INGEST_TOKEN);
+}
+
+function requireIngestToken(req: Request, res: Response, next: NextFunction): void {
+  if (!SENTINEL_INGEST_TOKEN) {
+    res.status(503).json({ error: 'Ingest token not configured' });
+    return;
+  }
+  if (!hasIngestToken(req)) {
     res.status(401).json({ error: 'Unauthorized' });
     return;
   }

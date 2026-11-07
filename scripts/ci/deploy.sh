@@ -65,11 +65,11 @@ echo "==> verify"
 ok=false
 for i in $(seq 1 30); do
   got=$($SSH "curl -fsS --max-time 3 http://127.0.0.1:$PORT/api/version" 2>/dev/null || true)
-  if [ "$got" = "{\"version\":\"$VERSION\"}" ]; then ok=true; break; fi
+  if [ "$got" = "{\"version\":\"$VERSION\"}" ] && $SSH "curl -fsS --max-time 3 -o /dev/null http://127.0.0.1:$PORT/readyz" 2>/dev/null; then ok=true; break; fi
   sleep 2
 done
 if [ "$ok" != true ]; then
-  echo "ERROR: $PM2_NAME did not report version $VERSION (last response: ${got:-none})"
+  echo "ERROR: $PM2_NAME did not report version $VERSION with /readyz passing (last version response: ${got:-none})"
   if [ -n "$PREVIOUS" ]; then
     echo "==> rolling back to $PREVIOUS"
     $SSH "set -e; ln -sfn '$PREVIOUS' '$SERVER_PATH/current.tmp'; mv -Tf '$SERVER_PATH/current.tmp' '$SERVER_PATH/current'; sudo -n -u pm2-user /home/pm2-user/bin/pm2-wrapper restart '$PM2_NAME'"

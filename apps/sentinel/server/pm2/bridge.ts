@@ -37,6 +37,8 @@ function readPm2List(): Promise<Pm2Process[]> {
   return new Promise((resolve, reject) => {
     const child = spawn(process.platform === 'win32' ? 'pm2.cmd' : 'pm2', ['jlist'], {
       windowsHide: true,
+      timeout: 8000,
+      killSignal: 'SIGKILL',
     });
     let stdout = '';
     let stderr = '';
@@ -141,16 +143,23 @@ export type Pm2BridgeHandle = {
 export function startPm2Bridge(intervalMs = 10_000): Pm2BridgeHandle {
   let stopped = false;
   let timer: ReturnType<typeof setInterval> | null = null;
+  let inFlight = false;
 
   const tick = () => {
-    void pollOnce().catch((err) => {
-      log('warn', 'pm2_bridge_poll_failed', {
-        error: err instanceof Error ? err.message : String(err),
+    if (inFlight) return;
+    inFlight = true;
+    void pollOnce()
+      .catch((err) => {
+        log('warn', 'pm2_bridge_poll_failed', {
+          error: err instanceof Error ? err.message : String(err),
+        });
+        try {
+          writeHostSnapshot(Date.now());
+        } catch {}
+      })
+      .finally(() => {
+        inFlight = false;
       });
-      try {
-        writeHostSnapshot(Date.now());
-      } catch {}
-    });
   };
 
   tick();

@@ -2,8 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import { WOR_IMAGES_DIR } from '../../config.ts';
-import { fetchWithTimeout, FETCH_TIMEOUT_MS } from '../../http/fetchWithTimeout.ts';
 import { getWikiUserAgent } from '../../scraping/wikiUserAgent.ts';
+import { fetchTextBounded, FETCH_TIMEOUT_MS } from '../warframe/http/fetchWithTimeout.ts';
 import type { CatalogBundle } from './catalogQueries.ts';
 import type { FastidiousImageRef } from './fastidiousCatalog.ts';
 import { sleep } from './fastidiousClient.ts';
@@ -40,11 +40,11 @@ async function fetchWikiJson<T>(params: Record<string, string>): Promise<T | nul
   for (const [key, value] of Object.entries(params)) {
     url.searchParams.set(key, value);
   }
-  const response = await fetchWithTimeout(url, { headers }, FETCH_TIMEOUT_MS.wikiFetch);
+  const { response, text } = await fetchTextBounded(url, { headers }, FETCH_TIMEOUT_MS.wikiFetch);
   if (!response.ok) {
     throw new Error(`Wiki API HTTP ${response.status}`);
   }
-  return (await response.json()) as T;
+  return JSON.parse(text) as T;
 }
 
 async function resolveWikiFileUrl(fileTitle: string): Promise<string | null> {

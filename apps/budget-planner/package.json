@@ -52,6 +52,7 @@
   "devDependencies": {
     "@clerk/react": "catalog:",
     "@clerk/testing": "catalog:",
+    "@clerk/ui": "catalog:",
     "@dark-avian-labs/config": "workspace:*",
     "@dark-avian-labs/ui": "workspace:*",
     "@dnd-kit/helpers": "0.5.3",

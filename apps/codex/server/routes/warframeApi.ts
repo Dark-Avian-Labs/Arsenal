@@ -5,15 +5,10 @@ import { Router } from 'express';
 import { requireClerkUserId } from '../auth/clerkUser.ts';
 import { requireCodexAdmin } from '../core.ts';
 import {
-  HELMINTH_VALUES,
   VALID_STATUSES,
-  isHelminthValue,
   isValidHelminthCellValue,
-  isValidStatus,
-  warframeAddRowSchema,
   warframeAdminUpdateSchema,
   warframeDeleteRowSchema,
-  warframeEditRowSchema,
   warframePatchSettingsSchema,
   warframeUpdateAdvancedProgressSchema,
   warframeQueries as q,
@@ -23,6 +18,7 @@ import { provisionWarframeUserIfNeeded } from '../services/warframeProvision.ts'
 import { runWarframeSync } from '../services/warframeSync.ts';
 import {
   createWarframeSyncRun,
+  getLatestWarframeSyncRunRow,
   getWarframeSyncRunRow,
   maskWarframeSyncResult,
   toWarframeSyncRunResponse,
@@ -46,66 +42,6 @@ const SETTING_HIDE_COMPLETED = 'hide_completed';
 const SETTING_MARKET_LINKS = 'market_links';
 const SETTING_ADVANCED_MODE = 'advanced_mode';
 const SETTING_SHOW_ALL_VARIANTS = 'show_all_variants';
-
-type ValidateColumnValuesInvalidEntry = {
-  column_id: string;
-  value: string;
-  reason: string;
-  allowed: readonly string[];
-};
-
-function validateColumnValues(
-  valuesRaw: Record<string, string>,
-  columns: { id: number; name: string }[],
-  itemNameForHelminth?: string,
-): {
-  valid: Record<number, string>;
-  invalid: ValidateColumnValuesInvalidEntry[];
-} {
-  const valid: Record<number, string> = {};
-  const invalid: ValidateColumnValuesInvalidEntry[] = [];
-  for (const [key, value] of Object.entries(valuesRaw)) {
-    const id = parseInt(key, 10);
-    if (Number.isNaN(id)) {
-      invalid.push({
-        column_id: key,
-        value,
-        reason: 'invalid column_id (must be a number)',
-        allowed: [],
-      });
-      continue;
-    }
-    const col = columns.find((column) => column.id === id);
-    if (!col) {
-      invalid.push({
-        column_id: key,
-        value,
-        reason: 'unknown column for this worksheet',
-        allowed: columns.map((column) => String(column.id)),
-      });
-      continue;
-    }
-    const validValue =
-      col.name === 'Helminth'
-        ? itemNameForHelminth !== undefined
-          ? isValidHelminthCellValue(itemNameForHelminth, value)
-          : isHelminthValue(value)
-        : isValidStatus(value);
-    if (!validValue) {
-      invalid.push({
-        column_id: key,
-        value,
-        reason:
-          col.name === 'Helminth' ? 'invalid value for Helminth column' : 'invalid status value',
-        allowed:
-          col.name === 'Helminth' ? [...HELMINTH_VALUES, 'Unavailable'] : [...VALID_STATUSES],
-      });
-    } else {
-      valid[id] = value;
-    }
-  }
-  return { valid, invalid };
-}
 
 warframeApiRouter.get('/worksheets', (req, res) => {
   runWithWarframeDb(res, (db) => {
@@ -277,70 +213,12 @@ warframeApiRouter.patch('/advanced-progress', (req, res) => {
   });
 });
 
-warframeApiRouter.post('/rows', (req, res) => {
-  const clerkUserId = requireClerkUserId(req);
-  const data = validateBody(warframeAddRowSchema, req.body, res);
-  if (!data) return;
-  runWithWarframeDb(res, async (db) => {
-    const columns = q.getWorksheetColumns(db, data.worksheet_id, clerkUserId);
-    if (columns.length === 0) {
-      res.status(403).json({ error: 'Worksheet not found or access denied.' });
-      return;
-    }
-    const { valid, invalid } = validateColumnValues(data.values, columns, data.item_name);
-    if (invalid.length > 0) {
-      res.status(400).json({ error: 'Invalid column/value(s).', invalid });
-      return;
-    }
-    const rowId = q.addRow(db, data.worksheet_id, clerkUserId, data.item_name, valid);
-    res.status(201).json({ success: true, row_id: rowId });
-  });
-});
-
-warframeApiRouter.patch('/rows/:rowId', (req, res) => {
-  const clerkUserId = requireClerkUserId(req);
-  const data = validateBody(
-    warframeEditRowSchema,
-    { ...req.body, row_id: Number(req.params.rowId) },
-    res,
-  );
-  if (!data) return;
-  runWithWarframeDb(res, async (db) => {
-    try {
-      const worksheetId = q.getRowWorksheetId(db, data.row_id, clerkUserId);
-      if (worksheetId === null) {
-        res.status(404).json({ error: 'Row not found.' });
-        return;
-      }
-      const columns = q.getWorksheetColumns(db, worksheetId, clerkUserId);
-      const existingName = q.getRowItemName(db, data.row_id, clerkUserId) ?? '';
-      const itemNameForHelminth =
-        data.item_name !== null && data.item_name.trim() !== ''
-          ? data.item_name.trim()
-          : existingName;
-      const { valid, invalid } = validateColumnValues(data.values, columns, itemNameForHelminth);
-      if (invalid.length > 0) {
-        res.status(400).json({ error: 'Invalid column/value(s).', invalid });
-        return;
-      }
-      const ok = q.editRow(db, data.row_id, clerkUserId, data.item_name, valid);
-      if (!ok) {
-        res.status(404).json({ error: 'Row not found.' });
-        return;
-      }
-      res.status(200).json({ success: true });
-    } catch {
-      res.status(500).json({ error: 'Internal Server Error' });
-    }
-  });
-});
-
 warframeApiRouter.delete('/rows/:rowId', (req, res) => {
   const clerkUserId = requireClerkUserId(req);
   const data = validateBody(warframeDeleteRowSchema, { row_id: Number(req.params.rowId) }, res);
   if (!data) return;
   runWithWarframeDb(res, async (db) => {
-    const ok = q.deleteRow(db, data.row_id, clerkUserId);
+    const ok = q.deleteRow(db, data.row_id, clerkUserId, true);
     if (!ok) {
       res.status(404).json({ error: 'Row not found.' });
       return;
@@ -408,6 +286,15 @@ warframeApiRouter.post('/admin/sync/release-lease', requireCodexAdmin, (_req, re
     return;
   }
   res.status(200).json({ released: result === 'released' });
+});
+
+warframeApiRouter.get('/admin/sync/runs/latest', requireCodexAdmin, (_req, res) => {
+  const row = getLatestWarframeSyncRunRow();
+  if (!row) {
+    res.status(404).json({ error: 'Sync run not found.' });
+    return;
+  }
+  res.status(200).json(toWarframeSyncRunResponse(row));
 });
 
 warframeApiRouter.get('/admin/sync/runs/:id', requireCodexAdmin, (req, res) => {

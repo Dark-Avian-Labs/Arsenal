@@ -6,11 +6,11 @@ import {
   getAppMeta,
   getLatestHost,
   listFleet,
-  queryEventRates,
   queryEvents,
   queryHostSeries,
   queryHttpSeries,
   querySeries,
+  resolveRange,
   type RangePreset,
 } from './query.ts';
 
@@ -50,12 +50,15 @@ fleetRouter.get('/:appId', requireAdmin, (req: Request, res: Response) => {
     res.status(404).json({ error: 'app not found' });
     return;
   }
+  const { from, to, bucketMs } = resolveRange(range);
   res.json({
     app: meta,
     range,
+    from,
+    to,
+    bucketMs,
     points: querySeries(db, appId, range),
     http: queryHttpSeries(db, appId, range),
-    eventRates: queryEventRates(db, appId, range),
     events: queryEvents(db, appId, range),
   });
 });

@@ -1,7 +1,13 @@
 import { describe, it, expect } from 'vitest';
 
 import type { Mod } from '../../types/warframe';
-import { catalogKeyForMod, mergeModWithCatalog, hydrateSlotsWithModCatalog } from '../modCatalogHydration';
+import {
+  catalogKeyForMod,
+  mergeModWithCatalog,
+  hydrateSlotsWithModCatalog,
+  slimSlotsForSave,
+} from '../modCatalogHydration';
+import { createRivenMod } from '../riven';
 
 describe('mergeModWithCatalog', () => {
   it('fills set_stats and mod_set from catalog when missing on stored mod', () => {
@@ -62,6 +68,52 @@ describe('mergeModWithCatalog', () => {
     };
     const merged = mergeModWithCatalog(stored, catalog);
     expect(merged.image_path).toBe(wikiPath);
+  });
+
+  it('lets the catalog win over a stale stored copy', () => {
+    const catalog: Mod = {
+      unique_name: '/u/serration',
+      name: 'Serration',
+      base_drain: 4,
+      polarity: 'AP_ATTACK',
+      description: 'new',
+      fusion_limit: 10,
+    };
+    const stored: Mod = {
+      unique_name: '/u/serration',
+      name: 'Serration',
+      base_drain: 6,
+      polarity: 'AP_TACTIC',
+      description: 'old',
+      fusion_limit: 10,
+    };
+    const merged = mergeModWithCatalog(stored, catalog);
+    expect(merged.base_drain).toBe(4);
+    expect(merged.polarity).toBe('AP_ATTACK');
+    expect(merged.description).toBe('new');
+  });
+});
+
+describe('slimSlotsForSave', () => {
+  it('keeps only identity for catalog mods and the full copy for rivens and unknown mods', () => {
+    const catalog = new Map<string, Mod>([
+      ['/u/known', { unique_name: '/u/known', name: 'Known', type: 'PRIMARY', base_drain: 4 }],
+    ]);
+    const riven = createRivenMod({ positive: [] }, undefined);
+    const unknown: Mod = { unique_name: '/u/gone', name: 'Gone', base_drain: 7 };
+    const out = slimSlotsForSave(
+      [
+        { index: 0, type: 'general', mod: { ...catalog.get('/u/known')!, description: 'x' } },
+        { index: 1, type: 'general', mod: riven },
+        { index: 2, type: 'general', mod: unknown },
+        { index: 3, type: 'general' },
+      ],
+      catalog,
+    );
+    expect(out[0].mod).toEqual({ unique_name: '/u/known', name: 'Known', type: 'PRIMARY' });
+    expect(out[1].mod).toBe(riven);
+    expect(out[2].mod).toBe(unknown);
+    expect(hydrateSlotsWithModCatalog(out, catalog)[0].mod?.base_drain).toBe(4);
   });
 });
 

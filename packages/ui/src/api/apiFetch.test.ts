@@ -27,6 +27,20 @@ describe('apiFetch clerk token', () => {
     expect(headersFromInit(capturedInit).get('Authorization')).toBe('Bearer fresh-session-token');
   });
 
+  it('keeps the token off cross-origin URLs and always sets a timeout signal', async () => {
+    let capturedInit: RequestInit | undefined;
+    vi.stubGlobal('fetch', async (_url: string, init?: RequestInit) => {
+      capturedInit = init;
+      return new Response('ok', { status: 200 });
+    });
+    setClerkTokenGetter(async () => 'fresh-session-token');
+
+    await apiFetch('https://evil.example/collect');
+
+    expect(headersFromInit(capturedInit).has('Authorization')).toBe(false);
+    expect(capturedInit?.signal).toBeInstanceOf(AbortSignal);
+  });
+
   it('retries a 401 once after forcing a Clerk token refresh', async () => {
     const capturedInits: RequestInit[] = [];
     vi.stubGlobal('fetch', async (_url: string, init?: RequestInit) => {

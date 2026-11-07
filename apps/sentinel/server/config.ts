@@ -47,6 +47,10 @@ export const PORT = serverEnv.PORT;
 export const SHUTDOWN_TIMEOUT_MS = serverEnv.SHUTDOWN_TIMEOUT_MS;
 export const HOST = serverEnv.HOST;
 export const NODE_ENV = serverEnv.NODE_ENV;
+// The .env.example placeholder is shorter than 32 characters, so this also rejects it.
+if (NODE_ENV === 'production' && SENTINEL_INGEST_TOKEN.length < 32) {
+  throw new Error('SENTINEL_INGEST_TOKEN must be at least 32 characters in production.');
+}
 export const APP_NAME = serverEnv.APP_NAME;
 export const APP_ID = serverEnv.APP_ID;
 export const APP_VERSION = readReleaseVersion(PROJECT_ROOT, readPackageVersion(PROJECT_ROOT));

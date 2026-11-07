@@ -140,61 +140,61 @@ export function ForgejoPage() {
   const [sync, setSync] = useState<SyncStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [updatedAt, setUpdatedAt] = useState<number | null>(null);
+  const [filters, setFilters] = useState({ workflow: '', repo: '' });
+
+  useEffect(() => {
+    const timer = window.setTimeout(
+      () => setFilters({ workflow: workflow.trim(), repo: repo.trim() }),
+      300,
+    );
+    return () => window.clearTimeout(timer);
+  }, [workflow, repo]);
 
   const query = useMemo(() => {
     const params = new URLSearchParams({ range });
-    if (workflow.trim()) params.set('workflow', workflow.trim());
+    if (filters.workflow) params.set('workflow', filters.workflow);
     if (status !== 'any') params.set('status', status);
-    if (repo.trim()) params.set('repo', repo.trim());
+    if (filters.repo) params.set('repo', filters.repo);
     return params.toString();
-  }, [workflow, status, repo, range]);
+  }, [filters, status, range]);
 
   useEffect(() => {
     if (auth.status !== 'authenticated') return undefined;
     let cancelled = false;
 
-    async function load(): Promise<void> {
+    async function load(withSync: boolean): Promise<void> {
       try {
         const [runsRes, summaryRes, seriesRes, syncRes] = await Promise.all([
           apiFetch(`/api/actions/runs?${query}`),
           apiFetch(`/api/actions/summary?${query}`),
           apiFetch(`/api/actions/series?${query}`),
-          apiFetch('/api/actions/sync'),
+          withSync ? apiFetch('/api/actions/sync') : null,
         ]);
         if (cancelled) return;
-        if (
-          runsRes.status === 401 ||
-          summaryRes.status === 401 ||
-          seriesRes.status === 401 ||
-          syncRes.status === 401
-        ) {
+        const responses = [runsRes, summaryRes, seriesRes, syncRes].filter((res) => res != null);
+        if (responses.some((res) => res.status === 401)) {
           setError('Sign in to view Forgejo actions.');
           setRuns([]);
           return;
         }
-        if (
-          runsRes.status === 403 ||
-          summaryRes.status === 403 ||
-          seriesRes.status === 403 ||
-          syncRes.status === 403
-        ) {
+        if (responses.some((res) => res.status === 403)) {
           setError('Admin access required.');
           setRuns([]);
           return;
         }
-        if (!runsRes.ok || !summaryRes.ok || !seriesRes.ok || !syncRes.ok) {
+        if (responses.some((res) => !res.ok)) {
           throw new Error('Actions request failed');
         }
         const runsBody = (await runsRes.json()) as { runs: RunRow[] };
         const summaryBody = (await summaryRes.json()) as { summary: Summary };
         const seriesBody = (await seriesRes.json()) as { points: ChartPoint[] };
-        const syncBody = (await syncRes.json()) as SyncStatus;
+        const syncBody = syncRes ? ((await syncRes.json()) as SyncStatus) : null;
         if (cancelled) return;
         setError(null);
         setRuns(runsBody.runs);
         setSummary(summaryBody.summary);
         setSeries(seriesBody.points);
-        setSync(syncBody);
+        if (syncBody) setSync(syncBody);
         setUpdatedAt(Date.now());
       } catch (err: unknown) {
         if (!cancelled) {
@@ -203,12 +203,13 @@ export function ForgejoPage() {
       }
     }
 
-    void load();
+    // Filter changes skip /sync; it only changes when the server poller runs.
+    void load(sync === null);
     const timer = window.setInterval(() => {
-      if (document.visibilityState === 'visible') void load();
+      if (document.visibilityState === 'visible') void load(true);
     }, 15_000);
     const onWake = (): void => {
-      if (document.visibilityState === 'visible') void load();
+      if (document.visibilityState === 'visible') void load(true);
     };
     window.addEventListener('focus', onWake);
     document.addEventListener('visibilitychange', onWake);
@@ -367,7 +368,7 @@ export function ForgejoPage() {
         </p>
       ) : null}
 
-      {summary && workflow.trim() && summary.repos.length > 0 ? (
+      {summary && filters.workflow && summary.repos.length > 0 ? (
         <div className="table-container glass-surface">
           <div className="table-scroll">
             <table className="fleet-table">

@@ -17,6 +17,9 @@ const RANGES = [
 type DetailPayload = {
   app: { id: string; displayName: string; pm2Name: string | null };
   range: string;
+  from: number;
+  to: number;
+  bucketMs: number;
   points: Array<{
     ts: number;
     cpu: number | null;
@@ -35,7 +38,6 @@ type DetailPayload = {
     reqPerSec: number | null;
     errorRate: number | null;
   }>;
-  eventRates: Array<{ ts: number; graceful: number; crash: number }>;
   events: Array<{
     id: number;
     ts: number;
@@ -58,8 +60,10 @@ function hasSeries(points: ChartPoint[]): boolean {
 }
 
 function ChartStrip({
+  data,
   charts,
 }: {
+  data: DetailPayload;
   charts: Array<{ title: string; unit: string; points: ChartPoint[]; colorVar?: string }>;
 }) {
   const visible = charts.filter((chart) => hasSeries(chart.points));
@@ -72,6 +76,9 @@ function ChartStrip({
           title={chart.title}
           unit={chart.unit}
           points={chart.points}
+          from={data.from}
+          to={data.to}
+          bucketMs={data.bucketMs}
           colorVar={chart.colorVar}
         />
       ))}
@@ -260,9 +267,13 @@ export function AppDetailPage() {
               title="CPU"
               unit="%"
               points={data.points.map((p) => ({ ts: p.ts, value: p.cpu }))}
+              from={data.from}
+              to={data.to}
+              bucketMs={data.bucketMs}
             />
           ) : null}
           <ChartStrip
+            data={data}
             charts={[
               {
                 title: 'Memory',
@@ -299,6 +310,7 @@ export function AppDetailPage() {
           <section className="space-y-3">
             <h2 className="text-foreground text-lg font-semibold">Process</h2>
             <ChartStrip
+              data={data}
               charts={[
                 {
                   title: 'Heap used',

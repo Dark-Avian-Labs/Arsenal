@@ -1,6 +1,11 @@
 import type Database from 'better-sqlite3';
 
-import type { ExitEvent, HttpSample, ProcessSample } from './ingestSchema.ts';
+import {
+  INGEST_MAX_AGE_MS,
+  type ExitEvent,
+  type HttpSample,
+  type ProcessSample,
+} from './ingestSchema.ts';
 
 export type HostSample = {
   ts?: number;
@@ -133,11 +138,23 @@ const ONE_M_KEEP_MS = 14 * 24 * 60 * 60 * 1000;
 const ONE_H_KEEP_MS = 90 * 24 * 60 * 60 * 1000;
 const EVENTS_KEEP_MS = 90 * 24 * 60 * 60 * 1000;
 
+const HOUR_MS = 3_600_000;
+// Covers the oldest ts ingest accepts plus one 5-minute rollup interval, with slack for timer drift.
+const ROLLUP_LOOKBACK_MS = INGEST_MAX_AGE_MS + 10 * 60 * 1000;
+
 export function rollupAndPrune(db: Database.Database, now = Date.now()): void {
+  db.transaction(() => rollupAndPruneTx(db, now))();
+}
+
+function rollupAndPruneTx(db: Database.Database, now: number): void {
   const rawCutoff = now - RAW_KEEP_MS;
   const oneMCutoff = now - ONE_M_KEEP_MS;
   const oneHCutoff = now - ONE_H_KEEP_MS;
   const eventsCutoff = now - EVENTS_KEEP_MS;
+  // Hour-aligned so every 1m and 1h bucket touched is recomputed from all of its rows.
+  const since = Math.floor((now - ROLLUP_LOOKBACK_MS) / HOUR_MS) * HOUR_MS;
+  // An empty http_1h (first run after it was added) backfills from everything left in http_raw.
+  const httpSince = db.prepare('SELECT 1 FROM http_1h LIMIT 1').get() ? since : rawCutoff;
 
   db.prepare(
     `INSERT INTO samples_1m (
@@ -175,7 +192,7 @@ export function rollupAndPrune(db: Database.Database, now = Date.now()): void {
        elu_avg = excluded.elu_avg,
        gc_p95_avg = excluded.gc_p95_avg,
        sample_count = excluded.sample_count`,
-  ).run(rawCutoff);
+  ).run(since);
 
   db.prepare(
     `INSERT INTO samples_1h (
@@ -213,12 +230,30 @@ export function rollupAndPrune(db: Database.Database, now = Date.now()): void {
        elu_avg = excluded.elu_avg,
        gc_p95_avg = excluded.gc_p95_avg,
        sample_count = excluded.sample_count`,
-  ).run(oneMCutoff);
+  ).run(since);
+
+  db.prepare(
+    `INSERT INTO http_1h (app_id, bucket_ts, count, errors, latency_p95_avg)
+     SELECT
+       app_id,
+       (ts / 3600000) * 3600000 AS bucket_ts,
+       SUM(count),
+       SUM(CASE WHEN status_class = '5xx' THEN count ELSE 0 END),
+       AVG(latency_p95_ms)
+     FROM http_raw
+     WHERE ts >= ?
+     GROUP BY app_id, bucket_ts
+     ON CONFLICT(app_id, bucket_ts) DO UPDATE SET
+       count = excluded.count,
+       errors = excluded.errors,
+       latency_p95_avg = excluded.latency_p95_avg`,
+  ).run(httpSince);
 
   db.prepare('DELETE FROM samples_raw WHERE ts < ?').run(rawCutoff);
   db.prepare('DELETE FROM samples_1m WHERE bucket_ts < ?').run(oneMCutoff);
   db.prepare('DELETE FROM samples_1h WHERE bucket_ts < ?').run(oneHCutoff);
   db.prepare('DELETE FROM http_raw WHERE ts < ?').run(rawCutoff);
+  db.prepare('DELETE FROM http_1h WHERE bucket_ts < ?').run(oneHCutoff);
   db.prepare('DELETE FROM events WHERE ts < ?').run(eventsCutoff);
   db.prepare('DELETE FROM host_raw WHERE ts < ?').run(rawCutoff);
 }

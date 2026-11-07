@@ -60,9 +60,7 @@ export function SearchBar() {
           className="search-box w-52"
           placeholder={searchPlaceholder}
           aria-label="Search"
-          aria-expanded={open}
           aria-controls={resultsId}
-          aria-autocomplete="list"
           value={query}
           onChange={(event) => {
             const value = event.target.value;

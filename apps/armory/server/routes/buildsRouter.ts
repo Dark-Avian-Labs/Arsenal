@@ -4,12 +4,13 @@ import { z } from 'zod';
 import {
   DELETED_USER_LABEL,
   getOwnerDisplayName,
+  getOwnerUsernames,
   resolveOwnerUsernames,
   resolveClerkUserIdByUsername,
 } from '../auth/armoryUsers.ts';
 import { getClerkUserId } from '../auth/clerkUser.ts';
 import { getClerkAuthState } from '../auth/middleware.ts';
-import { canReadBuild } from '../buildAccess.ts';
+import { canReadBuild, loadoutGrantsBuild } from '../buildAccess.ts';
 import { bustCatalogResponseCache, sendCachedCatalogJson } from '../cache/catalogResponseCache.ts';
 import { getUserDb } from '../db/connection.ts';
 import {
@@ -40,6 +41,28 @@ import {
   ModConfigSchema,
 } from './modConfigValidation.ts';
 import { BuildUpdateBodySchema, UserContentNameSchema } from './userContentSchemas.ts';
+
+function canReadBuildForRequest(
+  db: ReturnType<typeof getUserDb>,
+  req: Request,
+  row: BuildRow,
+  context: ReturnType<typeof buildReadAccessContext>,
+): boolean {
+  if (canReadBuild(row, context)) return true;
+  const loadoutId = parseNumericId(req.query.loadout as string | string[] | undefined);
+  if (loadoutId === null || context.shareToken === null) return false;
+  const loadout = db
+    .prepare(
+      `SELECT l.clerk_user_id, l.visibility, l.share_token
+       FROM loadouts l
+       INNER JOIN loadout_builds lb ON lb.loadout_id = l.id
+       WHERE l.id = ? AND lb.build_id = ?`,
+    )
+    .get(loadoutId, row.id) as
+    | { clerk_user_id: string; visibility: string | null; share_token: string | null }
+    | undefined;
+  return loadout !== undefined && loadoutGrantsBuild(loadout, row, context.shareToken);
+}
 
 const BuildCreateBodySchema = z.object({
   name: UserContentNameSchema,
@@ -118,7 +141,7 @@ buildsRouter.get('/builds', (req: Request, res: Response) => {
       )
       .all(clerkUserId, limit, offset) as BuildRow[];
 
-    const builds = rows.map((row) => toBuildResponse(row));
+    const builds = rows.map((row) => toBuildResponse(row, true));
 
     res.json({ builds, limit, offset });
   } catch (err) {
@@ -167,6 +190,10 @@ buildsRouter.get('/builds/by-user', async (req: Request, res: Response) => {
       res.status(400).json({ error: 'clerk_user_id is required' });
       return;
     }
+    if (!/^user_[A-Za-z0-9]+$/.test(clerkUserId)) {
+      res.status(400).json({ error: 'Invalid clerk_user_id' });
+      return;
+    }
 
     const { limit, offset } = parseListPagination(req);
     const rows = db
@@ -178,7 +205,11 @@ buildsRouter.get('/builds/by-user', async (req: Request, res: Response) => {
       )
       .all(clerkUserId, limit, offset) as BuildRow[];
 
-    const ownerUsernames = await resolveOwnerUsernames([clerkUserId]);
+    // Only ids that own public builds may cost a Clerk lookup.
+    const ownerUsernames =
+      rows.length > 0
+        ? await resolveOwnerUsernames([clerkUserId])
+        : getOwnerUsernames([clerkUserId]);
     const loadouts = fetchPublicLoadoutsForUser(db, clerkUserId, ownerUsernames, {
       limit: MAX_LOADOUTS_PER_USER,
       offset: 0,
@@ -278,8 +309,7 @@ buildsRouter.get('/builds/favorites', (req: Request, res: Response) => {
       return;
     }
 
-    const authState = getClerkAuthState(req);
-    const readContext = buildReadAccessContext(req, clerkUserId, authState.isArmoryAdmin);
+    const isAdmin = getClerkAuthState(req).isArmoryAdmin;
     const { limit, offset } = parseListPagination(req, {
       defaultLimit: MAX_BUILDS_PER_USER,
       max: MAX_BUILDS_PER_USER,
@@ -290,14 +320,13 @@ buildsRouter.get('/builds/favorites', (req: Request, res: Response) => {
          FROM builds b
          INNER JOIN build_favorites f ON f.build_id = b.id
          WHERE f.clerk_user_id = ?
+           AND (? = 1 OR b.visibility = 'public' OR b.clerk_user_id = ?)
          ORDER BY f.created_at DESC
          LIMIT ? OFFSET ?`,
       )
-      .all(clerkUserId, limit, offset) as BuildRow[];
+      .all(clerkUserId, isAdmin ? 1 : 0, clerkUserId, limit, offset) as BuildRow[];
 
-    const builds = rows
-      .filter((row) => canReadBuild(row, readContext))
-      .map((row) => toBuildResponse(row));
+    const builds = rows.map((row) => toBuildResponse(row));
 
     res.json({ builds, limit, offset });
   } catch (err) {
@@ -387,7 +416,7 @@ buildsRouter.get('/builds/:id/loadouts', async (req: Request, res: Response) => 
       | undefined;
     const authState = getClerkAuthState(req);
     const readContext = buildReadAccessContext(req, uid, authState.isArmoryAdmin);
-    if (!buildRow || !canReadBuild(buildRow, readContext)) {
+    if (!buildRow || !canReadBuildForRequest(db, req, buildRow, readContext)) {
       res.status(404).json({ error: 'Build not found' });
       return;
     }
@@ -446,7 +475,7 @@ buildsRouter.get('/builds/:id', async (req: Request, res: Response) => {
     const authState = getClerkAuthState(req);
     const isGameAdmin = authState.isArmoryAdmin;
     const accessContext = buildReadAccessContext(req, sessionUserId, isGameAdmin);
-    if (!canReadBuild(row, accessContext)) {
+    if (!canReadBuildForRequest(db, req, row, accessContext)) {
       res.status(404).json({ error: 'Build not found' });
       return;
     }
@@ -694,7 +723,7 @@ buildsRouter.post('/builds/:id/copy', (req: Request, res: Response) => {
     const authState = getClerkAuthState(req);
     const isGameAdmin = authState.isArmoryAdmin;
     const readContext = buildReadAccessContext(req, clerkUserId, isGameAdmin);
-    if (!canReadBuild(source, readContext)) {
+    if (!canReadBuildForRequest(db, req, source, readContext)) {
       res.status(404).json({ error: 'Build not found' });
       return;
     }

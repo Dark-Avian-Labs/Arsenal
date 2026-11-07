@@ -15,6 +15,8 @@ async function getWorker(): Promise<Worker> {
     workerPromise = (async () => {
       const worker = await createWorker('eng', 1, {
         langPath: '/tessdata',
+        workerPath: '/tesseract/worker.min.js',
+        corePath: '/tesseract',
         gzip: true,
       });
       await worker.setParameters({

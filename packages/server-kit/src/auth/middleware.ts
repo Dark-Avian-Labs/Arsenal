@@ -53,10 +53,11 @@ export function getClerkAuthState(req: Request): ClerkAuthState {
   const auth = getAuth(req);
   const userId = auth.userId ?? null;
   const metadata = metadataFromSessionClaims(auth.sessionClaims);
+  const appId = (req.app?.locals.appId as string | undefined) || process.env.APP_ID?.trim();
   return {
     authenticated: Boolean(userId),
     userId,
-    isAdmin: isAppAdmin(metadata, process.env.APP_ID?.trim() || 'appbase'),
+    isAdmin: appId ? isAppAdmin(metadata, appId) : false,
   };
 }
 

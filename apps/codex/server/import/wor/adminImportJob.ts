@@ -1,6 +1,6 @@
-import { getWorCatalogDb } from '../../games/wor/index.ts';
 import type Database from 'better-sqlite3';
 
+import { getWorCatalogDb } from '../../games/wor/index.ts';
 import {
   isWorImportLeaseHeld,
   releaseWorImportLease,
@@ -14,20 +14,30 @@ import {
 import type { WorPipelineStepKey } from './worPipelineSteps.ts';
 import { WOR_PIPELINE_STEPS } from './worPipelineSteps.ts';
 
+export type WorAdminImportLogLine = WorImportLogLine & { id: number };
+
 export type WorAdminImportSnapshot = {
   runId: number;
   running: boolean;
   startedAt: string | null;
   finishedAt: string | null;
-  lines: WorImportLogLine[];
+  lines: WorAdminImportLogLine[];
   summary: WorImportSummary | null;
   error: string | null;
 };
 
-type SnapshotListener = (snapshot: WorAdminImportSnapshot) => void;
+export type WorAdminImportEvent =
+  | { snapshot: WorAdminImportSnapshot }
+  | { lines: WorAdminImportLogLine[] };
+
+type SnapshotListener = (event: WorAdminImportEvent) => void;
 
 const MAX_LINES = 2000;
+const LINE_NOTIFY_THROTTLE_MS = 250;
 const listeners = new Set<SnapshotListener>();
+let nextLineId = 1;
+let notifiedLineId = 0;
+let lineNotifyTimer: ReturnType<typeof setTimeout> | null = null;
 
 let state: WorAdminImportSnapshot = {
   runId: 0,
@@ -46,19 +56,37 @@ function nowIso(): string {
   return new Date().toISOString();
 }
 
-function notify(): void {
-  const snapshot = { ...state, lines: [...state.lines] };
+function emit(event: WorAdminImportEvent): void {
   for (const listener of listeners) {
-    listener(snapshot);
+    listener(event);
   }
 }
 
+function notify(): void {
+  if (lineNotifyTimer) {
+    clearTimeout(lineNotifyTimer);
+    lineNotifyTimer = null;
+  }
+  notifiedLineId = nextLineId - 1;
+  emit({ snapshot: getWorAdminImportSnapshot() });
+}
+
+function notifyNewLines(): void {
+  lineNotifyTimer = null;
+  const lines = state.lines.filter((line) => line.id > notifiedLineId);
+  if (lines.length === 0) return;
+  notifiedLineId = lines[lines.length - 1]!.id;
+  emit({ lines });
+}
+
 function pushLine(level: WorImportLogLine['level'], message: string): void {
-  state.lines.push({ ts: nowIso(), level, message });
+  state.lines.push({ id: nextLineId++, ts: nowIso(), level, message });
   if (state.lines.length > MAX_LINES) {
     state.lines.splice(0, state.lines.length - MAX_LINES);
   }
-  notify();
+  if (lineNotifyTimer) return;
+  lineNotifyTimer = setTimeout(notifyNewLines, LINE_NOTIFY_THROTTLE_MS);
+  lineNotifyTimer.unref?.();
 }
 
 export function getWorAdminImportSnapshot(): WorAdminImportSnapshot {
@@ -67,10 +95,17 @@ export function getWorAdminImportSnapshot(): WorAdminImportSnapshot {
 
 export function subscribeWorAdminImport(listener: SnapshotListener): () => void {
   listeners.add(listener);
-  listener(getWorAdminImportSnapshot());
   return () => {
     listeners.delete(listener);
   };
+}
+
+export function waitForWorImportIdle(timeoutMs: number): Promise<boolean> {
+  if (!activeJobPromise) return Promise.resolve(true);
+  return Promise.race([
+    activeJobPromise.then(() => true),
+    new Promise<boolean>((resolve) => setTimeout(() => resolve(false), timeoutMs).unref()),
+  ]);
 }
 
 export function isWorImportRunning(): boolean {
@@ -84,6 +119,8 @@ export function isWorImportRunning(): boolean {
 
 export function __resetWorAdminImportForTests(): void {
   listeners.clear();
+  if (lineNotifyTimer) clearTimeout(lineNotifyTimer);
+  lineNotifyTimer = null;
   state = {
     runId: 0,
     running: false,

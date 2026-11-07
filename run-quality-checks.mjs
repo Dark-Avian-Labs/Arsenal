@@ -75,7 +75,7 @@ for (const result of results) {
   }
 }
 
-const hasFailures = results.some((result) => !result.success);
+const hasFailures = results.some((result) => !result.success || result.hasWarnings);
 if (hasFailures) {
   process.exitCode = 1;
 }

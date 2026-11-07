@@ -207,6 +207,7 @@ importRouter.post(
         planned.plan.gear.missing.map((row) => row.id),
         deleteMissing && options.gearMode === 'sync',
       );
+      q.assertGearQuota(db, accountId);
       applyArtifacts(
         accountId,
         artifactRows,

@@ -918,6 +918,18 @@ html.dark body::before {
     color: var(--color-muted);
   }
 
+  @media (pointer: coarse) {
+    .form-input,
+    .search-box {
+      font-size: 16px;
+    }
+
+    .icon-toggle-btn {
+      width: 44px;
+      height: 44px;
+    }
+  }
+
   .tabs {
     display: flex;
     gap: 4px;
@@ -1429,13 +1441,31 @@ html:not(.dark) {
   background: var(--color-glass);
   border: 1px solid var(--color-glass-border);
   border-color: var(--stale-banner-border) !important;
-  animation: stale-update-banner-glow 2.4s ease-in-out infinite;
   box-shadow:
     var(--shadow-panel),
-    0 0 0 1px color-mix(in oklab, var(--stale-banner-border) 35%, transparent),
-    0 0 28px color-mix(in oklab, var(--stale-banner-glow) 45%, transparent),
+    0 0 0 1px color-mix(in oklab, var(--stale-banner-border) 30%, transparent),
+    0 0 18px color-mix(in oklab, var(--stale-banner-glow) 30%, transparent),
     inset 0 1px 0 color-mix(in oklab, var(--color-foreground) 14%, transparent),
     inset 0 -1px 0 color-mix(in oklab, var(--color-foreground) 5%, transparent);
+}
+
+/* The banner clips its scan with overflow: hidden, so the pulsing glow lives on the wrapper. */
+.stale-update-glow {
+  position: relative;
+  border-radius: var(--radius-ui);
+}
+
+.stale-update-glow::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--stale-banner-border) 55%, transparent),
+    0 0 36px color-mix(in oklab, var(--stale-banner-glow) 55%, transparent);
+  opacity: 0;
+  animation: stale-update-banner-glow 2.4s ease-in-out infinite;
+  pointer-events: none;
 }
 
 .stale-update-banner::before {
@@ -1526,22 +1556,8 @@ html:not(.dark) {
 }
 
 @keyframes stale-update-banner-glow {
-  0%,
-  100% {
-    box-shadow:
-      var(--shadow-panel),
-      0 0 0 1px color-mix(in oklab, var(--stale-banner-border) 30%, transparent),
-      0 0 18px color-mix(in oklab, var(--stale-banner-glow) 30%, transparent),
-      inset 0 1px 0 color-mix(in oklab, var(--color-foreground) 14%, transparent),
-      inset 0 -1px 0 color-mix(in oklab, var(--color-foreground) 5%, transparent);
-  }
   50% {
-    box-shadow:
-      var(--shadow-panel),
-      0 0 0 1px color-mix(in oklab, var(--stale-banner-border) 55%, transparent),
-      0 0 36px color-mix(in oklab, var(--stale-banner-glow) 55%, transparent),
-      inset 0 1px 0 color-mix(in oklab, var(--color-foreground) 14%, transparent),
-      inset 0 -1px 0 color-mix(in oklab, var(--color-foreground) 5%, transparent);
+    opacity: 1;
   }
 }
 
@@ -1574,4 +1590,13 @@ html:not(.dark) .invert-on-light {
 
 .animate-slide-up {
   animation: slide-up 0.25s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stale-update-glow::before,
+  .stale-update-banner::after,
+  .toast-pill,
+  .animate-slide-up {
+    animation: none;
+  }
 }

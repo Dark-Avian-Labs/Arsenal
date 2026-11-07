@@ -61,7 +61,14 @@ try {
 } catch {}
 
 const range = previous ? `${prefix}${previous}..HEAD` : 'HEAD';
-const paths = ['--', `apps/${app}`, 'packages', 'pnpm-lock.yaml', 'pnpm-workspace.yaml'];
+const paths = [
+  '--',
+  `apps/${app}`,
+  'packages',
+  'package.json',
+  'pnpm-lock.yaml',
+  'pnpm-workspace.yaml',
+];
 const raw = git(['log', '--first-parent', '--format=%H%x1f%s%x1f%b%x1e', range, ...paths]);
 const commits = raw
   .split('\x1e')

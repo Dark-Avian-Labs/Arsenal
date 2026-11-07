@@ -82,8 +82,17 @@ const optionalNumber = z.preprocess(
 
 const optionalText = z.preprocess(
   (value) => (typeof value === 'string' ? value.trim() : undefined),
-  z.string().optional(),
+  z.string().max(128).optional(),
 );
+
+export const INGEST_MAX_AGE_MS = 10 * 60 * 1000;
+const INGEST_MAX_SKEW_MS = 60 * 1000;
+
+function clampTs(ts: number | undefined, now: number): number | undefined {
+  if (ts == null) return undefined;
+  if (ts > now + INGEST_MAX_SKEW_MS) return now;
+  return Math.max(ts, now - INGEST_MAX_AGE_MS);
+}
 
 const appIdSchema = z.string().trim().regex(APP_ID_RE);
 
@@ -181,6 +190,7 @@ function sampleError(error: z.ZodError): string {
 
 export function parseIngestBody(
   body: unknown,
+  now = Date.now(),
 ): { ok: true; value: ParsedIngest } | { ok: false; error: string } {
   if (!isPlainObject(body)) {
     return { ok: false, error: 'body must be an object' };
@@ -205,11 +215,12 @@ export function parseIngestBody(
     if (itemForbidden) return { ok: false, error: itemForbidden };
     const parsed = sampleSchema.safeParse(item);
     if (!parsed.success) return { ok: false, error: sampleError(parsed.error) };
+    const ts = clampTs(parsed.data.ts, now);
     if (parsed.data.kind === 'exit') {
-      samples.push({ ...parsed.data, source: parsed.data.source ?? 'agent' });
+      samples.push({ ...parsed.data, ts, source: parsed.data.source ?? 'agent' });
       continue;
     }
-    samples.push(parsed.data);
+    samples.push({ ...parsed.data, ts });
   }
 
   return { ok: true, value: { samples } };

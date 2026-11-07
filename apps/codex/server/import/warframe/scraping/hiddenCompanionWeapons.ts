@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 
 import { BEAST_CLAW_REGISTRY } from '@dark-avian-labs/warframe-catalog';
+
 import { PROJECT_ROOT } from '../../../config.ts';
 import {
   beastClawsWikiRevisionChanged,

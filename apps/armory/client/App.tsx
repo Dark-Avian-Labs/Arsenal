@@ -1,4 +1,5 @@
 import { ClerkProvider } from '@clerk/react';
+import { ui } from '@clerk/ui';
 import { AppShellProvider, AuthProvider } from '@dark-avian-labs/ui';
 import { Outlet } from 'react-router';
 
@@ -42,6 +43,7 @@ export function App() {
   return (
     <AppShellProvider value={shell}>
       <ClerkProvider
+        ui={ui}
         publishableKey={publishableKey}
         signInUrl={APP_PATHS.signIn}
         signUpUrl={APP_PATHS.signUp}

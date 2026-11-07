@@ -54,6 +54,7 @@ async function postIngest(ingestUrl: string, token: string, samples: unknown[]):
       authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({ samples }),
+    signal: AbortSignal.timeout(3000),
   });
   if (!res.ok && res.status !== 204) {
     throw new Error(`ingest ${res.status}`);
@@ -68,8 +69,8 @@ export function createSentinelAgent(options: SentinelAgentOptions): {
   middleware: RequestHandler;
   start: () => void;
   stop: () => void;
-  noteGracefulExit: (signal?: string) => void;
-  noteCrash: (err: unknown) => void;
+  noteGracefulExit: (signal?: string) => Promise<void>;
+  noteCrash: (err: unknown) => Promise<void>;
 } {
   const flushIntervalMs = options.flushIntervalMs ?? 15_000;
   const httpBuckets = new Map<string, HttpBucket>();
@@ -87,7 +88,7 @@ export function createSentinelAgent(options: SentinelAgentOptions): {
   let lastElu = performance.eventLoopUtilization();
   let timer: ReturnType<typeof setInterval> | null = null;
   let stopped = false;
-  let exitSent = false;
+  let exitReport: Promise<void> | null = null;
 
   const flush = async () => {
     const samples: unknown[] = [];
@@ -148,10 +149,8 @@ export function createSentinelAgent(options: SentinelAgentOptions): {
     message?: string,
     exitCode?: number,
     signal?: string,
-  ) => {
-    if (exitSent) return;
-    exitSent = true;
-    void postIngest(options.ingestUrl, options.token, [
+  ): Promise<void> => {
+    exitReport ??= postIngest(options.ingestUrl, options.token, [
       {
         kind: 'exit',
         appId: options.appId,
@@ -164,6 +163,7 @@ export function createSentinelAgent(options: SentinelAgentOptions): {
         source: 'agent',
       },
     ]).catch(() => {});
+    return exitReport;
   };
 
   const middleware: RequestHandler = (req: Request, res: Response, next: NextFunction) => {

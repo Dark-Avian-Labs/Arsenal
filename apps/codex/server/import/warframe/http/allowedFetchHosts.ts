@@ -9,6 +9,10 @@ export const ALLOWED_FETCH_HOSTS = new Set([
   'content.warframe.com',
   'origin.warframe.com',
   'api.warframe.market',
+  'fastidious.gg',
+  'prospector.gg',
+  'watcher-of-realms.fandom.com',
+  'static.wikia.nocookie.net',
 ]);
 
 export const ALLOWED_IMAGE_MIME_TYPES = new Set([

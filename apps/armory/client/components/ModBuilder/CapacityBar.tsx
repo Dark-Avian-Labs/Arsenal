@@ -1,6 +1,7 @@
-import { MaterialSymbol } from '@dark-avian-labs/ui';
+import { MaterialSymbol, SelectDropdown } from '@dark-avian-labs/ui';
 
 import orokinReactorImg from '../../assets/orokin-reactor.png';
+import type { BuildVisibility } from '../../types/warframe';
 import type { FormaCount } from '../../utils/formaCounter';
 import { GlassTooltip } from '../GlassTooltip';
 
@@ -19,10 +20,16 @@ interface CapacityBarProps {
   incarnonEnabled?: boolean;
   onIncarnonToggle?: () => void;
   incarnonAvailable?: boolean;
-  buildIsPublic?: boolean;
-  onBuildIsPublicChange?: (next: boolean) => void;
+  buildVisibility?: BuildVisibility;
+  onBuildVisibilityChange?: (next: BuildVisibility) => void;
   readOnly?: boolean;
 }
+
+const VISIBILITY_OPTIONS = [
+  { value: 'private', label: 'Private' },
+  { value: 'unlisted', label: 'Unlisted' },
+  { value: 'public', label: 'Public' },
+];
 
 function toolToggleClass(active: boolean, variant: 'success' | 'warning'): string {
   const activeClass =
@@ -44,8 +51,8 @@ export function CapacityBar({
   incarnonEnabled = false,
   onIncarnonToggle,
   incarnonAvailable = false,
-  buildIsPublic = false,
-  onBuildIsPublicChange,
+  buildVisibility = 'private',
+  onBuildVisibilityChange,
   readOnly = false,
 }: CapacityBarProps) {
   const totalAvailable = capacity.baseCapacity + capacity.capacityBonus;
@@ -188,18 +195,17 @@ export function CapacityBar({
                 />
               </button>
             )}
-            {onBuildIsPublicChange && (
-              <button
-                type="button"
-                onClick={() => onBuildIsPublicChange(!buildIsPublic)}
+            {onBuildVisibilityChange && (
+              <SelectDropdown
+                className="w-24"
+                triggerClassName="form-input select-dropdown-trigger flex h-[22px] w-full cursor-pointer items-center justify-between gap-1 px-2 py-0 text-left text-[10px] disabled:cursor-not-allowed disabled:opacity-50"
+                value={buildVisibility}
+                options={VISIBILITY_OPTIONS}
+                onChange={(v) => onBuildVisibilityChange(v as BuildVisibility)}
                 disabled={readOnly}
-                aria-pressed={buildIsPublic}
-                aria-label="Public build"
-                title="Public build"
-                className={`${toolToggleClass(buildIsPublic, 'success')} h-[22px] w-[22px]`}
-              >
-                <MaterialSymbol name="public" style={{ fontSize: 14 }} />
-              </button>
+                buttonAriaLabel="Build visibility"
+                preserveOrder
+              />
             )}
             {onFormaToggle && (
               <button

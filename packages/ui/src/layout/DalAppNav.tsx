@@ -43,6 +43,7 @@ export function DalAppNav({
   const [open, setOpen] = useState(false);
   const hoverCapable = useHoverCapable();
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const handleRef = useRef<HTMLButtonElement | null>(null);
   const collapseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -67,7 +68,7 @@ export function DalAppNav({
   }, []);
 
   useEffect(() => {
-    if (!open || hoverCapable) return undefined;
+    if (!open) return undefined;
 
     const onPointerDown = (event: MouseEvent) => {
       if (!rootRef.current?.contains(event.target as Node)) {
@@ -75,7 +76,9 @@ export function DalAppNav({
       }
     };
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setOpen(false);
+      if (event.key !== 'Escape') return;
+      setOpen(false);
+      if (rootRef.current?.contains(document.activeElement)) handleRef.current?.focus();
     };
     document.addEventListener('mousedown', onPointerDown);
     document.addEventListener('keydown', onKeyDown);
@@ -83,7 +86,7 @@ export function DalAppNav({
       document.removeEventListener('mousedown', onPointerDown);
       document.removeEventListener('keydown', onKeyDown);
     };
-  }, [open, hoverCapable]);
+  }, [open]);
 
   if (!apps) return null;
   const visibleApps = visibleDalAppNavApps(apps, showSentinel);
@@ -116,7 +119,7 @@ export function DalAppNav({
   };
 
   const onHandleClick = () => {
-    if (hoverCapable) return;
+    clearCollapseTimer();
     setOpen((prev) => !prev);
   };
 
@@ -126,8 +129,12 @@ export function DalAppNav({
       className={`dal-app-nav${open ? ' dal-app-nav--open' : ''}`}
       onMouseEnter={onRegionEnter}
       onMouseLeave={onRegionLeave}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false);
+      }}
     >
       <button
+        ref={handleRef}
         type="button"
         className="dal-app-nav__handle"
         style={{ minHeight: CLOSED_RAIL_MIN_HEIGHT }}

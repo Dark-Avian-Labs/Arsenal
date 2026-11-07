@@ -3,12 +3,14 @@ import '@dark-avian-labs/ui/clerk-auth.css';
 import './i18n';
 
 import { ClerkProvider } from '@clerk/react';
+import { ui } from '@clerk/ui';
 import {
   AppShellProvider,
   AuthProvider,
   DisabledAuthProvider,
   ThemeProvider,
 } from '@dark-avian-labs/ui';
+import i18n from 'i18next';
 import { StrictMode, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { RouterProvider } from 'react-router';
@@ -31,13 +33,14 @@ const shell = {
   clerkEnabled: CLERK_PUBLISHABLE_KEY.length > 0,
   legalPageUrl: LEGAL_PAGE_URL,
   legalEntityName: LEGAL_ENTITY_NAME,
-  searchPlaceholder: 'Search plans',
+  searchPlaceholder: i18n.t('app.searchPlans'),
   paths: APP_PATHS,
 };
 
 function Providers({ children }: { children: ReactNode }) {
   const page = CLERK_PUBLISHABLE_KEY ? (
     <ClerkProvider
+      ui={ui}
       publishableKey={CLERK_PUBLISHABLE_KEY}
       signInUrl={APP_PATHS.signIn}
       signUpUrl={APP_PATHS.signUp}

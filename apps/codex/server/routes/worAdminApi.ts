@@ -56,25 +56,28 @@ worAdminApiRouter.get('/import/stream', requireCodexAdmin, (req, res) => {
 
   const canWrite = () => !closed && !res.writableEnded && !res.writableFinished && res.writable;
 
-  const sendSnapshot = () => {
+  const send = (event: string, data: object) => {
     if (!canWrite()) {
       cleanup();
       return;
     }
     try {
-      const payload = JSON.stringify(getWorAdminImportSnapshot());
-      res.write('event: snapshot\n');
-      res.write(`data: ${payload}\n\n`);
+      res.write(`event: ${event}\n`);
+      res.write(`data: ${JSON.stringify(data)}\n\n`);
     } catch {
       cleanup();
     }
   };
 
-  const unsubscribe = subscribeWorAdminImport(() => {
-    sendSnapshot();
+  const unsubscribe = subscribeWorAdminImport((event) => {
+    if ('snapshot' in event) {
+      send('snapshot', event.snapshot);
+      return;
+    }
+    for (const line of event.lines) send('line', line);
   });
 
-  sendSnapshot();
+  send('snapshot', getWorAdminImportSnapshot());
   heartbeat = setInterval(() => {
     if (!canWrite()) {
       cleanup();

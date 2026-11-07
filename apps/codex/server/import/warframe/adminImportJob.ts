@@ -25,6 +25,8 @@ import { runStartupPipeline } from './startupPipeline.ts';
 
 export type { ImportLogLine } from './importRuns.ts';
 
+export type AdminImportLogLine = ImportLogLine & { id: number };
+
 export interface AdminImportSnapshot {
   runId: number;
   running: boolean;
@@ -32,15 +34,21 @@ export interface AdminImportSnapshot {
   finishedAt: string | null;
   requestedByUserId: string | null;
   requestedByUserMasked: string | null;
-  lines: ImportLogLine[];
+  lines: AdminImportLogLine[];
   summary: StartupPipelineSummary | null;
   error: string | null;
 }
 
-type SnapshotListener = (snapshot: AdminImportSnapshot) => void;
+export type AdminImportEvent = { snapshot: AdminImportSnapshot } | { lines: AdminImportLogLine[] };
+
+type SnapshotListener = (event: AdminImportEvent) => void;
 
 const MAX_LINES = 4000;
+const LINE_NOTIFY_THROTTLE_MS = 250;
 const listeners = new Set<SnapshotListener>();
+let nextLineId = 1;
+let notifiedLineId = 0;
+let lineNotifyTimer: ReturnType<typeof setTimeout> | null = null;
 
 let state: AdminImportSnapshot = {
   runId: 0,
@@ -74,7 +82,7 @@ function hydrateAdminImportFromDb(): void {
     finishedAt: row.finished_at,
     requestedByUserId: null,
     requestedByUserMasked: null,
-    lines: steps.lines,
+    lines: steps.lines.map((line) => ({ ...line, id: nextLineId++ })),
     summary: steps.summary,
     error: row.error_text,
   };
@@ -89,7 +97,8 @@ function nowIso(): string {
 }
 
 function pushLine(level: 'info' | 'error', message: string): void {
-  const line: ImportLogLine = {
+  const line: AdminImportLogLine = {
+    id: nextLineId++,
     ts: nowIso(),
     level,
     message,
@@ -99,7 +108,32 @@ function pushLine(level: 'info' | 'error', message: string): void {
     state.lines.splice(0, state.lines.length - MAX_LINES);
   }
   schedulePersistCurrentSteps();
-  notify();
+  if (lineNotifyTimer) return;
+  lineNotifyTimer = setTimeout(notifyNewLines, LINE_NOTIFY_THROTTLE_MS);
+  lineNotifyTimer.unref?.();
+}
+
+function emit(event: AdminImportEvent): void {
+  let index = 0;
+  for (const listener of listeners) {
+    try {
+      listener(event);
+    } catch (error) {
+      log('error', 'Admin import snapshot listener failed', {
+        index,
+        err: error instanceof Error ? error.message : String(error),
+      });
+    }
+    index += 1;
+  }
+}
+
+function notifyNewLines(): void {
+  lineNotifyTimer = null;
+  const lines = state.lines.filter((line) => line.id > notifiedLineId);
+  if (lines.length === 0) return;
+  notifiedLineId = lines[lines.length - 1]!.id;
+  emit({ lines });
 }
 
 const PERSIST_THROTTLE_MS = 1000;
@@ -127,19 +161,13 @@ function persistCurrentSteps(): void {
 }
 
 function notify(): void {
-  const snapshot = getAdminImportSnapshot();
-  let index = 0;
-  for (const listener of listeners) {
-    try {
-      listener(snapshot);
-    } catch (error) {
-      log('error', 'Admin import snapshot listener failed', {
-        index,
-        err: error instanceof Error ? error.message : String(error),
-      });
-    }
-    index += 1;
+  if (lineNotifyTimer) {
+    clearTimeout(lineNotifyTimer);
+    lineNotifyTimer = null;
   }
+  const snapshot = getAdminImportSnapshot();
+  notifiedLineId = nextLineId - 1;
+  emit({ snapshot });
 }
 
 export function getAdminImportSnapshot(): AdminImportSnapshot {
@@ -251,6 +279,7 @@ export function startAdminImportJob(
   };
   updateImportRun(run.id, { status: 'running' });
   pushLine('info', `[AdminImport] Run #${state.runId} queued by user ${masked}.`);
+  notify();
 
   activeJobPromise = (async () => {
     const lockToken = tryAcquireImportLease(run.id);

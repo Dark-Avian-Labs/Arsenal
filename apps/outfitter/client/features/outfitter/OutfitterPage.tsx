@@ -24,6 +24,7 @@ export function OutfitterPage() {
   const [artifacts, setArtifacts] = useState<ArtifactView[]>([]);
   const [artifactCatalog, setArtifactCatalog] = useState<CatalogArtifact[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const [gearFormOpen, setGearFormOpen] = useState(false);
   const [editingGear, setEditingGear] = useState<GearView | null>(null);
   const [artifactFormOpen, setArtifactFormOpen] = useState(false);
@@ -74,6 +75,8 @@ export function OutfitterPage() {
       setArtifactCatalog(artifactsBody.catalog ?? []);
     } catch (error) {
       setLoadError(error instanceof Error ? error.message : 'Failed to load');
+    } finally {
+      setLoading(false);
     }
   }, [loadAccounts]);
 
@@ -163,6 +166,8 @@ export function OutfitterPage() {
     await reload();
   }
 
+  const shownTab = loading ? null : tab;
+
   return (
     <div>
       <div className="tabs items-center">
@@ -195,25 +200,26 @@ export function OutfitterPage() {
       </div>
 
       {loadError ? <p className="mb-4 text-sm text-[var(--color-danger)]">{loadError}</p> : null}
-      {accounts.length === 0 ? (
+      {loading ? <p className="text-muted text-sm">Loading…</p> : null}
+      {!loading && accounts.length === 0 ? (
         <p className="text-muted text-sm">Create an account to store gear.</p>
       ) : null}
 
-      {tab === 'gear' ? (
+      {shownTab === 'gear' ? (
         <GearTab gear={gear} onAdd={() => openGear(null)} onEdit={openGear} />
       ) : null}
-      {tab === 'artifacts' ? (
+      {shownTab === 'artifacts' ? (
         <ArtifactsTab
           artifacts={artifacts}
           onAdd={() => openArtifact(null)}
           onEdit={openArtifact}
         />
       ) : null}
-      {tab === 'reroll' ? <RerollTab gear={gear} onOpenGear={openGear} /> : null}
-      {tab === 'equipment' ? (
+      {shownTab === 'reroll' ? <RerollTab gear={gear} onOpenGear={openGear} /> : null}
+      {shownTab === 'equipment' ? (
         <EquipmentTab heroes={heroes} gear={gear} artifacts={artifacts} onSaved={reload} />
       ) : null}
-      {tab === 'outfit' ? <OutfitTab heroes={heroes} gear={gear} onSaved={reload} /> : null}
+      {shownTab === 'outfit' ? <OutfitTab heroes={heroes} gear={gear} onSaved={reload} /> : null}
 
       <ImportModal open={importOpen} onClose={() => setImportOpen(false)} onImported={reload} />
       <GearFormModal

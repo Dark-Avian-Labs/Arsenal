@@ -145,11 +145,11 @@ export function Layout() {
   return (
     <div className="flex min-h-screen flex-col">
       <a href="#main-content" className="skip-link">
-        Skip to main content
+        {t('app.skipToContent')}
       </a>
       {clerkEnabled ? <ClerkTokenBridge /> : null}
       {clerkEnabled ? <ClerkDalAppNav /> : <DalAppNav currentAppId={APP_ID} />}
-      <header className="no-print relative z-30 px-4 pt-4 pb-2 sm:px-6">
+      <header className="no-print safe-px relative z-30 pt-4 pb-2">
         <div className="mx-auto flex h-14 w-full max-w-3xl items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-2">
             <Link
@@ -175,7 +175,7 @@ export function Layout() {
                 alt="Dark Avian Labs feather mark"
                 className="brand-lockup__icon"
               />
-              <span className="brand-lockup__title">{APP_DISPLAY_NAME}</span>
+              <span className="brand-lockup__title hidden sm:inline">{APP_DISPLAY_NAME}</span>
             </Link>
             <span
               className="text-muted shrink-0 font-mono text-[10px] leading-none tracking-wide opacity-70"
@@ -234,7 +234,10 @@ export function Layout() {
           </div>
         </div>
       </header>
-      <main id="main-content" className="relative z-0 flex-1 px-4 pb-24 sm:px-6">
+      <main
+        id="main-content"
+        className="safe-px relative z-0 flex-1 pb-[calc(6rem+env(safe-area-inset-bottom))]"
+      >
         <div className="mx-auto w-full max-w-3xl">
           <ChunkErrorBoundary>
             <Suspense

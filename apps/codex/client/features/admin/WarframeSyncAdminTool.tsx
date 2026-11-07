@@ -7,6 +7,26 @@ type WarframeSyncAdminToolProps = {
   onSyncComplete?: (result: SyncResult) => void | Promise<void>;
 };
 
+type SyncRunStatus = {
+  id?: number;
+  status?: string;
+  summary?: SyncResult | null;
+  error?: string | null;
+};
+
+async function waitForSyncRun(pollUrl: string, signal: AbortSignal): Promise<SyncResult> {
+  const deadline = Date.now() + 30 * 60 * 1000;
+  while (Date.now() < deadline) {
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    const pollRes = await apiFetch(pollUrl, { signal });
+    const pollBody = (await pollRes.json().catch(() => null)) as SyncRunStatus | null;
+    if (!pollRes.ok || !pollBody) throw new Error('Failed to poll sync status');
+    if (pollBody.status === 'failed') throw new Error(pollBody.error || 'Sync failed');
+    if (pollBody.status === 'succeeded' && pollBody.summary) return pollBody.summary;
+  }
+  throw new Error('Sync timed out while waiting for completion');
+}
+
 export function WarframeSyncAdminTool({ onSyncComplete }: WarframeSyncAdminToolProps) {
   const [runningSync, setRunningSync] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -20,6 +40,39 @@ export function WarframeSyncAdminTool({ onSyncComplete }: WarframeSyncAdminToolP
       mountedRef.current = false;
       syncAbortRef.current?.abort();
     };
+  }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    void (async () => {
+      try {
+        const response = await apiFetch('/api/warframe/admin/sync/runs/latest', {
+          signal: controller.signal,
+        });
+        if (!response.ok) return;
+        const run = (await response.json().catch(() => null)) as SyncRunStatus | null;
+        if (run?.status === 'succeeded' && run.summary) {
+          setLastReport(run.summary);
+          return;
+        }
+        if (typeof run?.id !== 'number' || (run.status !== 'pending' && run.status !== 'running')) {
+          return;
+        }
+        setRunningSync(true);
+        const result = await waitForSyncRun(
+          `/api/warframe/admin/sync/runs/${run.id}`,
+          controller.signal,
+        );
+        setLastReport(result);
+        await onSyncComplete?.(result);
+      } catch (err) {
+        if (controller.signal.aborted) return;
+        setError(err instanceof Error ? err.message : 'Failed to run sync');
+      } finally {
+        if (!controller.signal.aborted) setRunningSync(false);
+      }
+    })();
+    return () => controller.abort();
   }, []);
 
   const handleSync = useCallback(async (): Promise<void> => {
@@ -47,24 +100,7 @@ export function WarframeSyncAdminTool({ onSyncComplete }: WarframeSyncAdminToolP
           typeof body.pollUrl === 'string'
             ? body.pollUrl
             : `/api/warframe/admin/sync/runs/${body.runId}`;
-        const deadline = Date.now() + 30 * 60 * 1000;
-        while (Date.now() < deadline) {
-          if (controller.signal.aborted || !mountedRef.current) return;
-          await new Promise((resolve) => setTimeout(resolve, 1500));
-          const pollRes = await apiFetch(pollUrl, { signal: controller.signal });
-          const pollBody = (await pollRes.json().catch(() => null)) as {
-            status?: string;
-            summary?: SyncResult | null;
-            error?: string | null;
-          } | null;
-          if (!pollRes.ok || !pollBody) throw new Error('Failed to poll sync status');
-          if (pollBody.status === 'failed') throw new Error(pollBody.error || 'Sync failed');
-          if (pollBody.status === 'succeeded' && pollBody.summary) {
-            result = pollBody.summary;
-            break;
-          }
-        }
-        if (!result) throw new Error('Sync timed out while waiting for completion');
+        result = await waitForSyncRun(pollUrl, controller.signal);
       } else {
         result = body as SyncResult;
       }

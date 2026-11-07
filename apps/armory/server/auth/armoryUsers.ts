@@ -14,23 +14,39 @@ export function ensureArmoryUsersSchema(db: ReturnType<typeof getCatalogDb>): vo
   db.exec(`
     CREATE TABLE IF NOT EXISTS armory_users (
       clerk_user_id TEXT PRIMARY KEY,
-      username TEXT NOT NULL UNIQUE COLLATE NOCASE,
+      username TEXT UNIQUE COLLATE NOCASE,
       deleted_at TEXT
     );
   `);
-  const cols = db.prepare('PRAGMA table_info(armory_users)').all() as { name: string }[];
+  const cols = db.prepare('PRAGMA table_info(armory_users)').all() as {
+    name: string;
+    notnull: number;
+  }[];
   if (!cols.some((c) => c.name === 'deleted_at')) {
     try {
       db.exec('ALTER TABLE armory_users ADD COLUMN deleted_at TEXT');
     } catch (err) {
-      if (isDuplicateColumnError(err)) {
-        log('warn', 'armory_users.deleted_at already exists (benign)', {
-          err: err instanceof Error ? err.message : String(err),
-        });
-        return;
-      }
-      throw err;
+      if (!isDuplicateColumnError(err)) throw err;
+      log('warn', 'armory_users.deleted_at already exists (benign)', {
+        err: err instanceof Error ? err.message : String(err),
+      });
     }
+  }
+  if (cols.find((c) => c.name === 'username')?.notnull) {
+    db.transaction(() => {
+      db.exec(`
+        CREATE TABLE armory_users_new (
+          clerk_user_id TEXT PRIMARY KEY,
+          username TEXT UNIQUE COLLATE NOCASE,
+          deleted_at TEXT
+        );
+        INSERT INTO armory_users_new (clerk_user_id, username, deleted_at)
+          SELECT clerk_user_id, CASE WHEN deleted_at IS NULL THEN username END, deleted_at
+          FROM armory_users;
+        DROP TABLE armory_users;
+        ALTER TABLE armory_users_new RENAME TO armory_users;
+      `);
+    })();
   }
 }
 
@@ -42,13 +58,18 @@ export function upsertArmoryUser(clerkUserId: string, username: string | null): 
   }
   const trimmed = typeof username === 'string' ? username.trim() : '';
   if (trimmed.length > 0) {
-    db.prepare(
-      `INSERT INTO armory_users (clerk_user_id, username, deleted_at)
-       VALUES (?, ?, NULL)
-       ON CONFLICT(clerk_user_id) DO UPDATE SET
-         username = excluded.username,
-         deleted_at = NULL`,
-    ).run(clerkUserId, trimmed);
+    db.transaction(() => {
+      db.prepare(
+        'UPDATE armory_users SET username = NULL WHERE username = ? AND clerk_user_id <> ?',
+      ).run(trimmed, clerkUserId);
+      db.prepare(
+        `INSERT INTO armory_users (clerk_user_id, username, deleted_at)
+         VALUES (?, ?, NULL)
+         ON CONFLICT(clerk_user_id) DO UPDATE SET
+           username = excluded.username,
+           deleted_at = NULL`,
+      ).run(clerkUserId, trimmed);
+    })();
     return;
   }
   db.prepare(`UPDATE armory_users SET deleted_at = NULL WHERE clerk_user_id = ?`).run(clerkUserId);
@@ -57,9 +78,9 @@ export function upsertArmoryUser(clerkUserId: string, username: string | null): 
 export function markArmoryUserDeleted(clerkUserId: string): void {
   const db = getCatalogDb();
   ensureArmoryUsersSchema(db);
-  db.prepare(`UPDATE armory_users SET deleted_at = datetime('now') WHERE clerk_user_id = ?`).run(
-    clerkUserId,
-  );
+  db.prepare(
+    `UPDATE armory_users SET deleted_at = datetime('now'), username = NULL WHERE clerk_user_id = ?`,
+  ).run(clerkUserId);
 }
 
 const CLERK_SYNC_TIMEOUT_MS = 5_000;
@@ -82,6 +103,19 @@ export function hasActiveArmoryUser(clerkUserId: string): boolean {
 }
 
 export async function syncArmoryUserFromClerk(clerkUserId: string): Promise<string | null> {
+  const now = Date.now();
+  if ((clerkSyncCooldown.get(clerkUserId) ?? 0) > now) return null;
+  const username = await fetchArmoryUserFromClerk(clerkUserId);
+  if (username) {
+    clerkSyncCooldown.delete(clerkUserId);
+  } else {
+    clerkSyncCooldown.set(clerkUserId, now + CLERK_SYNC_COOLDOWN_MS);
+    pruneClerkSyncCooldown(now);
+  }
+  return username;
+}
+
+async function fetchArmoryUserFromClerk(clerkUserId: string): Promise<string | null> {
   let timeoutTimer: NodeJS.Timeout | undefined;
   try {
     const user = await Promise.race([
@@ -167,15 +201,9 @@ export async function resolveOwnerUsernames(
   await Promise.all(
     toSync.map(async (clerkUserId) => {
       const username = await syncArmoryUserFromClerk(clerkUserId);
-      if (username) {
-        map.set(clerkUserId, username);
-        clerkSyncCooldown.delete(clerkUserId);
-      } else {
-        clerkSyncCooldown.set(clerkUserId, now + CLERK_SYNC_COOLDOWN_MS);
-      }
+      if (username) map.set(clerkUserId, username);
     }),
   );
-  pruneClerkSyncCooldown(now);
 
   return map;
 }
@@ -195,11 +223,12 @@ export function getOwnerUsernames(clerkUserIds: string[]): Map<string, string | 
       )
       .all(...unique) as Array<{
       clerk_user_id: string;
-      username: string;
+      username: string | null;
       deleted_at: string | null;
     }>;
     for (const r of rows) {
-      map.set(r.clerk_user_id, r.deleted_at ? DELETED_USER_LABEL : r.username);
+      if (r.deleted_at) map.set(r.clerk_user_id, DELETED_USER_LABEL);
+      else if (r.username) map.set(r.clerk_user_id, r.username);
     }
   } catch (err) {
     log('error', 'Armory user username lookup failed', {

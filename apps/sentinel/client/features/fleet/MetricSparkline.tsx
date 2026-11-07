@@ -8,11 +8,14 @@ type SparklineProps = {
   title: string;
   unit: string;
   points: Point[];
+  from: number;
+  to: number;
+  bucketMs: number;
   colorVar?: string;
   variant?: 'hero' | 'strip';
 };
 
-type Plotted = { ts: number; value: number; x: number; y: number };
+type Plotted = { ts: number; value: number; x: number; y: number; segment: number };
 
 type Hover = { index: number; x: number };
 
@@ -37,6 +40,9 @@ export function MetricSparkline({
   title,
   unit,
   points,
+  from,
+  to,
+  bucketMs,
   colorVar = 'var(--color-accent)',
   variant = 'strip',
 }: SparklineProps) {
@@ -46,72 +52,84 @@ export function MetricSparkline({
   const fillId = useId().replace(/:/g, '');
   const [hover, setHover] = useState<Hover | null>(null);
 
-  const { plotted, linePath, areaPath, ticks } = useMemo(() => {
+  const { plotted, segments, linePath, areaPath, ticks } = useMemo(() => {
     const values = points
       .map((p) => p.value)
       .filter((v): v is number => v != null && Number.isFinite(v));
     const maxVal = values.length ? Math.max(...values) : 0;
     const peak = Math.max(maxVal * 1.4, maxVal > 0 ? maxVal : 1);
-    const denom = Math.max(points.length - 1, 1);
+    const span = Math.max(to - from, 1);
     const next: Plotted[] = [];
-    for (let i = 0; i < points.length; i++) {
-      const point = points[i];
+    const runs: Plotted[][] = [];
+    for (const point of points) {
       if (point.value == null || !Number.isFinite(point.value)) continue;
-      next.push({
+      const prev = next[next.length - 1];
+      if (!prev || point.ts - prev.ts > 2 * bucketMs) runs.push([]);
+      const plottedPoint = {
         ts: point.ts,
         value: point.value,
-        x: (i / denom) * width,
+        x: ((point.ts - from) / span) * width,
         y: height - (point.value / peak) * (height - top),
-      });
+        segment: runs.length - 1,
+      };
+      next.push(plottedPoint);
+      runs[runs.length - 1]!.push(plottedPoint);
     }
 
-    let line = smoothLinePath(next);
+    let line = '';
+    let area = '';
     if (next.length === 1) {
       const y = next[0]!.y;
       line = `M 0 ${y} L ${width} ${y}`;
+      area = `${line} L ${width} ${height} L 0 ${height} Z`;
+    } else {
+      for (const run of runs) {
+        const first = run[0]!;
+        const last = run[run.length - 1]!;
+        // A zero-length subpath draws a dot through the round line cap.
+        const runLine = run.length === 1 ? `M ${first.x} ${first.y} h 0` : smoothLinePath(run);
+        line += ` ${runLine}`;
+        if (run.length > 1) area += ` ${runLine} L ${last.x} ${height} L ${first.x} ${height} Z`;
+      }
     }
-    const first = next[0];
-    const last = next[next.length - 1];
-    const area =
-      first && last && line
-        ? `${line} L ${last.x} ${height} L ${next.length === 1 ? 0 : first.x} ${height} Z`
-        : '';
-    const span = first && last ? last.ts - first.ts : 0;
-    const tickPoints =
-      variant === 'hero' && next.length > 1
-        ? [next[0]!, next[Math.floor((next.length - 1) / 2)]!, next[next.length - 1]!]
-        : [];
 
     return {
       plotted: next,
-      linePath: line,
-      areaPath: area,
-      ticks: tickPoints.map((point) => ({ x: point.x, label: axisLabel(point.ts, span) })),
+      segments: runs,
+      linePath: line.trim(),
+      areaPath: area.trim(),
+      ticks:
+        variant === 'hero' && next.length > 1
+          ? [from, (from + to) / 2, to].map((ts) => ({
+              x: ((ts - from) / span) * width,
+              label: axisLabel(ts, span),
+            }))
+          : [],
     };
-  }, [points, top, variant]);
+  }, [points, from, to, bucketMs, top, variant]);
 
   const latest = plotted.length ? plotted[plotted.length - 1].value : null;
   const sample = hover != null ? plotted[hover.index] : null;
   const headerValue = sample?.value ?? latest;
-  const markerY = hover != null && plotted.length > 0 ? smoothLineY(plotted, hover.x) : null;
+  const markerY =
+    hover != null && sample ? smoothLineY(segments[sample.segment] ?? [], hover.x) : null;
 
   function pointerAt(clientX: number, svg: SVGSVGElement): Hover | null {
     if (plotted.length === 0) return null;
     const rect = svg.getBoundingClientRect();
     if (rect.width <= 0) return null;
     const raw = ((clientX - rect.left) / rect.width) * width;
-    const left = plotted[0]!.x;
-    const right = plotted[plotted.length - 1]!.x;
-    const x = Math.min(right, Math.max(left, raw));
     let best = 0;
-    let bestDist = Math.abs(plotted[0]!.x - x);
+    let bestDist = Math.abs(plotted[0]!.x - raw);
     for (let i = 1; i < plotted.length; i++) {
-      const dist = Math.abs(plotted[i]!.x - x);
+      const dist = Math.abs(plotted[i]!.x - raw);
       if (dist < bestDist) {
         best = i;
         bestDist = dist;
       }
     }
+    const run = segments[plotted[best]!.segment]!;
+    const x = Math.min(run[run.length - 1]!.x, Math.max(run[0]!.x, raw));
     return { index: best, x };
   }
 

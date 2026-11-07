@@ -47,6 +47,7 @@ gearRouter.post(
     }
     const id = db.transaction(() => {
       const gearId = q.insertGear(db, accountId, parsed.write);
+      q.assertGearQuota(db, accountId);
       q.equipGearSlot(db, accountId, gearId, parsed.equipped_hero_slug);
       return gearId;
     })();

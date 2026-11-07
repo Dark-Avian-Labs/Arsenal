@@ -313,12 +313,17 @@ async function fetchOverframeRawWithClient(
   client: CuimpHttp,
   url: string,
   timeoutMs: number,
+  maxBytes: number,
 ): Promise<{ status: number; body: string; rawBody: Buffer }> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
     const response = await client.get(url, { signal: controller.signal });
+    const declaredBytes = Number(normalizeResponseHeaders(response.headers)['content-length']);
+    if (declaredBytes > maxBytes || response.rawBody.length > maxBytes) {
+      throw new Error(`Overframe response for ${url} exceeded ${maxBytes} byte limit`);
+    }
     const body = responseBodyText(response.rawBody, response.data);
     if (response.status < 200 || response.status >= 300) {
       throw createHttpStatusError(response.status, url, response.headers, body);
@@ -339,6 +344,7 @@ async function fetchOverframeRawWithClient(
 async function fetchOverframeRaw(
   pathOrUrl: string,
   timeoutMs: number,
+  maxBytes: number,
 ): Promise<{ status: number; body: string; rawBody: Buffer }> {
   const url = toAbsoluteOverframeUrl(pathOrUrl);
   let lastError: unknown;
@@ -348,7 +354,7 @@ async function fetchOverframeRaw(
     const client = overframeClients[clientIndex];
 
     try {
-      const result = await fetchOverframeRawWithClient(client, url, timeoutMs);
+      const result = await fetchOverframeRawWithClient(client, url, timeoutMs, maxBytes);
       activeClientIndex = clientIndex;
       return result;
     } catch (error: unknown) {
@@ -388,6 +394,7 @@ export async function warmUpOverframeFetch(): Promise<void> {
         overframeClients[i],
         url,
         FETCH_TIMEOUT_MS.htmlPage,
+        FETCH_BYTE_LIMITS.html,
       );
       activeClientIndex = i;
       const buildId = extractBuildIdFromHtml(result.body);
@@ -428,10 +435,7 @@ export async function fetchOverframeHtml(
   timeoutMs: number = FETCH_TIMEOUT_MS.htmlPage,
 ): Promise<string> {
   await ensureOverframeFetchReady();
-  const { body } = await fetchOverframeRaw(path, timeoutMs);
-  if (Buffer.byteLength(body, 'utf8') > FETCH_BYTE_LIMITS.html) {
-    throw new Error(`Overframe HTML exceeded ${FETCH_BYTE_LIMITS.html} byte limit`);
-  }
+  const { body } = await fetchOverframeRaw(path, timeoutMs, FETCH_BYTE_LIMITS.html);
   const buildId = extractBuildIdFromHtml(body);
   if (buildId) {
     cachedBuildId ??= buildId;
@@ -444,10 +448,7 @@ export async function fetchOverframeBytes(
   timeoutMs: number = FETCH_TIMEOUT_MS.binaryImage,
 ): Promise<Buffer> {
   await ensureOverframeFetchReady();
-  const { rawBody } = await fetchOverframeRaw(pathOrUrl, timeoutMs);
-  if (rawBody.length > FETCH_BYTE_LIMITS.image) {
-    throw new Error(`Overframe binary exceeded ${FETCH_BYTE_LIMITS.image} byte limit`);
-  }
+  const { rawBody } = await fetchOverframeRaw(pathOrUrl, timeoutMs, FETCH_BYTE_LIMITS.image);
   return rawBody;
 }
 
@@ -481,7 +482,7 @@ export async function fetchOverframePageJson<T>(
 
   async function loadJson(buildId: string): Promise<T> {
     const jsonPath = overframeJsonPath(pagePath, buildId);
-    const { body } = await fetchOverframeRaw(jsonPath, timeoutMs);
+    const { body } = await fetchOverframeRaw(jsonPath, timeoutMs, FETCH_BYTE_LIMITS.html);
     try {
       return JSON.parse(body) as T;
     } catch (error) {

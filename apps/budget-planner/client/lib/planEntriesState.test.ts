@@ -28,6 +28,7 @@ function plan(entries: Entry[]): PlanDetail {
     plan: { id: 'p1', name: 'Home', currency: 'EUR', owner_user_id: 'u1' },
     role: 'owner',
     categories: [],
+    archivedEntryCounts: {},
     accounts: [],
     entries,
     totals: { expenseCents: 0, incomeCents: 0, netCents: 0 },

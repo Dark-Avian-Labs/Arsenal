@@ -130,6 +130,28 @@ export function getWarframeSyncRunRow(id: number): WarframeSyncRunRow | null {
   return row ?? null;
 }
 
+export function getLatestWarframeSyncRunRow(): WarframeSyncRunRow | null {
+  ensureWarframeSyncJobsSchema();
+  const row = getWarframeDb()
+    .prepare(
+      `SELECT id, status, initiator_hash, started_at, finished_at, summary_json, error_text, lock_token
+       FROM warframe_sync_runs ORDER BY id DESC LIMIT 1`,
+    )
+    .get() as WarframeSyncRunRow | undefined;
+  return row ?? null;
+}
+
+export function failStaleWarframeSyncRuns(): void {
+  if (isWarframeSyncLeaseHeld()) return;
+  getWarframeDb()
+    .prepare(
+      `UPDATE warframe_sync_runs
+       SET status = 'failed', finished_at = datetime('now'), error_text = COALESCE(error_text, ?), lock_token = NULL
+       WHERE status IN ('pending', 'running')`,
+    )
+    .run('Interrupted by server restart.');
+}
+
 function readInitiatorMasked(summaryJson: string | null, initiatorHash: string): string {
   if (summaryJson) {
     try {

@@ -1,7 +1,7 @@
 import { useAuth } from '@clerk/react';
 import { Button, Input, MaterialSymbol, Modal } from '@dark-avian-labs/ui';
 import { ApiError, apiJson } from '@dark-avian-labs/ui';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams, useSearchParams } from 'react-router';
 
@@ -12,9 +12,11 @@ import {
   type PlanMonth,
 } from '../../../shared/planMonth';
 import { FrequencyBadge } from '../../components/budget/FrequencyBadge';
+import { PLANS_CHANGED_EVENT } from '../../components/Layout/PlanSwitcher';
 import { FormSelect } from '../../components/ui/FormSelect';
 import { RequireAuth } from '../../features/auth/RequireAuth';
-import { formatMoney } from '../../lib/format';
+import { apiErrorMessage } from '../../lib/apiError';
+import { formatIsoDate, formatMoney } from '../../lib/format';
 import { removeEntryFromPlan } from '../../lib/planEntriesState';
 import { canEdit, type Entry, type PlanDetail } from '../../lib/types';
 import { copyTextToClipboard } from '../../utils/clipboard';
@@ -66,6 +68,7 @@ function PlanPageInner() {
   const [copied, setCopied] = useState(false);
   const [saving, setSaving] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<PendingDelete>(null);
+  const loadSeq = useRef(0);
 
   const locale = i18n.language;
   const viewingCurrentMonth = isSameMonth(selectedMonth, calendarMonth());
@@ -93,23 +96,22 @@ function PlanPageInner() {
 
   const load = useCallback(async () => {
     if (!planId) return;
+    const seq = ++loadSeq.current;
     setLoading(true);
     setError(null);
     try {
       const detail = await apiJson<PlanDetail>(
         `/api/plans/${planId}?year=${selectedMonth.year}&month=${selectedMonth.month}`,
       );
-      setData(detail);
+      if (seq === loadSeq.current) setData(detail);
     } catch (err) {
-      if (err instanceof ApiError) {
-        if (err.status === 404) setError(t('plan.notFound'));
-        else if (err.status === 401 || err.status === 403) setError(t('plan.accessDenied'));
-        else setError(err.message);
-      } else {
-        setError(t('plan.loadFailed'));
-      }
+      if (seq !== loadSeq.current) return;
+      if (err instanceof ApiError && err.status === 404) setError(t('plan.notFound'));
+      else if (err instanceof ApiError && (err.status === 401 || err.status === 403)) {
+        setError(t('plan.accessDenied'));
+      } else setError(apiErrorMessage(err, 'plan.loadFailed'));
     } finally {
-      setLoading(false);
+      if (seq === loadSeq.current) setLoading(false);
     }
   }, [planId, selectedMonth.year, selectedMonth.month, t]);
 
@@ -176,11 +178,13 @@ function PlanPageInner() {
         }
         case 'plan': {
           await apiJson(`/api/plans/${planId}`, { method: 'DELETE' });
+          window.dispatchEvent(new Event(PLANS_CHANGED_EVENT));
           navigate('/');
           break;
         }
         case 'leave': {
           await apiJson(`/api/plans/${planId}/leave`, { method: 'POST' });
+          window.dispatchEvent(new Event(PLANS_CHANGED_EVENT));
           navigate('/');
           break;
         }
@@ -201,7 +205,7 @@ function PlanPageInner() {
       }
       setPendingDelete(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Delete failed');
+      setError(apiErrorMessage(err, 'errors.deleteFailed'));
     } finally {
       setSaving(false);
     }
@@ -242,7 +246,7 @@ function PlanPageInner() {
         body: JSON.stringify(next),
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Reorder failed');
+      setError(apiErrorMessage(err, 'errors.reorderFailed'));
       await load();
     }
   }
@@ -262,7 +266,7 @@ function PlanPageInner() {
       setInviteLink(url);
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Invite failed');
+      setError(apiErrorMessage(err, 'errors.inviteFailed'));
     } finally {
       setSaving(false);
     }
@@ -384,7 +388,9 @@ function PlanPageInner() {
         </div>
       </div>
 
-      <section className={`statement-figure ${viewMode === 'print' ? 'no-print' : ''}`}>
+      <section
+        className={`statement-figure ${viewMode === 'print' ? 'no-print' : ''} ${loading ? 'opacity-60' : ''}`}
+      >
         <p className="text-muted text-sm">{t('plan.net')}</p>
         <p
           className={`statement-figure__net tabular-nums ${
@@ -415,49 +421,51 @@ function PlanPageInner() {
         </p>
       ) : null}
 
-      {viewMode === 'list' ? (
-        <PlanListView
-          categories={data.categories}
-          entries={data.entries}
-          accounts={data.accounts}
-          organizeMode={organizeMode && editable && viewingCurrentMonth}
-          currency={currency}
-          locale={locale}
-          year={selectedMonth.year}
-          month={selectedMonth.month}
-          onOpenEntry={openDetails}
-          onReorder={applyReorder}
-        />
-      ) : null}
+      <div className={loading ? 'opacity-60' : undefined} aria-busy={loading}>
+        {viewMode === 'list' ? (
+          <PlanListView
+            categories={data.categories}
+            entries={data.entries}
+            accounts={data.accounts}
+            organizeMode={organizeMode && editable && viewingCurrentMonth}
+            currency={currency}
+            locale={locale}
+            year={selectedMonth.year}
+            month={selectedMonth.month}
+            onOpenEntry={openDetails}
+            onReorder={applyReorder}
+          />
+        ) : null}
 
-      {viewMode === 'breakdown' ? (
-        <AccountBreakdownView
-          entries={data.entries}
-          accounts={data.accounts}
-          currency={currency}
-          locale={locale}
-          year={selectedMonth.year}
-          month={selectedMonth.month}
-        />
-      ) : null}
+        {viewMode === 'breakdown' ? (
+          <AccountBreakdownView
+            entries={data.entries}
+            accounts={data.accounts}
+            currency={currency}
+            locale={locale}
+            year={selectedMonth.year}
+            month={selectedMonth.month}
+          />
+        ) : null}
 
-      {viewMode === 'print' ? (
-        <PrintView
-          planName={data.plan.name}
-          categories={data.categories}
-          entries={data.entries}
-          accounts={data.accounts}
-          currency={currency}
-          locale={locale}
-          year={selectedMonth.year}
-          month={selectedMonth.month}
-        />
-      ) : null}
+        {viewMode === 'print' ? (
+          <PrintView
+            planName={data.plan.name}
+            categories={data.categories}
+            entries={data.entries}
+            accounts={data.accounts}
+            currency={currency}
+            locale={locale}
+            year={selectedMonth.year}
+            month={selectedMonth.month}
+          />
+        ) : null}
+      </div>
 
       {editable && viewMode === 'list' ? (
         <button
           type="button"
-          className="btn btn-accent fixed right-4 bottom-20 z-40 px-4 shadow-lg sm:right-8"
+          className="btn btn-accent fixed right-[max(1rem,env(safe-area-inset-right))] bottom-[calc(5rem+env(safe-area-inset-bottom))] z-40 px-4 shadow-lg sm:right-[max(2rem,env(safe-area-inset-right))]"
           onClick={openCreate}
           aria-label={t('plan.newEntry')}
         >
@@ -509,7 +517,9 @@ function PlanPageInner() {
                 <>
                   <div className="flex justify-between gap-4">
                     <span className="text-muted">{t('entry.endDate')}</span>
-                    <span>{selected.end_date ?? '—'}</span>
+                    <span>
+                      {selected.end_date ? formatIsoDate(selected.end_date, locale) : '—'}
+                    </span>
                   </div>
                   <div className="flex justify-between gap-4">
                     <span className="text-muted">{t('entry.finalAmount')}</span>
@@ -682,12 +692,12 @@ function PlanPageInner() {
                   <a
                     className="btn btn-accent text-center"
                     href={`mailto:${encodeURIComponent(inviteEmail)}?subject=${encodeURIComponent(
-                      `Join "${data.plan.name}" on BudgetPlanner`,
+                      t('invite.mailSubject', { name: data.plan.name }),
                     )}&body=${encodeURIComponent(
-                      `You've been invited to ${inviteRole === 'editor' ? 'edit' : 'view'} "${data.plan.name}".\n\n${inviteLink}\n`,
+                      `${t('invite.mailBody', { context: inviteRole, name: data.plan.name })}\n\n${inviteLink}\n`,
                     )}`}
                   >
-                    mailto
+                    {t('invite.sendEmail')}
                   </a>
                 </div>
               ) : (

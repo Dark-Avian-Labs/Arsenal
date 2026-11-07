@@ -1,10 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { HERO_RARITIES, type FactionKey } from '../../games/wor/index.ts';
 import type Database from 'better-sqlite3';
 
-import { fetchWithTimeout, FETCH_TIMEOUT_MS } from '../../http/fetchWithTimeout.ts';
+import { HERO_RARITIES, type FactionKey } from '../../games/wor/index.ts';
+import { fetchTextBounded, FETCH_TIMEOUT_MS } from '../warframe/http/fetchWithTimeout.ts';
 import type { CatalogArtifactRow, CatalogBundle, CatalogHeroRow } from './catalogQueries.ts';
 import { applyHeroBaseStats } from './fandomHeroStats.ts';
 import { sleep } from './fastidiousClient.ts';
@@ -647,7 +647,7 @@ function prospectorUserAgent(): string {
 }
 
 async function fetchWpJson(url: URL): Promise<{ body: unknown; totalPages: number }> {
-  const response = await fetchWithTimeout(
+  const { response, text } = await fetchTextBounded(
     url,
     {
       headers: {
@@ -662,7 +662,7 @@ async function fetchWpJson(url: URL): Promise<{ body: unknown; totalPages: numbe
   }
   const headerPages = Number(response.headers.get('x-wp-totalpages'));
   return {
-    body: await response.json(),
+    body: JSON.parse(text),
     totalPages: Number.isFinite(headerPages) && headerPages > 0 ? headerPages : 1,
   };
 }

@@ -1,12 +1,14 @@
 import { useAuth } from '@clerk/react';
 import { Button } from '@dark-avian-labs/ui';
-import { apiJson } from '@dark-avian-labs/ui';
+import { ApiError, apiJson } from '@dark-avian-labs/ui';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router';
 
 import { planPath } from '../../app/paths';
+import { PLANS_CHANGED_EVENT } from '../../components/Layout/PlanSwitcher';
 import { RequireAuth } from '../../features/auth/RequireAuth';
+import { apiErrorMessage } from '../../lib/apiError';
 
 interface InvitePreview {
   role: 'editor' | 'viewer';
@@ -32,7 +34,7 @@ function InviteInner() {
         const data = await apiJson<InvitePreview>(`/api/invites/${token}`);
         setPreview(data);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Invite unavailable');
+        setError(apiErrorMessage(err, 'errors.inviteUnavailable'));
       }
     })();
   }, [token]);
@@ -46,9 +48,14 @@ function InviteInner() {
         method: 'POST',
         body: JSON.stringify({ setAsDefault }),
       });
+      window.dispatchEvent(new Event(PLANS_CHANGED_EVENT));
       navigate(planPath(result.planId));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Accept failed');
+      setError(
+        err instanceof ApiError && err.code === 'already_member'
+          ? t('invite.alreadyMember')
+          : apiErrorMessage(err, 'errors.acceptFailed'),
+      );
     } finally {
       setAccepting(false);
     }
@@ -78,7 +85,7 @@ function InviteInner() {
       </div>
       {isLoaded && isSignedIn ? (
         <>
-          <label className="flex items-center gap-2 text-sm">
+          <label className="flex min-h-11 items-center gap-2 text-sm">
             <input
               type="checkbox"
               checked={setAsDefault}

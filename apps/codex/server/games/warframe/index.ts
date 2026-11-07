@@ -16,10 +16,8 @@ export {
 export { closeDb as closeWarframeDb, getDb as getWarframeDb } from './db/schema.ts';
 export * as warframeQueries from './db/queries.ts';
 export {
-  addRowSchema as warframeAddRowSchema,
   adminUpdateSchema as warframeAdminUpdateSchema,
   deleteRowSchema as warframeDeleteRowSchema,
-  editRowSchema as warframeEditRowSchema,
   patchSettingsSchema as warframePatchSettingsSchema,
   updateAdvancedProgressSchema as warframeUpdateAdvancedProgressSchema,
   updateSchema as warframeUpdateSchema,

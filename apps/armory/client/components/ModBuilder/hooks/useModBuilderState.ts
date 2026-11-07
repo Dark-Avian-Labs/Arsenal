@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { IncarnonSelection } from '../../../types/incarnon';
 import type {
   BuildConfig,
+  BuildVisibility,
   EquipmentType,
   ModSlot,
   SlotType,
@@ -47,7 +48,8 @@ export function useModBuilderState(
   const [isFavorited, setIsFavorited] = useState(false);
   const [buildOwnerUserId, setBuildOwnerUserId] = useState<string | null>(null);
   const [buildOwnerUsername, setBuildOwnerUsername] = useState<string | null>(null);
-  const [buildIsPublic, setBuildIsPublic] = useState(false);
+  const [buildVisibility, setBuildVisibility] = useState<BuildVisibility>('private');
+  const [buildShareToken, setBuildShareToken] = useState<string | null>(null);
   const [arcaneSlots, setArcaneSlots] = useState<ArcaneSlot[]>([{ rank: 0 }, { rank: 0 }]);
   const [shardSlots, setShardSlots] = useState<ShardSlotConfig[]>(
     Array.from({ length: 5 }, () => ({ tauforged: false })),
@@ -86,7 +88,8 @@ export function useModBuilderState(
     setIsFavorited(false);
     setBuildOwnerUserId(null);
     setBuildOwnerUsername(null);
-    setBuildIsPublic(false);
+    setBuildVisibility('private');
+    setBuildShareToken(null);
     setHelminthConfig(undefined);
     setIncarnonEnabled(false);
     setIncarnonSelections(undefined);
@@ -155,8 +158,10 @@ export function useModBuilderState(
     setBuildOwnerUserId,
     buildOwnerUsername,
     setBuildOwnerUsername,
-    buildIsPublic,
-    setBuildIsPublic,
+    buildVisibility,
+    setBuildVisibility,
+    buildShareToken,
+    setBuildShareToken,
     arcaneSlots,
     setArcaneSlots,
     shardSlots,

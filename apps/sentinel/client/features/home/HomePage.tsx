@@ -237,12 +237,12 @@ export function HomePage() {
         const res = await apiFetch('/api/fleet');
         if (cancelled) return;
         if (res.status === 401) {
-          setApps([]);
+          setApps(null);
           setError('Sign in to view the fleet.');
           return;
         }
         if (res.status === 403) {
-          setApps([]);
+          setApps(null);
           setError('Admin access required.');
           return;
         }
@@ -322,13 +322,13 @@ export function HomePage() {
 
       {!error && apps === null ? <p className="text-muted text-sm">Loading fleet…</p> : null}
 
-      {!error && apps && apps.length === 0 ? (
+      {apps && apps.length === 0 ? (
         <ProcessList
           apps={[]}
           emptyMessage="No samples yet. Start the PM2 bridge on the server host, or point an in-app agent at /api/ingest."
         />
       ) : null}
-      {!error && apps && apps.length > 0 ? (
+      {apps && apps.length > 0 ? (
         <>
           {appRows.length > 0 ? (
             <ProcessList apps={appRows} title={moduleRows.length > 0 ? 'Apps' : undefined} />

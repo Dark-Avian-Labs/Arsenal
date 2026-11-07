@@ -8,6 +8,8 @@ import { useLocation, useNavigate } from 'react-router';
 import { APP_PATHS, planPath } from '../../app/paths';
 import type { PlanSummary } from '../../lib/types';
 
+export const PLANS_CHANGED_EVENT = 'budgetplanner:plans-changed';
+
 export function PlanSwitcher() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -20,12 +22,16 @@ export function PlanSwitcher() {
 
   useEffect(() => {
     if (!isLoaded || !isSignedIn) return;
-    void apiJson<{ plans: PlanSummary[] }>('/api/plans')
-      .then((data) => setPlans(data.plans))
-      .catch(() => {
-        setPlans([]);
-      });
-  }, [isLoaded, isSignedIn, location.pathname]);
+    const load = () =>
+      void apiJson<{ plans: PlanSummary[] }>('/api/plans')
+        .then((data) => setPlans(data.plans))
+        .catch(() => {
+          setPlans([]);
+        });
+    load();
+    window.addEventListener(PLANS_CHANGED_EVENT, load);
+    return () => window.removeEventListener(PLANS_CHANGED_EVENT, load);
+  }, [isLoaded, isSignedIn]);
 
   if (!isLoaded || !isSignedIn || plans.length === 0) return null;
 
@@ -43,7 +49,7 @@ export function PlanSwitcher() {
       open={open}
       onOpenChange={setOpen}
       buttonAriaLabel={t('plan.switchPlan')}
-      className="w-36 sm:w-52"
+      className="w-28 sm:w-52"
     />
   );
 }

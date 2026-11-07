@@ -74,11 +74,15 @@ describe('validateEntryBody', () => {
   it('validates only provided fields when partial', () => {
     expect(validateEntryBody({ amount_cents: 50 }, true)).toEqual([]);
     expect(validateEntryBody({ amount_cents: -1 }, true)).toEqual(['amount_cents']);
+    expect(validateEntryBody({ amount_cents: 99_999_999_999 }, true)).toEqual([]);
+    expect(validateEntryBody({ amount_cents: 100_000_000_000 }, true)).toEqual(['amount_cents']);
   });
 
   it('rejects malformed end_date values', () => {
     expect(validateEntryBody({ ...valid, end_date: '03/2028' })).toContain('end_date');
     expect(validateEntryBody({ ...valid, end_date: '2028-13-01' })).toContain('end_date');
+    expect(validateEntryBody({ ...valid, end_date: '2026-02-31' })).toContain('end_date');
+    expect(validateEntryBody({ ...valid, end_date: '2028-02-29' })).toEqual([]);
     expect(validateEntryBody({ ...valid, end_date: '2028-03-01' })).toEqual([]);
     expect(validateEntryBody({ ...valid, end_date: null })).toEqual([]);
   });

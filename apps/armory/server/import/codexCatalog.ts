@@ -143,64 +143,76 @@ export function syncCodexWarframeCatalog(options?: {
 
   try {
     const syncTx = dest.transaction(() => {
-      dest.exec('PRAGMA foreign_keys = OFF');
-      try {
-        for (const table of [...CODEX_CATALOG_TABLES].reverse()) {
-          if (SKIP_TABLES.has(table)) continue;
-          if (!tableExists(dest, table, 'main')) {
-            onLog?.(`Skip ${table}: missing on Armory side.`);
-            continue;
+      for (const table of [...CODEX_CATALOG_TABLES].reverse()) {
+        if (SKIP_TABLES.has(table)) continue;
+        if (!tableExists(dest, table, 'main')) {
+          onLog?.(`Skip ${table}: missing on Armory side.`);
+          continue;
+        }
+        const deleted = (
+          dest.prepare(`SELECT COUNT(*) AS c FROM main.${escapeSqlIdent(table)}`).get() as {
+            c: number;
           }
-          const deleted = (
-            dest.prepare(`SELECT COUNT(*) AS c FROM main.${escapeSqlIdent(table)}`).get() as {
-              c: number;
-            }
-          ).c;
-          dest.prepare(`DELETE FROM main.${escapeSqlIdent(table)}`).run();
-          if (deleted > 0) {
-            onLog?.(`Cleared ${table} (${deleted} row(s)).`);
-          }
+        ).c;
+        dest.prepare(`DELETE FROM main.${escapeSqlIdent(table)}`).run();
+        if (deleted > 0) {
+          onLog?.(`Cleared ${table} (${deleted} row(s)).`);
+        }
+      }
+
+      for (const table of CODEX_CATALOG_TABLES) {
+        if (SKIP_TABLES.has(table)) continue;
+        if (!tableExists(dest, table, 'main')) {
+          tables[table] = 0;
+          continue;
+        }
+        if (!tableExists(dest, table, attachAlias)) {
+          onLog?.(`Skip ${table}: missing in Codex catalog.`);
+          tables[table] = 0;
+          continue;
         }
 
-        for (const table of CODEX_CATALOG_TABLES) {
-          if (SKIP_TABLES.has(table)) continue;
-          if (!tableExists(dest, table, 'main')) {
-            tables[table] = 0;
-            continue;
-          }
-          if (!tableExists(dest, table, attachAlias)) {
-            onLog?.(`Skip ${table}: missing in Codex catalog.`);
-            tables[table] = 0;
-            continue;
-          }
+        const columns = commonColumns(dest, table);
+        if (columns.length === 0) {
+          onLog?.(`Skip ${table}: no overlapping columns.`);
+          tables[table] = 0;
+          continue;
+        }
 
-          const columns = commonColumns(dest, table);
-          if (columns.length === 0) {
-            onLog?.(`Skip ${table}: no overlapping columns.`);
-            tables[table] = 0;
-            continue;
-          }
-
-          const colList = columns.map(escapeSqlIdent).join(', ');
-          dest
-            .prepare(
-              `INSERT INTO main.${escapeSqlIdent(table)} (${colList})
+        const colList = columns.map(escapeSqlIdent).join(', ');
+        dest
+          .prepare(
+            `INSERT INTO main.${escapeSqlIdent(table)} (${colList})
                SELECT ${colList} FROM ${attachAlias}.${escapeSqlIdent(table)}`,
-            )
-            .run();
-          const count = (
-            dest.prepare(`SELECT COUNT(*) AS c FROM main.${escapeSqlIdent(table)}`).get() as {
-              c: number;
-            }
-          ).c;
-          tables[table] = count;
-          onLog?.(`Synced ${table}: ${count} row(s).`);
-        }
-      } finally {
-        dest.exec('PRAGMA foreign_keys = ON');
+          )
+          .run();
+        const count = (
+          dest.prepare(`SELECT COUNT(*) AS c FROM main.${escapeSqlIdent(table)}`).get() as {
+            c: number;
+          }
+        ).c;
+        tables[table] = count;
+        onLog?.(`Synced ${table}: ${count} row(s).`);
       }
     });
-    syncTx();
+    // SQLite ignores this pragma inside a transaction.
+    dest.exec('PRAGMA foreign_keys = OFF');
+    try {
+      syncTx();
+    } finally {
+      dest.exec('PRAGMA foreign_keys = ON');
+    }
+    const violations = dest.prepare('PRAGMA main.foreign_key_check').all() as {
+      table: string;
+      rowid: number | null;
+      parent: string;
+    }[];
+    if (violations.length > 0) {
+      onLog?.(`${violations.length} foreign key violation(s) after sync.`, 'error');
+    }
+    for (const v of violations.slice(0, 20)) {
+      onLog?.(`Foreign key violation: ${v.table} row ${v.rowid} → ${v.parent}.`, 'error');
+    }
   } finally {
     dest.exec(`DETACH DATABASE ${attachAlias}`);
   }

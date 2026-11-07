@@ -1,5 +1,5 @@
 import { parseIsoDate } from '../../shared/dueThisMonth';
-import { MAX_COMMENT_LENGTH, MAX_NAME_LENGTH } from '../../shared/entryLimits';
+import { MAX_AMOUNT_CENTS, MAX_COMMENT_LENGTH, MAX_NAME_LENGTH } from '../../shared/entryLimits';
 import { MAX_PLAN_YEAR, MIN_PLAN_YEAR } from '../../shared/planMonth';
 
 export type EntryPayload = {
@@ -20,7 +20,11 @@ export type EntryPayload = {
 export function entryPayloadFieldErrors(payload: EntryPayload): string[] {
   const fields: string[] = [];
   if (!payload.name || payload.name.length > MAX_NAME_LENGTH) fields.push('name');
-  if (!Number.isInteger(payload.amount_cents) || payload.amount_cents < 0) {
+  if (
+    !Number.isInteger(payload.amount_cents) ||
+    payload.amount_cents < 0 ||
+    payload.amount_cents > MAX_AMOUNT_CENTS
+  ) {
     fields.push('amount_cents');
   }
   if (!['expense', 'income', 'credit'].includes(payload.kind)) fields.push('kind');
@@ -59,7 +63,9 @@ export function entryPayloadFieldErrors(payload: EntryPayload): string[] {
   }
   if (
     payload.final_amount_cents != null &&
-    (!Number.isInteger(payload.final_amount_cents) || payload.final_amount_cents < 0)
+    (!Number.isInteger(payload.final_amount_cents) ||
+      payload.final_amount_cents < 0 ||
+      payload.final_amount_cents > MAX_AMOUNT_CENTS)
   ) {
     fields.push('final_amount_cents');
   }

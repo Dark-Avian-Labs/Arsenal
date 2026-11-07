@@ -60,6 +60,24 @@ export function isWorImportLeaseHeld(db: Database.Database): boolean {
   return Boolean(row?.lock_token);
 }
 
+export function recoverWorImportLeaseOnStartup(db: Database.Database): void {
+  ensureWorImportLeaseColumns(db);
+  const row = db.prepare('SELECT lock_token FROM import_lease WHERE id = ?').get(LEASE_ROW_ID) as
+    | { lock_token: string | null }
+    | undefined;
+  if (!row?.lock_token) return;
+  db.transaction(() => {
+    db.prepare(
+      'UPDATE import_lease SET lock_token = NULL, run_id = NULL, locked_at = NULL WHERE id = ?',
+    ).run(LEASE_ROW_ID);
+    db.prepare(
+      `UPDATE import_runs
+       SET status = 'failed', finished_at = datetime('now'), error = COALESCE(error, ?)
+       WHERE status IN ('pending', 'running')`,
+    ).run('Interrupted by server restart or stale import lock.');
+  })();
+}
+
 export function renewWorImportLease(db: Database.Database, lockToken: string): boolean {
   ensureWorImportLeaseColumns(db);
   const updated = db

@@ -16,21 +16,30 @@ import { refreshEpic7DbAvailability } from './epic7DbState.ts';
 import { closeEpic7Db, getEpic7Db } from './games/epic7/index.ts';
 import { closeWarframeDb, getWarframeDb } from './games/warframe/index.ts';
 import { closeWorCatalogDb, closeWorDb, getWorCatalogDb, getWorDb } from './games/wor/index.ts';
-import { startAdminImportJob as startWarframeAdminImportJob } from './import/warframe/adminImportJob.ts';
+import {
+  startAdminImportJob as startWarframeAdminImportJob,
+  waitForAdminImportIdle as waitForWarframeImportIdle,
+} from './import/warframe/adminImportJob.ts';
 import { recoverImportLeaseOnStartup as recoverWarframeImportLeaseOnStartup } from './import/warframe/importRuns.ts';
 import { catalogNeedsImport as warframeCatalogNeedsImport } from './import/warframe/startupPipeline.ts';
+import { waitForWorImportIdle } from './import/wor/adminImportJob.ts';
+import { recoverWorImportLeaseOnStartup } from './import/wor/importLease.ts';
 import {
   catalogNeedsImport,
   copyWorCatalogIntoCollectionIfNeeded,
   ensureWorCatalogSeededFromCollection,
   runWorStartupPipeline,
 } from './import/wor/startupPipeline.ts';
-import { ensureWarframeSyncJobsSchema } from './services/warframeSyncJobs.ts';
+import {
+  ensureWarframeSyncJobsSchema,
+  failStaleWarframeSyncRuns,
+} from './services/warframeSyncJobs.ts';
 import { waitForWarframeSyncIdle } from './services/warframeSyncState.ts';
 import { refreshWorDbAvailability } from './worDbState.ts';
 
 ensureDataDirs();
 ensureWarframeSyncJobsSchema();
+failStaleWarframeSyncRuns();
 function assertTableExists(db: { prepare: (sql: string) => unknown }, tableName: string): void {
   const row = (
     db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?") as {
@@ -69,9 +78,10 @@ ensureGameSchemasReady();
 void refreshEpic7DbAvailability();
 void refreshWorDbAvailability().then(async () => {
   try {
+    const catalogDb = getWorCatalogDb();
+    recoverWorImportLeaseOnStartup(catalogDb);
     ensureWorCatalogSeededFromCollection();
     copyWorCatalogIntoCollectionIfNeeded();
-    const catalogDb = getWorCatalogDb();
     if (catalogNeedsImport(catalogDb)) {
       log('info', 'WoR catalog empty — running fixture bootstrap import');
       await runWorStartupPipeline();
@@ -119,9 +129,17 @@ startServer({
   shutdownTimeoutMs: SHUTDOWN_TIMEOUT_MS,
   sentinelAgent,
   beforeClose: async () => {
-    const syncFinished = await waitForWarframeSyncIdle(Math.max(SHUTDOWN_TIMEOUT_MS - 2000, 1000));
+    const timeoutMs = Math.max(SHUTDOWN_TIMEOUT_MS - 2000, 1000);
+    const [syncFinished, warframeImportFinished, worImportFinished] = await Promise.all([
+      waitForWarframeSyncIdle(timeoutMs),
+      waitForWarframeImportIdle(timeoutMs),
+      waitForWorImportIdle(timeoutMs),
+    ]);
     if (!syncFinished) {
       log('warn', 'Warframe sync still running; proceeding with shutdown');
+    }
+    if (!warframeImportFinished || !worImportFinished) {
+      log('warn', 'Catalog import still running; proceeding with shutdown');
     }
   },
   onClose: () => {

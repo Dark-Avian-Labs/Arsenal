@@ -1,12 +1,11 @@
-import * as cheerio from 'cheerio';
-import type { Element } from 'domhandler';
-
 import { lookupBeastClawByCompanionName } from '@dark-avian-labs/warframe-catalog';
 import {
   damagePerShotFromWikiEntries,
   parseWikiDamageCellText,
   serializeDamagePerShot,
 } from '@dark-avian-labs/warframe-catalog';
+import * as cheerio from 'cheerio';
+import type { Element } from 'domhandler';
 
 export const BEAST_CLAWS_WIKI_PAGE = 'Claws_(Beast)';
 

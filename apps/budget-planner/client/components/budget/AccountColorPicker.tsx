@@ -14,7 +14,7 @@ export function AccountColorPicker({
   return (
     <div className="flex flex-col gap-1.5">
       <span className="text-muted text-xs">{t('plan.accountColor')}</span>
-      <div className="flex flex-wrap gap-2" role="radiogroup" aria-label={t('plan.accountColor')}>
+      <div className="flex flex-wrap gap-5" role="radiogroup" aria-label={t('plan.accountColor')}>
         {ACCOUNT_COLORS.map((color) => {
           const selected = value === color;
           return (

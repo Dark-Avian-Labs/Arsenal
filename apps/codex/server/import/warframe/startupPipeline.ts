@@ -769,9 +769,7 @@ async function runStartupPipelineInner(
       err('[Overframe] Scrape failed —', e);
     }
   } else {
-    log(
-      '[Overframe] Skipped — Overframe scrape is off unless Include Overframe is checked.',
-    );
+    log('[Overframe] Skipped — Overframe scrape is off unless Include Overframe is checked.');
     summary.overframe.outcome = 'skipped';
     summary.overframe.detail =
       missingOverframeItems > 0

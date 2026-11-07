@@ -24,7 +24,8 @@ export function parseIsoDate(iso: string): { year: number; month: number; day: n
   const year = Number(match[1]);
   const month = Number(match[2]);
   const day = Number(match[3]);
-  if (!year || month < 1 || month > 12 || day < 1 || day > 31) return null;
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (!year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) return null;
   return { year, month, day };
 }
 

@@ -2,11 +2,8 @@ import { describe, expect, it } from 'vitest';
 
 import {
   MAX_WARFRAME_CELL_VALUE_LENGTH,
-  MAX_WARFRAME_ITEM_NAME_LENGTH,
-  addRowSchema,
   adminUpdateSchema,
   deleteRowSchema,
-  editRowSchema,
   patchSettingsSchema,
   updateAdvancedProgressSchema,
   updateSchema,
@@ -65,65 +62,6 @@ describe('Warframe validation schemas', () => {
         expect(r.data.row_id).toBe(3);
         expect(r.data.column_id).toBe(7);
       }
-    });
-  });
-
-  describe('addRowSchema', () => {
-    it('accepts valid input', () => {
-      const r = addRowSchema.safeParse({
-        worksheet_id: 1,
-        item_name: 'Excalibur',
-        values: { '1': 'Obtained' },
-      });
-      expect(r.success).toBe(true);
-      if (r.success) {
-        expect(r.data.item_name).toBe('Excalibur');
-        expect(r.data.values).toEqual({ '1': 'Obtained' });
-      }
-    });
-
-    it('defaults values to empty object', () => {
-      const r = addRowSchema.safeParse({
-        worksheet_id: 1,
-        item_name: 'Mag',
-      });
-      expect(r.success).toBe(true);
-      if (r.success) expect(r.data.values).toEqual({});
-    });
-
-    it('rejects empty item_name', () => {
-      expect(addRowSchema.safeParse({ worksheet_id: 1, item_name: '' }).success).toBe(false);
-    });
-
-    it('rejects non-positive worksheet_id', () => {
-      expect(addRowSchema.safeParse({ worksheet_id: -1, item_name: 'Test' }).success).toBe(false);
-    });
-
-    it('rejects zero worksheet_id', () => {
-      expect(addRowSchema.safeParse({ worksheet_id: 0, item_name: 'Test' }).success).toBe(false);
-    });
-  });
-
-  describe('editRowSchema', () => {
-    it('accepts valid input', () => {
-      const r = editRowSchema.safeParse({
-        row_id: 5,
-        item_name: 'Rhino',
-        values: {},
-      });
-      expect(r.success).toBe(true);
-    });
-
-    it('accepts null item_name', () => {
-      const r = editRowSchema.safeParse({ row_id: 5, item_name: null });
-      expect(r.success).toBe(true);
-      if (r.success) expect(r.data.item_name).toBeNull();
-    });
-
-    it('defaults item_name to null when absent', () => {
-      const r = editRowSchema.safeParse({ row_id: 5 });
-      expect(r.success).toBe(true);
-      if (r.success) expect(r.data.item_name).toBeNull();
     });
   });
 
@@ -190,15 +128,6 @@ describe('Warframe validation schemas', () => {
   });
 
   describe('string length limits', () => {
-    it('rejects item names over MAX_WARFRAME_ITEM_NAME_LENGTH', () => {
-      expect(
-        addRowSchema.safeParse({
-          worksheet_id: 1,
-          item_name: 'n'.repeat(MAX_WARFRAME_ITEM_NAME_LENGTH + 1),
-        }).success,
-      ).toBe(false);
-    });
-
     it('rejects cell values over MAX_WARFRAME_CELL_VALUE_LENGTH', () => {
       expect(
         updateSchema.safeParse({

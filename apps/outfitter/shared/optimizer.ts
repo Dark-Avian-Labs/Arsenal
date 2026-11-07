@@ -360,9 +360,10 @@ function reservedIdsForSlot(
   pieces: GearPieceInput[],
   slot: GearSlot,
   request: OptimizerRequest,
+  hintOf: (piece: GearPieceInput) => number,
 ): Set<number> {
   const groups: GearPieceInput[][] = [];
-  groups.push(takeTop(pieces, 1, (piece) => pieceWeightHint(piece, request)));
+  groups.push(takeTop(pieces, 1, hintOf));
   for (const key of activeMinimumKeys(request)) {
     groups.push(takeTop(pieces, 1, (piece) => rawForMinimum(key, soloStats(piece, request.hero))));
   }
@@ -372,7 +373,7 @@ function reservedIdsForSlot(
       takeTop(
         pieces.filter((piece) => piece.setKey === desired),
         1,
-        (piece) => pieceWeightHint(piece, request),
+        hintOf,
       ),
     );
   }
@@ -383,10 +384,9 @@ function keepForSlot(
   pieces: GearPieceInput[],
   slot: GearSlot,
   request: OptimizerRequest,
+  hintOf: (piece: GearPieceInput) => number,
 ): GearPieceInput[] {
-  const groups: GearPieceInput[][] = [
-    takeTop(pieces, SCORE_KEEP, (piece) => pieceWeightHint(piece, request)),
-  ];
+  const groups: GearPieceInput[][] = [takeTop(pieces, SCORE_KEEP, hintOf)];
   for (const key of activeMinimumKeys(request)) {
     groups.push(
       takeTop(pieces, MIN_KEEP, (piece) => rawForMinimum(key, soloStats(piece, request.hero))),
@@ -398,7 +398,7 @@ function keepForSlot(
       takeTop(
         pieces.filter((piece) => piece.setKey === desired),
         DESIRED_SET_KEEP,
-        (piece) => pieceWeightHint(piece, request),
+        hintOf,
       ),
     );
   }
@@ -409,7 +409,7 @@ function keepForSlot(
     else bySet.set(piece.setKey, [piece]);
   }
   for (const setPieces of bySet.values()) {
-    groups.push(takeTop(setPieces, SET_KEEP, (piece) => pieceWeightHint(piece, request)));
+    groups.push(takeTop(setPieces, SET_KEEP, hintOf));
   }
   return unionById(groups);
 }
@@ -417,7 +417,7 @@ function keepForSlot(
 function dropWorstExtra(
   grouped: Record<GearSlot, GearPieceInput[]>,
   reserved: Record<GearSlot, Set<number>>,
-  request: OptimizerRequest,
+  hintOf: (piece: GearPieceInput) => number,
 ): boolean {
   let worstSlot: GearSlot | null = null;
   let worstId = -1;
@@ -428,7 +428,7 @@ function dropWorstExtra(
     if (pieces.length <= 1) continue;
     for (const piece of pieces) {
       if (reserved[slot].has(piece.id)) continue;
-      const score = pieceWeightHint(piece, request);
+      const score = hintOf(piece);
       if (
         pieces.length > largestCount ||
         (pieces.length === largestCount && score < worstScore) ||
@@ -464,12 +464,17 @@ function pruneSlots(
     amulet: new Set(),
     ring: new Set(),
   };
+  const hints = new Map<number, number>();
   for (const slot of GEAR_SLOTS) {
-    next[slot] = keepForSlot(grouped[slot], slot, request);
-    reserved[slot] = reservedIdsForSlot(grouped[slot], slot, request);
+    for (const piece of grouped[slot]) hints.set(piece.id, pieceWeightHint(piece, request));
+  }
+  const hintOf = (piece: GearPieceInput) => hints.get(piece.id) ?? 0;
+  for (const slot of GEAR_SLOTS) {
+    next[slot] = keepForSlot(grouped[slot], slot, request, hintOf);
+    reserved[slot] = reservedIdsForSlot(grouped[slot], slot, request, hintOf);
   }
   while (comboCount(next) > FULL_ENUM_LIMIT) {
-    if (dropWorstExtra(next, reserved, request)) continue;
+    if (dropWorstExtra(next, reserved, hintOf)) continue;
     break;
   }
   return next;
@@ -517,6 +522,7 @@ async function searchGroupedAsync(
   grouped: Record<GearSlot, GearPieceInput[]>,
   request: OptimizerRequest,
   onProgress?: OptimizerProgress,
+  signal?: AbortSignal,
 ): Promise<RankedLoadout[]> {
   const best: RankedLoadout[] = [];
   const total = comboCount(grouped);
@@ -531,6 +537,7 @@ async function searchGroupedAsync(
     }
     if (done % SEARCH_YIELD_EVERY === 0) {
       await yieldEventLoop();
+      signal?.throwIfAborted();
     }
   }
   return best;
@@ -557,11 +564,13 @@ export function optimizeLoadouts(request: OptimizerRequest): RankedLoadout[] {
 export async function optimizeLoadoutsAsync(
   request: OptimizerRequest,
   onProgress?: OptimizerProgress,
+  signal?: AbortSignal,
 ): Promise<RankedLoadout[]> {
   const grouped = prepareGrouped(request);
   if (!grouped) {
     onProgress?.(1, 1);
     return [];
   }
-  return searchGroupedAsync(grouped, request, onProgress);
+  signal?.throwIfAborted();
+  return searchGroupedAsync(grouped, request, onProgress, signal);
 }

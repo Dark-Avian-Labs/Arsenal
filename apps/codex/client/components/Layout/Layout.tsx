@@ -11,7 +11,7 @@ import {
 } from '@dark-avian-labs/ui';
 import { useAuth } from '@dark-avian-labs/ui';
 import feathers from '@dark-avian-labs/ui/feathers.svg';
-import worFavicon from '@dark-avian-labs/wor-assets/favicon.svg';
+import worFavicon from '@dark-avian-labs/wor-assets/favicon.png';
 import {
   useEffect,
   useLayoutEffect,
@@ -193,7 +193,7 @@ export function Layout() {
       favicon.rel = 'icon';
       document.head.append(favicon);
     }
-    favicon.type = 'image/svg+xml';
+    favicon.removeAttribute('type');
     favicon.href = faviconHref;
   }, [location.pathname]);
 
