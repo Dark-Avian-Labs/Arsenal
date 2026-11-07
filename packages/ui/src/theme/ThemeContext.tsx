@@ -158,9 +158,9 @@ export function ThemeProvider({
       return;
     }
     try {
+      writeThemeCookie(mode);
       window.localStorage.setItem(SHARED_THEME_STORAGE_KEY, mode);
       window.localStorage.setItem(appStorageKey, mode);
-      writeThemeCookie(mode);
     } catch (error) {
       console.warn('Failed to persist theme mode to localStorage or cookie.', error);
     }
@@ -179,8 +179,8 @@ export function ThemeProvider({
       return;
     }
     try {
-      window.localStorage.setItem(UI_STYLE_STORAGE_KEY, uiStyle);
       writeUiStyleCookie(uiStyle);
+      window.localStorage.setItem(UI_STYLE_STORAGE_KEY, uiStyle);
     } catch (error) {
       console.warn('Failed to persist UI style to localStorage or cookie.', error);
     }

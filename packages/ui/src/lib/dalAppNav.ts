@@ -14,8 +14,8 @@ export type DalAppNavDocument = {
 export const DEFAULT_DAL_APP_NAV_URL = '/api/dal-app-nav';
 export const DAL_APP_NAV_UPSTREAM_URL = 'https://darkavianlabs.com/dal-app-nav.json';
 
-const CACHE_KEY = 'dal.app-nav.cache.v1';
-const CACHE_TTL_MS = 5 * 60 * 1000;
+const CACHE_KEY = 'dal.app-nav.cache.v2';
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
 type CachePayload = {
   fetchedAt: number;
@@ -93,7 +93,7 @@ export function visibleDalAppNavApps(
 
 function readCache(): CachePayload | null {
   try {
-    const raw = sessionStorage.getItem(CACHE_KEY);
+    const raw = localStorage.getItem(CACHE_KEY);
     if (!raw) return null;
     const parsed: unknown = JSON.parse(raw);
     if (parsed === null || typeof parsed !== 'object') return null;
@@ -110,7 +110,7 @@ function readCache(): CachePayload | null {
 function writeCache(document: DalAppNavDocument): void {
   try {
     const payload: CachePayload = { fetchedAt: Date.now(), document };
-    sessionStorage.setItem(CACHE_KEY, JSON.stringify(payload));
+    localStorage.setItem(CACHE_KEY, JSON.stringify(payload));
   } catch {}
 }
 
@@ -124,17 +124,16 @@ export function getDalAppNavUrl(): string {
 
 export async function loadDalAppNav(): Promise<DalAppNavDocument | null> {
   const cached = readCache();
-  const cacheFresh = cached !== null && Date.now() - cached.fetchedAt < CACHE_TTL_MS;
-
-  if (cacheFresh) {
-    void refreshDalAppNav().catch(() => {});
+  if (cached) {
+    const age = Date.now() - cached.fetchedAt;
+    if (age < 0 || age >= CACHE_TTL_MS) void refreshDalAppNav().catch(() => {});
     return cached.document;
   }
 
   try {
     return await refreshDalAppNav();
   } catch {
-    return cached?.document ?? null;
+    return null;
   }
 }
 

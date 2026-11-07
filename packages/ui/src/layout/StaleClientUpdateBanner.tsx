@@ -17,19 +17,21 @@ export function StaleClientUpdateBanner({ appVersion }: StaleClientUpdateBannerP
       role="status"
       aria-live="polite"
     >
-      <div className="stale-update-banner pointer-events-auto ml-auto flex w-fit max-w-full items-center gap-3 p-2 pr-4">
-        <button
-          type="button"
-          className="stale-update-cta shrink-0"
-          onClick={() => {
-            window.location.reload();
-          }}
-        >
-          <span className="stale-update-cta__label">Refresh</span>
-        </button>
-        <p className="text-foreground pr-1 text-sm font-medium tracking-tight">
-          Client out of date
-        </p>
+      <div className="stale-update-glow pointer-events-auto ml-auto w-fit max-w-full">
+        <div className="stale-update-banner flex items-center gap-3 p-2 pr-4">
+          <button
+            type="button"
+            className="stale-update-cta shrink-0"
+            onClick={() => {
+              window.location.reload();
+            }}
+          >
+            <span className="stale-update-cta__label">Refresh</span>
+          </button>
+          <p className="text-foreground pr-1 text-sm font-medium tracking-tight">
+            Client out of date
+          </p>
+        </div>
       </div>
     </div>
   );

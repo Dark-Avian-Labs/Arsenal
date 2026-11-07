@@ -102,6 +102,10 @@ export function SelectDropdown({
     },
     [isControlled, onOpenChange],
   );
+  const closeToTrigger = () => {
+    setOpen(false);
+    buttonRef.current?.focus();
+  };
 
   const displayOptions = useMemo(() => {
     if (preserveOrder) return options;
@@ -118,31 +122,36 @@ export function SelectDropdown({
     const r = btn.getBoundingClientRect();
     const spaceBelow = window.innerHeight - r.bottom - MENU_GAP_PX - VIEWPORT_MARGIN_PX;
     const useFloating = placement === 'floating' || spaceBelow < FLOATING_MIN_SPACE_PX;
+    let next: MenuRect;
 
     if (useFloating) {
       const spaceAbove = r.top - MENU_GAP_PX - VIEWPORT_MARGIN_PX;
       const openAbove = spaceBelow < FLOATING_MIN_SPACE_PX && spaceAbove > spaceBelow;
       const availableSpace = openAbove ? spaceAbove : spaceBelow;
       const maxHeight = Math.min(MENU_MAX_HEIGHT_PX, Math.max(0, availableSpace));
-      setMenuRect({
+      next = {
         top: openAbove ? r.top - MENU_GAP_PX - maxHeight : r.bottom + MENU_GAP_PX,
         left: r.left,
         width: r.width,
         maxHeight,
         mode: 'floating',
-      });
-      return;
+      };
+    } else {
+      const spaceFromTop = window.innerHeight - r.top - VIEWPORT_MARGIN_PX;
+      const maxHeight = Math.min(MENU_MAX_HEIGHT_PX, Math.max(FLOATING_MIN_SPACE_PX, spaceFromTop));
+      next = { top: r.top, left: r.left, width: r.width, maxHeight, mode: 'attached' };
     }
 
-    const spaceFromTop = window.innerHeight - r.top - VIEWPORT_MARGIN_PX;
-    const maxHeight = Math.min(MENU_MAX_HEIGHT_PX, Math.max(FLOATING_MIN_SPACE_PX, spaceFromTop));
-    setMenuRect({
-      top: r.top,
-      left: r.left,
-      width: r.width,
-      maxHeight,
-      mode: 'attached',
-    });
+    setMenuRect((prev) =>
+      prev &&
+      prev.top === next.top &&
+      prev.left === next.left &&
+      prev.width === next.width &&
+      prev.maxHeight === next.maxHeight &&
+      prev.mode === next.mode
+        ? prev
+        : next,
+    );
   }, [placement]);
 
   useLayoutEffect(() => {
@@ -150,12 +159,15 @@ export function SelectDropdown({
       setMenuRect(null);
       return;
     }
+    const onScroll = (event: Event) => {
+      if (!menuRef.current?.contains(event.target as Node)) updateMenuPosition();
+    };
     updateMenuPosition();
     window.addEventListener('resize', updateMenuPosition);
-    window.addEventListener('scroll', updateMenuPosition, true);
+    window.addEventListener('scroll', onScroll, true);
     return () => {
       window.removeEventListener('resize', updateMenuPosition);
-      window.removeEventListener('scroll', updateMenuPosition, true);
+      window.removeEventListener('scroll', onScroll, true);
     };
   }, [open, updateMenuPosition]);
 
@@ -213,14 +225,19 @@ export function SelectDropdown({
       const opt = displayOptions[focusedIndex];
       if (opt) {
         onChange(opt.value);
-        setOpen(false);
+        closeToTrigger();
       }
       return;
     }
     if (e.key === 'Escape') {
       e.preventDefault();
       e.stopPropagation();
-      setOpen(false);
+      closeToTrigger();
+      return;
+    }
+    if (e.key === 'Tab') {
+      // Focus the trigger without preventDefault so Tab moves on from the trigger, not from the portal.
+      closeToTrigger();
     }
   };
 
@@ -269,7 +286,7 @@ export function SelectDropdown({
                 }}
                 onClick={() => {
                   onChange(opt.value);
-                  setOpen(false);
+                  closeToTrigger();
                 }}
               >
                 <SelectOptionLabel option={opt} fallback={opt.label} />

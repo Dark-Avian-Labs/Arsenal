@@ -1,15 +1,15 @@
 export const AUTH_REDIRECT_QUERY_PARAM = 'redirect_url';
 
 export function safeAuthRedirectPath(path: string): string | null {
-  if (
-    path.startsWith('/') &&
-    !path.startsWith('//') &&
-    !path.includes('\\') &&
-    !path.includes('://')
-  ) {
-    return path;
+  // oxlint-disable-next-line no-control-regex
+  if (!path.startsWith('/') || /[\u0000-\u001f\u007f]/.test(path)) return null;
+  const origin = typeof location === 'undefined' ? 'http://localhost' : location.origin;
+  try {
+    const url = new URL(path, origin);
+    return url.origin === origin ? url.pathname + url.search + url.hash : null;
+  } catch {
+    return null;
   }
-  return null;
 }
 
 export function buildAuthPagePath(basePath: string, returnTo: string): string {

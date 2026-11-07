@@ -9,9 +9,12 @@ interface ModalProps {
   ariaLabelledBy?: string;
 }
 
+const openModals: HTMLElement[] = [];
+
 export function Modal({ open, onClose, children, className, ariaLabelledBy }: ModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
   const onCloseRef = useRef(onClose);
+  const pointerDownOnBackdropRef = useRef(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -88,6 +91,7 @@ export function Modal({ open, onClose, children, className, ariaLabelledBy }: Mo
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (openModals[openModals.length - 1] !== modalElement) return;
       if (event.key === 'Escape') {
         onCloseRef.current();
         return;
@@ -130,10 +134,12 @@ export function Modal({ open, onClose, children, className, ariaLabelledBy }: Mo
       }
     };
 
+    openModals.push(modalElement);
     document.addEventListener('keydown', handleKeyDown);
     document.addEventListener('focusin', handleFocusIn);
 
     return () => {
+      openModals.splice(openModals.indexOf(modalElement), 1);
       document.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('focusin', handleFocusIn);
       if (
@@ -182,7 +188,15 @@ export function Modal({ open, onClose, children, className, ariaLabelledBy }: Mo
   };
 
   const modalContent = (
-    <div className="modal-overlay active" onClick={onClose}>
+    <div
+      className="modal-overlay active"
+      onPointerDown={(event) => {
+        pointerDownOnBackdropRef.current = event.target === event.currentTarget;
+      }}
+      onClick={(event) => {
+        if (pointerDownOnBackdropRef.current && event.target === event.currentTarget) onClose();
+      }}
+    >
       <div
         ref={modalRef}
         className={modalClassName}
