@@ -129,7 +129,7 @@ function listPendingInvites(db: ReturnType<typeof getAppDb>, planId: string): In
     .prepare(
       `SELECT id, email, role, expires_at
        FROM plan_invites
-       WHERE plan_id = ? AND accepted_at IS NULL AND expires_at > datetime('now')
+       WHERE plan_id = ? AND accepted_at IS NULL AND julianday(expires_at) > julianday('now')
        ORDER BY created_at DESC`,
     )
     .all(planId) as InviteRow[];
@@ -179,7 +179,11 @@ plansRouter.post('/', (req: Request, res: Response) => {
     const fields = fieldErrors(parsed.error);
     res
       .status(400)
-      .json({ error: fields.includes('name') ? 'Invalid plan name' : 'Invalid currency' });
+      .json(
+        fields.includes('name')
+          ? { error: 'Invalid plan name', code: 'invalid_name' }
+          : { error: 'Invalid currency', code: 'invalid_currency' },
+      );
     return;
   }
   const { name, currency } = parsed.data;
@@ -203,7 +207,7 @@ plansRouter.get('/:planId', requirePlanAccess('viewer'), (req: Request, res: Res
     )
     .get(planId) as PlanRow | undefined;
   if (!plan) {
-    res.status(404).json({ error: 'Plan not found' });
+    res.status(404).json({ error: 'Plan not found', code: 'not_found' });
     return;
   }
 
@@ -224,6 +228,14 @@ plansRouter.get('/:planId', requirePlanAccess('viewer'), (req: Request, res: Res
 
   const entries = listPlanEntries(db, planId, year, month, includeArchived);
   const totals = computeMonthTotals(entries, year, month);
+  const archivedEntryCounts: Record<string, number> = {};
+  const counts = db
+    .prepare(
+      `SELECT category_id, COUNT(*) AS n FROM entries WHERE plan_id = ? GROUP BY category_id`,
+    )
+    .all(planId) as Array<{ category_id: string; n: number }>;
+  for (const row of counts) archivedEntryCounts[row.category_id] = row.n;
+  for (const entry of entries) archivedEntryCounts[entry.category_id]!--;
   const role = (res.locals as { planRole?: MemberRole }).planRole!;
   const members = listMembers(db, planId);
 
@@ -231,6 +243,7 @@ plansRouter.get('/:planId', requirePlanAccess('viewer'), (req: Request, res: Res
     plan,
     role,
     categories,
+    archivedEntryCounts,
     accounts,
     entries,
     totals,
@@ -247,7 +260,7 @@ plansRouter.patch('/:planId', requirePlanAccess('editor'), (req: Request, res: R
     | { id: string; name: string; currency: string }
     | undefined;
   if (!plan) {
-    res.status(404).json({ error: 'Plan not found' });
+    res.status(404).json({ error: 'Plan not found', code: 'not_found' });
     return;
   }
 
@@ -260,7 +273,11 @@ plansRouter.patch('/:planId', requirePlanAccess('editor'), (req: Request, res: R
     const fields = fieldErrors(parsed.error);
     res
       .status(400)
-      .json({ error: fields.includes('name') ? 'Invalid plan name' : 'Invalid currency' });
+      .json(
+        fields.includes('name')
+          ? { error: 'Invalid plan name', code: 'invalid_name' }
+          : { error: 'Invalid currency', code: 'invalid_currency' },
+      );
     return;
   }
   const { name, currency } = parsed.data;
@@ -288,7 +305,7 @@ plansRouter.delete('/:planId', requirePlanAccess('owner'), (req: Request, res: R
     return result.changes;
   });
   if (tx() === 0) {
-    res.status(404).json({ error: 'Plan not found' });
+    res.status(404).json({ error: 'Plan not found', code: 'not_found' });
     return;
   }
   res.status(204).end();
@@ -299,7 +316,10 @@ plansRouter.post('/:planId/leave', requirePlanAccess('viewer'), (req: Request, r
   const user = req.appUser!;
   const role = (res.locals as { planRole?: MemberRole }).planRole;
   if (role === 'owner') {
-    res.status(400).json({ error: 'Owner cannot leave the plan. Delete it instead.' });
+    res.status(400).json({
+      error: 'Owner cannot leave the plan. Delete it instead.',
+      code: 'owner_cannot_leave',
+    });
     return;
   }
 
@@ -321,11 +341,11 @@ plansRouter.delete(
     const db = getAppDb();
     const membership = getMembership(planId, userId);
     if (!membership) {
-      res.status(404).json({ error: 'Member not found' });
+      res.status(404).json({ error: 'Member not found', code: 'not_found' });
       return;
     }
     if (membership.role === 'owner') {
-      res.status(400).json({ error: 'Cannot remove the plan owner' });
+      res.status(400).json({ error: 'Cannot remove the plan owner', code: 'cannot_remove_owner' });
       return;
     }
 
@@ -348,7 +368,7 @@ plansRouter.delete(
       .prepare(`DELETE FROM plan_invites WHERE id = ? AND plan_id = ? AND accepted_at IS NULL`)
       .run(inviteId, planId);
     if (result.changes === 0) {
-      res.status(404).json({ error: 'Invite not found' });
+      res.status(404).json({ error: 'Invite not found', code: 'not_found' });
       return;
     }
     res.status(204).end();
@@ -362,7 +382,7 @@ plansRouter.post(
     const planId = routeParam(req.params.planId);
     const name = normalizeName(req.body?.name);
     if (!name) {
-      res.status(400).json({ error: 'Name is required' });
+      res.status(400).json({ error: 'Name is required', code: 'invalid_name' });
       return;
     }
     const db = getAppDb();
@@ -394,12 +414,12 @@ plansRouter.patch(
       .prepare(`SELECT id, name, sort_order FROM categories WHERE id = ? AND plan_id = ?`)
       .get(categoryId, planId) as { id: string; name: string; sort_order: number } | undefined;
     if (!existing) {
-      res.status(404).json({ error: 'Category not found' });
+      res.status(404).json({ error: 'Category not found', code: 'not_found' });
       return;
     }
     const name = normalizeName(req.body?.name, existing.name);
     if (!name) {
-      res.status(400).json({ error: 'Invalid name' });
+      res.status(400).json({ error: 'Invalid name', code: 'invalid_name' });
       return;
     }
     const sortOrder = isNonNegativeInteger(req.body?.sort_order)
@@ -425,7 +445,7 @@ plansRouter.delete(
       .prepare(`DELETE FROM categories WHERE id = ? AND plan_id = ?`)
       .run(categoryId, planId);
     if (result.changes === 0) {
-      res.status(404).json({ error: 'Category not found' });
+      res.status(404).json({ error: 'Category not found', code: 'not_found' });
       return;
     }
     res.status(204).end();
@@ -439,7 +459,7 @@ plansRouter.post(
     const planId = routeParam(req.params.planId);
     const name = normalizeName(req.body?.name);
     if (!name) {
-      res.status(400).json({ error: 'Name is required' });
+      res.status(400).json({ error: 'Name is required', code: 'invalid_name' });
       return;
     }
     const db = getAppDb();
@@ -476,12 +496,12 @@ plansRouter.patch(
       | { id: string; name: string; color: string; sort_order: number }
       | undefined;
     if (!existing) {
-      res.status(404).json({ error: 'Account not found' });
+      res.status(404).json({ error: 'Account not found', code: 'not_found' });
       return;
     }
     const name = normalizeName(req.body?.name, existing.name);
     if (!name) {
-      res.status(400).json({ error: 'Invalid name' });
+      res.status(400).json({ error: 'Invalid name', code: 'invalid_name' });
       return;
     }
     const sortOrder = isNonNegativeInteger(req.body?.sort_order)
@@ -508,7 +528,7 @@ plansRouter.delete(
       .prepare(`DELETE FROM accounts WHERE id = ? AND plan_id = ?`)
       .run(accountId, planId);
     if (result.changes === 0) {
-      res.status(404).json({ error: 'Account not found' });
+      res.status(404).json({ error: 'Account not found', code: 'not_found' });
       return;
     }
     res.status(204).end();
@@ -545,13 +565,13 @@ plansRouter.post('/:planId/entries', requirePlanAccess('editor'), (req: Request,
 
   const db = getAppDb();
   if (!categoryBelongsToPlan(db, body.category_id as string, planId)) {
-    res.status(400).json({ error: 'Invalid category' });
+    res.status(400).json({ error: 'Invalid category', code: 'invalid_category' });
     return;
   }
 
   const accountId = typeof body.account_id === 'string' && body.account_id ? body.account_id : null;
   if (accountId && !accountBelongsToPlan(db, accountId, planId)) {
-    res.status(400).json({ error: 'Invalid account' });
+    res.status(400).json({ error: 'Invalid account', code: 'invalid_account' });
     return;
   }
 
@@ -607,7 +627,7 @@ plansRouter.patch(
       .prepare(`SELECT ${ENTRY_SELECT} FROM entries WHERE id = ? AND plan_id = ?`)
       .get(entryId, planId) as PlanEntryRow | undefined;
     if (!existing) {
-      res.status(404).json({ error: 'Entry not found' });
+      res.status(404).json({ error: 'Entry not found', code: 'not_found' });
       return;
     }
 
@@ -657,7 +677,7 @@ plansRouter.patch(
         ? body.category_id
         : existing.category_id;
     if (!categoryBelongsToPlan(db, categoryId, planId)) {
-      res.status(400).json({ error: 'Invalid category' });
+      res.status(400).json({ error: 'Invalid category', code: 'invalid_category' });
       return;
     }
     const accountId =
@@ -667,7 +687,7 @@ plansRouter.patch(
           ? body.account_id || null
           : existing.account_id;
     if (accountId && !accountBelongsToPlan(db, accountId, planId)) {
-      res.status(400).json({ error: 'Invalid account' });
+      res.status(400).json({ error: 'Invalid account', code: 'invalid_account' });
       return;
     }
     const comment = normalizeComment(body.comment, existing.comment);
@@ -728,7 +748,7 @@ plansRouter.delete(
       .prepare(`DELETE FROM entries WHERE id = ? AND plan_id = ?`)
       .run(entryId, planId);
     if (result.changes === 0) {
-      res.status(404).json({ error: 'Entry not found' });
+      res.status(404).json({ error: 'Entry not found', code: 'not_found' });
       return;
     }
     res.status(204).end();
@@ -781,7 +801,7 @@ plansRouter.post('/:planId/reorder', requirePlanAccess('editor'), (req: Request,
     tx();
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Invalid reorder';
-    res.status(400).json({ error: message });
+    res.status(400).json({ error: message, code: 'invalid_reorder' });
     return;
   }
   res.json({ ok: true });
@@ -793,7 +813,7 @@ plansRouter.post('/:planId/invites', requirePlanAccess('owner'), (req: Request, 
   const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : '';
   const role = req.body?.role === 'editor' ? 'editor' : 'viewer';
   if (!email || !email.includes('@') || email.length > 254) {
-    res.status(400).json({ error: 'Valid email is required' });
+    res.status(400).json({ error: 'Valid email is required', code: 'invalid_email' });
     return;
   }
 
@@ -805,7 +825,10 @@ plansRouter.post('/:planId/invites', requirePlanAccess('owner'), (req: Request, 
     )
     .get(planId, email) as { role: string } | undefined;
   if (existingMember) {
-    res.status(409).json({ error: 'That email already belongs to a plan member' });
+    res.status(409).json({
+      error: 'That email already belongs to a plan member',
+      code: 'email_already_member',
+    });
     return;
   }
 
@@ -923,15 +946,15 @@ invitesRouter.get('/:token', requireAuth, (req: Request, res: Response) => {
     | undefined;
 
   if (!row) {
-    res.status(404).json({ error: 'Invite not found' });
+    res.status(404).json({ error: 'Invite not found', code: 'invite_not_found' });
     return;
   }
   if (row.accepted_at) {
-    res.status(410).json({ error: 'Invite already accepted' });
+    res.status(410).json({ error: 'Invite already accepted', code: 'invite_already_accepted' });
     return;
   }
   if (new Date(row.expires_at).getTime() < Date.now()) {
-    res.status(410).json({ error: 'Invite expired' });
+    res.status(410).json({ error: 'Invite expired', code: 'invite_expired' });
     return;
   }
 
@@ -964,19 +987,22 @@ invitesRouter.post('/:token/accept', requireAuth, (req: Request, res: Response) 
     | undefined;
 
   if (!invite) {
-    res.status(404).json({ error: 'Invite not found' });
+    res.status(404).json({ error: 'Invite not found', code: 'invite_not_found' });
     return;
   }
   if (invite.accepted_at) {
-    res.status(410).json({ error: 'Invite already accepted' });
+    res.status(410).json({ error: 'Invite already accepted', code: 'invite_already_accepted' });
     return;
   }
   if (new Date(invite.expires_at).getTime() < Date.now()) {
-    res.status(410).json({ error: 'Invite expired' });
+    res.status(410).json({ error: 'Invite expired', code: 'invite_expired' });
     return;
   }
   if (user.email.trim().toLowerCase() !== invite.email.trim().toLowerCase()) {
-    res.status(403).json({ error: 'Invite email does not match your account' });
+    res.status(403).json({
+      error: 'Invite email does not match your account',
+      code: 'invite_email_mismatch',
+    });
     return;
   }
 
@@ -1009,9 +1035,10 @@ invitesRouter.post('/:token/accept', requireAuth, (req: Request, res: Response) 
     tx();
   } catch (err) {
     if (err instanceof Error && err.message === 'OWNER_INVITE') {
-      res
-        .status(409)
-        .json({ error: 'Plan owners cannot accept an invite that would change their role' });
+      res.status(409).json({
+        error: 'Plan owners cannot accept an invite that would change their role',
+        code: 'already_member',
+      });
       return;
     }
     throw err;

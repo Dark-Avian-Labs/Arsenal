@@ -175,7 +175,7 @@ describe('plan authorization and invites', () => {
         ...monthlyEntry(foreignCategory, 'Leak'),
       });
       expect(crossPlan.status).toBe(400);
-      expect(crossPlan.data).toEqual({ error: 'Invalid category' });
+      expect(crossPlan.data).toEqual({ error: 'Invalid category', code: 'invalid_category' });
 
       const foreignAccountId = 'acct-other';
       dbState
@@ -186,7 +186,7 @@ describe('plan authorization and invites', () => {
         account_id: foreignAccountId,
       });
       expect(crossAccount.status).toBe(400);
-      expect(crossAccount.data).toEqual({ error: 'Invalid account' });
+      expect(crossAccount.data).toEqual({ error: 'Invalid account', code: 'invalid_account' });
     });
   });
 
@@ -250,6 +250,7 @@ describe('plan authorization and invites', () => {
       authState.user = outsider;
       const mismatch = await http(base, 'POST', `/api/invites/${resentInvite.token}/accept`);
       expect(mismatch.status).toBe(403);
+      expect(mismatch.data).toEqual(expect.objectContaining({ code: 'invite_email_mismatch' }));
 
       const guest = insertUser('u-guest', 'clerk-guest', 'guest@example.com');
       authState.user = guest;
@@ -259,6 +260,29 @@ describe('plan authorization and invites', () => {
 
       const oldToken = await http(base, 'POST', `/api/invites/${firstInvite.token}/accept`);
       expect(oldToken.status).toBe(404);
+    });
+  });
+
+  it('hides invites that expired earlier today and counts archived entries per category', async () => {
+    const db = dbState.db!;
+    db.prepare(
+      `INSERT INTO plan_invites (id, plan_id, email, role, token, invited_by, expires_at)
+       VALUES ('i-old', ?, 'late@example.com', 'viewer', 'tok-old', ?, ?)`,
+    ).run(planId, owner.id, new Date(Date.now() - 60_000).toISOString());
+    const categoryId = firstCategoryId(planId);
+    db.prepare(
+      `INSERT INTO entries (id, plan_id, category_id, name, amount_cents, kind, frequency, due_day, due_month, due_year, archived_at, sort_order)
+       VALUES ('e-old', ?, ?, 'Old fee', 500, 'expense', 'once', 1, 1, 2020, datetime('now'), 0)`,
+    ).run(planId, categoryId);
+
+    await withServer(async (base) => {
+      const plan = await http(base, 'GET', `/api/plans/${planId}`);
+      const data = plan.data as {
+        pendingInvites: unknown[];
+        archivedEntryCounts: Record<string, number>;
+      };
+      expect(data.pendingInvites).toEqual([]);
+      expect(data.archivedEntryCounts[categoryId]).toBe(1);
     });
   });
 });

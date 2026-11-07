@@ -12,6 +12,7 @@ import {
 import { MAX_PLAN_YEAR, MIN_PLAN_YEAR, type PlanMonth } from '../../../shared/planMonth';
 import { AccountColorPicker } from '../../components/budget/AccountColorPicker';
 import { FormSelect } from '../../components/ui/FormSelect';
+import { apiErrorMessage } from '../../lib/apiError';
 import { entryPayloadFieldErrors, type EntryPayload } from '../../lib/entryPayload';
 import { centsToInput, parseAmountToCents } from '../../lib/format';
 import { applyEntryToPlan } from '../../lib/planEntriesState';
@@ -63,11 +64,11 @@ function emptyForm(categoryId: string, year: number, month: number): EntryFormSt
   };
 }
 
-function entryToForm(entry: Entry): EntryFormState {
+function entryToForm(entry: Entry, locale: string): EntryFormState {
   const now = new Date();
   return {
     name: entry.name,
-    amount: centsToInput(entry.amount_cents),
+    amount: centsToInput(entry.amount_cents, locale),
     kind: entry.kind,
     frequency: entry.frequency,
     due_day: String(entry.due_day),
@@ -77,7 +78,8 @@ function entryToForm(entry: Entry): EntryFormState {
     account_id: entry.account_id ?? '',
     comment: entry.comment ?? '',
     end_date: entry.end_date ?? '',
-    final_amount: entry.final_amount_cents != null ? centsToInput(entry.final_amount_cents) : '',
+    final_amount:
+      entry.final_amount_cents != null ? centsToInput(entry.final_amount_cents, locale) : '',
   };
 }
 
@@ -122,7 +124,8 @@ export function EntrySheet({
   onPlanChange: (updater: (prev: PlanDetail) => PlanDetail) => void;
   onRequestDelete: (pending: EntrySheetDelete) => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language;
   const [form, setForm] = useState<EntryFormState>(() =>
     emptyForm(data.categories[0]?.id ?? '', selectedMonth.year, selectedMonth.month),
   );
@@ -142,7 +145,7 @@ export function EntrySheet({
 
   useEffect(() => {
     if (!open) return;
-    if (mode === 'edit' && entry) setForm(entryToForm(entry));
+    if (mode === 'edit' && entry) setForm(entryToForm(entry, locale));
     else setForm(emptyForm(data.categories[0]?.id ?? '', selectedMonth.year, selectedMonth.month));
     resetFieldEditors();
   }, [open, mode, entry?.id]); // Snapshot category and month when the sheet opens. Adding a category must not reset the form.
@@ -190,7 +193,7 @@ export function EntrySheet({
       setNewAccountName('');
       setAccountEditor('closed');
     } catch (err) {
-      onError(err instanceof Error ? err.message : 'Failed to add account');
+      onError(apiErrorMessage(err, 'errors.saveFailed'));
     } finally {
       onSaving(false);
     }
@@ -215,7 +218,7 @@ export function EntrySheet({
       setAccountEditor('closed');
       setNewAccountName('');
     } catch (err) {
-      onError(err instanceof Error ? err.message : 'Failed to rename account');
+      onError(apiErrorMessage(err, 'errors.saveFailed'));
     } finally {
       onSaving(false);
     }
@@ -235,7 +238,7 @@ export function EntrySheet({
       setNewCategoryName('');
       setCategoryEditor('closed');
     } catch (err) {
-      onError(err instanceof Error ? err.message : 'Failed to add category');
+      onError(apiErrorMessage(err, 'errors.saveFailed'));
     } finally {
       onSaving(false);
     }
@@ -260,7 +263,7 @@ export function EntrySheet({
       setCategoryEditor('closed');
       setNewCategoryName('');
     } catch (err) {
-      onError(err instanceof Error ? err.message : 'Failed to rename category');
+      onError(apiErrorMessage(err, 'errors.saveFailed'));
     } finally {
       onSaving(false);
     }
@@ -278,7 +281,9 @@ export function EntrySheet({
       kind: 'category',
       id: cat.id,
       name: cat.name,
-      entryCount: data.entries.filter((e) => e.category_id === cat.id).length,
+      entryCount:
+        data.entries.filter((e) => e.category_id === cat.id).length +
+        (data.archivedEntryCounts[cat.id] ?? 0),
     });
   }
 
@@ -295,14 +300,14 @@ export function EntrySheet({
   }
 
   async function saveEntry() {
-    const amount = parseAmountToCents(form.amount);
+    const amount = parseAmountToCents(form.amount, locale);
     if (amount == null) {
       onError(t('entry.invalidAmount'));
       return;
     }
     let finalAmountCents: number | null = null;
     if (form.kind === 'credit' && form.final_amount.trim()) {
-      const parsedFinal = parseAmountToCents(form.final_amount);
+      const parsedFinal = parseAmountToCents(form.final_amount, locale);
       if (parsedFinal == null) {
         onError(formatEntryFieldsMessage(['final_amount_cents'], t));
         return;
@@ -350,7 +355,7 @@ export function EntrySheet({
       if (err instanceof ApiError && err.fields.length) {
         onError(formatEntryFieldsMessage(err.fields, t));
       } else {
-        onError(err instanceof Error ? err.message : t('entry.saveFailed'));
+        onError(apiErrorMessage(err, 'entry.saveFailed'));
       }
     } finally {
       onSaving(false);
@@ -415,6 +420,7 @@ export function EntrySheet({
             <span>{t('entry.dueDay')}</span>
             <Input
               type="number"
+              inputMode="numeric"
               min={1}
               max={31}
               value={form.due_day}
@@ -426,6 +432,7 @@ export function EntrySheet({
               <span>{t('entry.dueMonth')}</span>
               <Input
                 type="number"
+                inputMode="numeric"
                 min={1}
                 max={12}
                 value={form.due_month}
@@ -439,6 +446,7 @@ export function EntrySheet({
             <span>{t('entry.dueYear')}</span>
             <Input
               type="number"
+              inputMode="numeric"
               min={MIN_PLAN_YEAR}
               max={MAX_PLAN_YEAR}
               value={form.due_year}

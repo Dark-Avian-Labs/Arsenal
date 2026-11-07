@@ -7,8 +7,10 @@ import { Link, useNavigate } from 'react-router';
 
 import { CURRENCIES } from '../../../shared/currencies';
 import { planPath } from '../../app/paths';
+import { PLANS_CHANGED_EVENT } from '../../components/Layout/PlanSwitcher';
 import { FormSelect } from '../../components/ui/FormSelect';
 import { RequireAuth } from '../../features/auth/RequireAuth';
+import { apiErrorMessage } from '../../lib/apiError';
 import type { Me, PlanSummary } from '../../lib/types';
 
 function HomeInner() {
@@ -19,7 +21,7 @@ function HomeInner() {
   const [me, setMe] = useState<Me | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [name, setName] = useState('Household');
+  const [name, setName] = useState(() => t('plan.defaultName'));
   const [currency, setCurrency] = useState('EUR');
   const [creating, setCreating] = useState(false);
 
@@ -35,7 +37,7 @@ function HomeInner() {
         setPlans(data.plans);
         setMe(data.me);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load');
+        setError(apiErrorMessage(err, 'errors.loadFailed'));
       } finally {
         setLoading(false);
       }
@@ -50,9 +52,10 @@ function HomeInner() {
         method: 'POST',
         body: JSON.stringify({ name, currency }),
       });
+      window.dispatchEvent(new Event(PLANS_CHANGED_EVENT));
       navigate(planPath(result.plan.id));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Create failed');
+      setError(apiErrorMessage(err, 'errors.createFailed'));
     } finally {
       setCreating(false);
     }

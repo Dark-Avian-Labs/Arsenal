@@ -82,32 +82,36 @@ export function AccountBreakdownView({
 
   return (
     <section className="glass-surface overflow-hidden">
-      <div className="border-glass-divider text-muted grid grid-cols-[1.4fr_1fr_1fr_1fr] gap-2 border-b px-4 py-2 text-xs font-semibold tracking-wide uppercase">
+      <div className="border-glass-divider text-muted grid grid-cols-[minmax(0,1fr)_auto] gap-2 border-b px-4 py-2 text-xs font-semibold tracking-wide uppercase sm:grid-cols-[1.4fr_1fr_1fr_1fr]">
         <span>{t('entry.account')}</span>
-        <span className="text-right">{t('plan.income')}</span>
-        <span className="text-right">{t('plan.expenses')}</span>
+        <span className="hidden text-right sm:block">{t('plan.income')}</span>
+        <span className="hidden text-right sm:block">{t('plan.expenses')}</span>
         <span className="text-right">{t('plan.net')}</span>
       </div>
       <ul className="divide-glass-divider divide-y">
         {rows.map((row) => (
           <li
             key={row.accountId ?? '__none__'}
-            className="grid grid-cols-[1.4fr_1fr_1fr_1fr] gap-2 px-4 py-3 text-sm"
+            className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-2 gap-y-0.5 px-4 py-3 text-sm sm:grid-cols-[1.4fr_1fr_1fr_1fr]"
           >
-            <span className="flex min-w-0 items-center gap-2 truncate font-medium">
+            <span className="col-start-1 row-start-1 flex min-w-0 items-center gap-2 truncate font-medium">
               {row.color ? (
                 <span className={`account-swatch account-swatch--${row.color}`} aria-hidden />
               ) : null}
               <span className="truncate">{row.name}</span>
             </span>
-            <span className="text-success text-right tabular-nums">
-              {formatMoney(row.incomeCents, currency, locale)}
-            </span>
-            <span className="text-right tabular-nums">
-              {formatMoney(row.expenseCents, currency, locale)}
+            <span className="col-span-2 row-start-2 flex gap-3 text-xs sm:contents sm:text-sm">
+              <span className="text-success tabular-nums sm:col-start-2 sm:row-start-1 sm:text-right">
+                {formatMoney(row.incomeCents, currency, locale)}
+                <span className="text-muted sm:hidden"> {t('plan.income')}</span>
+              </span>
+              <span className="tabular-nums sm:col-start-3 sm:row-start-1 sm:text-right">
+                {formatMoney(row.expenseCents, currency, locale)}
+                <span className="text-muted sm:hidden"> {t('plan.expenses')}</span>
+              </span>
             </span>
             <span
-              className={`text-right font-medium tabular-nums ${
+              className={`col-start-2 row-start-1 text-right font-medium tabular-nums sm:col-start-4 ${
                 row.netCents < 0 ? 'text-danger' : row.netCents > 0 ? 'text-success' : ''
               }`}
             >

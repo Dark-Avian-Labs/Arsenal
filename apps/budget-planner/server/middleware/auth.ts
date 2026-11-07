@@ -118,17 +118,17 @@ export function requirePlanAccess(minRole: 'viewer' | 'editor' | 'owner' = 'view
 
     const membership = getMembership(planId, user.id);
     if (!membership) {
-      res.status(403).json({ error: 'Not a member of this plan' });
+      res.status(403).json({ error: 'Not a member of this plan', code: 'forbidden' });
       return;
     }
 
     if (minRole === 'editor' && !canEdit(membership.role)) {
-      res.status(403).json({ error: 'Edit permission required' });
+      res.status(403).json({ error: 'Edit permission required', code: 'forbidden' });
       return;
     }
 
     if (minRole === 'owner' && membership.role !== 'owner') {
-      res.status(403).json({ error: 'Owner permission required' });
+      res.status(403).json({ error: 'Owner permission required', code: 'forbidden' });
       return;
     }
 

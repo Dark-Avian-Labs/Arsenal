@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import { CURRENCIES, type AllowedCurrency } from './currencies.ts';
 import { parseIsoDate } from './dueThisMonth.ts';
-import { MAX_COMMENT_LENGTH, MAX_NAME_LENGTH } from './entryLimits.ts';
+import { MAX_AMOUNT_CENTS, MAX_COMMENT_LENGTH, MAX_NAME_LENGTH } from './entryLimits.ts';
 import { MAX_PLAN_YEAR, MIN_PLAN_YEAR } from './planMonth.ts';
 
 export type { AllowedCurrency };
@@ -31,17 +31,18 @@ const currencySchema = z
   .toUpperCase()
   .refine((code) => isAllowedCurrency(code));
 const nonNegativeInt = z.number().int().nonnegative();
+const amountCents = nonNegativeInt.max(MAX_AMOUNT_CENTS);
 
 export const entrySchema = z.object({
   name: nameSchema,
-  amount_cents: nonNegativeInt,
+  amount_cents: amountCents,
   kind: entryKindSchema,
   frequency: entryFrequencySchema,
   due_day: z.number().int().min(1).max(31),
   category_id: z.string().min(1),
   due_month: z.number().int().min(1).max(12).nullable().optional(),
   due_year: z.number().int().min(MIN_YEAR).max(MAX_YEAR).nullable().optional(),
-  final_amount_cents: nonNegativeInt.nullable().optional(),
+  final_amount_cents: amountCents.nullable().optional(),
   comment: z.string().trim().min(1).max(MAX_COMMENT_LENGTH).nullable().optional(),
   end_date: z
     .union([z.literal(''), z.null(), z.string().refine((value) => parseIsoDate(value) != null)])

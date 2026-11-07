@@ -11,7 +11,10 @@ export interface AppUser {
   default_plan_id: string | null;
 }
 
-const DEFAULT_CATEGORIES = ['Accounts & Credit', 'Household', 'Entertainment', 'Parents'];
+const DEFAULT_CATEGORIES: Record<string, string[]> = {
+  en: ['Accounts & Credit', 'Household', 'Entertainment', 'Parents'],
+  de: ['Konten & Kredite', 'Haushalt', 'Freizeit', 'Eltern'],
+};
 
 export function getUserByClerkId(
   clerkUserId: string,
@@ -113,7 +116,7 @@ export function createPlanForOwner(owner: AppUser, name: string, currency = 'EUR
     const insertCategory = db.prepare(
       `INSERT INTO categories (id, plan_id, name, sort_order) VALUES (?, ?, ?, ?)`,
     );
-    DEFAULT_CATEGORIES.forEach((catName, index) => {
+    (DEFAULT_CATEGORIES[owner.locale] ?? DEFAULT_CATEGORIES.en!).forEach((catName, index) => {
       insertCategory.run(randomUUID(), planId, catName, index);
     });
 

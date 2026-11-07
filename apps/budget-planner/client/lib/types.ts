@@ -61,6 +61,7 @@ export interface PlanDetail {
   };
   role: MemberRole;
   categories: Category[];
+  archivedEntryCounts: Record<string, number>;
   accounts: Account[];
   entries: Entry[];
   totals: MonthTotals;

@@ -15,6 +15,18 @@
     overflow: visible;
   }
 
+  .safe-px {
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
+  }
+
+  @media (min-width: 40rem) {
+    .safe-px {
+      padding-left: max(1.5rem, env(safe-area-inset-left));
+      padding-right: max(1.5rem, env(safe-area-inset-right));
+    }
+  }
+
   .icon-toggle-btn:disabled {
     opacity: 0.4;
     cursor: not-allowed;
@@ -169,6 +181,7 @@
 }
 
 .account-color-swatch {
+  position: relative;
   width: 1.5rem;
   height: 1.5rem;
   border: 2px solid transparent;
@@ -176,6 +189,13 @@
   transition:
     transform 0.15s ease,
     border-color 0.15s ease;
+}
+
+.account-color-swatch::after {
+  content: '';
+  position: absolute;
+  inset: -12px;
+  border-radius: 999px;
 }
 
 .account-color-swatch--selected {
