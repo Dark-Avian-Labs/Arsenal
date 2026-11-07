@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { fetchWithTimeout, FETCH_TIMEOUT_MS } from '../../http/fetchWithTimeout.ts';
+import { fetchTextBounded, FETCH_TIMEOUT_MS } from '../warframe/http/fetchWithTimeout.ts';
 import { decodeInertiaPayload } from './htmlEntities.ts';
 import { FASTIDIOUS_BASE_URL } from './paths.ts';
 
@@ -27,7 +27,7 @@ export async function fetchFastidiousInertiaPage<TProps>(routePath: string): Pro
   rawHtml: string;
 }> {
   const url = `${FASTIDIOUS_BASE_URL}${routePath.startsWith('/') ? routePath : `/${routePath}`}`;
-  const response = await fetchWithTimeout(
+  const { response, text: rawHtml } = await fetchTextBounded(
     url,
     { headers: { 'User-Agent': fastidiousUserAgent(), Accept: 'text/html' } },
     FETCH_TIMEOUT_MS.htmlPage,
@@ -35,7 +35,6 @@ export async function fetchFastidiousInertiaPage<TProps>(routePath: string): Pro
   if (!response.ok) {
     throw new Error(`Fastidious fetch failed (${response.status}) for ${url}`);
   }
-  const rawHtml = await response.text();
   return { page: parseInertiaHtml<TProps>(rawHtml), rawHtml };
 }
 

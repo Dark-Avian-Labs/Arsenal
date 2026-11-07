@@ -3,23 +3,9 @@ import { positiveInt, z } from '@dark-avian-labs/server-kit';
 import { ABSOLUTE_MAX_ADVANCED_LEVEL } from '../advancedRules.ts';
 import { VALENCE_PERCENT_MAX_STORED, VALENCE_PERCENT_MIN } from '../config.ts';
 
-export const MAX_WARFRAME_ITEM_NAME_LENGTH = 255;
 export const MAX_WARFRAME_CELL_VALUE_LENGTH = 64;
-export const MAX_WARFRAME_RECORD_VALUE_LENGTH = 64;
 
 const cellValue = z.string().trim().max(MAX_WARFRAME_CELL_VALUE_LENGTH).default('');
-const recordValue = z.string().trim().max(MAX_WARFRAME_RECORD_VALUE_LENGTH);
-const itemName = z
-  .string()
-  .trim()
-  .min(1, 'Item name is required.')
-  .max(MAX_WARFRAME_ITEM_NAME_LENGTH);
-const itemNameNullable = z
-  .string()
-  .trim()
-  .max(MAX_WARFRAME_ITEM_NAME_LENGTH)
-  .nullable()
-  .default(null);
 
 export const patchSettingsSchema = z
   .object({
@@ -47,18 +33,6 @@ export const updateSchema = z.object({
   row_id: positiveInt,
   column_id: positiveInt,
   value: cellValue,
-});
-
-export const addRowSchema = z.object({
-  worksheet_id: positiveInt,
-  item_name: itemName,
-  values: z.record(z.string(), recordValue).optional().default({}),
-});
-
-export const editRowSchema = z.object({
-  row_id: positiveInt,
-  item_name: itemNameNullable,
-  values: z.record(z.string(), recordValue).optional().default({}),
 });
 
 export const deleteRowSchema = z.object({

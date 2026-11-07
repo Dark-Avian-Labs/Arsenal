@@ -1,8 +1,8 @@
 import { log } from '@dark-avian-labs/server-kit';
-import { getWarframeDb } from '../../games/warframe/index.ts';
 import Database from 'better-sqlite3';
 
 import { WARFRAME_CATALOG_DB_PATH } from '../../config.ts';
+import { getWarframeDb } from '../../games/warframe/index.ts';
 import { loadWorksheetSource, syncCatalogMasterFromSource } from '../../services/warframeSync.ts';
 
 export function copyCatalogToCollection(): {

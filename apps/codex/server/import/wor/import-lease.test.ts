@@ -3,14 +3,10 @@ import { afterEach, beforeEach, expect, it } from 'vitest';
 
 import { createSchema as createWorSchema } from '../../games/wor/db/schema.ts';
 import { ensureWorImportTables } from '../../games/wor/db/schema.ts';
-import {
-  requireWorImportLease,
-  tryAcquireWorImportLease,
-  WorImportLeaseLostError,
-} from './importLease.ts';
-import { applyWorCatalogMutation } from './startupPipeline.ts';
 import { describeWithSqlite } from '../../testing/describeWithSqlite.ts';
 import { createTempDbDir, removeTempDbDir } from '../../testing/sqliteTestHarness.ts';
+import { requireWorImportLease, tryAcquireWorImportLease, WorImportLeaseLostError } from './importLease.ts';
+import { applyWorCatalogMutation } from './startupPipeline.ts';
 
 describeWithSqlite('WoR import lease writes', () => {
   let db: Database.Database;

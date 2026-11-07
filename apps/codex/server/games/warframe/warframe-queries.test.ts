@@ -8,6 +8,7 @@ import {
   seedMinimalWarframeFixture,
   type WarframeTestDb,
 } from '../../testing/sqliteTestHarness.ts';
+import { ensureWarframeRowOrphanColumn } from './db/schema.ts';
 import { warframeQueries } from './index.ts';
 
 const { updateCell, addRow, deleteRow } = warframeQueries;
@@ -59,5 +60,12 @@ describeWithSqlite('warframeQueries', () => {
     expect(deleteRow(harness.db, fixture.rowId, fixture.clerkUserId)).toBe(true);
     const deletedRow = harness.db.prepare('SELECT id FROM rows WHERE id = ?').get(fixture.rowId);
     expect(deletedRow).toBeUndefined();
+  });
+
+  it('deleteRow with orphanedOnly keeps live rows', () => {
+    ensureWarframeRowOrphanColumn(harness.db);
+    expect(deleteRow(harness.db, fixture.rowId, fixture.clerkUserId, true)).toBe(false);
+    harness.db.prepare('UPDATE rows SET orphaned = 1 WHERE id = ?').run(fixture.rowId);
+    expect(deleteRow(harness.db, fixture.rowId, fixture.clerkUserId, true)).toBe(true);
   });
 });

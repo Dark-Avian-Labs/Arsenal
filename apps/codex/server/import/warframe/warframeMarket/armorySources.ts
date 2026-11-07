@@ -1,6 +1,9 @@
+import {
+  ARCANE_PUBLIC_LIST_SQL,
+  bindArcanePublicListParams,
+} from '@dark-avian-labs/warframe-catalog/server';
 import type Database from 'better-sqlite3';
 
-import { ARCANE_PUBLIC_LIST_SQL, bindArcanePublicListParams } from '@dark-avian-labs/warframe-catalog/server';
 import type { WorksheetCategory } from './resolveHref.ts';
 
 function loadNames(db: Database.Database, sql: string, args: unknown[] = []): string[] {

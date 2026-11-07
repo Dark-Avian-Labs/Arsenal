@@ -1,10 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  isStepForced,
-  shouldRebuildSqliteFromExports,
-  wantsOverframeScrape,
-} from './pipelineStepControl.ts';
+import { isStepForced, shouldRebuildSqliteFromExports, wantsOverframeScrape } from './pipelineStepControl.ts';
 
 describe('shouldRebuildSqliteFromExports', () => {
   it('reloads an empty catalog even when the export hashes match', () => {

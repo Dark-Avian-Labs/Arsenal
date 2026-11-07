@@ -138,19 +138,12 @@ export async function runImportPipeline(
           total: needed.length,
         });
 
-        let itemCount: number | undefined;
-        try {
-          const content = JSON.parse(fs.readFileSync(localPath, 'utf-8'));
-          itemCount = getItemCount(content);
-        } catch {}
-
         results.push({
           category: entry.category,
           filename: localFilename,
           hash: entry.hash,
           localPath,
           size: fileStat.size,
-          itemCount,
         });
         continue;
       }

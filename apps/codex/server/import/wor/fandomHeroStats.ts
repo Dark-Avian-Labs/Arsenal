@@ -3,8 +3,8 @@ import path from 'node:path';
 
 import type Database from 'better-sqlite3';
 
-import { FETCH_TIMEOUT_MS, fetchWithTimeout } from '../../http/fetchWithTimeout.ts';
 import { getWikiUserAgent } from '../../scraping/wikiUserAgent.ts';
+import { FETCH_TIMEOUT_MS, fetchTextBounded } from '../warframe/http/fetchWithTimeout.ts';
 import { sleep } from './fastidiousClient.ts';
 import { wikiPageTitleFromName } from './normalize.ts';
 import { parseHeroInfobox, type WikiHeroBaseStats } from './parseHeroInfobox.ts';
@@ -43,12 +43,12 @@ async function fetchWikiWikitext(pageTitle: string): Promise<string | null> {
   url.searchParams.set('prop', 'wikitext');
   url.searchParams.set('format', 'json');
   url.searchParams.set('formatversion', '2');
-  const response = await fetchWithTimeout(url, { headers }, FETCH_TIMEOUT_MS.wikiFetch);
+  const { response, text } = await fetchTextBounded(url, { headers }, FETCH_TIMEOUT_MS.wikiFetch);
   if (response.status === 404) return null;
   if (!response.ok) {
     throw new Error(`Wiki API HTTP ${response.status} for ${pageTitle}`);
   }
-  const payload = (await response.json()) as {
+  const payload = JSON.parse(text) as {
     parse?: { wikitext?: string };
     error?: { code?: string };
   };

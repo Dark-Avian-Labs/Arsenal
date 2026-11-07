@@ -52,8 +52,10 @@ import {
   __resetWorAdminImportForTests,
   getWorAdminImportSnapshot,
   startWorAdminImport,
+  subscribeWorAdminImport,
+  type WorAdminImportEvent,
 } from './adminImportJob.ts';
-import { tryAcquireWorImportLease } from './importLease.ts';
+import { isWorImportLeaseHeld, recoverWorImportLeaseOnStartup, tryAcquireWorImportLease } from './importLease.ts';
 
 describeWithSqlite('WoR admin import job', () => {
   let tmpDir: string;
@@ -109,5 +111,40 @@ describeWithSqlite('WoR admin import job', () => {
     expect(result.started).toBe(false);
     expect(result.reason).toBe('Import lease held by another process');
     expect(pipelineControl.run).not.toHaveBeenCalled();
+  });
+
+  it('sends a snapshot on start, then only new lines with increasing ids', async () => {
+    const events: WorAdminImportEvent[] = [];
+    subscribeWorAdminImport((event) => events.push(event));
+    startWorAdminImport();
+    expect(events).toEqual([{ snapshot: expect.objectContaining({ running: true, lines: [] }) }]);
+
+    await vi.waitFor(() => expect(events).toHaveLength(2));
+    const second = events[1];
+    expect(second && 'lines' in second ? second.lines.map((line) => line.message) : null).toEqual([
+      'Starting Watcher of Realms catalog import…',
+    ]);
+
+    pipelineControl.go();
+    await vi.waitFor(() => expect(getWorAdminImportSnapshot().running).toBe(false));
+    const ids = getWorAdminImportSnapshot().lines.map((line) => line.id);
+    expect(ids).toEqual([...ids].sort((a, b) => a - b));
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it('clears a leftover lease and fails the interrupted run on startup', () => {
+    const db = dbState.db!;
+    const runId = Number(db.prepare(`INSERT INTO import_runs (status) VALUES ('running')`).run().lastInsertRowid);
+    expect(tryAcquireWorImportLease(db, runId)).toBeTruthy();
+
+    recoverWorImportLeaseOnStartup(db);
+
+    expect(isWorImportLeaseHeld(db)).toBe(false);
+    const row = db.prepare('SELECT status, error FROM import_runs WHERE id = ?').get(runId) as {
+      status: string;
+      error: string | null;
+    };
+    expect(row.status).toBe('failed');
+    expect(row.error).toMatch(/Interrupted/);
   });
 });

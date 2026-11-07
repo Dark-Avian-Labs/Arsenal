@@ -918,10 +918,15 @@ export function editRow(
   }
 }
 
-export function deleteRow(db: Database.Database, rowId: number, clerkUserId: string): boolean {
+export function deleteRow(
+  db: Database.Database,
+  rowId: number,
+  clerkUserId: string,
+  orphanedOnly = false,
+): boolean {
   const row = db
     .prepare(
-      'SELECT r.id FROM rows r JOIN worksheets w ON r.worksheet_id = w.id WHERE r.id = ? AND w.clerk_user_id = ?',
+      `SELECT r.id FROM rows r JOIN worksheets w ON r.worksheet_id = w.id WHERE r.id = ? AND w.clerk_user_id = ?${orphanedOnly ? ' AND r.orphaned = 1' : ''}`,
     )
     .get(rowId, clerkUserId);
   if (!row) return false;

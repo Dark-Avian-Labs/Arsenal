@@ -2,9 +2,9 @@ import Database from 'better-sqlite3';
 import { afterEach, beforeEach, expect, it } from 'vitest';
 
 import { createSchema as createWorSchema } from '../../games/wor/db/schema.ts';
-import { fillMissingHeroStatsFromProspector, type ProspectorSnapshot } from './prospectorCatalog.ts';
 import { describeWithSqlite } from '../../testing/describeWithSqlite.ts';
 import { createTempDbDir, removeTempDbDir } from '../../testing/sqliteTestHarness.ts';
+import { fillMissingHeroStatsFromProspector, type ProspectorSnapshot } from './prospectorCatalog.ts';
 
 function emptySnapshot(heroes: ProspectorSnapshot['heroes']): ProspectorSnapshot {
   return {

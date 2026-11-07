@@ -27,6 +27,8 @@ import {
   tryAcquireWarframeSyncLease,
   releaseWarframeSyncLease,
   createWarframeSyncRun,
+  failStaleWarframeSyncRuns,
+  getLatestWarframeSyncRunRow,
 } from './warframeSyncJobs.ts';
 
 describe('warframeSyncJobs', () => {
@@ -77,5 +79,16 @@ describe('warframeSyncJobs', () => {
     const third = tryAcquireWarframeSyncLease(run.id + 1);
     expect(third).toBeTruthy();
     releaseWarframeSyncLease(third!);
+  });
+
+  it('fails stale runs on startup only when no lease is held', () => {
+    const run = createWarframeSyncRun('user_admin');
+    const token = tryAcquireWarframeSyncLease(run.id);
+    failStaleWarframeSyncRuns();
+    expect(getLatestWarframeSyncRunRow()?.status).toBe('pending');
+
+    releaseWarframeSyncLease(token!);
+    failStaleWarframeSyncRuns();
+    expect(getLatestWarframeSyncRunRow()).toMatchObject({ id: run.id, status: 'failed' });
   });
 });

@@ -1,9 +1,11 @@
 import { apiFetch } from '@dark-avian-labs/ui';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+type ImportLine = { id: number; ts: string; level: string; message: string };
+
 type ImportSnapshot = {
   running: boolean;
-  lines: { ts: string; level: string; message: string }[];
+  lines: ImportLine[];
   summary: {
     heroes: number;
     artifacts: number;
@@ -19,8 +21,13 @@ function parseSnapshot(body: unknown): ImportSnapshot | null {
   return record.snapshot ?? record;
 }
 
+const MAX_LOG_LINES = 2000;
+const STREAM_DISCONNECTED =
+  'Live import log disconnected. Polling will keep updating while a job runs.';
+
 export function WorImportAdminTool() {
   const [snapshot, setSnapshot] = useState<ImportSnapshot | null>(null);
+  const [streamOpen, setStreamOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
   const [forceImport, setForceImport] = useState(false);
@@ -56,6 +63,11 @@ export function WorImportAdminTool() {
     })();
 
     const stream = new EventSource('/api/wor/admin/import/stream', { withCredentials: true });
+    stream.onopen = () => {
+      if (disposed) return;
+      setStreamOpen(true);
+      setError((previous) => (previous === STREAM_DISCONNECTED ? null : previous));
+    };
     stream.addEventListener('snapshot', (event) => {
       if (disposed) return;
       try {
@@ -63,12 +75,22 @@ export function WorImportAdminTool() {
         if (next) applySnapshot(next);
       } catch {}
     });
+    stream.addEventListener('line', (event) => {
+      if (disposed) return;
+      try {
+        const line = JSON.parse((event as MessageEvent).data) as ImportLine;
+        setSnapshot((previous) =>
+          previous && line.id > (previous.lines.at(-1)?.id ?? 0)
+            ? { ...previous, lines: [...previous.lines, line].slice(-MAX_LOG_LINES) }
+            : previous,
+        );
+      } catch {}
+    });
     stream.onerror = () => {
       if (disposed) return;
+      setStreamOpen(false);
       setError((previous) =>
-        previous?.includes('already running')
-          ? previous
-          : 'Live import log disconnected. Polling will keep updating while a job runs.',
+        previous?.includes('already running') ? previous : STREAM_DISCONNECTED,
       );
     };
 
@@ -79,14 +101,14 @@ export function WorImportAdminTool() {
   }, [applySnapshot, loadStatus]);
 
   useEffect(() => {
-    if (!snapshot?.running) return undefined;
+    if (!snapshot?.running || streamOpen) return undefined;
 
     const poll = window.setInterval(() => {
       void loadStatus().catch(() => {});
     }, 2000);
 
     return () => window.clearInterval(poll);
-  }, [loadStatus, snapshot?.running]);
+  }, [loadStatus, snapshot?.running, streamOpen]);
 
   useEffect(() => {
     const container = logContainerRef.current;
@@ -187,11 +209,8 @@ export function WorImportAdminTool() {
         {lines.length === 0 ? (
           <p className="text-muted">Import log will appear here.</p>
         ) : (
-          lines.map((line, index) => (
-            <div
-              key={`${line.ts}-${index}`}
-              className={line.level === 'error' ? 'text-danger' : ''}
-            >
+          lines.map((line) => (
+            <div key={line.id} className={line.level === 'error' ? 'text-danger' : ''}>
               [{line.ts}] {line.message}
             </div>
           ))
