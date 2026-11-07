@@ -75,11 +75,13 @@ export function OutfitTab({
   const [calcSearching, setCalcSearching] = useState(false);
   const calcAbortRef = useRef<AbortController | null>(null);
   const [heroDraft, setHeroDraft] = useState<HeroRow | null>(null);
+  const [statsError, setStatsError] = useState<string | null>(null);
 
   const outfitHeroRow = heroes.find((hero) => hero.slug === outfitHero) ?? null;
 
   useEffect(() => {
     setHeroDraft(outfitHeroRow);
+    setStatsError(null);
   }, [outfitHeroRow]);
 
   function applyRole(id: OutfitRoleId): void {
@@ -170,19 +172,32 @@ export function OutfitTab({
   }
 
   async function saveHeroStats(): Promise<void> {
-    if (!heroDraft) return;
-    await apiFetch(`/api/heroes/${heroDraft.slug}/stats`, {
+    if (!heroDraft || !outfitHeroRow) return;
+    const stats = {
+      hp: heroDraft.hp,
+      atk: heroDraft.atk,
+      def: heroDraft.def,
+      atk_interval: heroDraft.atk_interval,
+      rr_auto: heroDraft.rr_auto,
+      rr_attack: heroDraft.rr_attack,
+      rr_attacked: heroDraft.rr_attacked,
+    };
+    if (Object.values(stats).some((value) => Number.isNaN(value))) {
+      setHeroDraft(outfitHeroRow);
+      return;
+    }
+    const keys = Object.keys(stats) as (keyof typeof stats)[];
+    if (keys.every((key) => stats[key] === outfitHeroRow[key])) return;
+    setStatsError(null);
+    const response = await apiFetch(`/api/heroes/${heroDraft.slug}/stats`, {
       method: 'PATCH',
-      body: JSON.stringify({
-        hp: heroDraft.hp,
-        atk: heroDraft.atk,
-        def: heroDraft.def,
-        atk_interval: heroDraft.atk_interval,
-        rr_auto: heroDraft.rr_auto,
-        rr_attack: heroDraft.rr_attack,
-        rr_attacked: heroDraft.rr_attacked,
-      }),
-    });
+      body: JSON.stringify(stats),
+    }).catch(() => null);
+    if (!response?.ok) {
+      const body = (await response?.json().catch(() => null)) as { error?: string } | null;
+      setStatsError(body?.error ?? 'Could not save hero stats.');
+      return;
+    }
     await onSaved();
   }
 
@@ -217,15 +232,18 @@ export function OutfitTab({
                     <input
                       className="form-input mt-1 w-full"
                       type="number"
-                      value={heroDraft[key]}
+                      value={Number.isNaN(heroDraft[key]) ? '' : heroDraft[key]}
                       onChange={(event) =>
-                        setHeroDraft({ ...heroDraft, [key]: Number(event.target.value) })
+                        setHeroDraft({ ...heroDraft, [key]: event.target.valueAsNumber })
                       }
                       onBlur={() => void saveHeroStats()}
                     />
                   </label>
                 ))}
               </div>
+            ) : null}
+            {statsError ? (
+              <p className="mt-2 text-sm text-[var(--color-danger)]">{statsError}</p>
             ) : null}
             <div className="mt-4 grid grid-cols-2 gap-3">
               <FieldSelect

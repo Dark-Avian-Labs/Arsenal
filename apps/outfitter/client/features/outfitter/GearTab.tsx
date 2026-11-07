@@ -41,7 +41,8 @@ export function GearTab({
   const filteredGear = useMemo(
     () =>
       gear
-        .filter((piece) => {
+        .map((piece) => ({ piece, rating: rateGear(piece) }))
+        .filter(({ piece, rating }) => {
           if (!matchesTriFilter(piece.slot, slotFilter)) return false;
           if (setFilter && piece.set_key !== setFilter) return false;
           if (mainFilter && piece.main_stat !== mainFilter) return false;
@@ -49,16 +50,12 @@ export function GearTab({
             const stats = [piece.sub1_stat, piece.sub2_stat, piece.sub3_stat, piece.sub4_stat];
             if (!stats.includes(subFilter as GearView['main_stat'])) return false;
           }
-          if (ratingFilter || ruleFilter) {
-            const rating = rateGear(piece);
-            if (ratingFilter && rating.rank !== ratingFilter) return false;
-            if (ruleFilter === 'none' && rating.ruleName != null) return false;
-            if (ruleFilter && ruleFilter !== 'none' && rating.ruleName !== ruleFilter) return false;
-          }
+          if (ratingFilter && rating.rank !== ratingFilter) return false;
+          if (ruleFilter === 'none' && rating.ruleName != null) return false;
+          if (ruleFilter && ruleFilter !== 'none' && rating.ruleName !== ruleFilter) return false;
           return true;
         })
-        .slice()
-        .sort(compareInventoryGear),
+        .sort((left, right) => compareInventoryGear(left.piece, right.piece)),
     [gear, mainFilter, ratingFilter, ruleFilter, setFilter, slotFilter, subFilter],
   );
 
@@ -151,11 +148,10 @@ export function GearTab({
         </div>
       </div>
       <div className="gear-stamps">
-        {filteredGear.map((piece) => {
+        {filteredGear.map(({ piece, rating }) => {
           const setName = SET_BY_KEY[piece.set_key]?.name ?? piece.set_key;
           const mainLabel = formatMainStatText(piece.main_stat, piece.main_value, piece.main_bonus);
           const illegalLabels = outOfRangeGearLabels(piece);
-          const rating = rateGear(piece);
           return (
             <button
               key={piece.id}

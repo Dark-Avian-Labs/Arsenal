@@ -141,6 +141,7 @@ export function EquipmentTab({
   } | null>(null);
   const [selectedArtifactId, setSelectedArtifactId] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
+  const loadoutSlugRef = useRef<string | null>(null);
 
   const equippedHeroes = useMemo(() => {
     const slugs = new Set(gear.map((piece) => piece.equipped_hero_slug).filter(Boolean));
@@ -208,17 +209,24 @@ export function EquipmentTab({
   }, [heroLoadout, selectedEquipmentArtifact, selectedHero]);
 
   async function openHero(hero: HeroRow): Promise<void> {
+    loadoutSlugRef.current = hero.slug;
     setSelectedHero(hero);
     setHeroLoadout(null);
     setSelectedArtifactId('');
     setFormError(null);
-    const response = await apiFetch(`/api/heroes/${hero.slug}/loadout`);
-    if (!response.ok) return;
-    const body = (await response.json()) as {
-      gear?: GearView[];
-      artifact?: ArtifactView | null;
-      stats?: FinalStats | null;
-    };
+    const response = await apiFetch(`/api/heroes/${hero.slug}/loadout`).catch(() => null);
+    const body = response?.ok
+      ? ((await response.json().catch(() => null)) as {
+          gear?: GearView[];
+          artifact?: ArtifactView | null;
+          stats?: FinalStats | null;
+        } | null)
+      : null;
+    if (loadoutSlugRef.current !== hero.slug) return;
+    if (!body) {
+      setFormError('Could not load this loadout.');
+      return;
+    }
     const artifact = body.artifact ?? null;
     setHeroLoadout({ gear: body.gear ?? [], artifact, stats: body.stats ?? null });
     setSelectedArtifactId(artifact ? String(artifact.id) : '');

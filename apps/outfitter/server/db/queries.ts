@@ -131,16 +131,43 @@ export function getAccount(
     .get(accountId, clerkUserId) as AccountRow | undefined;
 }
 
+export const MAX_ACCOUNTS_PER_USER = 10;
+export const MAX_GEAR_PER_ACCOUNT = 10_000;
+
+function notFound(message: string): Error {
+  return Object.assign(new Error(message), { status: 404, expose: true });
+}
+
+function rethrowDuplicateName(error: unknown): never {
+  if ((error as { code?: unknown }).code === 'SQLITE_CONSTRAINT_UNIQUE') {
+    throw Object.assign(new Error('Account name already used'), { status: 409, expose: true });
+  }
+  throw error;
+}
+
 export function createAccount(
   db: Database.Database,
   clerkUserId: string,
   accountName: string,
 ): AccountRow {
   const existing = listAccounts(db, clerkUserId);
+  if (existing.length >= MAX_ACCOUNTS_PER_USER) {
+    throw Object.assign(
+      new Error(`Account limit reached (${MAX_ACCOUNTS_PER_USER} per user). Delete one first.`),
+      { status: 409, expose: true },
+    );
+  }
   const isActive = existing.length === 0 ? 1 : 0;
-  const result = db
-    .prepare(`INSERT INTO game_accounts (clerk_user_id, account_name, is_active) VALUES (?, ?, ?)`)
-    .run(clerkUserId, accountName, isActive);
+  let result: Database.RunResult;
+  try {
+    result = db
+      .prepare(
+        `INSERT INTO game_accounts (clerk_user_id, account_name, is_active) VALUES (?, ?, ?)`,
+      )
+      .run(clerkUserId, accountName, isActive);
+  } catch (error) {
+    rethrowDuplicateName(error);
+  }
   const row = getAccount(db, Number(result.lastInsertRowid), clerkUserId);
   if (!row) throw new Error('Failed to create account');
   return row;
@@ -152,17 +179,22 @@ export function renameAccount(
   clerkUserId: string,
   accountName: string,
 ): void {
-  const result = db
-    .prepare(`UPDATE game_accounts SET account_name = ? WHERE id = ? AND clerk_user_id = ?`)
-    .run(accountName, accountId, clerkUserId);
-  if (result.changes === 0) throw new Error('Account not found');
+  let result: Database.RunResult;
+  try {
+    result = db
+      .prepare(`UPDATE game_accounts SET account_name = ? WHERE id = ? AND clerk_user_id = ?`)
+      .run(accountName, accountId, clerkUserId);
+  } catch (error) {
+    rethrowDuplicateName(error);
+  }
+  if (result.changes === 0) throw notFound('Account not found');
 }
 
 export function deleteAccount(db: Database.Database, accountId: number, clerkUserId: string): void {
   const result = db
     .prepare(`DELETE FROM game_accounts WHERE id = ? AND clerk_user_id = ?`)
     .run(accountId, clerkUserId);
-  if (result.changes === 0) throw new Error('Account not found');
+  if (result.changes === 0) throw notFound('Account not found');
 }
 
 export function setActiveAccount(
@@ -171,7 +203,7 @@ export function setActiveAccount(
   clerkUserId: string,
 ): AccountRow {
   const owned = getAccount(db, accountId, clerkUserId);
-  if (!owned) throw new Error('Account not found');
+  if (!owned) throw notFound('Account not found');
   const transaction = db.transaction(() => {
     db.prepare(`UPDATE game_accounts SET is_active = 0 WHERE clerk_user_id = ?`).run(clerkUserId);
     db.prepare(`UPDATE game_accounts SET is_active = 1 WHERE id = ? AND clerk_user_id = ?`).run(
@@ -389,14 +421,29 @@ export function updateGear(
       exclusive_faction: write.exclusive_faction,
       ...subFields(write.substats),
     });
-  if (result.changes === 0) throw new Error('Gear not found');
+  if (result.changes === 0) throw notFound('Gear not found');
 }
 
 export function deleteGear(db: Database.Database, accountId: number, gearId: number): void {
   const result = db
     .prepare(`DELETE FROM gear_pieces WHERE id = ? AND account_id = ?`)
     .run(gearId, accountId);
-  if (result.changes === 0) throw new Error('Gear not found');
+  if (result.changes === 0) throw notFound('Gear not found');
+}
+
+/** Call inside the inserting transaction so an over-limit write rolls back. */
+export function assertGearQuota(db: Database.Database, accountId: number): void {
+  const { count } = db
+    .prepare(`SELECT COUNT(*) AS count FROM gear_pieces WHERE account_id = ?`)
+    .get(accountId) as { count: number };
+  if (count > MAX_GEAR_PER_ACCOUNT) {
+    throw Object.assign(
+      new Error(
+        `Gear limit reached (${MAX_GEAR_PER_ACCOUNT.toLocaleString('en-US')} per account).`,
+      ),
+      { status: 413, expose: true },
+    );
+  }
 }
 
 export function equipGearSlot(
@@ -695,14 +742,14 @@ export function updateArtifact(
        WHERE id = @id AND account_id = @account_id`,
     )
     .run({ id: artifactId, account_id: accountId, ...write });
-  if (result.changes === 0) throw new Error('Artifact not found');
+  if (result.changes === 0) throw notFound('Artifact not found');
 }
 
 export function deleteArtifact(db: Database.Database, accountId: number, artifactId: number): void {
   const result = db
     .prepare(`DELETE FROM artifact_pieces WHERE id = ? AND account_id = ?`)
     .run(artifactId, accountId);
-  if (result.changes === 0) throw new Error('Artifact not found');
+  if (result.changes === 0) throw notFound('Artifact not found');
 }
 
 export function equipArtifact(

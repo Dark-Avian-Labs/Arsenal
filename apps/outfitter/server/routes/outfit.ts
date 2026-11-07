@@ -16,6 +16,8 @@ import { asyncHandler, json, sendError } from '../http/handlers.ts';
 export const outfitRouter = Router();
 outfitRouter.use(requireAuthApi);
 
+const calculatingAccounts = new Set<number>();
+
 function toPieceInput(row: q.GearPieceRow): GearPieceInput {
   const substats = [
     row.sub1_stat && row.sub1_value != null ? { stat: row.sub1_stat, value: row.sub1_value } : null,
@@ -60,16 +62,25 @@ outfitRouter.post(
     }
     const includeEquipped = req.body?.include_equipped === true;
     const includeOthersEquipped = req.body?.include_others_equipped === true;
-    res.status(200);
-    res.setHeader('Content-Type', 'application/x-ndjson; charset=utf-8');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('X-Accel-Buffering', 'no');
-    res.flushHeaders();
-    res.write(`${JSON.stringify({ phase: 'prepare' })}\n`);
-    await new Promise<void>((resolve) => {
-      setTimeout(resolve, 0);
+    if (calculatingAccounts.has(accountId)) {
+      sendError(res, 'A calculation is already running for this account.', 409);
+      return;
+    }
+    calculatingAccounts.add(accountId);
+    const controller = new AbortController();
+    res.on('close', () => {
+      if (!res.writableFinished) controller.abort();
     });
     try {
+      res.status(200);
+      res.setHeader('Content-Type', 'application/x-ndjson; charset=utf-8');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('X-Accel-Buffering', 'no');
+      res.flushHeaders();
+      res.write(`${JSON.stringify({ phase: 'prepare' })}\n`);
+      await new Promise<void>((resolve) => {
+        setTimeout(resolve, 0);
+      });
       let lastPct = -1;
       const results = await optimizeLoadoutsAsync(
         {
@@ -95,21 +106,24 @@ outfitRouter.post(
           heroSlug,
         },
         (done, total) => {
-          if (res.writableEnded) return;
+          if (controller.signal.aborted || res.writableEnded) return;
           const pct = total > 0 ? Math.floor((done / total) * 100) : 100;
           if (pct === lastPct && done < total) return;
           lastPct = pct;
           res.write(`${JSON.stringify({ progress: done, total })}\n`);
         },
+        controller.signal,
       );
       if (!res.writableEnded) {
         res.write(`${JSON.stringify({ results })}\n`);
         res.end();
       }
     } catch {
-      if (res.writableEnded) return;
+      if (controller.signal.aborted || res.writableEnded) return;
       res.write(`${JSON.stringify({ error: 'Calculate failed' })}\n`);
       res.end();
+    } finally {
+      calculatingAccounts.delete(accountId);
     }
   }),
 );

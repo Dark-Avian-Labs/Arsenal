@@ -62,38 +62,48 @@ export function ImportModal({ open, onClose, onImported }: Props) {
     if (!file) return;
     setBusy(true);
     setError(null);
-    const response = await apiFetch('/api/import/preview', {
-      method: 'POST',
-      body: JSON.stringify(payload(false)),
-    });
-    const body = (await response.json().catch(() => null)) as
-      | (ImportPlan & { error?: string })
-      | null;
-    setBusy(false);
-    if (!response.ok || !body || body.error) {
-      setPlan(null);
-      setError(body?.error ?? 'Could not read that file.');
-      return;
+    try {
+      const response = await apiFetch('/api/import/preview', {
+        method: 'POST',
+        body: JSON.stringify(payload(false)),
+      });
+      const body = (await response.json().catch(() => null)) as
+        | (ImportPlan & { error?: string })
+        | null;
+      if (!response.ok || !body || body.error) {
+        setPlan(null);
+        setError(body?.error ?? 'Could not read that file.');
+        return;
+      }
+      setPlan(body);
+    } catch {
+      setError('Could not reach the server.');
+    } finally {
+      setBusy(false);
     }
-    setPlan(body);
   }
 
   async function apply(): Promise<void> {
     if (!file || !plan) return;
     setBusy(true);
     setError(null);
-    const response = await apiFetch('/api/import', {
-      method: 'POST',
-      body: JSON.stringify(payload(true)),
-    });
-    const body = (await response.json().catch(() => null)) as { error?: string } | null;
-    setBusy(false);
-    if (!response.ok) {
-      setError(body?.error ?? 'Import failed.');
-      return;
+    try {
+      const response = await apiFetch('/api/import', {
+        method: 'POST',
+        body: JSON.stringify(payload(true)),
+      });
+      const body = (await response.json().catch(() => null)) as { error?: string } | null;
+      if (!response.ok) {
+        setError(body?.error ?? 'Import failed.');
+        return;
+      }
+      await onImported();
+      onClose();
+    } catch {
+      setError('Could not reach the server.');
+    } finally {
+      setBusy(false);
     }
-    await onImported();
-    onClose();
   }
 
   const needsWipe = gearMode === 'restore' || artifactMode === 'restore';

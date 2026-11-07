@@ -10,4 +10,4 @@ Account-specific stat edits live in `account_hero_stats`. One piece and one arti
 
 Stat math is `shared/formulas.ts`. Pieces are mythic, with four substats.
 
-OCR is `server/ocr/`. A missing `eng.traineddata` is fetched once into `data/tessdata`.
+OCR runs in the browser from `client/features/outfitter/ocr/`. `public/tessdata` is committed. `dev`, `dev:client`, and `build` run `scripts/copy-tesseract.ts`, which copies the Tesseract worker and LSTM cores into the git-ignored `public/tesseract/`. The CSP allows no CDN.

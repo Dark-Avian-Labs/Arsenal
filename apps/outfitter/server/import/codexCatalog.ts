@@ -49,7 +49,10 @@ export type CatalogImportSummary = {
 
 function relativeFromWorPath(portraitPath: string | null): string | null {
   if (!portraitPath) return null;
-  return portraitPath.replace(/^\/wor-images\//, '').replace(/^wor-images\//, '');
+  const relative = portraitPath.replace(/^\/wor-images\//, '').replace(/^wor-images\//, '');
+  const contained = path.relative(HERO_IMAGES_DIR, path.join(HERO_IMAGES_DIR, relative));
+  if (contained.startsWith('..') || path.isAbsolute(contained)) return null;
+  return relative;
 }
 
 function copyIfExists(fromPath: string, toPath: string): boolean {

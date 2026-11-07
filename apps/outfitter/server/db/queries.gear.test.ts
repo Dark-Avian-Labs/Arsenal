@@ -81,3 +81,17 @@ describe('gear queries', () => {
     expect(q.getGear(db, 1, armorId)?.equipped_hero_slug).toBeNull();
   });
 });
+
+describe('account errors', () => {
+  it('exposes duplicate names, missing rows and the account cap as client errors', () => {
+    const db = memoryDb();
+    expect(() => q.createAccount(db, 'u1', 'main')).toThrow(
+      expect.objectContaining({ status: 409, expose: true, message: 'Account name already used' }),
+    );
+    expect(() => q.deleteGear(db, 1, 999)).toThrow(expect.objectContaining({ status: 404, expose: true }));
+    for (let index = 1; index < q.MAX_ACCOUNTS_PER_USER; index += 1) {
+      q.createAccount(db, 'u1', `alt ${index}`);
+    }
+    expect(() => q.createAccount(db, 'u1', 'one more')).toThrow(expect.objectContaining({ status: 409, expose: true }));
+  });
+});

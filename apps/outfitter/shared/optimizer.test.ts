@@ -255,4 +255,28 @@ describe('optimizeLoadouts', () => {
     expect(ticks[0]).toEqual([0, 1]);
     expect(ticks.at(-1)).toEqual([1, 1]);
   });
+
+  it('stops the async search once the signal aborts', async () => {
+    const pieces: GearPieceInput[] = [];
+    let id = 1;
+    for (const slot of GEAR_SLOTS) {
+      for (let index = 0; index < 8; index += 1) {
+        pieces.push(piece(id, slot, 'calamity'));
+        id += 1;
+      }
+    }
+    const controller = new AbortController();
+    let lastDone = 0;
+    await expect(
+      optimizeLoadoutsAsync(
+        { hero, pieces, weights: { atk: 10 }, minimums: {}, forceSets: false },
+        (done) => {
+          lastDone = done;
+          controller.abort();
+        },
+        controller.signal,
+      ),
+    ).rejects.toThrow();
+    expect(lastDone).toBeLessThan(8 ** 5);
+  });
 });
