@@ -8,7 +8,7 @@
     "validate": "node run-quality-checks.mjs",
     "check-format": "oxfmt --check .",
     "format": "oxfmt --write .",
-    "lint": "oxlint .",
+    "lint": "oxlint --deny-warnings .",
     "lint:fix": "oxlint --fix .",
     "typecheck": "pnpm -r --workspace-concurrency=1 run --if-present typecheck",
     "build": "pnpm -r run --if-present build",

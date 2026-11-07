@@ -18,6 +18,7 @@ function planSummary(result, detail) {
 function sharedHits(files) {
   const hits = [];
   if (files.some((file) => file.startsWith('packages/'))) hits.push('packages/');
+  if (files.includes('package.json')) hits.push('root package.json');
   if (files.includes('pnpm-lock.yaml')) hits.push('lockfile');
   if (files.includes('pnpm-workspace.yaml')) hits.push('workspace');
   if (files.some((file) => file.startsWith('scripts/ci/'))) hits.push('scripts/ci');
