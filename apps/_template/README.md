@@ -41,6 +41,8 @@ pnpm --filter dal-template dev
 
 A hosted process needs `NODE_ENV=production` and `.env.production`. Fill the Clerk keys before `pnpm --filter dal-template run build`. The client bundle reads `VITE_` values at build time. Point `APP_PUBLIC_BASE_URL` and the cookie settings at the host you are actually using. The example is filled in with the lab's domains.
 
+To report to Sentinel, set `SENTINEL_INGEST_URL` and `SENTINEL_INGEST_TOKEN`. The app sends nothing when they are unset. `apps/sentinel/scripts/sync-ingest-token-to-siblings.mjs` copies the token into a hard-coded list of apps, so add the new app's directory to `labsSiblings` there.
+
 ## License
 
 MIT

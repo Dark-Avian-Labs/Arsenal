@@ -33,17 +33,14 @@
   },
   "dependencies": {
     "@clerk/express": "catalog:",
-    "@dark-avian-labs/sentinel-agent": "workspace:*",
     "@dark-avian-labs/server-kit": "workspace:*",
     "@dotenvx/dotenvx": "catalog:",
-    "better-sqlite3": "catalog:",
-    "express": "catalog:",
-    "express-rate-limit": "catalog:",
-    "helmet": "catalog:"
+    "express": "catalog:"
   },
   "devDependencies": {
     "@clerk/react": "catalog:",
     "@clerk/testing": "catalog:",
+    "@clerk/ui": "catalog:",
     "@dark-avian-labs/config": "workspace:*",
     "@dark-avian-labs/ui": "workspace:*",
     "@fontsource-variable/cascadia-mono": "catalog:",
@@ -51,7 +48,6 @@
     "@fontsource-variable/geist-mono": "catalog:",
     "@playwright/test": "catalog:",
     "@tailwindcss/vite": "catalog:",
-    "@types/better-sqlite3": "catalog:",
     "@types/express": "catalog:",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
