@@ -30,3 +30,16 @@ export function canReadBuild(
 
   return canReadSharedResource(row, context);
 }
+
+/** An unlisted loadout's token also opens the owner's public and unlisted builds linked to it. */
+export function loadoutGrantsBuild(
+  loadout: VisibilityRow,
+  build: BuildVisibilityRow,
+  shareToken: string | null | undefined,
+): boolean {
+  if ((loadout.visibility ?? 'private') !== 'unlisted') return false;
+  if (build.clerk_user_id !== loadout.clerk_user_id) return false;
+  const buildVis = build.visibility ?? 'private';
+  if (buildVis !== 'public' && buildVis !== 'unlisted') return false;
+  return canReadSharedResource(loadout, { sessionUserId: null, isGameAdmin: false, shareToken });
+}

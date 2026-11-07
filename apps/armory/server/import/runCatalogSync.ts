@@ -12,7 +12,11 @@ function main(): void {
       console.log(`${prefix} ${message}`);
     },
   });
-  console.log('[CatalogSync] Done.', JSON.stringify(summary, null, 2));
+  if (process.send) {
+    process.send(summary);
+  } else {
+    console.log('[CatalogSync] Done.', JSON.stringify(summary, null, 2));
+  }
 }
 
 try {

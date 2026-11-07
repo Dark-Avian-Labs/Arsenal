@@ -226,6 +226,7 @@ export interface StoredBuild extends BuildConfig {
   created_at: string;
   updated_at: string;
   visibility?: BuildVisibility;
+  share_token?: string | null;
   description?: string | null;
 }
 

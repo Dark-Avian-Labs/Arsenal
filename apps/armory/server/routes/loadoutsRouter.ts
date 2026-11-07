@@ -1,9 +1,8 @@
-import { timingSafeEqualString } from '@dark-avian-labs/server-kit';
 import { Router, type Request, type Response } from 'express';
 
 import { getClerkUserId } from '../auth/clerkUser.ts';
 import { getClerkAuthState } from '../auth/middleware.ts';
-import { canReadBuild } from '../buildAccess.ts';
+import { canReadBuild, loadoutGrantsBuild } from '../buildAccess.ts';
 import { getUserDb } from '../db/connection.ts';
 import { canReadLoadout } from '../loadoutAccess.ts';
 import {
@@ -129,12 +128,6 @@ loadoutsRouter.get('/loadouts/:id', (req: Request, res: Response) => {
       return;
     }
 
-    const hasLoadoutTokenAccess =
-      vis === 'unlisted' &&
-      readContext.shareToken != null &&
-      loadoutAccessRow.share_token != null &&
-      timingSafeEqualString(loadoutAccessRow.share_token, readContext.shareToken);
-
     const linkRows = db
       .prepare('SELECT build_id, slot_type FROM loadout_builds WHERE loadout_id = ?')
       .all(id) as Array<{ build_id: number; slot_type: string }>;
@@ -150,17 +143,12 @@ loadoutsRouter.get('/loadouts/:id', (req: Request, res: Response) => {
     for (const link of linkRows) {
       const buildRow = buildsById.get(link.build_id);
       if (!buildRow) continue;
-      const buildVis = buildRow.visibility ?? 'private';
-      let canSeeBuild = canReadBuild(buildRow, readContext);
       if (
-        !canSeeBuild &&
-        hasLoadoutTokenAccess &&
-        buildRow.clerk_user_id === loadoutAccessRow.clerk_user_id &&
-        (buildVis === 'public' || buildVis === 'unlisted')
+        !canReadBuild(buildRow, readContext) &&
+        !loadoutGrantsBuild(loadoutAccessRow, buildRow, readContext.shareToken)
       ) {
-        canSeeBuild = true;
+        continue;
       }
-      if (!canSeeBuild) continue;
       buildsWithSlots.push({
         slot_type: link.slot_type,
         build: toBuildResponse(buildRow, isOwner || isGameAdmin),

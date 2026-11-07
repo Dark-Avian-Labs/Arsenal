@@ -4,7 +4,7 @@ import request from 'supertest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { __catalogResponseCacheTest } from '../cache/catalogResponseCache.ts';
-import { createMemoryUserDb, insertTestBuild } from '../testing/memoryUserDb.ts';
+import { createMemoryUserDb, insertTestBuild, insertTestLoadout, linkLoadoutBuild } from '../testing/memoryUserDb.ts';
 import { MAX_BUILDS_PER_USER, MAX_NAME_LENGTH } from './apiShared.ts';
 import { minimalModConfig } from './modConfigValidation.ts';
 
@@ -36,6 +36,7 @@ vi.mock('../auth/middleware.ts', async (importOriginal) => {
 vi.mock('../auth/armoryUsers.ts', () => ({
   DELETED_USER_LABEL: 'Deleted User',
   getOwnerDisplayName: (_id: string, map: Map<string, string>) => map.get(_id) ?? 'User',
+  getOwnerUsernames: () => new Map(),
   resolveOwnerUsernames: async (ids: string[]) => new Map(ids.map((id) => [id, 'testuser'])),
   resolveClerkUserIdByUsername: () => null,
 }));
@@ -162,6 +163,30 @@ describe('builds API routes', () => {
     const res = await request(createTestApp()).get('/api/builds/1');
     expect(res.status).toBe(200);
     expect(res.body.build.share_token).toBe('share-abc123');
+  });
+
+  it('opens unlisted builds through an unlisted loadout link, and only that way', async () => {
+    const db = dbState.db!;
+    const linked = insertTestBuild(db, { visibility: 'unlisted', shareToken: 'build-token' });
+    const privateLinked = insertTestBuild(db, { visibility: 'private' });
+    const unlinked = insertTestBuild(db, { visibility: 'unlisted', shareToken: 'other-token' });
+    const loadout = insertTestLoadout(db, { visibility: 'unlisted', shareToken: 'loadout-token' });
+    linkLoadoutBuild(db, loadout, linked, 'warframe');
+    linkLoadoutBuild(db, loadout, privateLinked, 'primary');
+    authState.userId = 'user_other';
+    const app = createTestApp();
+    const via = (buildId: number, token: string) =>
+      request(app).get(`/api/builds/${buildId}?loadout=${loadout}&token=${token}`);
+
+    const allowed = await via(linked, 'loadout-token');
+    expect(allowed.status).toBe(200);
+    expect(allowed.body.build.share_token).toBeUndefined();
+    expect((await via(linked, 'wrong-token')).status).toBe(404);
+    expect((await via(privateLinked, 'loadout-token')).status).toBe(404);
+    expect((await via(unlinked, 'loadout-token')).status).toBe(404);
+
+    db.prepare("UPDATE loadouts SET visibility = 'private' WHERE id = ?").run(loadout);
+    expect((await via(linked, 'loadout-token')).status).toBe(404);
   });
 
   it('rejects build updates whose name exceeds MAX_NAME_LENGTH', async () => {

@@ -51,16 +51,16 @@ function clientIndexPath(): string {
 function setTitle(html: string, title: string): string {
   const tag = `<title>${escapeHtml(title)}</title>`;
   if (/<title>[^<]*<\/title>/i.test(html)) {
-    return html.replace(/<title>[^<]*<\/title>/i, tag);
+    return html.replace(/<title>[^<]*<\/title>/i, () => tag);
   }
-  return html.replace(/<\/head>/i, `    ${tag}\n  </head>`);
+  return html.replace(/<\/head>/i, () => `    ${tag}\n  </head>`);
 }
 
 function setMeta(html: string, attr: 'name' | 'property', key: string, content: string): string {
   const tag = `<meta ${attr}="${key}" content="${escapeHtml(content)}" />`;
   const pattern = new RegExp(`<meta\\s+${attr}="${key}"\\s+content="[^"]*"\\s*/?>`, 'i');
-  if (pattern.test(html)) return html.replace(pattern, tag);
-  return html.replace(/<\/head>/i, `    ${tag}\n  </head>`);
+  if (pattern.test(html)) return html.replace(pattern, () => tag);
+  return html.replace(/<\/head>/i, () => `    ${tag}\n  </head>`);
 }
 
 export function injectSharePreview(html: string, preview: SharePreview): string {

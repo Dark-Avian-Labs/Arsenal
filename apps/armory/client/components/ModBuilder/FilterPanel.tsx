@@ -1,5 +1,14 @@
 import { MaterialSymbol } from '@dark-avian-labs/ui';
-import { memo, useState, useMemo, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
+import {
+  memo,
+  useState,
+  useMemo,
+  useRef,
+  useEffect,
+  useLayoutEffect,
+  useCallback,
+  useDeferredValue,
+} from 'react';
 
 import { useModCatalog } from '../../hooks/useModCatalog';
 import type { Mod, ModRarity, EquipmentType } from '../../types/warframe';
@@ -207,6 +216,12 @@ export function FilterPanel({
     return [...baseMods, ...syntheticStanceMods];
   }, [baseMods, equipmentType, equipment]);
 
+  const searchHaystacks = useMemo(
+    () => new Map(allMods.map((mod) => [mod, getModSearchHaystack(mod).toLowerCase()])),
+    [allMods],
+  );
+  const deferredSearch = useDeferredValue(search);
+
   const { compatible, lockedOut } = useMemo(() => {
     const compatMods = filterCompatibleMods(allMods, equipmentType, equipment);
 
@@ -232,10 +247,10 @@ export function FilterPanel({
       });
     }
 
-    const query = search.trim().toLowerCase();
+    const query = deferredSearch.trim().toLowerCase();
     const textFiltered = slotFiltered.filter((mod) => {
       if (rarity !== 'ALL' && mod.rarity !== rarity) return false;
-      if (query && !getModSearchHaystack(mod).toLowerCase().includes(query)) return false;
+      if (query && !searchHaystacks.get(mod)?.includes(query)) return false;
       return true;
     });
 
@@ -250,7 +265,16 @@ export function FilterPanel({
     }
 
     return { compatible: available, lockedOut: locked };
-  }, [allMods, equipmentType, equipment, equippedMods, targetSlotType, rarity, search]);
+  }, [
+    allMods,
+    searchHaystacks,
+    equipmentType,
+    equipment,
+    equippedMods,
+    targetSlotType,
+    rarity,
+    deferredSearch,
+  ]);
 
   const displayMods = showLockedOut ? [...compatible, ...lockedOut] : compatible;
   const lockedOutSet = useMemo(() => new Set(lockedOut), [lockedOut]);
@@ -512,6 +536,12 @@ const ModPickerCard = memo(function ModPickerCard({
     <div
       onClick={() => onPick(mod, locked)}
       className={`${locked ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+      style={{
+        contentVisibility: 'auto',
+        containIntrinsicSize: `auto ${DEFAULT_LAYOUT.cardWidth * scale}px ${
+          (expanded ? DEFAULT_LAYOUT.cardHeight : DEFAULT_LAYOUT.collapsedHeight) * scale
+        }px`,
+      }}
     >
       <div className={expanded ? 'relative' : undefined}>
         <ModCard

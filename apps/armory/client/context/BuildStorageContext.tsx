@@ -14,6 +14,8 @@ import type { BuildConfig, BuildVisibility, StoredBuild } from '../types/warfram
 import { readApiErrorMessage } from '../utils/apiError';
 import { normalizeRivenConfigMembership } from '../utils/riven';
 
+const FOCUS_REFRESH_MIN_INTERVAL_MS = 60_000;
+
 function mapBuildRows(rows: Array<Record<string, unknown>>): StoredBuild[] {
   return rows
     .map((row) => {
@@ -43,6 +45,7 @@ function mapBuildRows(rows: Array<Record<string, unknown>>): StoredBuild[] {
           if (v === 'public' || v === 'private' || v === 'unlisted') return v;
           return 'private';
         })(),
+        share_token: typeof row.share_token === 'string' ? row.share_token : null,
         description: typeof row.description === 'string' ? row.description : undefined,
       } as StoredBuild;
     })
@@ -52,6 +55,7 @@ function mapBuildRows(rows: Array<Record<string, unknown>>): StoredBuild[] {
 interface BuildStorageContextValue {
   builds: StoredBuild[];
   loading: boolean;
+  error: string | null;
   saveBuild: (
     config: BuildConfig,
     equipmentName: string,
@@ -62,7 +66,8 @@ interface BuildStorageContextValue {
   deleteBuild: (id: string) => Promise<void>;
   getBuild: (id: string) => StoredBuild | undefined;
   refresh: () => Promise<StoredBuild[]>;
-  copyBuildFromId: (sourceId: string, name: string) => Promise<string>;
+  /** `accessQuery` is the `?token=…&loadout=…` suffix that let the visitor read the source build. */
+  copyBuildFromId: (sourceId: string, name: string, accessQuery?: string) => Promise<string>;
 }
 
 const BuildStorageContext = createContext<BuildStorageContextValue | null>(null);
@@ -71,20 +76,24 @@ export function BuildStorageProvider({ children }: { children: ReactNode }) {
   const { auth } = useAuth();
   const [builds, setBuilds] = useState<StoredBuild[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const refreshGenerationRef = useRef(0);
+  const lastRefreshAtRef = useRef(0);
   const buildsRef = useRef(builds);
   buildsRef.current = builds;
 
   const refresh = useCallback(async (): Promise<StoredBuild[]> => {
     const generation = ++refreshGenerationRef.current;
+    lastRefreshAtRef.current = Date.now();
     if (buildsRef.current.length === 0) {
       setLoading(true);
     }
     try {
       const response = await apiFetch('/api/builds');
       if (!response.ok) {
+        const message = await readApiErrorMessage(response, 'Failed to load builds');
         if (generation === refreshGenerationRef.current) {
-          setBuilds([]);
+          setError(message);
         }
         return [];
       }
@@ -95,12 +104,13 @@ export function BuildStorageProvider({ children }: { children: ReactNode }) {
       const mapped = mapBuildRows(rows);
       if (generation === refreshGenerationRef.current) {
         setBuilds(mapped);
+        setError(null);
       }
       return mapped;
     } catch (error) {
       console.error('Failed to refresh builds', error);
       if (generation === refreshGenerationRef.current) {
-        setBuilds([]);
+        setError(error instanceof Error ? error.message : 'Failed to load builds');
       }
       return [];
     } finally {
@@ -119,6 +129,7 @@ export function BuildStorageProvider({ children }: { children: ReactNode }) {
     if (auth.status !== 'authenticated') {
       refreshGenerationRef.current += 1;
       setBuilds([]);
+      setError(null);
       setLoading(false);
       return;
     }
@@ -128,7 +139,10 @@ export function BuildStorageProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (auth.status !== 'authenticated') return undefined;
     const onVisibility = (): void => {
-      if (document.visibilityState === 'visible') {
+      if (
+        document.visibilityState === 'visible' &&
+        Date.now() - lastRefreshAtRef.current >= FOCUS_REFRESH_MIN_INTERVAL_MS
+      ) {
         void refresh();
       }
     };
@@ -239,8 +253,8 @@ export function BuildStorageProvider({ children }: { children: ReactNode }) {
   );
 
   const copyBuildFromId = useCallback(
-    async (sourceId: string, name: string): Promise<string> => {
-      const response = await apiFetch(`/api/builds/${sourceId}/copy`, {
+    async (sourceId: string, name: string, accessQuery = ''): Promise<string> => {
+      const response = await apiFetch(`/api/builds/${sourceId}/copy${accessQuery}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name }),
@@ -264,13 +278,14 @@ export function BuildStorageProvider({ children }: { children: ReactNode }) {
     () => ({
       builds,
       loading,
+      error,
       saveBuild,
       deleteBuild,
       getBuild,
       refresh,
       copyBuildFromId,
     }),
-    [builds, loading, saveBuild, deleteBuild, getBuild, refresh, copyBuildFromId],
+    [builds, loading, error, saveBuild, deleteBuild, getBuild, refresh, copyBuildFromId],
   );
 
   return <BuildStorageContext.Provider value={value}>{children}</BuildStorageContext.Provider>;

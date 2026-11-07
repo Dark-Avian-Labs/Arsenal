@@ -33,7 +33,7 @@ import {
   reconcileStoredBuildModSlots,
   type BuildModSlot,
 } from '../../../shared/buildSlotLayout.js';
-import { buildEditPath, userBuildsPath } from '../../app/paths';
+import { buildEditPath, buildReadOnlyPath, userBuildsPath } from '../../app/paths';
 import { useApi } from '../../hooks/useApi';
 import { useBuildFavorites } from '../../hooks/useBuildFavorites';
 import { useBuildStorage } from '../../hooks/useBuildStorage';
@@ -49,6 +49,7 @@ import {
   type Companion,
   type EquipmentType,
   type BuildConfig,
+  type BuildVisibility,
   type ValenceBonus,
   type Ability,
   type PolarityKey,
@@ -72,7 +73,11 @@ import {
   selectIncarnonPerk,
 } from '../../utils/incarnonSelections';
 import { parseIncarnonData, weaponHasIncarnon } from '../../utils/incarnonStats';
-import { catalogKeyForMod, hydrateSlotsWithModCatalog } from '../../utils/modCatalogHydration';
+import {
+  catalogKeyForMod,
+  hydrateSlotsWithModCatalog,
+  slimSlotsForSave,
+} from '../../utils/modCatalogHydration';
 import { isModLockedOut, isPostureMod } from '../../utils/modFiltering';
 import { canPlaceModInSlot, findEmptySlotForMod } from '../../utils/modPlacement';
 import {
@@ -247,7 +252,7 @@ function applySetRankDelta(
 function modBuilderPersistFingerprint(args: {
   buildName: string;
   buildDescription: string;
-  buildIsPublic: boolean;
+  buildVisibility: BuildVisibility;
   equipmentType: EquipmentType;
   equipmentUniqueName: string;
   currentBuildId?: string;
@@ -263,7 +268,7 @@ function modBuilderPersistFingerprint(args: {
   return JSON.stringify({
     n: args.buildName,
     d: args.buildDescription,
-    p: args.buildIsPublic,
+    p: args.buildVisibility,
     et: args.equipmentType,
     eu: args.equipmentUniqueName,
     id: args.currentBuildId ?? '',
@@ -291,6 +296,12 @@ export function ModBuilder() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const readOnly = searchParams.get('view') === '1';
+  const shareTokenParam = searchParams.get('token');
+  const viaLoadoutParam = searchParams.get('loadout');
+  const shareTokenQuery = shareTokenParam
+    ? `?token=${encodeURIComponent(shareTokenParam)}` +
+      (viaLoadoutParam ? `&loadout=${encodeURIComponent(viaLoadoutParam)}` : '')
+    : '';
   const compactOverview = searchParams.get('compact') === '1';
   const { saveBuild: storageSave, getBuild, copyBuildFromId } = useBuildStorage();
   const { toggleFavorite, favoriteBusy } = useBuildFavorites();
@@ -345,8 +356,10 @@ export function ModBuilder() {
     setBuildOwnerUserId,
     buildOwnerUsername,
     setBuildOwnerUsername,
-    buildIsPublic,
-    setBuildIsPublic,
+    buildVisibility,
+    setBuildVisibility,
+    buildShareToken,
+    setBuildShareToken,
     arcaneSlots,
     setArcaneSlots,
     shardSlots,
@@ -531,7 +544,7 @@ export function ModBuilder() {
   livePersistFingerprintRef.current = modBuilderPersistFingerprint({
     buildName,
     buildDescription,
-    buildIsPublic,
+    buildVisibility,
     equipmentType,
     equipmentUniqueName: selectedEquipment?.unique_name ?? '',
     currentBuildId,
@@ -610,7 +623,7 @@ export function ModBuilder() {
     let alive = true;
 
     async function syncBuildMetadataFromApi(targetBuildId: string): Promise<void> {
-      const response = await apiFetch(`/api/builds/${targetBuildId}`);
+      const response = await apiFetch(`/api/builds/${targetBuildId}${shareTokenQuery}`);
       if (!response.ok) return;
       const body = (await response.json()) as {
         can_edit?: boolean;
@@ -618,7 +631,7 @@ export function ModBuilder() {
         is_favorited?: boolean;
         owner_user_id?: string;
         owner_username?: string | null;
-        build?: { visibility?: string };
+        build?: { visibility?: string; share_token?: string | null };
       };
       if (!alive) return;
       setIsOwnBuild(body.can_edit === true);
@@ -630,15 +643,15 @@ export function ModBuilder() {
           : null,
       );
       setBuildOwnerUsername(typeof body.owner_username === 'string' ? body.owner_username : null);
-      if (body.build?.visibility === 'public') {
-        setBuildIsPublic(true);
-      } else if (body.build?.visibility === 'private' || body.build?.visibility === 'unlisted') {
-        setBuildIsPublic(false);
+      const vis = body.build?.visibility;
+      if (vis === 'public' || vis === 'private' || vis === 'unlisted') {
+        setBuildVisibility(vis);
       }
+      setBuildShareToken(body.build?.share_token ?? null);
     }
 
     async function loadBuildFromApi(targetBuildId: string): Promise<void> {
-      const response = await apiFetch(`/api/builds/${targetBuildId}`);
+      const response = await apiFetch(`/api/builds/${targetBuildId}${shareTokenQuery}`);
       if (!response.ok) {
         if (alive) {
           setEquipmentLoadError(`Failed to load build (${response.status})`);
@@ -653,6 +666,7 @@ export function ModBuilder() {
           equipment_unique_name: string;
           mod_config?: Partial<BuildConfig>;
           visibility?: string;
+          share_token?: string | null;
           description?: string | null;
         };
         can_edit?: boolean;
@@ -683,7 +697,9 @@ export function ModBuilder() {
           : null,
       );
       setBuildOwnerUsername(typeof body.owner_username === 'string' ? body.owner_username : null);
-      setBuildIsPublic(body.build.visibility === 'public');
+      const vis = body.build.visibility;
+      setBuildVisibility(vis === 'public' || vis === 'unlisted' ? vis : 'private');
+      setBuildShareToken(body.build.share_token ?? null);
       setHelminthConfig(config.helminth);
       setIncarnonEnabled(config.incarnonEnabled === true);
       setIncarnonSelections(
@@ -723,7 +739,7 @@ export function ModBuilder() {
         setIsBuildOwner(true);
         setBuildOwnerUserId(null);
         setBuildOwnerUsername(null);
-        setBuildIsPublic(stored.visibility === 'public');
+        setBuildVisibility(stored.visibility ?? 'private');
         setHelminthConfig(stored.helminth);
         setIncarnonEnabled(stored.incarnonEnabled === true);
         setIncarnonSelections(
@@ -754,7 +770,7 @@ export function ModBuilder() {
     return () => {
       alive = false;
     };
-  }, [buildId, routeEqType, equipmentId, getBuild, loaded]);
+  }, [buildId, routeEqType, equipmentId, getBuild, loaded, shareTokenQuery]);
 
   const slotsInitKeyRef = useRef<string | null>(null);
   const buildSlotsReconcileKeyRef = useRef<string | null>(null);
@@ -1680,7 +1696,7 @@ export function ModBuilder() {
       const savingAsCopy = saveMode === 'save-as-copy';
 
       if (!savingAsCopy && !isOwnBuild && currentBuildId) {
-        const newId = await copyBuildFromId(currentBuildId, finalName);
+        const newId = await copyBuildFromId(currentBuildId, finalName, shareTokenQuery);
         setCurrentBuildId(newId);
         setIsOwnBuild(true);
         setShowSaveModal(false);
@@ -1702,7 +1718,7 @@ export function ModBuilder() {
         name: finalName,
         equipment_type: equipmentType,
         equipment_unique_name: selectedEquipment.unique_name,
-        slots,
+        slots: slimSlotsForSave(slots, modCatalogByUnique),
         helminth: persistHelminthForSave(helminthConfig, warframeForSave),
         incarnonEnabled: hasIncarnon ? incarnonEnabled : undefined,
         incarnonSelections: hasIncarnon ? incarnonSelections : undefined,
@@ -1720,10 +1736,11 @@ export function ModBuilder() {
         config,
         siriusOrionEquipmentSaveName(selectedEquipment),
         imagePath,
-        buildIsPublic ? 'public' : 'private',
+        buildVisibility,
         buildDescription,
       );
-      setBuildIsPublic(saved.visibility === 'public');
+      setBuildVisibility(saved.visibility ?? 'private');
+      setBuildShareToken(saved.share_token ?? null);
       setBuildDescription(typeof saved.description === 'string' ? saved.description : '');
       setCurrentBuildId(saved.id);
       setIsOwnBuild(true);
@@ -1733,7 +1750,7 @@ export function ModBuilder() {
         modBuilderPersistFingerprint({
           buildName: finalName,
           buildDescription: typeof saved.description === 'string' ? saved.description : '',
-          buildIsPublic: saved.visibility === 'public',
+          buildVisibility: saved.visibility ?? 'private',
           equipmentType: saved.equipment_type,
           equipmentUniqueName: saved.equipment_unique_name,
           currentBuildId: saved.id,
@@ -1927,6 +1944,26 @@ export function ModBuilder() {
                   >
                     <MaterialSymbol name="share" style={{ fontSize: 22 }} />
                   </button>
+                  {isBuildOwner &&
+                  buildVisibility === 'unlisted' &&
+                  buildShareToken &&
+                  currentBuildId ? (
+                    <button
+                      type="button"
+                      className="btn btn-secondary flex h-9 w-9 shrink-0 items-center justify-center p-0"
+                      onClick={() => {
+                        const url = `${window.location.origin}${buildReadOnlyPath(currentBuildId)}&token=${encodeURIComponent(buildShareToken)}`;
+                        navigator.clipboard.writeText(url).then(
+                          () => showSaveToast('success', 'Share link copied'),
+                          () => showSaveToast('error', 'Could not copy the share link'),
+                        );
+                      }}
+                      title="Copy share link"
+                      aria-label="Copy share link"
+                    >
+                      <MaterialSymbol name="content_copy" style={{ fontSize: 22 }} />
+                    </button>
+                  ) : null}
                   <button
                     type="button"
                     className="btn btn-secondary flex h-9 w-9 shrink-0 items-center justify-center p-0"
@@ -2190,10 +2227,8 @@ export function ModBuilder() {
                 !readOnly && isOwnBuild && hasIncarnon ? handleIncarnonToggle : undefined
               }
               incarnonAvailable={hasIncarnon}
-              buildIsPublic={buildIsPublic}
-              onBuildIsPublicChange={
-                !readOnly && isOwnBuild ? (next) => setBuildIsPublic(next) : undefined
-              }
+              buildVisibility={buildVisibility}
+              onBuildVisibilityChange={!readOnly && isOwnBuild ? setBuildVisibility : undefined}
               readOnly={readOnly}
             />
           </div>
