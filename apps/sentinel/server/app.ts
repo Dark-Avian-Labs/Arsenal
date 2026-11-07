@@ -1,6 +1,6 @@
 import { createApp as createKitApp } from '@dark-avian-labs/server-kit';
 import express from 'express';
-import { rateLimit } from 'express-rate-limit';
+import { ipKeyGenerator, rateLimit } from 'express-rate-limit';
 
 import {
   APP_ID,
@@ -14,7 +14,7 @@ import {
   ensureDataDirs,
 } from './config.ts';
 import { getMetricsDb } from './metrics/db.ts';
-import { ingestRouter } from './metrics/ingestRoute.ts';
+import { hasIngestToken, ingestRouter } from './metrics/ingestRoute.ts';
 import { apiRouter } from './routes/api.ts';
 
 export interface AppBundle {
@@ -24,6 +24,20 @@ export interface AppBundle {
 
 export function createApp(options: { metricsMiddleware?: express.RequestHandler } = {}): AppBundle {
   ensureDataDirs();
+
+  const ingestLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 120,
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator: (req) => {
+      const appId = (req.body as { samples?: Array<{ appId?: unknown }> } | undefined)?.samples?.[0]
+        ?.appId;
+      return hasIngestToken(req) && typeof appId === 'string'
+        ? `app:${appId}`
+        : ipKeyGenerator(req.ip ?? '');
+    },
+  });
 
   const bundle = createKitApp({
     appName: APP_NAME,
@@ -39,15 +53,12 @@ export function createApp(options: { metricsMiddleware?: express.RequestHandler 
       getMetricsDb().prepare('SELECT 1').get();
       return true;
     },
+    // Agents share 127.0.0.1, so ingest skips the per-IP baseline and /api limiters.
+    mountBeforeApi: (app) => {
+      app.use('/api/ingest', express.json({ limit: '100kb' }), ingestLimiter, ingestRouter);
+    },
   });
 
-  const ingestLimiter = rateLimit({
-    windowMs: 60 * 1000,
-    max: 120,
-    standardHeaders: true,
-    legacyHeaders: false,
-  });
-  bundle.apiRouter.use('/ingest', ingestLimiter, ingestRouter);
   bundle.apiRouter.use(apiRouter);
 
   return { app: bundle.app, apiRouter: bundle.apiRouter };

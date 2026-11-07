@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { closeMetricsDb, getMetricsDb } from './db.ts';
-import { coalesceLatestSampleFields, listFleet } from './query.ts';
-import { writeHttpSample, writeProcessSample } from './writer.ts';
+import { coalesceLatestSampleFields, listFleet, queryHttpSeries } from './query.ts';
+import { rollupAndPrune, writeHttpSample, writeProcessSample } from './writer.ts';
 
 describe('coalesceLatestSampleFields', () => {
   it('fills status and cpu from an older PM2 row when the newest is agent-only', () => {
@@ -161,5 +161,37 @@ describe('listFleet', () => {
 
     const [app] = listFleet(db, now);
     expect(app.hours.at(-1)).toMatchObject({ bad: false, errorRate: 0 });
+  });
+});
+
+describe('http_1h rollup', () => {
+  afterEach(() => {
+    closeMetricsDb();
+  });
+
+  it('backfills once, then recomputes the current hour for 7d charts', () => {
+    const db = getMetricsDb();
+    const now = 1_700_000_000_000;
+    const http = (ts: number, statusClass: string, count: number) =>
+      writeHttpSample(db, {
+        kind: 'http',
+        appId: 'armory',
+        ts,
+        method: 'GET',
+        routePattern: '/api/builds',
+        statusClass,
+        count,
+      });
+    http(now - 30 * 3_600_000, '5xx', 2);
+    http(now - 60_000, '2xx', 3);
+    rollupAndPrune(db, now);
+    http(now, '2xx', 4);
+    rollupAndPrune(db, now + 60_000);
+
+    const points = queryHttpSeries(db, 'armory', '7d', now + 60_000);
+    expect(points.map((point) => [point.count, point.errorRate])).toEqual([
+      [2, 1],
+      [7, 0],
+    ]);
   });
 });

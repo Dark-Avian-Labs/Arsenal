@@ -30,6 +30,7 @@ export function migrateMetricsSchema(db: Database.Database): void {
       FOREIGN KEY (app_id) REFERENCES apps(id)
     );
     CREATE INDEX IF NOT EXISTS idx_samples_raw_app_ts ON samples_raw(app_id, ts);
+    CREATE INDEX IF NOT EXISTS idx_samples_raw_ts ON samples_raw(ts);
 
     CREATE TABLE IF NOT EXISTS samples_1m (
       app_id TEXT NOT NULL,
@@ -73,6 +74,16 @@ export function migrateMetricsSchema(db: Database.Database): void {
       FOREIGN KEY (app_id) REFERENCES apps(id)
     );
     CREATE INDEX IF NOT EXISTS idx_http_raw_app_ts ON http_raw(app_id, ts);
+    CREATE INDEX IF NOT EXISTS idx_http_raw_ts ON http_raw(ts);
+
+    CREATE TABLE IF NOT EXISTS http_1h (
+      app_id TEXT NOT NULL,
+      bucket_ts INTEGER NOT NULL,
+      count INTEGER NOT NULL,
+      errors INTEGER NOT NULL,
+      latency_p95_avg REAL,
+      PRIMARY KEY (app_id, bucket_ts)
+    );
 
     CREATE TABLE IF NOT EXISTS events (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -86,6 +97,7 @@ export function migrateMetricsSchema(db: Database.Database): void {
       FOREIGN KEY (app_id) REFERENCES apps(id)
     );
     CREATE INDEX IF NOT EXISTS idx_events_app_ts ON events(app_id, ts);
+    CREATE INDEX IF NOT EXISTS idx_events_ts ON events(ts);
 
     CREATE TABLE IF NOT EXISTS host_raw (
       id INTEGER PRIMARY KEY AUTOINCREMENT,

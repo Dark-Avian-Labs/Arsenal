@@ -50,4 +50,29 @@ describe('parseIngestBody', () => {
       }).ok,
     ).toBe(false);
   });
+
+  it('clamps timestamps to the last 10 minutes and pulls future ones back to now', () => {
+    const now = 1_700_000_000_000;
+    const parsed = parseIngestBody(
+      {
+        samples: [
+          { kind: 'process', appId: 'codex', ts: now + 30_000 },
+          { kind: 'process', appId: 'codex', ts: now + 365 * 86_400_000 },
+          { kind: 'process', appId: 'codex', ts: now - 86_400_000 },
+          { kind: 'exit', appId: 'codex', exitKind: 'crash', ts: 32_503_680_000_000 },
+        ],
+      },
+      now,
+    );
+    expect(parsed.ok && parsed.value.samples.map((sample) => sample.ts)).toEqual([
+      now + 30_000,
+      now,
+      now - 10 * 60 * 1000,
+      now,
+    ]);
+  });
+
+  it('rejects text fields over 128 characters', () => {
+    expect(parseIngestBody({ samples: [{ kind: 'process', appId: 'codex', status: 'x'.repeat(129) }] }).ok).toBe(false);
+  });
 });

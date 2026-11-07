@@ -32,6 +32,7 @@ const GLANCE_HOURS = 24;
 const HOUR_MS = 3_600_000;
 
 const FLEET_SAMPLE_FRESH_MS = 60_000;
+const FLEET_APP_STALE_MS = 7 * 24 * HOUR_MS;
 
 type SampleFields = {
   cpu: number | null;
@@ -79,9 +80,9 @@ export function listFleet(db: Database.Database, now = Date.now()): FleetAppRow[
   const apps = db
     .prepare(
       `SELECT id, display_name AS displayName, pm2_name AS pm2Name, pmx_module AS pmxModule, updated_at AS updatedAt
-       FROM apps ORDER BY pmx_module, display_name`,
+       FROM apps WHERE updated_at >= ? ORDER BY pmx_module, display_name`,
     )
-    .all() as Array<{
+    .all(now - FLEET_APP_STALE_MS) as Array<{
     id: string;
     displayName: string;
     pm2Name: string | null;
@@ -293,20 +294,29 @@ export function queryHttpSeries(
   preset: RangePreset,
   now = Date.now(),
 ): HttpPoint[] {
-  const { from, to, bucketMs } = resolveRange(preset, now);
-  const rows = db
-    .prepare(
-      `SELECT
-         (ts / ?) * ? AS ts,
-         SUM(count) AS count,
-         AVG(latency_p95_ms) AS latencyP95Ms,
-         SUM(CASE WHEN status_class = '5xx' THEN count ELSE 0 END) AS errors
-       FROM http_raw
-       WHERE app_id = ? AND ts >= ? AND ts <= ?
-       GROUP BY (ts / ?) * ?
-       ORDER BY ts`,
-    )
-    .all(bucketMs, bucketMs, appId, from, to, bucketMs, bucketMs) as Array<{
+  const { from, to, table, bucketMs } = resolveRange(preset, now);
+  const rows = (
+    table === '1h'
+      ? db
+          .prepare(
+            `SELECT bucket_ts AS ts, count, latency_p95_avg AS latencyP95Ms, errors
+             FROM http_1h WHERE app_id = ? AND bucket_ts >= ? AND bucket_ts <= ? ORDER BY bucket_ts`,
+          )
+          .all(appId, from, to)
+      : db
+          .prepare(
+            `SELECT
+               (ts / ?) * ? AS ts,
+               SUM(count) AS count,
+               AVG(latency_p95_ms) AS latencyP95Ms,
+               SUM(CASE WHEN status_class = '5xx' THEN count ELSE 0 END) AS errors
+             FROM http_raw
+             WHERE app_id = ? AND ts >= ? AND ts <= ?
+             GROUP BY (ts / ?) * ?
+             ORDER BY ts`,
+          )
+          .all(bucketMs, bucketMs, appId, from, to, bucketMs, bucketMs)
+  ) as Array<{
     ts: number;
     count: number;
     latencyP95Ms: number | null;
@@ -321,33 +331,6 @@ export function queryHttpSeries(
     reqPerSec: bucketSec > 0 ? row.count / bucketSec : null,
     errorRate: row.count > 0 ? row.errors / row.count : null,
   }));
-}
-
-export type EventRatePoint = {
-  ts: number;
-  graceful: number;
-  crash: number;
-};
-
-export function queryEventRates(
-  db: Database.Database,
-  appId: string,
-  preset: RangePreset,
-  now = Date.now(),
-): EventRatePoint[] {
-  const { from, to, bucketMs } = resolveRange(preset, now);
-  return db
-    .prepare(
-      `SELECT
-         (ts / ?) * ? AS ts,
-         SUM(CASE WHEN kind = 'graceful' THEN 1 ELSE 0 END) AS graceful,
-         SUM(CASE WHEN kind = 'crash' THEN 1 ELSE 0 END) AS crash
-       FROM events
-       WHERE app_id = ? AND ts >= ? AND ts <= ?
-       GROUP BY (ts / ?) * ?
-       ORDER BY ts`,
-    )
-    .all(bucketMs, bucketMs, appId, from, to, bucketMs, bucketMs) as EventRatePoint[];
 }
 
 export type EventRow = {
