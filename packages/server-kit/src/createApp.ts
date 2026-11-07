@@ -41,7 +41,11 @@ export function createApp(options: CreateAppOptions): AppBundle {
   const assetMax = options.rateLimits?.asset ?? 5000;
   const ready = options.readiness ?? (() => true);
 
+  const appId = options.appId.trim() || process.env.APP_ID?.trim();
+  if (!appId) throw new Error('createApp needs an appId or APP_ID.');
+
   const app = express();
+  app.locals.appId = appId;
 
   if (options.trustProxy) app.set('trust proxy', 1);
   if (options.nodeEnv === 'production' && options.secureCookies && !options.trustProxy) {
@@ -99,6 +103,48 @@ export function createApp(options: CreateAppOptions): AppBundle {
       });
   });
 
+  const publicPageLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: pageMax,
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+
+  const staticAssetLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: assetMax,
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+
+  const clientDir =
+    options.nodeEnv !== 'production' && process.env.E2E_CLIENT_DIR?.trim()
+      ? path.resolve(process.env.E2E_CLIENT_DIR.trim())
+      : path.join(options.projectRoot, 'dist', 'client');
+  const faviconPng = path.join(clientDir, 'favicon.png');
+  const sendFavicon: RequestHandler = (_req, res, next) => {
+    if (!fs.existsSync(faviconPng)) {
+      res.status(404).end();
+      return;
+    }
+    res.sendFile(faviconPng, (err) => {
+      if (err) next(err);
+    });
+  };
+  app.get('/favicon.png', publicPageLimiter, sendFavicon);
+  app.get('/favicon.ico', publicPageLimiter, sendFavicon);
+
+  if (options.nodeEnv !== 'development') {
+    app.use(
+      '/assets',
+      staticAssetLimiter,
+      express.static(path.join(clientDir, 'assets'), {
+        maxAge: '1y',
+        immutable: true,
+      }),
+    );
+  }
+
   app.use(clerkMiddleware());
   options.mount?.(app);
 
@@ -125,20 +171,6 @@ export function createApp(options: CreateAppOptions): AppBundle {
     legacyHeaders: false,
   });
 
-  const publicPageLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: pageMax,
-    standardHeaders: true,
-    legacyHeaders: false,
-  });
-
-  const staticAssetLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: assetMax,
-    standardHeaders: true,
-    legacyHeaders: false,
-  });
-
   const writeLimiter =
     options.rateLimits?.write == null
       ? undefined
@@ -161,23 +193,6 @@ export function createApp(options: CreateAppOptions): AppBundle {
   const apiRouter = express.Router();
   app.use('/api', appApiLimiter, rejectCrossSiteWrites, apiRouter);
 
-  const clientDir =
-    options.nodeEnv !== 'production' && process.env.E2E_CLIENT_DIR?.trim()
-      ? path.resolve(process.env.E2E_CLIENT_DIR.trim())
-      : path.join(options.projectRoot, 'dist', 'client');
-  const faviconPng = path.join(clientDir, 'favicon.png');
-  const sendFavicon: RequestHandler = (_req, res, next) => {
-    if (!fs.existsSync(faviconPng)) {
-      res.status(404).end();
-      return;
-    }
-    res.sendFile(faviconPng, (err) => {
-      if (err) next(err);
-    });
-  };
-  app.get('/favicon.png', publicPageLimiter, sendFavicon);
-  app.get('/favicon.ico', publicPageLimiter, sendFavicon);
-
   app.use('/api', (_req, res) => {
     res.status(404).json({ error: 'Not found' });
   });
@@ -194,15 +209,6 @@ export function createApp(options: CreateAppOptions): AppBundle {
         clientIndexPath,
       });
     }
-
-    app.use(
-      '/assets',
-      staticAssetLimiter,
-      express.static(path.join(clientDir, 'assets'), {
-        maxAge: '1y',
-        immutable: true,
-      }),
-    );
 
     const spaFallback: RequestHandler = (req, res, next) => {
       if (req.method !== 'GET' && req.method !== 'HEAD') {

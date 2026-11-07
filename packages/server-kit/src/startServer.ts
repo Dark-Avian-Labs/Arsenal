@@ -36,8 +36,10 @@ export function startServer(options: StartServerOptions): Server {
   function shutdown(exitCode: number, signal?: string): void {
     if (shuttingDown) return;
     shuttingDown = true;
-    if (exitCode === 0) sentinelAgent?.noteGracefulExit(signal);
-    else sentinelAgent?.noteCrash(new Error(`shutdown exit ${exitCode}`));
+    const exitReport =
+      exitCode === 0
+        ? sentinelAgent?.noteGracefulExit(signal)
+        : sentinelAgent?.noteCrash(new Error(`shutdown exit ${exitCode}`));
     sentinelAgent?.stop();
 
     let done = false;
@@ -49,7 +51,9 @@ export function startServer(options: StartServerOptions): Server {
       } catch (err) {
         log('error', 'Failed to close resources during shutdown', { error: String(err) });
       }
-      process.exit(code);
+      void Promise.race([exitReport, new Promise((resolve) => setTimeout(resolve, 1000))]).finally(
+        () => process.exit(code),
+      );
     }
 
     const timeout = setTimeout(closeAndExit, shutdownTimeoutMs);

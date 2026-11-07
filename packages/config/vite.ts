@@ -59,19 +59,29 @@ export interface AppViteOptions {
 export function defineAppVite(options: AppViteOptions) {
   return defineConfig(({ mode }) => {
     const env = loadEnv(mode, process.cwd(), '');
+    const plain = (value: string | undefined) => {
+      const trimmed = value?.trim() ?? '';
+      return trimmed.startsWith('encrypted:') ? '' : trimmed;
+    };
     const read = (key: string, fallback: string) => {
       const bare = key.startsWith('VITE_') ? key.slice('VITE_'.length) : '';
       return (
-        process.env[key]?.trim() ||
-        (bare ? process.env[bare]?.trim() : '') ||
-        env[key]?.trim() ||
-        (bare ? env[bare]?.trim() : '') ||
+        plain(process.env[key]) ||
+        (bare ? plain(process.env[bare]) : '') ||
+        plain(env[key]) ||
+        (bare ? plain(env[bare]) : '') ||
         fallback
       );
     };
     const defines: Record<string, string> = {
       'import.meta.env.VITE_APP_VERSION': JSON.stringify(process.env.APP_VERSION ?? '0.0.0-dev'),
     };
+    // PR builds run without dotenvx, so Vite would otherwise inline the ciphertext.
+    for (const [key, value] of Object.entries(env)) {
+      if (key.startsWith('VITE_') && value.trim().startsWith('encrypted:')) {
+        defines[`import.meta.env.${key}`] = '""';
+      }
+    }
     for (const [key, fallback] of Object.entries(options.defines ?? {})) {
       defines[`import.meta.env.${key}`] = JSON.stringify(read(key, fallback));
     }
