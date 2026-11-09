@@ -1,0 +1,188 @@
+name: Sentinel agent
+
+permissions:
+  contents: read
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Agent semver without prefix (e.g. 0.1.0). Creates tag agent-v0.1.0.
+        required: true
+        type: string
+      prerelease:
+        description: Mark the GitHub release as a pre-release
+        required: false
+        type: boolean
+        default: false
+      draft:
+        description: Create the GitHub release as a draft
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: sentinel-agent-release
+  cancel-in-progress: false
+
+jobs:
+  pack-and-upload:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+      tag: ${{ steps.meta.outputs.tag }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Resolve agent version
+        id: meta
+        shell: bash
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          version="$INPUT_VERSION"
+          if ! printf '%s' "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$'; then
+            echo "ERROR: Version must be semver (got '$version')."
+            exit 1
+          fi
+          tag="agent-v$version"
+          if git ls-remote --tags origin "refs/tags/$tag" | grep -q .; then
+            echo "ERROR: $tag already exists on GitHub."
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "asset=dark-avian-labs-sentinel-agent-$version.tgz" >> "$GITHUB_OUTPUT"
+          echo "Resolved $tag"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 26
+
+      - name: Enable pnpm
+        run: npm install -g pnpm@$(node -p 'require("./package.json").packageManager.replace(/^pnpm@/, "")')
+
+      - name: Install agent and its build dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts --filter @dark-avian-labs/sentinel-agent...
+
+      - name: Set agent package version
+        working-directory: packages/sentinel-agent
+        env:
+          AGENT_VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          node -e "
+            const fs = require('node:fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            pkg.version = process.env.AGENT_VERSION;
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+          "
+
+      - name: Build and pack agent
+        shell: bash
+        env:
+          ASSET: ${{ steps.meta.outputs.asset }}
+        run: |
+          set -euo pipefail
+          pnpm --filter @dark-avian-labs/sentinel-agent run build
+          test -f packages/sentinel-agent/dist/index.js
+          mkdir -p dist-agent
+          pnpm --dir packages/sentinel-agent pack --pack-destination "$GITHUB_WORKSPACE/dist-agent"
+          src="$(ls -1 dist-agent/*.tgz)"
+          dest="dist-agent/$ASSET"
+          if [ "$src" != "$dest" ]; then
+            mv "$src" "$dest"
+          fi
+          test -f "$dest"
+          ls -la dist-agent
+
+      - name: Publish GitHub release
+        uses: iShark5060/actions-gh-release@94f56e3da003730f20265af02c59507d52c46f76 # v1.2.2
+        with:
+          tag_name: ${{ steps.meta.outputs.tag }}
+          target_commitish: ${{ github.sha }}
+          name: sentinel-agent ${{ steps.meta.outputs.version }}
+          draft: ${{ inputs.draft }}
+          prerelease: ${{ inputs.prerelease }}
+          make_latest: false
+          body: |
+            In-process Sentinel metrics agent only (HTTP latency, event-loop lag, exit kind).
+
+            Install outside this repo:
+
+            ```json
+            "@dark-avian-labs/sentinel-agent": "https://github.com/${{ github.repository }}/releases/download/${{ steps.meta.outputs.tag }}/${{ steps.meta.outputs.asset }}"
+            ```
+
+            Apps in Arsenal keep the workspace dependency. This release does not include the Sentinel dashboard.
+          files: dist-agent/${{ steps.meta.outputs.asset }}
+          fail_on_unmatched_files: true
+          upload_checksums: true
+
+  sync-tags:
+    needs: pack-and-upload
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Tailscale
+        uses: tailscale/github-action@064b10558093f38325e838ddea35486bdc6b1d5c # v4.4.0
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          audience: ${{ secrets.TS_AUDIENCE }}
+          tags: tag:ci
+          ping: git.darkavianlabs.com
+
+      - name: Push release tag to Forgejo
+        env:
+          FORGEJO_TOKEN: ${{ secrets.FORGEJO_TOKEN }}
+          FORGEJO_REPO: Dark-Avian-Labs/Arsenal
+          TAG: ${{ needs.pack-and-upload.outputs.tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "$FORGEJO_TOKEN" ]; then
+            echo "FORGEJO_TOKEN is empty."
+            exit 1
+          fi
+          if [ -z "$TAG" ]; then
+            echo "Release tag is empty."
+            exit 1
+          fi
+          if ! git ls-remote origin "refs/tags/$TAG" | grep -q .; then
+            echo "Release tag ${TAG} is not on GitHub."
+            exit 1
+          fi
+          git fetch --force origin "refs/tags/$TAG:refs/tags/$TAG"
+          git -c "http.extraHeader=AUTHORIZATION: token ${FORGEJO_TOKEN}" \
+            push "https://git.darkavianlabs.com/${FORGEJO_REPO}.git" \
+            "refs/tags/$TAG:refs/tags/$TAG"
+
+  discord-status:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [pack-and-upload, sync-tags]
+    if: always()
+
+    steps:
+      - name: Send Discord status
+        uses: iShark5060/actions-discord-status@66f6681ff19536b7787feecc4fdc20c506de365b # v1.2.1
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK }}
+          job_results: ${{ join(needs.*.result, ',') }}
+          mention_on: failure
+          content: '<@${{ secrets.DISCORD_USERID }}>'
+          title: ${{ github.workflow }}
+          description: ${{ contains(needs.*.result, 'failure') && format('Agent {0} failed.', inputs.version) || contains(needs.*.result, 'cancelled') && format('Agent {0} was cancelled.', inputs.version) || format('Agent {0} is published as agent-v{0}.', inputs.version) }}

@@ -4,7 +4,13 @@ In-process agent for Sentinel. Collects event-loop lag, HTTP latency by route pa
 
 ## Install
 
-Apps in this repo depend on it with `"@dark-avian-labs/sentinel-agent": "workspace:*"`. Node loads `dist/index.js`. App releases are tags named `<app>-vX.Y.Z` and do not publish this package on their own.
+Apps in this repo depend on it with `"@dark-avian-labs/sentinel-agent": "workspace:*"`. Node loads `dist/index.js`. App releases are tags named `<app>-vX.Y.Z` and do not publish this package.
+
+Other repos install the GitHub release tarball. `.github/workflows/release.yml` packs it as `agent-vX.Y.Z`.
+
+```json
+"@dark-avian-labs/sentinel-agent": "https://github.com/Dark-Avian-Labs/Arsenal/releases/download/agent-vX.Y.Z/dark-avian-labs-sentinel-agent-X.Y.Z.tgz"
+```
 
 ## Usage
 

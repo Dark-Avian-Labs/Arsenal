@@ -8,7 +8,7 @@ CI conventions live in `docs/org-standards/`. The license for every app is the r
 
 `@dark-avian-labs/ui` is the shell, sign-in pages, `apiFetch`, styles, and the feather mark. `@dark-avian-labs/server-kit` is the HTTP stack and `readServerEnv`. `@dark-avian-labs/sentinel-agent` is the in-process metrics agent. `@dark-avian-labs/warframe-catalog` is the shared Warframe catalog code. Armory and Codex each keep their own SQLite file, and Codex keeps the scraper. `@dark-avian-labs/wor-assets` is the Watcher of Realms icons and `triFilter`. `@dark-avian-labs/config` is the shared tsconfig, `defineAppVite`, and `defineAppPlaywright`.
 
-`ui`, `wor-assets`, and `config` stay TypeScript because Vite bundles them. `server-kit`, `sentinel-agent`, and `warframe-catalog` emit `dist` JavaScript. Node will not strip types for a file under `node_modules`, and `pnpm deploy` copies those packages there. `pnpm install` builds that dist. After editing one of those three, run its `build` before starting an app.
+`ui`, `wor-assets`, and `config` stay TypeScript because Vite bundles them. `server-kit`, `sentinel-agent`, and `warframe-catalog` emit `dist` JavaScript. Node will not strip types for a file under `node_modules`, and `pnpm deploy` copies those packages there. `pnpm install` builds that dist. After editing one of those three, run its `build` before starting an app. Repos outside this workspace install the agent from the GitHub release `agent-vX.Y.Z`, packed by `.github/workflows/release.yml`.
 
 ## Ports
 
