@@ -32,6 +32,14 @@ There is one tag per app release, named `<app>-vX.Y.Z`, for example `armory-v1.7
 
 `ui` and `wor-assets` export TypeScript and have no build script. Vite bundles them. `server-kit`, `sentinel-agent`, and `warframe-catalog` emit `dist` JavaScript, because Node will not strip types for a file under `node_modules` and `pnpm deploy` copies those packages there. `pr.yml` runs `pnpm --filter "@dark-avian-labs/*" --filter dal-template run --if-present build`, which builds the three packages that have a build script and skips the rest. Each deployed app is then built with `scripts/ci/build-app.sh`. Deploy checks `node_modules/@dark-avian-labs/server-kit/dist/index.js` and the sentinel-agent dist entry.
 
+## Agent package
+
+`@dark-avian-labs/sentinel-agent` for repos outside this workspace is published from `.github/workflows/release.yml`. Forgejo does not run that file. GitHub Actions does, once Actions are enabled on the Arsenal mirror.
+
+Dispatch it with a version such as `0.1.0`. The job packs `packages/sentinel-agent`, uploads `dark-avian-labs-sentinel-agent-<version>.tgz` on the GitHub release `agent-v<version>`, and pushes that tag to Forgejo. The version is written into the tarball only. It does not commit a version bump. An existing `agent-v*` tag fails the job. In-repo apps keep `workspace:*`.
+
+The GitHub repository needs `FORGEJO_TOKEN`, `TS_OAUTH_CLIENT_ID`, `TS_AUDIENCE`, `DISCORD_WEBHOOK`, and `DISCORD_USERID`. Those are separate from the Forgejo secrets below.
+
 ## Secrets
 
 Shared, one each: `SSH_PRIVATE_KEY`, `SERVER_KNOWN_HOST`, `SERVER_HOST`, `SERVER_USER`, `SERVER_SSH_PORT`, `DISCORD_WEBHOOK`, `DISCORD_USERID`, `SAYORI_TOKEN`, `E2E_CLERK_USER_EMAIL`, `E2E_CLERK_USER_PASSWORD`.
