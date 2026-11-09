@@ -1,5 +1,6 @@
 import { Button, Input, MaterialSymbol, Modal } from '@dark-avian-labs/ui';
 import { ApiError, apiJson } from '@dark-avian-labs/ui';
+import type { TFunction } from 'i18next';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -83,10 +84,7 @@ function entryToForm(entry: Entry, locale: string): EntryFormState {
   };
 }
 
-function formatEntryFieldsMessage(
-  fields: string[],
-  t: (key: string, options?: { fields?: string }) => string,
-): string {
+function formatEntryFieldsMessage(fields: string[], t: TFunction): string {
   const labels = fields.map((field) => {
     const key = `entry.fields.${field}`;
     const label = t(key);
