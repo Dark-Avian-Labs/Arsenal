@@ -81,6 +81,8 @@ jobs:
             const fs = require('node:fs');
             const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
             pkg.version = process.env.AGENT_VERSION;
+            pkg.types = './dist/index.d.ts';
+            pkg.exports['.'].types = './dist/index.d.ts';
             fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
           "
 
@@ -92,6 +94,7 @@ jobs:
           set -euo pipefail
           pnpm --filter @dark-avian-labs/sentinel-agent run build
           test -f packages/sentinel-agent/dist/index.js
+          test -f packages/sentinel-agent/dist/index.d.ts
           mkdir -p dist-agent
           pnpm --dir packages/sentinel-agent pack --pack-destination "$GITHUB_WORKSPACE/dist-agent"
           src="$(ls -1 dist-agent/*.tgz)"
