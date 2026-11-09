@@ -77,7 +77,7 @@
     "react": "catalog:",
     "react-dom": "catalog:",
     "react-router": "catalog:",
-    "supertest": "^7.3.1",
+    "supertest": "^7.3.2",
     "tailwind-merge": "^3.7.0",
     "tailwindcss": "catalog:",
     "typescript": "catalog:",
