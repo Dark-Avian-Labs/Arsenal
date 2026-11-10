@@ -1,7 +1,7 @@
 import { MaterialSymbol, Modal } from '@dark-avian-labs/ui';
 import feathers from '@dark-avian-labs/ui/feathers.svg';
 import { toBlob } from 'html-to-image';
-import { useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react';
 
 import { helminthReplacedAbilityIndex } from '../../../shared/buildReference.js';
@@ -45,8 +45,8 @@ import {
 } from './useWarframeShareAbilities';
 import { useWeaponShareIncarnon } from './useWeaponShareIncarnon';
 
-const SHARE_CANVAS_WIDTH = 720;
-const SHARE_CANVAS_HEIGHT = 1280;
+const SHARE_CANVAS_WIDTH = 840;
+const SHARE_CANVAS_HEIGHT = 820;
 const SHARE_EXPORT_PIXEL_RATIO = 2;
 const MAX_DESCRIPTION_LENGTH = 900;
 const TRUNCATED_DESCRIPTION_LENGTH = MAX_DESCRIPTION_LENGTH - 3;
@@ -180,19 +180,21 @@ const SHARE_ELEMENT_ICONS: Record<string, string> = {
   True: '20_true',
 };
 
-const MOD_SHARE_GAP_PX = 3;
+const MOD_SHARE_GAP_PX = 4;
 const MOD_COLLAPSED_H = DEFAULT_LAYOUT.collapsedHeight;
 const MOD_SCALE_MIN = 0.28;
 const MOD_SCALE_MAX = 1.02;
+const SHARE_MOD_COLUMNS = 2;
+const SHARE_RADAR_MAX_PX = 148;
+
+function splitShareModColumns(slots: ModSlot[]): [ModSlot[], ModSlot[]] {
+  const rows = Math.max(1, Math.ceil(slots.length / SHARE_MOD_COLUMNS));
+  return [slots.slice(0, rows), slots.slice(rows)];
+}
 
 function ModShareColumnList({ slots, modScale }: { slots: ModSlot[]; modScale: number }) {
-  if (slots.length === 0) {
-    return (
-      <p className="text-muted py-4 text-center text-[10px] text-[#7e8fb8]">No mods equipped.</p>
-    );
-  }
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-1 overflow-hidden pr-0.5">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-1 overflow-hidden">
       {slots.map((slot) => (
         <div
           key={`${slot.index}-${slot.mod?.unique_name ?? 'm'}`}
@@ -215,26 +217,30 @@ function ModShareColumnList({ slots, modScale }: { slots: ModSlot[]; modScale: n
 
 function ModsShareSection({ slots }: { slots: ModSlot[] }) {
   const listRef = useRef<HTMLDivElement>(null);
-  const [modScale, setModScale] = useState(0.42);
-  const n = slots.length;
+  const [modScale, setModScale] = useState(0.55);
+  const [leftColumn, rightColumn] = splitShareModColumns(slots);
+  const rows = leftColumn.length;
 
   useLayoutEffect(() => {
     const el = listRef.current;
-    if (!el || n === 0) return;
+    if (!el || rows === 0) return;
     const run = () => {
       const h = el.clientHeight;
-      if (h <= 0) return;
-      const nEff = Math.min(n, 12);
-      const raw = (h - Math.max(0, nEff - 1) * MOD_SHARE_GAP_PX) / (nEff * MOD_COLLAPSED_H);
+      const w = el.clientWidth;
+      if (h <= 0 || w <= 0) return;
+      const colW = (w - MOD_SHARE_GAP_PX) / SHARE_MOD_COLUMNS;
+      const heightScale = (h - Math.max(0, rows - 1) * MOD_SHARE_GAP_PX) / (rows * MOD_COLLAPSED_H);
+      const widthScale = (colW - 2) / DEFAULT_LAYOUT.cardWidth;
+      const raw = Math.min(heightScale, widthScale);
       setModScale(Math.min(MOD_SCALE_MAX, Math.max(MOD_SCALE_MIN, raw)));
     };
     run();
     const ro = new ResizeObserver(run);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [n]);
+  }, [rows]);
 
-  if (n === 0) {
+  if (slots.length === 0) {
     return (
       <div className="flex min-h-0 min-w-0 flex-1 flex-col justify-center overflow-hidden">
         <p className="text-center text-[10px] text-[#7e8fb8]">No mods equipped.</p>
@@ -243,10 +249,60 @@ function ModsShareSection({ slots }: { slots: ModSlot[] }) {
   }
 
   return (
-    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-      <div ref={listRef} className="min-h-0 min-w-0 flex-1">
-        <ModShareColumnList slots={slots} modScale={modScale} />
+    <div ref={listRef} className="flex min-h-0 min-w-0 flex-1 gap-1 overflow-hidden">
+      <ModShareColumnList slots={leftColumn} modScale={modScale} />
+      <ModShareColumnList slots={rightColumn} modScale={modScale} />
+    </div>
+  );
+}
+
+function ShareArcaneRow({ slots }: { slots: ArcaneSlot[] }) {
+  const rowRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(0.72);
+  const filled = slots.filter((slot) => slot.arcane);
+
+  useLayoutEffect(() => {
+    const el = rowRef.current;
+    if (!el || filled.length === 0) return;
+    const run = () => {
+      const w = el.clientWidth;
+      if (w <= 0) return;
+      const colW = (w - MOD_SHARE_GAP_PX) / SHARE_MOD_COLUMNS;
+      setScale(Math.max(0.4, (colW - 2) / DEFAULT_ARCANE_LAYOUT.cardWidth));
+    };
+    run();
+    const ro = new ResizeObserver(run);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [filled.length]);
+
+  if (filled.length === 0) {
+    return (
+      <div className="flex shrink-0 justify-center py-1">
+        <span className="text-[9px] text-[#7e8fb8]">No arcanes</span>
       </div>
+    );
+  }
+
+  return (
+    <div ref={rowRef} className="grid w-full shrink-0 grid-cols-2 gap-1">
+      {filled.map((slot, i) => {
+        const arcane = slot.arcane!;
+        const maxRank = getMaxRank(arcane);
+        const art = arcane.image_path ? `/images${arcane.image_path}` : '';
+        return (
+          <div key={`${arcane.unique_name}-${i}`} className="flex min-w-0 justify-center">
+            <ArcaneCardPreview
+              layout={{ ...DEFAULT_ARCANE_LAYOUT, scale }}
+              rarity={normalizeArcaneRarity(arcane.rarity)}
+              arcaneArt={art}
+              arcaneName={arcane.name}
+              rank={slot.rank}
+              maxRank={maxRank}
+            />
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -263,7 +319,7 @@ function ShareRadarAuto({
   stroke?: string;
 }) {
   const boxRef = useRef<HTMLDivElement>(null);
-  const [size, setSize] = useState(168);
+  const [size, setSize] = useState(SHARE_RADAR_MAX_PX);
 
   useLayoutEffect(() => {
     const el = boxRef.current;
@@ -271,7 +327,8 @@ function ShareRadarAuto({
     const run = () => {
       const w = el.clientWidth;
       const h = el.clientHeight;
-      setSize(Math.max(72, Math.floor(Math.min(w, h) - 8)));
+      if (w <= 0 || h <= 0) return;
+      setSize(Math.max(72, Math.min(SHARE_RADAR_MAX_PX, Math.floor(Math.min(w, h) - 8))));
     };
     run();
     const ro = new ResizeObserver(run);
@@ -280,7 +337,10 @@ function ShareRadarAuto({
   }, []);
 
   return (
-    <div ref={boxRef} className="flex min-h-0 w-full min-w-0 flex-1 items-center justify-center">
+    <div
+      ref={boxRef}
+      className="flex h-full min-h-0 w-full min-w-0 flex-1 items-center justify-center"
+    >
       <ShareRadarChart
         dense
         size={size}
@@ -791,7 +851,7 @@ function ShareHeroImage({
   };
 
   return (
-    <div className="relative h-[340px] w-full shrink-0 overflow-hidden bg-transparent">
+    <div className="relative h-[250px] w-full shrink-0 overflow-hidden bg-transparent">
       {equipmentImagePath ? (
         <img
           src={equipmentImagePath}
@@ -832,7 +892,7 @@ export function BuildShareModal({
   valenceBonus,
 }: BuildShareModalProps) {
   const exportRef = useRef<HTMLDivElement | null>(null);
-  const previewBoxRef = useRef<HTMLDivElement | null>(null);
+  const [previewBoxNode, setPreviewBoxNode] = useState<HTMLDivElement | null>(null);
   const bgPanSurfaceRef = useRef<HTMLDivElement | null>(null);
   const bgPanDragRef = useRef<{
     pointerId: number;
@@ -910,21 +970,25 @@ export function BuildShareModal({
     return [m.critChance, m.critMultiplier, m.statusChance, m.fireRate, m.multishot, reloadScore];
   }, [weaponCalc]);
 
+  const setPreviewBox = useCallback((node: HTMLDivElement | null) => {
+    setPreviewBoxNode((current) => (current === node ? current : node));
+  }, []);
+
   useLayoutEffect(() => {
-    if (!open) return;
-    const el = previewBoxRef.current;
+    const el = previewBoxNode;
     if (!el) return;
     const run = () => {
       const w = el.clientWidth;
       const h = el.clientHeight;
-      if (w <= 0 || h <= 0) return;
-      setPreviewScale(Math.min(w / SHARE_CANVAS_WIDTH, h / SHARE_CANVAS_HEIGHT, 1));
+      if (w <= 16 || h <= 16) return;
+      const pad = 16;
+      setPreviewScale(Math.min((w - pad) / SHARE_CANVAS_WIDTH, (h - pad) / SHARE_CANVAS_HEIGHT, 1));
     };
     run();
     const ro = new ResizeObserver(run);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [open]);
+  }, [previewBoxNode]);
 
   useLayoutEffect(() => {
     const el = bgPanSurfaceRef.current;
@@ -940,7 +1004,6 @@ export function BuildShareModal({
     return () => ro.disconnect();
   }, [bgDataUrl, open]);
 
-  const arcaneScale = 0.5;
   const skillIconPx = 34;
 
   async function handleUploadChange(file: File | null): Promise<void> {
@@ -1079,7 +1142,7 @@ export function BuildShareModal({
       ];
 
   const leftColumn = (
-    <div className="flex min-h-0 w-[46%] max-w-[46%] min-w-0 flex-[0_0_46%] flex-col gap-2 pr-1">
+    <div className="flex min-h-0 w-1/2 max-w-[50%] min-w-0 flex-[0_0_50%] flex-col gap-2 pr-1">
       <div className="flex shrink-0 items-start gap-2.5">
         <img
           src={feathers}
@@ -1103,28 +1166,7 @@ export function BuildShareModal({
         <ShareIncarnonStamp active={shareIncarnon.showIncarnon} />
       </div>
       <ModsShareSection slots={equippedSlots} />
-      <div className="flex shrink-0 flex-wrap items-center justify-center gap-3 py-1">
-        {filledArcanes.length === 0 ? (
-          <span className="text-[9px] text-[#7e8fb8]">No arcanes</span>
-        ) : (
-          filledArcanes.map((slot, i) => {
-            const a = slot.arcane!;
-            const maxRank = getMaxRank(a);
-            const art = a.image_path ? `/images${a.image_path}` : '';
-            return (
-              <ArcaneCardPreview
-                key={`${a.unique_name}-${i}`}
-                layout={{ ...DEFAULT_ARCANE_LAYOUT, scale: arcaneScale }}
-                rarity={normalizeArcaneRarity(a.rarity)}
-                arcaneArt={art}
-                arcaneName={a.name}
-                rank={slot.rank}
-                maxRank={maxRank}
-              />
-            );
-          })
-        )}
-      </div>
+      <ShareArcaneRow slots={filledArcanes} />
     </div>
   );
 
@@ -1149,8 +1191,8 @@ export function BuildShareModal({
             </div>
           </>
         ) : null}
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2 overflow-hidden">
-          <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col gap-1 overflow-hidden">
+          <div className="flex min-h-0 w-full flex-1">
             <ShareRadarAuto
               labels={
                 isCompanion
@@ -1176,7 +1218,7 @@ export function BuildShareModal({
             />
           </div>
           {!isCompanion ? (
-            <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+            <div className="flex min-h-0 w-full flex-1">
               <ShareRadarAuto
                 labels={[
                   'Ability Duration',
@@ -1213,7 +1255,7 @@ export function BuildShareModal({
             <ShareIncarnonPanel tiers={shareIncarnon.tiers} iconPx={skillIconPx} iconsOnly />
           </div>
         ) : null}
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <div className="flex h-[156px] w-full shrink-0">
           <ShareRadarAuto labels={weaponStatLabels} values={weaponRadarValues} />
         </div>
         <div className="min-h-0 flex-1 overflow-hidden">
@@ -1237,10 +1279,10 @@ export function BuildShareModal({
       open
       onClose={onClose}
       ariaLabelledBy="share-build-title"
-      className="glass-modal-surface max-w-[1120px]"
+      className="glass-modal-surface flex h-[90vh] max-h-[90vh] w-[min(1120px,94vw)] max-w-[1120px] flex-col overflow-hidden"
     >
-      <div className="grid gap-5 lg:grid-cols-[300px_1fr]">
-        <section className="space-y-4">
+      <div className="grid min-h-0 flex-1 grid-rows-[minmax(0,38%)_minmax(0,1fr)] gap-5 lg:grid-cols-[300px_minmax(0,1fr)] lg:grid-rows-1">
+        <section className="min-h-0 space-y-4 overflow-y-auto">
           <h3 id="share-build-title" className="text-foreground text-lg font-semibold">
             Export Share Image
           </h3>
@@ -1374,15 +1416,15 @@ export function BuildShareModal({
           </div>
         </section>
 
-        <section className="flex min-h-0 min-w-0 flex-col space-y-3">
-          <div className="text-muted text-xs tracking-[0.16em] uppercase">
+        <section className="flex min-h-0 min-w-0 flex-col gap-3">
+          <div className="text-muted shrink-0 text-xs tracking-[0.16em] uppercase">
             Preview ({SHARE_CANVAS_WIDTH} × {SHARE_CANVAS_HEIGHT}) — scaled to fit; PNG exports at{' '}
             {SHARE_CANVAS_WIDTH * SHARE_EXPORT_PIXEL_RATIO} ×{' '}
             {SHARE_CANVAS_HEIGHT * SHARE_EXPORT_PIXEL_RATIO} for sharper output
           </div>
           <div
-            ref={previewBoxRef}
-            className="flex h-[min(720px,82vh)] min-h-0 w-full min-w-0 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-black/20 p-2"
+            ref={setPreviewBox}
+            className="flex min-h-0 w-full flex-1 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-black/20 p-2"
           >
             <div
               className="overflow-hidden rounded-[20px]"
