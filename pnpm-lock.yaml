@@ -165,14 +165,14 @@ settings:
 catalogs:
   default:
     '@clerk/express':
-      specifier: ^2.1.88
-      version: 2.1.88
+      specifier: ^2.1.90
+      version: 2.1.90
     '@clerk/react':
       specifier: ^6.18.6
       version: 6.18.6
     '@clerk/testing':
-      specifier: ^2.2.55
-      version: 2.2.55
+      specifier: ^2.3.0
+      version: 2.3.0
     '@clerk/ui':
       specifier: ^1.42.4
       version: 1.42.4
@@ -189,8 +189,8 @@ catalogs:
       specifier: ^5.3.0
       version: 5.3.0
     '@playwright/test':
-      specifier: ^1.65.0
-      version: 1.65.0
+      specifier: ^1.65.1
+      version: 1.65.1
     '@tailwindcss/vite':
       specifier: ^4.3.5
       version: 4.3.5
@@ -216,8 +216,8 @@ catalogs:
       specifier: ^5.1.0
       version: 5.1.0
     better-sqlite3:
-      specifier: ^13.1.1
-      version: 13.1.1
+      specifier: ^13.2.0
+      version: 13.2.0
     express:
       specifier: ^5.3.0
       version: 5.3.0
@@ -271,13 +271,13 @@ importers:
         version: 0.48.3
       '@playwright/test':
         specifier: 'catalog:'
-        version: 1.65.0
+        version: 1.65.1
       '@vitest/coverage-v8':
         specifier: 'catalog:'
         version: 5.1.0(vitest@5.1.0)
       better-sqlite3:
         specifier: 'catalog:'
-        version: 13.1.1
+        version: 13.2.0
       oxfmt:
         specifier: 'catalog:'
         version: 0.78.0
@@ -295,7 +295,7 @@ importers:
     dependencies:
       '@clerk/express':
         specifier: 'catalog:'
-        version: 2.1.88(express@5.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+        version: 2.1.90(express@5.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@dark-avian-labs/server-kit':
         specifier: workspace:*
         version: link:../../packages/server-kit
@@ -311,7 +311,7 @@ importers:
         version: 6.18.6(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@clerk/testing':
         specifier: 'catalog:'
-        version: 2.2.55(@playwright/test@1.65.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+        version: 2.3.0(@playwright/test@1.65.1)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@clerk/ui':
         specifier: 'catalog:'
         version: 1.42.4(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -332,7 +332,7 @@ importers:
         version: 5.3.0
       '@playwright/test':
         specifier: 'catalog:'
-        version: 1.65.0
+        version: 1.65.1
       '@tailwindcss/vite':
         specifier: 'catalog:'
         version: 4.3.5(vite@8.3.8(@types/node@26.6.6)(jiti@2.7.0))
@@ -392,7 +392,7 @@ importers:
     dependencies:
       '@clerk/express':
         specifier: 'catalog:'
-        version: 2.1.88(express@5.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+        version: 2.1.90(express@5.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@dark-avian-labs/sentinel-agent':
         specifier: workspace:*
         version: link:../../packages/sentinel-agent
@@ -407,7 +407,7 @@ importers:
         version: 2.38.2
       better-sqlite3:
         specifier: 'catalog:'
-        version: 13.1.1
+        version: 13.2.0
       express:
         specifier: 'catalog:'
         version: 5.3.0
@@ -426,7 +426,7 @@ importers:
         version: 6.18.6(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@clerk/testing':
         specifier: 'catalog:'
-        version: 2.2.55(@playwright/test@1.65.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+        version: 2.3.0(@playwright/test@1.65.1)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@clerk/ui':
         specifier: 'catalog:'
         version: 1.42.4(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -438,7 +438,7 @@ importers:
         version: link:../../packages/ui
       '@playwright/test':
         specifier: 'catalog:'
-        version: 1.65.0
+        version: 1.65.1
       '@tailwindcss/vite':
         specifier: 'catalog:'
         version: 4.3.5(vite@8.3.8(@types/node@26.6.6)(jiti@2.7.0))
@@ -516,7 +516,7 @@ importers:
     dependencies:
       '@clerk/express':
         specifier: 'catalog:'
-        version: 2.1.88(express@5.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+        version: 2.1.90(express@5.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@dark-avian-labs/sentinel-agent':
         specifier: workspace:*
         version: link:../../packages/sentinel-agent
@@ -528,7 +528,7 @@ importers:
         version: 2.38.2
       better-sqlite3:
         specifier: 'catalog:'
-        version: 13.1.1
+        version: 13.2.0
       express:
         specifier: 'catalog:'
         version: 5.3.0
@@ -547,7 +547,7 @@ importers:
         version: 6.18.6(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@clerk/testing':
         specifier: 'catalog:'
-        version: 2.2.55(@playwright/test@1.65.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+        version: 2.3.0(@playwright/test@1.65.1)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@clerk/ui':
         specifier: 'catalog:'
         version: 1.42.4(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -565,7 +565,7 @@ importers:
         version: 0.5.3(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@playwright/test':
         specifier: 'catalog:'
-        version: 1.65.0
+        version: 1.65.1
       '@tailwindcss/vite':
         specifier: 'catalog:'
         version: 4.3.5(vite@8.3.8(@types/node@26.6.6)(jiti@2.7.0))
@@ -634,7 +634,7 @@ importers:
     dependencies:
       '@clerk/express':
         specifier: 'catalog:'
-        version: 2.1.88(express@5.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+        version: 2.1.90(express@5.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@dark-avian-labs/sentinel-agent':
         specifier: workspace:*
         version: link:../../packages/sentinel-agent
@@ -652,7 +652,7 @@ importers:
         version: 1.5.3
       better-sqlite3:
         specifier: 'catalog:'
-        version: 13.1.1
+        version: 13.2.0
       cheerio:
         specifier: ^1.2.0
         version: 1.2.0
@@ -680,7 +680,7 @@ importers:
         version: 6.18.6(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@clerk/testing':
         specifier: 'catalog:'
-        version: 2.2.55(@playwright/test@1.65.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+        version: 2.3.0(@playwright/test@1.65.1)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@clerk/ui':
         specifier: 'catalog:'
         version: 1.42.4(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -695,7 +695,7 @@ importers:
         version: link:../../packages/wor-assets
       '@playwright/test':
         specifier: 'catalog:'
-        version: 1.65.0
+        version: 1.65.1
       '@tailwindcss/vite':
         specifier: 'catalog:'
         version: 4.3.5(vite@8.3.8(@types/node@26.6.6)(jiti@2.7.0))
@@ -767,7 +767,7 @@ importers:
     dependencies:
       '@clerk/express':
         specifier: 'catalog:'
-        version: 2.1.88(express@5.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+        version: 2.1.90(express@5.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@dark-avian-labs/sentinel-agent':
         specifier: workspace:*
         version: link:../../packages/sentinel-agent
@@ -779,7 +779,7 @@ importers:
         version: 2.38.2
       better-sqlite3:
         specifier: 'catalog:'
-        version: 13.1.1
+        version: 13.2.0
       express:
         specifier: 'catalog:'
         version: 5.3.0
@@ -798,7 +798,7 @@ importers:
         version: 6.18.6(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@clerk/testing':
         specifier: 'catalog:'
-        version: 2.2.55(@playwright/test@1.65.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+        version: 2.3.0(@playwright/test@1.65.1)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@clerk/ui':
         specifier: 'catalog:'
         version: 1.42.4(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -813,7 +813,7 @@ importers:
         version: link:../../packages/wor-assets
       '@playwright/test':
         specifier: 'catalog:'
-        version: 1.65.0
+        version: 1.65.1
       '@tailwindcss/vite':
         specifier: 'catalog:'
         version: 4.3.5(vite@8.3.8(@types/node@26.6.6)(jiti@2.7.0))
@@ -879,7 +879,7 @@ importers:
     dependencies:
       '@clerk/express':
         specifier: 'catalog:'
-        version: 2.1.88(express@5.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+        version: 2.1.90(express@5.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@dark-avian-labs/sentinel-agent':
         specifier: workspace:*
         version: link:../../packages/sentinel-agent
@@ -891,7 +891,7 @@ importers:
         version: 2.38.2
       better-sqlite3:
         specifier: 'catalog:'
-        version: 13.1.1
+        version: 13.2.0
       express:
         specifier: 'catalog:'
         version: 5.3.0
@@ -928,7 +928,7 @@ importers:
         version: 5.3.0
       '@playwright/test':
         specifier: 'catalog:'
-        version: 1.65.0
+        version: 1.65.1
       '@tailwindcss/vite':
         specifier: 'catalog:'
         version: 4.3.5(vite@8.3.8(@types/node@26.6.6)(jiti@2.7.0))
@@ -991,13 +991,13 @@ importers:
     dependencies:
       '@clerk/testing':
         specifier: 'catalog:'
-        version: 2.2.55(@playwright/test@1.65.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+        version: 2.3.0(@playwright/test@1.65.1)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@dotenvx/dotenvx':
         specifier: 'catalog:'
         version: 2.38.2
       '@playwright/test':
         specifier: 'catalog:'
-        version: 1.65.0
+        version: 1.65.1
       '@tailwindcss/vite':
         specifier: 'catalog:'
         version: 4.3.5(vite@8.3.8(@types/node@26.6.6)(jiti@2.7.0))
@@ -1031,7 +1031,7 @@ importers:
     dependencies:
       '@clerk/express':
         specifier: 'catalog:'
-        version: 2.1.88(express@5.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+        version: 2.1.90(express@5.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@dark-avian-labs/sentinel-agent':
         specifier: workspace:*
         version: link:../sentinel-agent
@@ -1040,7 +1040,7 @@ importers:
         version: 2.38.2
       better-sqlite3:
         specifier: 'catalog:'
-        version: 13.1.1
+        version: 13.2.0
       express:
         specifier: 'catalog:'
         version: 5.3.0
@@ -1123,7 +1123,7 @@ importers:
         version: link:../server-kit
       better-sqlite3:
         specifier: 'catalog:'
-        version: 13.1.1
+        version: 13.2.0
     devDependencies:
       '@dark-avian-labs/config':
         specifier: workspace:*
@@ -1207,12 +1207,12 @@ packages:
     resolution: {integrity: sha512-6zABk/ECA/QYSCQ1NGiVwwbQerUCZ+TQbp64Q3AgmfNvurHH0j8TtXa1qbShXA6qqkpAj4V5W8pP6mLe1mcMqA==}
     engines: {node: '>=18'}
 
-  '@clerk/backend@3.27.0':
-    resolution: {integrity: sha512-pmhVVP9EsAOL1rlRU4xR0XSL1BJczxGAJIqv8c+C9fRz7TYzCndGUMSSE/Zg7i2QOA24ExJbEJUiOjILdUL2EQ==}
+  '@clerk/backend@3.29.0':
+    resolution: {integrity: sha512-VmoVqkQXDs3hi2HsUomqe9Z/izoGgQ+IbY8fJN9VsqSdKVgHGUBw6CjDbOufkDakDuC8zBtcT9sn0M3QR3RHfQ==}
     engines: {node: '>=20.9.0'}
 
-  '@clerk/express@2.1.88':
-    resolution: {integrity: sha512-q/Tdp3pwh5EhlkL4aBwNfct3UdetjmWkgfPHXkr1AchpWoEs23Dmi7h+lOVG8HL4ShIMHGkaKBacEtQLCHwxKg==}
+  '@clerk/express@2.1.90':
+    resolution: {integrity: sha512-Rk9aq18p5P6vMNu/bYfrPVgfzduoYQkep9kgDPew2rI0+9kopGNMdWN6kLthEBNMgWKGhErk4wBuMOsYwkAOuw==}
     engines: {node: '>=20.9.0'}
     peerDependencies:
       express: ^4.17.0 || ^5.0.0
@@ -1240,8 +1240,20 @@ packages:
       react-dom:
         optional: true
 
-  '@clerk/testing@2.2.55':
-    resolution: {integrity: sha512-vweZKxMby+3gFrsAXPdjfg9CjbqRCuCs2oYGvUXX+PUGYSlNNYR25MVIkxhzycxiG8AToE28pv+6GPXWTqsN+Q==}
+  '@clerk/shared@4.45.1':
+    resolution: {integrity: sha512-rAGh+U8dSE6Ov1I3mXysIHaGhxx63ET+24kW4gnmApJvrfU8nq9JT9pQOoyzG3X4PQa93aaAsxkck46CynDeHA==}
+    engines: {node: '>=20.9.0'}
+    peerDependencies:
+      react: ^18.0.0 || ~19.0.3 || ~19.1.4 || ~19.2.3 || ~19.3.0-0
+      react-dom: ^18.0.0 || ~19.0.3 || ~19.1.4 || ~19.2.3 || ~19.3.0-0
+    peerDependenciesMeta:
+      react:
+        optional: true
+      react-dom:
+        optional: true
+
+  '@clerk/testing@2.3.0':
+    resolution: {integrity: sha512-koGc9eBSzVXsEe3kKFO9R9nnEBAxxhsPglcKhi2BAFgcuX6hQ0r+J5mgmj3pbrEAaKZge7goVlIpVusi7LO6aA==}
     engines: {node: '>=20.9.0'}
     peerDependencies:
       '@playwright/test': ^1
@@ -1781,8 +1793,8 @@ packages:
   '@paralleldrive/cuid2@2.3.1':
     resolution: {integrity: sha512-XO7cAxhnTZl0Yggq6jOgjiOHhbgcO4NqFqwSmQpjK3b6TEE6Uj/jfSk6wzYyemh3+I0sHirKSetjQwn5cZktFw==}
 
-  '@playwright/test@1.65.0':
-    resolution: {integrity: sha512-iGURLGuKDLakSEl7Pgfv8h7f+XLT+V861Wfhz0zlEl5nyFuKUopdkFBPKqTllTUp06aOwPuH8iuUEb3yp3MpbQ==}
+  '@playwright/test@1.65.1':
+    resolution: {integrity: sha512-y+NCIRm2LvY4slUVWvGh1nujJ8RF/hEisIsq2mtUPgdQC4L701bq5hZGMhrpeXjACvwvO9tj5dJqhvM6TP9lbw==}
     engines: {node: '>=20'}
     hasBin: true
 
@@ -2313,8 +2325,8 @@ packages:
     resolution: {integrity: sha512-Cg7TFGpIr01vOQNODXOOaGz2NpCU5gl8x1qJFbb6hbZxR7XrcE2vtbAsTAbJ7/xwJtUuJEw8K8Zr/AE0LHlesg==}
     engines: {node: '>=10', npm: '>=6'}
 
-  better-sqlite3@13.1.1:
-    resolution: {integrity: sha512-JjyLCATp+VLxZVFyWkicyzKYwpEFLCrV4MmshW97xv3JXdhw5jBDcsbEWRGm2L/96E+k7rtjON8q9nml05h3Pw==}
+  better-sqlite3@13.2.0:
+    resolution: {integrity: sha512-Z8Q/9x/uNyKxA1v4FNodyItRVRw1TeKBrmj32JhxhR0ceNcBY+wMobt/Bv7M7TzwPAXjnZRtNaEsATnUZSKWZQ==}
     engines: {node: '>=22'}
 
   bmp-js@0.1.0:
@@ -2994,13 +3006,13 @@ packages:
     resolution: {integrity: sha512-qcJu88Q2IWqJsDD529JKMdwGm/dvInW4HvQnRwiH9JtihJvzGOscDtHE3x1pBKeUOTysQ8kVmLnJ2kJu7yhcGA==}
     engines: {node: '>=12'}
 
-  playwright-core@1.65.0:
-    resolution: {integrity: sha512-vNSKgH6YqtN7cdT/L334zo0a+YwkrpicyrHJlWWPIm/Q+Nn2SWInil01oT0mbu96U4GgoRtCYQD9CzJQgju+lA==}
+  playwright-core@1.65.1:
+    resolution: {integrity: sha512-hqPpz7blSMPxWVdoeE1yiBSzXsKiVOd2k+kjCvmUywD2GPO2Dd9HfcWnq9NN0GHbNZDFgZ9JfBFr+X5/BLo0qw==}
     engines: {node: '>=20'}
     hasBin: true
 
-  playwright@1.65.0:
-    resolution: {integrity: sha512-F3AMWcR44qMBt4kq+6Kb6mX7bjGXshktKFOPULd7reED6ZJWevjbNRqysP7q+AATE9kdPEZBibex1BYsvpVoeA==}
+  playwright@1.65.1:
+    resolution: {integrity: sha512-vJ1FuoOrNwOKHUIVEvSt3jT1L+wjjDpwhwIstKtfvTh8XIG4FG4bIFuvNdMxi81LGfAhUgUZleVFaOLY4RIUUw==}
     engines: {node: '>=20'}
     hasBin: true
 
@@ -3480,18 +3492,18 @@ snapshots:
 
   '@bcoe/v8-coverage@1.0.2': {}
 
-  '@clerk/backend@3.27.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
+  '@clerk/backend@3.29.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
     dependencies:
-      '@clerk/shared': 4.44.1(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      '@clerk/shared': 4.45.1(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       standardwebhooks: 1.1.1
     transitivePeerDependencies:
       - react
       - react-dom
 
-  '@clerk/express@2.1.88(express@5.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
+  '@clerk/express@2.1.90(express@5.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
     dependencies:
-      '@clerk/backend': 3.27.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
-      '@clerk/shared': 4.44.1(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      '@clerk/backend': 3.29.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      '@clerk/shared': 4.45.1(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       express: 5.3.0
     transitivePeerDependencies:
       - react
@@ -3520,13 +3532,23 @@ snapshots:
       react: 19.3.1
       react-dom: 19.3.1(react@19.3.1)
 
-  '@clerk/testing@2.2.55(@playwright/test@1.65.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
+  '@clerk/shared@4.45.1(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
     dependencies:
-      '@clerk/backend': 3.27.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
-      '@clerk/shared': 4.44.1(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      '@tanstack/query-core': 5.104.1
+      dequal: 2.0.3
+      glob-to-regexp: 0.4.1
+      js-cookie: 3.0.8
+    optionalDependencies:
+      react: 19.3.1
+      react-dom: 19.3.1(react@19.3.1)
+
+  '@clerk/testing@2.3.0(@playwright/test@1.65.1)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
+    dependencies:
+      '@clerk/backend': 3.29.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      '@clerk/shared': 4.45.1(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       dotenv: 17.2.2
     optionalDependencies:
-      '@playwright/test': 1.65.0
+      '@playwright/test': 1.65.1
     transitivePeerDependencies:
       - react
       - react-dom
@@ -3961,9 +3983,9 @@ snapshots:
     dependencies:
       '@noble/hashes': 1.8.0
 
-  '@playwright/test@1.65.0':
+  '@playwright/test@1.65.1':
     dependencies:
-      playwright: 1.65.0
+      playwright: 1.65.1
 
   '@preact/signals-core@1.14.4': {}
 
@@ -4358,7 +4380,7 @@ snapshots:
       cosmiconfig: 7.1.0
       resolve: 1.22.14
 
-  better-sqlite3@13.1.1:
+  better-sqlite3@13.2.0:
     dependencies:
       node-addon-api: 8.9.2
 
@@ -5003,11 +5025,11 @@ snapshots:
 
   picomatch@4.0.7: {}
 
-  playwright-core@1.65.0: {}
+  playwright-core@1.65.1: {}
 
-  playwright@1.65.0:
+  playwright@1.65.1:
     dependencies:
-      playwright-core: 1.65.0
+      playwright-core: 1.65.1
 
   postcss@8.5.32:
     dependencies:
