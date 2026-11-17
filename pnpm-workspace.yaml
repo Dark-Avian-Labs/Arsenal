@@ -24,9 +24,9 @@ update:
 
 catalog:
   '@clerk/express': ^2.1.90
-  '@clerk/react': ^6.18.6
+  '@clerk/react': ^6.18.8
   '@clerk/testing': ^2.3.0
-  '@clerk/ui': ^1.42.4
+  '@clerk/ui': ^1.42.6
   '@dotenvx/dotenvx': ^2.38.2
   '@fontsource-variable/cascadia-mono': ^5.3.0
   '@fontsource-variable/geist': ^5.3.0
