@@ -23,9 +23,9 @@ update:
   githubActions: true
 
 catalog:
-  '@clerk/express': ^2.1.90
+  '@clerk/express': ^2.1.91
   '@clerk/react': ^6.18.8
-  '@clerk/testing': ^2.3.0
+  '@clerk/testing': ^2.3.1
   '@clerk/ui': ^1.42.6
   '@dotenvx/dotenvx': ^2.38.2
   '@fontsource-variable/cascadia-mono': ^5.3.0
