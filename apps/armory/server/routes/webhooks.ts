@@ -1,8 +1,10 @@
+import { clerkClient } from '@clerk/express';
 import { verifyWebhook, type WebhookEvent } from '@clerk/express/webhooks';
 import { log } from '@dark-avian-labs/server-kit';
 import { Router, type Request, type Response } from 'express';
 
 import { markArmoryUserDeleted, upsertArmoryUser } from '../auth/armoryUsers.ts';
+import { passwordChangeCutoff, revokeSessionsOpenedBefore } from '../auth/passwordSessions.ts';
 import { CLERK_WEBHOOK_SIGNING_SECRET } from '../config.ts';
 
 export const clerkWebhookRouter: Router = Router();
@@ -56,6 +58,16 @@ clerkWebhookRouter.post('/', async (req: Request, res: Response) => {
         if (!data?.id) break;
         const username = typeof data.username === 'string' ? data.username.trim() : '';
         upsertArmoryUser(data.id, username.length > 0 ? username : null);
+        const cutoff = passwordChangeCutoff(event.data);
+        if (cutoff !== null) {
+          const revoked = await revokeSessionsOpenedBefore(clerkClient.sessions, data.id, cutoff);
+          if (revoked > 0) {
+            log('info', 'Revoked sessions opened before a password change', {
+              userId: data.id,
+              count: revoked,
+            });
+          }
+        }
         break;
       }
       case 'user.deleted': {
