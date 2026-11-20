@@ -23,9 +23,9 @@ update:
   githubActions: true
 
 catalog:
-  '@clerk/express': ^2.1.91
+  '@clerk/express': ^2.1.93
   '@clerk/react': ^6.18.8
-  '@clerk/testing': ^2.3.1
+  '@clerk/testing': ^2.3.3
   '@clerk/ui': ^1.42.6
   '@dotenvx/dotenvx': ^2.38.2
   '@fontsource-variable/cascadia-mono': ^5.3.0
@@ -42,7 +42,7 @@ catalog:
   '@vitest/coverage-v8': ^5.1.0
   better-sqlite3: ^13.2.0
   express: ^5.3.0
-  express-rate-limit: ^8.7.4
+  express-rate-limit: ^8.7.5
   helmet: ^8.3.0
   oxfmt: ^0.78.0
   oxlint: ^1.93.0
