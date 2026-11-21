@@ -1,0 +1,98 @@
+name: Catalog Sync
+
+on:
+  schedule:
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+    inputs:
+      game:
+        description: Which catalog to rebuild (all, warframe, wor)
+        required: true
+        default: all
+        type: choice
+        options:
+          - all
+          - warframe
+          - wor
+      force:
+        description: Force full re-import even when upstream checksums match
+        required: false
+        default: false
+        type: boolean
+      force_images:
+        description: Re-download catalog image assets
+        required: false
+        default: false
+        type: boolean
+
+concurrency:
+  group: catalog-sync
+  cancel-in-progress: false
+
+env:
+  CI: true
+  npm_config_store_dir: /pnpm-store
+  npm_config_cache: /npm-cache
+
+jobs:
+  sync:
+    runs-on: build-node26
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Enable pnpm
+        run: npm install -g pnpm@$(node -p 'require("./package.json").packageManager.replace(/^pnpm@/, "")')
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build catalog snapshots
+        env:
+          GAME: ${{ github.event_name == 'workflow_dispatch' && inputs.game || 'all' }}
+          FORCE: ${{ github.event_name == 'workflow_dispatch' && inputs.force || 'false' }}
+          FORCE_IMAGES: ${{ github.event_name == 'workflow_dispatch' && inputs.force_images || 'false' }}
+        run: |
+          set -euo pipefail
+          args="--game=${GAME} --out=/tmp/catalog-stage"
+          if [ "$FORCE" = "true" ]; then args="$args --force"; fi
+          if [ "$FORCE_IMAGES" = "true" ]; then args="$args --force-images"; fi
+          node scripts/ci/build-catalog.ts $args
+          tar -C /tmp/catalog-stage/payload -czf /tmp/catalog-payload.tgz .
+          ls -lh /tmp/catalog-payload.tgz
+
+      - name: Deploy catalog snapshots
+        env:
+          CATALOG_TGZ: /tmp/catalog-payload.tgz
+          PM2_NAME: Arsenal
+          PORT: 3000
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SERVER_KNOWN_HOST: ${{ secrets.SERVER_KNOWN_HOST }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_PATH: ${{ secrets.SERVER_PATH_ARSENAL }}
+          SERVER_SSH_PORT: ${{ secrets.SERVER_SSH_PORT }}
+        run: bash scripts/ci/deploy-catalog.sh
+
+      - name: Cleanup SSH key
+        if: always()
+        run: rm -f ~/.ssh/deploy_key
+
+  discord-status:
+    runs-on: light-node26
+    timeout-minutes: 5
+    needs: [sync]
+    if: always()
+    defaults:
+      run:
+        shell: sh
+    steps:
+      - name: Send Discord status
+        uses: iShark5060/actions-discord-status@66f6681ff19536b7787feecc4fdc20c506de365b # v1.2.1
+        with:
+          webhook: ${{ secrets.DISCORD_WEBHOOK }}
+          job_results: ${{ join(needs.*.result, ',') }}
+          mention_on: failure
+          content: '<@${{ secrets.DISCORD_USERID }}>'
+          title: ${{ github.workflow }}
+          description: 'Catalog sync finished (${{ needs.sync.result }}).'

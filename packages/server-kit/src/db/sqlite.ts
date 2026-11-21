@@ -177,6 +177,9 @@ export class SqliteDatabase {
     this.readonly = readOnly;
     this.memory = isMemory;
     this.#db = new DatabaseSync(dbPath, { readOnly });
+    if (!isMemory) {
+      this.#db.exec('PRAGMA busy_timeout = 5000');
+    }
   }
 
   get open(): boolean {

@@ -14,7 +14,7 @@ import {
   TRUST_PROXY,
   WOR_IMAGES_DIR,
 } from './config.ts';
-import { contentTypeForImagePath, isAllowedImageExtension } from './import/wor/images.ts';
+import { contentTypeForImagePath, isAllowedImageExtension } from './imageMime.ts';
 import { assertCodexReady } from './probes.ts';
 import { apiRouter } from './routes/api.ts';
 import { authRouter } from './routes/auth.ts';

@@ -43,13 +43,9 @@
     "@dark-avian-labs/server-kit": "workspace:*",
     "@dark-avian-labs/warframe-catalog": "workspace:*",
     "@dotenvx/dotenvx": "catalog:",
-    "@napi-rs/lzma": "^1.5.3",
-    "cheerio": "^1.2.0",
-    "cuimp": "^2.1.2",
     "express": "catalog:",
     "express-rate-limit": "catalog:",
     "helmet": "catalog:",
-    "undici": "^8.12.4",
     "zod": "catalog:"
   },
   "devDependencies": {
@@ -59,6 +55,7 @@
     "@dark-avian-labs/config": "workspace:*",
     "@dark-avian-labs/ui": "workspace:*",
     "@dark-avian-labs/wor-assets": "workspace:*",
+    "@napi-rs/lzma": "^1.5.3",
     "@playwright/test": "catalog:",
     "@tailwindcss/vite": "catalog:",
     "@types/express": "catalog:",
@@ -68,7 +65,9 @@
     "@types/supertest": "^7.2.1",
     "@vitejs/plugin-react": "catalog:",
     "@vitest/coverage-v8": "catalog:",
+    "cheerio": "^1.2.0",
     "clsx": "^2.1.1",
+    "cuimp": "^2.1.2",
     "domhandler": "^6.0.1",
     "oxfmt": "catalog:",
     "oxlint": "catalog:",
@@ -79,6 +78,7 @@
     "tailwind-merge": "^3.7.0",
     "tailwindcss": "catalog:",
     "typescript": "catalog:",
+    "undici": "^8.12.4",
     "vite": "catalog:",
     "vitest": "catalog:"
   }

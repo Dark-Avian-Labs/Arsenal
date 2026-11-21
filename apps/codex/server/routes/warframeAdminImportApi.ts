@@ -4,15 +4,9 @@ import { z } from 'zod';
 
 import { parseForceSteps } from '../../shared/warframeImport/pipelineSteps.ts';
 import { getClerkUserId } from '../auth/clerkUser.ts';
+import { NODE_ENV } from '../config.ts';
 import { requireCodexAdmin } from '../core.ts';
-import {
-  getAdminImportSnapshot,
-  isAdminImportRunning,
-  resetAdminImportLock,
-  startAdminImportJob,
-  subscribeAdminImportSnapshot,
-} from '../import/warframe/adminImportJob.ts';
-import { catalogNeedsImport } from '../import/warframe/startupPipeline.ts';
+import { getCatalogDb } from '../import/warframe/db/connection.ts';
 
 export const warframeAdminImportRouter = Router();
 
@@ -22,6 +16,33 @@ const warframeAdminImportRunSchema = z.object({
   forceSteps: z.array(z.string()).optional(),
 });
 
+function isCiCatalogMode(): boolean {
+  const mode = process.env.CODEX_CATALOG_MODE?.trim().toLowerCase();
+  if (mode === 'local') return false;
+  if (mode === 'ci') return true;
+  return NODE_ENV === 'production';
+}
+
+function warframeCatalogNeedsImportLightweight(): boolean {
+  try {
+    const row = getCatalogDb().prepare('SELECT COUNT(*) AS c FROM warframes').get() as
+      | { c: number }
+      | undefined;
+    return !row || row.c === 0;
+  } catch {
+    return true;
+  }
+}
+
+function idleSnapshot() {
+  return {
+    running: false,
+    status: 'idle',
+    mode: 'ci',
+    message: 'Catalog scraping runs in Forgejo Actions (catalog-sync workflow).',
+  };
+}
+
 function json(res: Response, data: object, status = 200): void {
   res.status(status).json(data);
 }
@@ -30,16 +51,30 @@ function err(res: Response, message: string, status = 400): void {
   res.status(status).json({ error: message });
 }
 
-warframeAdminImportRouter.get('/import/status', requireCodexAdmin, (_req, res) => {
+warframeAdminImportRouter.get('/import/status', requireCodexAdmin, async (_req, res) => {
+  if (isCiCatalogMode()) {
+    json(res, idleSnapshot());
+    return;
+  }
+  const { getAdminImportSnapshot } = await import('../import/warframe/adminImportJob.ts');
   json(res, getAdminImportSnapshot());
 });
 
-warframeAdminImportRouter.get('/import/stream', requireCodexAdmin, (req, res) => {
+warframeAdminImportRouter.get('/import/stream', requireCodexAdmin, async (req, res) => {
   res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
   res.setHeader('Cache-Control', 'no-cache, no-transform');
   res.setHeader('Connection', 'keep-alive');
   res.setHeader('X-Accel-Buffering', 'no');
   res.flushHeaders?.();
+
+  if (isCiCatalogMode()) {
+    res.write(`event: snapshot\ndata: ${JSON.stringify(idleSnapshot())}\n\n`);
+    res.end();
+    return;
+  }
+
+  const { getAdminImportSnapshot, subscribeAdminImportSnapshot } =
+    await import('../import/warframe/adminImportJob.ts');
 
   let closed = false;
   let heartbeat: ReturnType<typeof setInterval> | null = null;
@@ -95,9 +130,19 @@ warframeAdminImportRouter.get('/import/stream', requireCodexAdmin, (req, res) =>
   });
 });
 
-warframeAdminImportRouter.post('/import/start', requireCodexAdmin, (req, res) => {
+warframeAdminImportRouter.post('/import/start', requireCodexAdmin, async (req, res) => {
+  if (isCiCatalogMode()) {
+    err(
+      res,
+      'In-server scraping is disabled in production. Trigger the Forgejo catalog-sync workflow instead.',
+      409,
+    );
+    return;
+  }
   const data = validateBody(warframeAdminImportRunSchema, req.body ?? {}, res);
   if (!data) return;
+  const { isAdminImportRunning, startAdminImportJob } =
+    await import('../import/warframe/adminImportJob.ts');
   if (isAdminImportRunning()) {
     err(res, 'Import already running', 409);
     return;
@@ -119,7 +164,12 @@ warframeAdminImportRouter.post('/import/start', requireCodexAdmin, (req, res) =>
   json(res, { started: true, snapshot: result.snapshot }, 202);
 });
 
-warframeAdminImportRouter.post('/import/reset', requireCodexAdmin, (_req, res) => {
+warframeAdminImportRouter.post('/import/reset', requireCodexAdmin, async (_req, res) => {
+  if (isCiCatalogMode()) {
+    json(res, { ok: true, snapshot: idleSnapshot() });
+    return;
+  }
+  const { resetAdminImportLock } = await import('../import/warframe/adminImportJob.ts');
   const result = resetAdminImportLock();
   if (!result.cleared) {
     err(res, result.reason ?? 'Import job is still running', 409);
@@ -129,8 +179,9 @@ warframeAdminImportRouter.post('/import/reset', requireCodexAdmin, (_req, res) =
 });
 
 warframeAdminImportRouter.get('/catalog/status', requireCodexAdmin, (_req, res) => {
+  const needs = warframeCatalogNeedsImportLightweight();
   json(res, {
-    needs_import: catalogNeedsImport(),
-    has_catalog: !catalogNeedsImport(),
+    needs_import: needs,
+    has_catalog: !needs,
   });
 });

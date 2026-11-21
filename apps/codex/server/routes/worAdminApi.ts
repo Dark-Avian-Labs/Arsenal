@@ -1,18 +1,39 @@
 import { validateBody } from '@dark-avian-labs/server-kit';
 import { Router, type Response } from 'express';
 
+import { NODE_ENV } from '../config.ts';
 import { requireCodexAdmin } from '../core.ts';
 import { getWorCatalogDb, worAdminImportRunSchema } from '../games/wor/index.ts';
-import {
-  getWorAdminImportSnapshot,
-  isWorImportRunning,
-  startWorAdminImport,
-  subscribeWorAdminImport,
-} from '../import/wor/adminImportJob.ts';
-import { catalogNeedsImport } from '../import/wor/startupPipeline.ts';
 import { ensureWorDbAvailable } from '../worDbState.ts';
 
 export const worAdminApiRouter = Router();
+
+function isCiCatalogMode(): boolean {
+  const mode = process.env.CODEX_CATALOG_MODE?.trim().toLowerCase();
+  if (mode === 'local') return false;
+  if (mode === 'ci') return true;
+  return NODE_ENV === 'production';
+}
+
+function worCatalogNeedsImportLightweight(): boolean {
+  try {
+    const row = getWorCatalogDb().prepare('SELECT COUNT(*) AS c FROM catalog_heroes').get() as
+      | { c: number }
+      | undefined;
+    return !row || row.c === 0;
+  } catch {
+    return true;
+  }
+}
+
+function idleSnapshot() {
+  return {
+    running: false,
+    status: 'idle',
+    mode: 'ci',
+    message: 'Catalog scraping runs in Forgejo Actions (catalog-sync workflow).',
+  };
+}
 
 function json(res: Response, data: object, status = 200): void {
   res.status(status).json(data);
@@ -22,15 +43,20 @@ function err(res: Response, message: string, status = 400): void {
   res.status(status).json({ error: message });
 }
 
-worAdminApiRouter.get('/import/status', requireCodexAdmin, (_req, res) => {
+worAdminApiRouter.get('/import/status', requireCodexAdmin, async (_req, res) => {
   if (!ensureWorDbAvailable()) {
     err(res, 'WoR database unavailable', 503);
     return;
   }
+  if (isCiCatalogMode()) {
+    json(res, idleSnapshot());
+    return;
+  }
+  const { getWorAdminImportSnapshot } = await import('../import/wor/adminImportJob.ts');
   json(res, getWorAdminImportSnapshot());
 });
 
-worAdminApiRouter.get('/import/stream', requireCodexAdmin, (req, res) => {
+worAdminApiRouter.get('/import/stream', requireCodexAdmin, async (req, res) => {
   if (!ensureWorDbAvailable()) {
     err(res, 'WoR database unavailable', 503);
     return;
@@ -40,6 +66,15 @@ worAdminApiRouter.get('/import/stream', requireCodexAdmin, (req, res) => {
   res.setHeader('Connection', 'keep-alive');
   res.setHeader('X-Accel-Buffering', 'no');
   res.flushHeaders?.();
+
+  if (isCiCatalogMode()) {
+    res.write(`event: snapshot\ndata: ${JSON.stringify(idleSnapshot())}\n\n`);
+    res.end();
+    return;
+  }
+
+  const { getWorAdminImportSnapshot, subscribeWorAdminImport } =
+    await import('../import/wor/adminImportJob.ts');
 
   let closed = false;
   let heartbeat: ReturnType<typeof setInterval> | null = null;
@@ -95,13 +130,23 @@ worAdminApiRouter.get('/import/stream', requireCodexAdmin, (req, res) => {
   });
 });
 
-worAdminApiRouter.post('/import/start', requireCodexAdmin, (req, res) => {
+worAdminApiRouter.post('/import/start', requireCodexAdmin, async (req, res) => {
   if (!ensureWorDbAvailable()) {
     err(res, 'WoR database unavailable', 503);
     return;
   }
+  if (isCiCatalogMode()) {
+    err(
+      res,
+      'In-server scraping is disabled in production. Trigger the Forgejo catalog-sync workflow instead.',
+      409,
+    );
+    return;
+  }
   const data = validateBody(worAdminImportRunSchema, req.body ?? {}, res);
   if (!data) return;
+  const { isWorImportRunning, startWorAdminImport } =
+    await import('../import/wor/adminImportJob.ts');
   if (isWorImportRunning()) {
     err(res, 'Import already running', 409);
     return;
@@ -123,18 +168,28 @@ worAdminApiRouter.get('/catalog/status', requireCodexAdmin, (_req, res) => {
     err(res, 'WoR database unavailable', 503);
     return;
   }
-  const db = getWorCatalogDb();
+  const needs = worCatalogNeedsImportLightweight();
   json(res, {
-    needs_import: catalogNeedsImport(db),
-    has_catalog: !catalogNeedsImport(db),
+    needs_import: needs,
+    has_catalog: !needs,
   });
 });
 
-worAdminApiRouter.post('/catalog/bootstrap', requireCodexAdmin, (_req, res) => {
+worAdminApiRouter.post('/catalog/bootstrap', requireCodexAdmin, async (_req, res) => {
   if (!ensureWorDbAvailable()) {
     err(res, 'WoR database unavailable', 503);
     return;
   }
+  if (isCiCatalogMode()) {
+    err(
+      res,
+      'In-server scraping is disabled in production. Trigger the Forgejo catalog-sync workflow instead.',
+      409,
+    );
+    return;
+  }
+  const { isWorImportRunning, startWorAdminImport } =
+    await import('../import/wor/adminImportJob.ts');
   if (isWorImportRunning()) {
     err(res, 'Import already running', 409);
     return;

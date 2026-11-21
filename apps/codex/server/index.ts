@@ -17,20 +17,6 @@ import { closeEpic7Db, getEpic7Db } from './games/epic7/index.ts';
 import { closeWarframeDb, getWarframeDb } from './games/warframe/index.ts';
 import { closeWorCatalogDb, closeWorDb, getWorCatalogDb, getWorDb } from './games/wor/index.ts';
 import {
-  startAdminImportJob as startWarframeAdminImportJob,
-  waitForAdminImportIdle as waitForWarframeImportIdle,
-} from './import/warframe/adminImportJob.ts';
-import { recoverImportLeaseOnStartup as recoverWarframeImportLeaseOnStartup } from './import/warframe/importRuns.ts';
-import { catalogNeedsImport as warframeCatalogNeedsImport } from './import/warframe/startupPipeline.ts';
-import { waitForWorImportIdle } from './import/wor/adminImportJob.ts';
-import { recoverWorImportLeaseOnStartup } from './import/wor/importLease.ts';
-import {
-  catalogNeedsImport,
-  copyWorCatalogIntoCollectionIfNeeded,
-  ensureWorCatalogSeededFromCollection,
-  runWorStartupPipeline,
-} from './import/wor/startupPipeline.ts';
-import {
   ensureWarframeSyncJobsSchema,
   failStaleWarframeSyncRuns,
 } from './services/warframeSyncJobs.ts';
@@ -76,15 +62,22 @@ function ensureGameSchemasReady(): void {
 }
 ensureGameSchemasReady();
 void refreshEpic7DbAvailability();
+const autoScrapeOnBoot = process.env.CODEX_AUTO_SCRAPE_ON_BOOT === '1';
+
 void refreshWorDbAvailability().then(async () => {
+  if (!autoScrapeOnBoot) return;
   try {
+    const [leaseMod, startupMod] = await Promise.all([
+      import('./import/wor/importLease.ts'),
+      import('./import/wor/startupPipeline.ts'),
+    ]);
     const catalogDb = getWorCatalogDb();
-    recoverWorImportLeaseOnStartup(catalogDb);
-    ensureWorCatalogSeededFromCollection();
-    copyWorCatalogIntoCollectionIfNeeded();
-    if (catalogNeedsImport(catalogDb)) {
+    leaseMod.recoverWorImportLeaseOnStartup(catalogDb);
+    startupMod.ensureWorCatalogSeededFromCollection();
+    startupMod.copyWorCatalogIntoCollectionIfNeeded();
+    if (startupMod.catalogNeedsImport(catalogDb)) {
       log('info', 'WoR catalog empty — running fixture bootstrap import');
-      await runWorStartupPipeline();
+      await startupMod.runWorStartupPipeline();
     }
   } catch (error) {
     log('error', 'WoR startup catalog bootstrap failed', {
@@ -93,12 +86,17 @@ void refreshWorDbAvailability().then(async () => {
   }
 });
 void (async () => {
-  if (NODE_ENV === 'test') return;
+  if (NODE_ENV === 'test' || !autoScrapeOnBoot) return;
   try {
-    recoverWarframeImportLeaseOnStartup();
-    if (warframeCatalogNeedsImport()) {
+    const [runsMod, startupMod, jobMod] = await Promise.all([
+      import('./import/warframe/importRuns.ts'),
+      import('./import/warframe/startupPipeline.ts'),
+      import('./import/warframe/adminImportJob.ts'),
+    ]);
+    runsMod.recoverImportLeaseOnStartup();
+    if (startupMod.catalogNeedsImport()) {
       log('info', 'Warframe catalog empty — running import bootstrap');
-      const result = startWarframeAdminImportJob('system:startup');
+      const result = jobMod.startAdminImportJob('system:startup');
       if (!result.started) {
         log('warn', 'Warframe startup import could not start', {
           reason: result.reason ?? 'unknown',
@@ -130,16 +128,9 @@ startServer({
   sentinelAgent,
   beforeClose: async () => {
     const timeoutMs = Math.max(SHUTDOWN_TIMEOUT_MS - 2000, 1000);
-    const [syncFinished, warframeImportFinished, worImportFinished] = await Promise.all([
-      waitForWarframeSyncIdle(timeoutMs),
-      waitForWarframeImportIdle(timeoutMs),
-      waitForWorImportIdle(timeoutMs),
-    ]);
+    const syncFinished = await waitForWarframeSyncIdle(timeoutMs);
     if (!syncFinished) {
       log('warn', 'Warframe sync still running; proceeding with shutdown');
-    }
-    if (!warframeImportFinished || !worImportFinished) {
-      log('warn', 'Catalog import still running; proceeding with shutdown');
     }
   },
   onClose: () => {
