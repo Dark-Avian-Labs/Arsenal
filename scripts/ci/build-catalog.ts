@@ -74,10 +74,13 @@ function computeTableContentHash(dbPath: string, tables: readonly string[]): str
       const cols = (db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>).map(
         (c) => c.name,
       );
-      const orderBy = cols[0] ? `ORDER BY ${cols[0]}` : '';
+      const orderBy =
+        cols.length > 0
+          ? `ORDER BY ${cols.map((c) => `"${c.replaceAll('"', '""')}"`).join(', ')}`
+          : '';
       const rows = db.prepare(`SELECT * FROM ${table} ${orderBy}`).all();
       hash.update(`${table}\n`);
-      hash.update(JSON.stringify(rows));
+      hash.update(JSON.stringify(rows, (_key, v) => (typeof v === 'bigint' ? v.toString() : v)));
       hash.update('\n');
     }
   } finally {
@@ -86,24 +89,35 @@ function computeTableContentHash(dbPath: string, tables: readonly string[]): str
   return hash.digest('hex');
 }
 
-function copyTreeIfPresent(fromDir: string, toDir: string): number {
-  if (!fs.existsSync(fromDir)) return 0;
-  let count = 0;
-  const walk = (src: string, dst: string) => {
-    fs.mkdirSync(dst, { recursive: true });
-    for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
-      const srcPath = path.join(src, entry.name);
-      const dstPath = path.join(dst, entry.name);
+function copyTreeAndHash(fromDir: string, toDir: string): { count: number; sha256: string } {
+  const hash = createHash('sha256');
+  if (!fs.existsSync(fromDir)) return { count: 0, sha256: hash.digest('hex') };
+  const files: string[] = [];
+  const collect = (dir: string, relBase: string) => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const rel = relBase ? `${relBase}/${entry.name}` : entry.name;
+      const full = path.join(dir, entry.name);
       if (entry.isDirectory()) {
-        walk(srcPath, dstPath);
+        collect(full, rel);
       } else if (entry.isFile() && !entry.name.endsWith('.hash')) {
-        fs.copyFileSync(srcPath, dstPath);
-        count += 1;
+        files.push(rel);
       }
     }
   };
-  walk(fromDir, toDir);
-  return count;
+  collect(fromDir, '');
+  files.sort();
+  for (const rel of files) {
+    const srcPath = path.join(fromDir, rel);
+    const dstPath = path.join(toDir, rel);
+    fs.mkdirSync(path.dirname(dstPath), { recursive: true });
+    const bytes = fs.readFileSync(srcPath);
+    fs.writeFileSync(dstPath, bytes);
+    hash.update(rel);
+    hash.update('\0');
+    hash.update(bytes);
+    hash.update('\0');
+  }
+  return { count: files.length, sha256: hash.digest('hex') };
 }
 
 async function main(): Promise<void> {
@@ -151,12 +165,14 @@ async function main(): Promise<void> {
     games: string[];
     databases: Record<string, { sizeBytes: number; sha256: string; contentHash: string }>;
     images: Record<string, number>;
+    imageHashes: Record<string, string>;
   } = {
     builtAt: new Date().toISOString(),
     sha: process.env.GITHUB_SHA ?? 'local',
     games: [],
     databases: {},
     images: {},
+    imageHashes: {},
   };
 
   if (game === 'all' || game === 'warframe') {
@@ -197,10 +213,12 @@ async function main(): Promise<void> {
       sha256: sha256File(dest),
       contentHash,
     };
-    manifest.images.warframe = copyTreeIfPresent(
+    const wfImages = copyTreeAndHash(
       process.env.WARFRAME_IMAGES_DIR,
       path.join(stageDir, 'images', 'warframe'),
     );
+    manifest.images.warframe = wfImages.count;
+    manifest.imageHashes.warframe = wfImages.sha256;
     console.log(
       `[catalog-builder] Warframe ready: ${manifest.databases['warframe-catalog.db'].sizeBytes} bytes, ${manifest.images.warframe} images.`,
     );
@@ -256,10 +274,12 @@ async function main(): Promise<void> {
       sha256: sha256File(dest),
       contentHash,
     };
-    manifest.images.wor = copyTreeIfPresent(
+    const worImages = copyTreeAndHash(
       process.env.WOR_IMAGES_DIR,
       path.join(stageDir, 'images', 'wor'),
     );
+    manifest.images.wor = worImages.count;
+    manifest.imageHashes.wor = worImages.sha256;
     console.log(
       `[catalog-builder] WoR ready: ${manifest.databases['wor-catalog.db'].sizeBytes} bytes, ${manifest.images.wor} images.`,
     );

@@ -61,10 +61,11 @@ $SSH "set -e
   mv -Tf '$SERVER_PATH/current.tmp' '$SERVER_PATH/current'
 
   echo '==> restart (or initial start) $PM2_NAME'
+  STARTED_NEW=false
   if ! sudo -n -u pm2-user /home/pm2-user/bin/pm2-wrapper restart '$PM2_NAME'; then
     echo '==> $PM2_NAME not registered in PM2 yet; starting from ecosystem.config.cjs'
     sudo -n -u pm2-user /home/pm2-user/bin/pm2-wrapper start '$SERVER_PATH/current/ecosystem.config.cjs'
-    sudo -n -u pm2-user /home/pm2-user/bin/pm2-wrapper save || true
+    STARTED_NEW=true
   fi
 
   echo '==> verify'
@@ -84,8 +85,15 @@ $SSH "set -e
       ln -sfn \"\$PREVIOUS\" '$SERVER_PATH/current.tmp'
       mv -Tf '$SERVER_PATH/current.tmp' '$SERVER_PATH/current'
       sudo -n -u pm2-user /home/pm2-user/bin/pm2-wrapper restart '$PM2_NAME'
+    elif [ \"\$STARTED_NEW\" = true ]; then
+      echo '==> removing failed initial PM2 registration for $PM2_NAME'
+      sudo -n -u pm2-user /home/pm2-user/bin/pm2-wrapper delete '$PM2_NAME' || true
+      rm -f '$SERVER_PATH/current'
     fi
     exit 1
+  fi
+  if [ \"\$STARTED_NEW\" = true ]; then
+    sudo -n -u pm2-user /home/pm2-user/bin/pm2-wrapper save || true
   fi
   echo '==> $PM2_NAME is serving $VERSION'
 

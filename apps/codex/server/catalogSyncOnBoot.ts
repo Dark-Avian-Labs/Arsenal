@@ -19,7 +19,7 @@ export function syncCatalogSnapshotsToCollectionsOnBoot(): void {
       if (worQueries.catalogHasEntries(catalogDb)) {
         const catalogVersion = worQueries.getCatalogVersion(catalogDb);
         const collectionVersion = worQueries.getCatalogVersion(appDb);
-        if (!worQueries.catalogHasEntries(appDb) || catalogVersion > collectionVersion) {
+        if (!worQueries.catalogHasEntries(appDb) || catalogVersion !== collectionVersion) {
           copyWorCatalogToCollection(catalogDb, appDb);
           appDb
             .transaction(() => {

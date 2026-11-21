@@ -1,10 +1,11 @@
+import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 
 import { log } from '@dark-avian-labs/server-kit';
 
 import { stopModListCacheCleanup } from './cache/modListCache.ts';
-import { ARMORY_DB_PATH, CODEX_WARFRAME_CATALOG_DB_PATH, ensureDataDirs } from './config.ts';
-import { closeAll } from './db/connection.ts';
+import { CODEX_WARFRAME_CATALOG_DB_PATH, ensureDataDirs } from './config.ts';
+import { closeAll, getCatalogDb } from './db/connection.ts';
 import { repairPlaceholderArtifactSlots } from './db/repairArtifactSlots.ts';
 import { createAppSchema } from './db/schema.ts';
 import {
@@ -17,14 +18,41 @@ import {
   syncCodexWarframeCatalog,
 } from './import/codexCatalog.ts';
 
-function isCodexCatalogNewerThanArmory(): boolean {
-  if (!fs.existsSync(CODEX_WARFRAME_CATALOG_DB_PATH) || !fs.existsSync(ARMORY_DB_PATH)) {
-    return false;
-  }
-  const srcStat = fs.statSync(CODEX_WARFRAME_CATALOG_DB_PATH);
-  if (srcStat.size === 0) return false;
-  const dstStat = fs.statSync(ARMORY_DB_PATH);
-  return srcStat.mtimeMs > dstStat.mtimeMs;
+function ensureCatalogSyncStateTable(): void {
+  getCatalogDb().exec(`
+    CREATE TABLE IF NOT EXISTS armory_catalog_sync_state (
+      id INTEGER PRIMARY KEY CHECK (id = 1),
+      source_sha256 TEXT NOT NULL,
+      synced_at TEXT NOT NULL
+    )
+  `);
+}
+
+function sha256File(filePath: string): string {
+  const hash = createHash('sha256');
+  hash.update(fs.readFileSync(filePath));
+  return hash.digest('hex');
+}
+
+function getLastSyncedSourceSha256(): string | null {
+  ensureCatalogSyncStateTable();
+  const row = getCatalogDb()
+    .prepare('SELECT source_sha256 FROM armory_catalog_sync_state WHERE id = 1')
+    .get() as { source_sha256?: string } | undefined;
+  return row?.source_sha256 ?? null;
+}
+
+function recordSyncedSourceSha256(sourceSha256: string): void {
+  ensureCatalogSyncStateTable();
+  getCatalogDb()
+    .prepare(
+      `INSERT INTO armory_catalog_sync_state (id, source_sha256, synced_at)
+       VALUES (1, ?, datetime('now'))
+       ON CONFLICT(id) DO UPDATE SET
+         source_sha256 = excluded.source_sha256,
+         synced_at = excluded.synced_at`,
+    )
+    .run(sourceSha256);
 }
 
 export function initArmory(): void {
@@ -33,20 +61,22 @@ export function initArmory(): void {
   repairPlaceholderArtifactSlots();
 
   try {
-    if (
-      codexCatalogDbExists() &&
-      (catalogWarframeCount() === 0 || isCodexCatalogNewerThanArmory())
-    ) {
-      const summary = syncCodexWarframeCatalog({
-        onLog: (message, level = 'info') => {
-          log(level === 'error' ? 'error' : 'info', message, { source: 'catalogSync' });
-        },
-      });
-      log('info', 'Boot-synced Codex Warframe catalog into Armory', {
-        source: CODEX_WARFRAME_CATALOG_DB_PATH,
-        tables: summary.tables,
-        imagesCopied: summary.imagesCopied,
-      });
+    if (codexCatalogDbExists()) {
+      const sourceSha256 = sha256File(CODEX_WARFRAME_CATALOG_DB_PATH);
+      const lastSyncedSha256 = getLastSyncedSourceSha256();
+      if (catalogWarframeCount() === 0 || sourceSha256 !== lastSyncedSha256) {
+        const summary = syncCodexWarframeCatalog({
+          onLog: (message, level = 'info') => {
+            log(level === 'error' ? 'error' : 'info', message, { source: 'catalogSync' });
+          },
+        });
+        recordSyncedSourceSha256(sourceSha256);
+        log('info', 'Boot-synced Codex Warframe catalog into Armory', {
+          source: CODEX_WARFRAME_CATALOG_DB_PATH,
+          tables: summary.tables,
+          imagesCopied: summary.imagesCopied,
+        });
+      }
     }
   } catch (error) {
     log('warn', 'Codex catalog sync skipped on boot', {

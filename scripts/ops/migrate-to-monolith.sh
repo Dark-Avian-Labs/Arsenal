@@ -2,6 +2,10 @@
 # Interactive VPS cutover script: consolidates Codex, Armory, Outfitter, and BudgetPlanner
 # into the unified Arsenal PM2 service on port 3000 (leaving Sentinel standalone on port 3005).
 #
+# Recommended order: run this cutover script FIRST to populate $ARSENAL_ROOT/data, then run
+# the first Arsenal deploy (deploy.yml). If Arsenal was already deployed/registered, step 1
+# stops it before replacing any SQLite files and restarts it after copying.
+#
 # Run as a user with write access to ARSENAL_ROOT and BACKUP_DIR (e.g. deploy or root).
 set -euo pipefail
 
@@ -37,13 +41,13 @@ rollback_legacy() {
 }
 trap rollback_legacy EXIT
 
-echo "==> 1/5 Stopping legacy PM2 processes first so SQLite files are quiescent (Sentinel stays running)"
+echo "==> 1/5 Stopping legacy PM2 processes (and Arsenal if registered) so SQLite files are quiescent (Sentinel stays running)"
 STOPPED_LEGACY=true
-for proc in Codex Armory Outfitter BudgetPlanner; do
+for proc in Arsenal Codex Armory Outfitter BudgetPlanner; do
   sudo -n -u pm2-user "$PM2_WRAPPER" stop "$proc" 2>/dev/null || true
 done
 
-for port in 3001 3002 3003 3004; do
+for port in 3000 3001 3002 3003 3004; do
   for _ in $(seq 1 15); do
     if ! curl -fsS --max-time 1 -o /dev/null "http://127.0.0.1:$port/healthz" 2>/dev/null; then
       break
@@ -51,7 +55,7 @@ for port in 3001 3002 3003 3004; do
     sleep 1
   done
   if curl -fsS --max-time 1 -o /dev/null "http://127.0.0.1:$port/healthz" 2>/dev/null; then
-    echo "ERROR: legacy service on port $port is still responding after stop; aborting before backup."
+    echo "ERROR: service on port $port is still responding after stop; aborting before backup/copy."
     exit 1
   fi
 done
@@ -114,11 +118,12 @@ elif [ -d "$OUTFITTER_ROOT/data/hero-images" ]; then
   cp -a "$OUTFITTER_ROOT/data/hero-images/." "$ARSENAL_ROOT/data/images/wor/"
 fi
 
-# Start Arsenal immediately if a release is already deployed at $ARSENAL_ROOT/current.
+# Start (or restart) Arsenal immediately if a release is already deployed at $ARSENAL_ROOT/current.
 if [ -f "$ARSENAL_ROOT/current/ecosystem.config.cjs" ]; then
   echo "==> Starting unified Arsenal PM2 process from $ARSENAL_ROOT/current/ecosystem.config.cjs"
-  sudo -n -u pm2-user "$PM2_WRAPPER" start "$ARSENAL_ROOT/current/ecosystem.config.cjs"
-  sudo -n -u pm2-user "$PM2_WRAPPER" save || true
+  if ! sudo -n -u pm2-user "$PM2_WRAPPER" restart Arsenal 2>/dev/null; then
+    sudo -n -u pm2-user "$PM2_WRAPPER" start "$ARSENAL_ROOT/current/ecosystem.config.cjs"
+  fi
   ok=false
   for _ in $(seq 1 30); do
     if curl -fsS --max-time 3 -o /dev/null "http://127.0.0.1:3000/readyz" 2>/dev/null; then
@@ -132,10 +137,11 @@ if [ -f "$ARSENAL_ROOT/current/ecosystem.config.cjs" ]; then
     sudo -n -u pm2-user "$PM2_WRAPPER" stop Arsenal 2>/dev/null || true
     exit 1
   fi
+  sudo -n -u pm2-user "$PM2_WRAPPER" save || true
   echo "    Arsenal is online and passing /readyz on 127.0.0.1:3000"
 else
   echo "==> NOTE: $ARSENAL_ROOT/current/ecosystem.config.cjs not found yet."
-  echo "    Deploy Arsenal first (Forgejo deploy.yml), or legacy apps will remain stopped until you start Arsenal."
+  echo "    Data is now consolidated in $ARSENAL_ROOT/data; run Forgejo deploy.yml next to deploy and start Arsenal."
 fi
 
 STOPPED_LEGACY=false

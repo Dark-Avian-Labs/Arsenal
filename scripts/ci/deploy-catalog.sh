@@ -26,6 +26,41 @@ STAGE="$DATA_DIR/.catalog-incoming-$RUN_ID"
 LOCK_FILE="$SERVER_PATH/.deploy.lock"
 FORCE_SWAP="${FORCE_SWAP:-false}"
 
+# Pre-flight manifest check: skip uploading the entire payload tarball when neither
+# databases nor images changed compared to the deployed catalog-manifest.json.
+if [ "$FORCE_SWAP" != "true" ]; then
+  LOCAL_MANIFEST="$(tar -xzf "$CATALOG_TGZ" -O ./catalog-manifest.json 2>/dev/null || tar -xzf "$CATALOG_TGZ" -O catalog-manifest.json 2>/dev/null || true)"
+  REMOTE_MANIFEST="$($SSH "cat '$DATA_DIR/catalog-manifest.json' 2>/dev/null || true")"
+  if [ -n "$LOCAL_MANIFEST" ] && [ -n "$REMOTE_MANIFEST" ]; then
+    SKIP_UPLOAD="$(node --input-type=module -e '
+      const [localRaw, remoteRaw] = process.argv.slice(1);
+      try {
+        const local = JSON.parse(localRaw);
+        const remote = JSON.parse(remoteRaw);
+        const games = Array.isArray(local.games) ? local.games : [];
+        if (games.length === 0) process.exit(0);
+        for (const [db, info] of Object.entries(local.databases ?? {})) {
+          const prev = remote?.databases?.[db];
+          const nextHash = info?.contentHash ?? info?.sha256;
+          const prevHash = prev?.contentHash ?? prev?.sha256;
+          if (!nextHash || nextHash !== prevHash) process.exit(0);
+        }
+        for (const [game, nextImgHash] of Object.entries(local.imageHashes ?? {})) {
+          const prevImgHash = remote?.imageHashes?.[game];
+          if (!nextImgHash || nextImgHash !== prevImgHash) process.exit(0);
+        }
+        process.stdout.write("true");
+      } catch {
+        // Parse error -> proceed with normal upload & swap.
+      }
+    ' "$LOCAL_MANIFEST" "$REMOTE_MANIFEST")"
+    if [ "$SKIP_UPLOAD" = "true" ]; then
+      echo "==> catalog databases and images unchanged; skipping upload and PM2 restart (zero downtime)"
+      exit 0
+    fi
+  fi
+fi
+
 echo "==> upload $CATALOG_TGZ to $STAGE"
 $SSH "umask 007; set -e; mkdir -p '$STAGE'; tar -xzf - -C '$STAGE'" < "$CATALOG_TGZ"
 
@@ -69,6 +104,9 @@ $SSH "set -euo pipefail
   ' '$STAGE' '$DATA_DIR' '$FORCE_SWAP')
 
   if [ -z \"\$CHANGED_DBS\" ]; then
+    if [ -f '$STAGE/catalog-manifest.json' ]; then
+      mv -f '$STAGE/catalog-manifest.json' '$DATA_DIR/catalog-manifest.json'
+    fi
     echo '==> catalog databases unchanged; skipping PM2 restart (zero downtime)'
     exit 0
   fi
@@ -98,6 +136,7 @@ $SSH "set -euo pipefail
       cp -a '$DATA_DIR/'\"\$db\" '$DATA_DIR/'\"\$db\"'.prev'
     fi
     mv -f '$STAGE/'\"\$db\" '$DATA_DIR/'\"\$db\"
+    touch '$DATA_DIR/'\"\$db\"
     rm -f '$DATA_DIR/'\"\$db\"'-wal' '$DATA_DIR/'\"\$db\"'-shm'
   done
 
