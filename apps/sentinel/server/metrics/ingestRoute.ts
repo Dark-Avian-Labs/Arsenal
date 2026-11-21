@@ -3,6 +3,7 @@ import type { NextFunction, Request, Response } from 'express';
 import { Router } from 'express';
 
 import { SENTINEL_INGEST_TOKEN } from '../config.ts';
+import { evaluateIngestAlerts } from './alerts.ts';
 import { getMetricsDb } from './db.ts';
 import { parseIngestBody } from './ingestSchema.ts';
 import { writeIngestSamples } from './writer.ts';
@@ -40,6 +41,7 @@ ingestRouter.post('/', requireIngestToken, (req: Request, res: Response) => {
     return;
   }
   const written = writeIngestSamples(getMetricsDb(), parsed.value.samples);
+  evaluateIngestAlerts(parsed.value.samples);
   res.status(204).end();
   void written;
 });

@@ -1,25 +1,11 @@
-import Database from 'better-sqlite3';
+import { createDbSingleton } from '@dark-avian-labs/server-kit';
 
 import { ACTIONS_DB_PATH, NODE_ENV } from '../config.ts';
 import { migrateActionsSchema } from './schema.ts';
 
-let actionsDb: Database.Database | null = null;
+const dbPath = NODE_ENV === 'test' ? ':memory:' : ACTIONS_DB_PATH;
+const { getDb: getActionsDb, closeDb: closeActionsDb } = createDbSingleton(dbPath, {
+  onOpen: (db) => migrateActionsSchema(db),
+});
 
-export function getActionsDb(): Database.Database {
-  if (!actionsDb) {
-    const path = NODE_ENV === 'test' ? ':memory:' : ACTIONS_DB_PATH;
-    actionsDb = new Database(path);
-    actionsDb.pragma('journal_mode = WAL');
-    actionsDb.pragma('foreign_keys = ON');
-    actionsDb.pragma('busy_timeout = 5000');
-    migrateActionsSchema(actionsDb);
-  }
-  return actionsDb;
-}
-
-export function closeActionsDb(): void {
-  if (actionsDb) {
-    actionsDb.close();
-    actionsDb = null;
-  }
-}
+export { getActionsDb, closeActionsDb };
