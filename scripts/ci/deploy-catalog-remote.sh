@@ -57,7 +57,9 @@ db_hash() { # $1 manifest file, $2 db name -> contentHash (or sha256), empty whe
 for game in warframe wor; do
   if [ -d "$STAGE/images/$game" ]; then
     mkdir -p "$DATA_DIR/images/$game"
-    cp -a "$STAGE/images/$game/." "$DATA_DIR/images/$game/"
+    # Plain -R, not -a: existing images belong to the PM2 user, and the deploy user may write
+    # them (group web) but not reset their owner or timestamps, which makes cp -a fail.
+    cp -R "$STAGE/images/$game/." "$DATA_DIR/images/$game/"
   fi
 done
 
