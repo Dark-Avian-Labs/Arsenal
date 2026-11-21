@@ -64,6 +64,25 @@ describe('SqliteDatabase (node:sqlite adapter)', () => {
     }
   });
 
+  it('rejects async/thenable transaction callbacks and preserves 64-bit lastInsertRowid', () => {
+    const db = openMemorySqlite();
+    try {
+      db.exec('CREATE TABLE t (id INTEGER PRIMARY KEY, v TEXT NOT NULL)');
+      const insert = db.prepare('INSERT INTO t (id, v) VALUES (?, ?)');
+      const bigId = 9007199254740995n;
+      const runRes = insert.run(bigId, 'big');
+      expect(runRes.lastInsertRowid).toBe(bigId);
+
+      const asyncTx = db.transaction(async () => {
+        insert.run(2, 'should-rollback');
+      });
+      expect(() => asyncTx()).toThrow(TypeError);
+      expect(db.prepare('SELECT v FROM t WHERE id = 2').get()).toBeUndefined();
+    } finally {
+      db.close();
+    }
+  });
+
   it('enforces fileMustExist and readonly mode and resets singleton on close', () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dal-sqlite-'));
     const dbPath = path.join(dir, 'test.db');

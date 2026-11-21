@@ -3,6 +3,7 @@ import './config.ts';
 import { createAppSentinelAgent, log, startServer } from '@dark-avian-labs/server-kit';
 
 import { createApp } from './app.ts';
+import { syncCatalogSnapshotsToCollectionsOnBoot } from './catalogSyncOnBoot.ts';
 import {
   APP_ID,
   APP_NAME,
@@ -63,6 +64,10 @@ function ensureGameSchemasReady(): void {
 ensureGameSchemasReady();
 void refreshEpic7DbAvailability();
 const autoScrapeOnBoot = process.env.CODEX_AUTO_SCRAPE_ON_BOOT === '1';
+
+if (!autoScrapeOnBoot && NODE_ENV !== 'test') {
+  syncCatalogSnapshotsToCollectionsOnBoot();
+}
 
 void refreshWorDbAvailability().then(async () => {
   if (!autoScrapeOnBoot) return;

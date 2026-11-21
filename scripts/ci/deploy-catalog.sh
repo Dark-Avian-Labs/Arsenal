@@ -21,14 +21,21 @@ echo "==> catalog deploy target: ${DEPLOY_HOST/#$SERVER_HOST/SERVER_HOST}"
 SSH="ssh -p $SERVER_SSH_PORT -i $HOME/.ssh/deploy_key -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$HOME/.ssh/known_hosts $SERVER_USER@$DEPLOY_HOST"
 
 DATA_DIR="$SERVER_PATH/data"
-STAGE="$DATA_DIR/.catalog-incoming"
+RUN_ID="$(date -u +%Y%m%d%H%M%S)-$$"
+STAGE="$DATA_DIR/.catalog-incoming-$RUN_ID"
+LOCK_FILE="$SERVER_PATH/.deploy.lock"
 
 echo "==> upload $CATALOG_TGZ to $STAGE"
-$SSH "umask 007; set -e; rm -rf '$STAGE'; mkdir -p '$STAGE'; tar -xzf - -C '$STAGE'" < "$CATALOG_TGZ"
+$SSH "umask 007; set -e; mkdir -p '$STAGE'; tar -xzf - -C '$STAGE'" < "$CATALOG_TGZ"
 
-echo "==> sync catalog images and swap immutable SQLite snapshots"
-$SSH "set -e
+echo "==> acquire deploy lock, stop $PM2_NAME, swap catalog DBs, restart and verify /readyz"
+$SSH "set -euo pipefail
   mkdir -p '$DATA_DIR/images'
+  exec 9>'$LOCK_FILE'
+  flock -w 180 9
+  cleanup() { rm -rf '$STAGE'; }
+  trap cleanup EXIT
+
   if [ -d '$STAGE/images/warframe' ]; then
     mkdir -p '$DATA_DIR/images/warframe'
     cp -a '$STAGE/images/warframe/.' '$DATA_DIR/images/warframe/'
@@ -37,6 +44,15 @@ $SSH "set -e
     mkdir -p '$DATA_DIR/images/wor'
     cp -a '$STAGE/images/wor/.' '$DATA_DIR/images/wor/'
   fi
+
+  # Stop PM2 before replacing SQLite files and clearing WAL/SHM sidecars so no open handles remain.
+  sudo -n -u pm2-user /home/pm2-user/bin/pm2-wrapper stop '$PM2_NAME' || true
+  for _ in \$(seq 1 15); do
+    if ! curl -fsS --max-time 1 -o /dev/null 'http://127.0.0.1:$PORT/healthz' 2>/dev/null; then
+      break
+    fi
+    sleep 1
+  done
 
   for db in warframe-catalog.db wor-catalog.db; do
     if [ -f '$STAGE/'\"\$db\" ]; then
@@ -48,23 +64,21 @@ $SSH "set -e
   if [ -f '$STAGE/catalog-manifest.json' ]; then
     mv -f '$STAGE/catalog-manifest.json' '$DATA_DIR/catalog-manifest.json'
   fi
-  rm -rf '$STAGE'
-"
 
-echo "==> restart $PM2_NAME to open fresh catalog DB inodes"
-$SSH "sudo -n -u pm2-user /home/pm2-user/bin/pm2-wrapper restart '$PM2_NAME'"
+  # Starting Arsenal runs boot-time catalog-to-collection sync for WoR & Warframe before /readyz passes.
+  sudo -n -u pm2-user /home/pm2-user/bin/pm2-wrapper restart '$PM2_NAME'
 
-echo "==> verify /readyz on port $PORT"
-ok=false
-for i in $(seq 1 30); do
-  if $SSH "curl -fsS --max-time 3 -o /dev/null http://127.0.0.1:$PORT/readyz" 2>/dev/null; then
-    ok=true
-    break
+  ok=false
+  for _ in \$(seq 1 30); do
+    if curl -fsS --max-time 3 -o /dev/null 'http://127.0.0.1:$PORT/readyz' 2>/dev/null; then
+      ok=true
+      break
+    fi
+    sleep 2
+  done
+  if [ \"\$ok\" != true ]; then
+    echo 'ERROR: $PM2_NAME did not pass /readyz after catalog swap'
+    exit 1
   fi
-  sleep 2
-done
-if [ "$ok" != true ]; then
-  echo "ERROR: $PM2_NAME did not pass /readyz after catalog swap"
-  exit 1
-fi
+"
 echo "==> catalog swap complete and verified"

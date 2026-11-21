@@ -19,6 +19,7 @@
     "./package.json": "./package.json",
     "./server": "./server/app.ts",
     "./probes": "./server/probes.ts",
+    "./catalog-sync": "./server/catalogSyncOnBoot.ts",
     "./warframe-db": "./server/games/warframe/index.ts",
     "./epic7-db": "./server/games/epic7/index.ts",
     "./wor-db": "./server/games/wor/index.ts"

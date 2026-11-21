@@ -122,11 +122,17 @@ class WrappedStatement implements SqliteStatement {
 
   run(...params: unknown[]): SqliteRunResult {
     try {
-      const res = bindAndCall(
-        params,
-        (named) => this.#stmt.run(named),
-        (...pos) => this.#stmt.run(...pos),
-      );
+      this.#stmt.setReadBigInts(true);
+      let res: ReturnType<StatementSync['run']>;
+      try {
+        res = bindAndCall(
+          params,
+          (named) => this.#stmt.run(named),
+          (...pos) => this.#stmt.run(...pos),
+        );
+      } finally {
+        this.#stmt.setReadBigInts(false);
+      }
       const changes = Number(res.changes);
       const lastInsertRowid =
         typeof res.lastInsertRowid === 'bigint' &&
@@ -223,6 +229,16 @@ export class SqliteDatabase {
   }
 
   transaction<F extends (...args: never[]) => unknown>(fn: F): SqliteTransaction<F> {
+    const assertNotThenable = (value: unknown): void => {
+      if (
+        value !== null &&
+        (typeof value === 'object' || typeof value === 'function') &&
+        typeof (value as { then?: unknown }).then === 'function'
+      ) {
+        throw new TypeError('Transaction function cannot return a promise');
+      }
+    };
+
     const runWithMode = (
       mode: '' | 'DEFERRED' | 'IMMEDIATE' | 'EXCLUSIVE',
       args: Parameters<F>,
@@ -232,6 +248,7 @@ export class SqliteDatabase {
         this.#db.exec(`SAVEPOINT ${sp}`);
         try {
           const result = fn(...args) as ReturnType<F>;
+          assertNotThenable(result);
           this.#db.exec(`RELEASE SAVEPOINT ${sp}`);
           return result;
         } catch (error) {
@@ -247,6 +264,7 @@ export class SqliteDatabase {
       this.#db.exec(mode ? `BEGIN ${mode}` : 'BEGIN');
       try {
         const result = fn(...args) as ReturnType<F>;
+        assertNotThenable(result);
         this.#db.exec('COMMIT');
         return result;
       } catch (error) {

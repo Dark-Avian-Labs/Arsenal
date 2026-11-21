@@ -20,13 +20,21 @@ export function runUserVersionMigrations<Db extends UserVersionMigratableDb>(
   db: Db,
   migrations: readonly SchemaMigration<Db>[],
 ): number {
+  const seen = new Set<number>();
+  for (const migration of migrations) {
+    if (!Number.isInteger(migration.version) || migration.version <= 0) {
+      throw new Error(`Invalid migration version ${migration.version} (${migration.name})`);
+    }
+    if (seen.has(migration.version)) {
+      throw new Error(`Duplicate migration version ${migration.version} (${migration.name})`);
+    }
+    seen.add(migration.version);
+  }
+
   const ordered = [...migrations].sort((a, b) => a.version - b.version);
   let current = getUserVersion(db);
 
   for (const migration of ordered) {
-    if (!Number.isInteger(migration.version) || migration.version <= 0) {
-      throw new Error(`Invalid migration version ${migration.version} (${migration.name})`);
-    }
     if (migration.version <= current) continue;
     const apply = db.transaction(() => {
       migration.up(db);

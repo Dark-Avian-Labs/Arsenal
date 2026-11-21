@@ -22,7 +22,6 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
-    isolate: false,
     env: testEnv,
     include: [
       'server/**/*.test.ts',

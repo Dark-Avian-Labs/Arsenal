@@ -32,7 +32,6 @@ export interface CreateAppOptions {
 export interface AppBundle {
   app: Express;
   apiRouter: Router;
-  writeLimiter?: RequestHandler;
 }
 
 export function createApp(options: CreateAppOptions): AppBundle {
@@ -171,6 +170,7 @@ export function createApp(options: CreateAppOptions): AppBundle {
     max: apiMax,
     standardHeaders: true,
     legacyHeaders: false,
+    skip: (req) => req.method.toUpperCase() === 'OPTIONS',
   });
 
   const writeLimiter =
@@ -184,12 +184,14 @@ export function createApp(options: CreateAppOptions): AppBundle {
           message: { error: 'Too many write requests, please try again later' },
         });
 
+  app.use('/api', appApiLimiter);
+
   app.get('/api/version', (_req, res) => {
     res.setHeader('Cache-Control', 'no-store');
     res.json({ version: options.appVersion });
   });
 
-  app.get('/api/dal-app-nav', appApiLimiter, (req, res) => {
+  app.get('/api/dal-app-nav', (req, res) => {
     void handleDalAppNavProxy(req, res);
   });
 
@@ -204,7 +206,7 @@ export function createApp(options: CreateAppOptions): AppBundle {
       next();
     });
   }
-  app.use('/api', appApiLimiter, rejectCrossSiteWrites, apiRouter);
+  app.use('/api', rejectCrossSiteWrites, apiRouter);
 
   app.use('/api', (_req, res) => {
     res.status(404).json({ error: 'Not found' });
@@ -289,5 +291,5 @@ export function createApp(options: CreateAppOptions): AppBundle {
     },
   );
 
-  return { app, apiRouter, writeLimiter };
+  return { app, apiRouter };
 }

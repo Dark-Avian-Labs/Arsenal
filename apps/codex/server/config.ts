@@ -16,7 +16,9 @@ loadAppEnv(PROJECT_ROOT);
 
 export const APP_VERSION = readReleaseVersion(PROJECT_ROOT, readPackageVersion(PROJECT_ROOT));
 
-export const DATA_DIR = path.join(PROJECT_ROOT, 'data');
+export const DATA_DIR = process.env.DATA_DIR?.trim()
+  ? path.resolve(PROJECT_ROOT, process.env.DATA_DIR.trim())
+  : path.join(PROJECT_ROOT, 'data');
 process.env.DATA_DIR = DATA_DIR;
 
 function resolveGameDbEnvPath(

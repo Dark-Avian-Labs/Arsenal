@@ -18,7 +18,6 @@ export default defineConfig({
         test: {
           name: 'unit',
           environment: 'node',
-          isolate: false,
           env: testEnv,
           exclude: [...defaultExclude, 'dist/**', 'e2e/**'],
           include: [

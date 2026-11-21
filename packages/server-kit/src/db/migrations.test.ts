@@ -36,4 +36,18 @@ describe('runUserVersionMigrations', () => {
     expect(ran).toEqual(['v1', 'v2']);
     db.close();
   });
+
+  it('rejects duplicate migration versions before applying any migration', () => {
+    const db = openMemorySqlite();
+    const ran: string[] = [];
+    const migrations = [
+      { version: 1, name: 'first', up: () => ran.push('first') },
+      { version: 1, name: 'duplicate', up: () => ran.push('duplicate') },
+    ];
+
+    expect(() => runUserVersionMigrations(db, migrations)).toThrow(/Duplicate migration version 1/);
+    expect(ran).toEqual([]);
+    expect(getUserVersion(db)).toBe(0);
+    db.close();
+  });
 });

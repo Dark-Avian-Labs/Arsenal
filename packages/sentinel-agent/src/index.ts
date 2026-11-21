@@ -92,81 +92,92 @@ export function createSentinelAgent(options: SentinelAgentOptions): {
   let lastCpuUsage = process.cpuUsage();
   let lastCpuHrTime = process.hrtime.bigint();
   let pendingSamples: unknown[] = [];
+  let flushing = false;
   let timer: ReturnType<typeof setInterval> | null = null;
   let stopped = false;
   let exitReport: Promise<void> | null = null;
 
   const flush = async () => {
-    const samples: unknown[] = [];
-    const now = Date.now();
-    const mem = process.memoryUsage();
-    const lagP50 = histogram.percentile(50) / 1e6;
-    const lagP95 = histogram.percentile(95) / 1e6;
-    const lagMax = histogram.max / 1e6;
-    histogram.reset();
+    if (flushing) return;
+    flushing = true;
+    try {
+      const httpSamples: unknown[] = [];
+      const now = Date.now();
+      const mem = process.memoryUsage();
+      const lagP50 = histogram.percentile(50) / 1e6;
+      const lagP95 = histogram.percentile(95) / 1e6;
+      const lagMax = histogram.max / 1e6;
+      histogram.reset();
 
-    const eluNow = performance.eventLoopUtilization(lastElu);
-    lastElu = performance.eventLoopUtilization();
-    const elu = latenciesFinite(eluNow.utilization);
+      const eluNow = performance.eventLoopUtilization(lastElu);
+      lastElu = performance.eventLoopUtilization();
+      const elu = latenciesFinite(eluNow.utilization);
 
-    const cpuDelta = process.cpuUsage(lastCpuUsage);
-    const nowHr = process.hrtime.bigint();
-    const elapsedUs = Number(nowHr - lastCpuHrTime) / 1000;
-    lastCpuUsage = process.cpuUsage();
-    lastCpuHrTime = nowHr;
-    const cpuPct =
-      elapsedUs > 0
-        ? latenciesFinite(((cpuDelta.user + cpuDelta.system) / elapsedUs) * 100)
-        : undefined;
+      const cpuDelta = process.cpuUsage(lastCpuUsage);
+      const nowHr = process.hrtime.bigint();
+      const elapsedUs = Number(nowHr - lastCpuHrTime) / 1000;
+      lastCpuUsage = process.cpuUsage();
+      lastCpuHrTime = nowHr;
+      const cpuPct =
+        elapsedUs > 0
+          ? latenciesFinite(((cpuDelta.user + cpuDelta.system) / elapsedUs) * 100)
+          : undefined;
 
-    const gcSorted = [...gcDurationsMs].sort((a, b) => a - b);
-    const gcP95Ms = percentile(gcSorted, 95);
-    gcDurationsMs.length = 0;
+      const gcSorted = [...gcDurationsMs].sort((a, b) => a - b);
+      const gcP95Ms = percentile(gcSorted, 95);
+      gcDurationsMs.length = 0;
 
-    samples.push({
-      kind: 'process',
-      appId: options.appId,
-      displayName: options.displayName ?? options.appId,
-      ts: now,
-      cpu: cpuPct,
-      heapMb: mem.heapUsed / (1024 * 1024),
-      heapTotalMb: mem.heapTotal / (1024 * 1024),
-      heapExternalMb: mem.external / (1024 * 1024),
-      rssMb: mem.rss / (1024 * 1024),
-      lagP50Ms: latenciesFinite(lagP50),
-      lagP95Ms: latenciesFinite(lagP95),
-      lagMaxMs: latenciesFinite(lagMax),
-      elu,
-      uptimeSec: process.uptime(),
-      gcP95Ms,
-      status: 'online',
-    });
-
-    for (const bucket of httpBuckets.values()) {
-      const sorted = [...bucket.latencies].sort((a, b) => a - b);
-      samples.push({
-        kind: 'http',
+      const processSample = {
+        kind: 'process',
         appId: options.appId,
         displayName: options.displayName ?? options.appId,
         ts: now,
-        method: bucket.method,
-        routePattern: bucket.routePattern,
-        statusClass: bucket.statusClass,
-        count: bucket.count,
-        latencyP50Ms: percentile(sorted, 50),
-        latencyP95Ms: percentile(sorted, 95),
-        latencyMaxMs: sorted[sorted.length - 1],
-      });
-    }
-    httpBuckets.clear();
+        cpu: cpuPct,
+        heapMb: mem.heapUsed / (1024 * 1024),
+        heapTotalMb: mem.heapTotal / (1024 * 1024),
+        heapExternalMb: mem.external / (1024 * 1024),
+        rssMb: mem.rss / (1024 * 1024),
+        lagP50Ms: latenciesFinite(lagP50),
+        lagP95Ms: latenciesFinite(lagP95),
+        lagMaxMs: latenciesFinite(lagMax),
+        elu,
+        uptimeSec: process.uptime(),
+        gcP95Ms,
+        status: 'online',
+      };
 
-    const batch = [...pendingSamples, ...samples].slice(-MAX_PENDING_SAMPLES);
-    pendingSamples = [];
-    try {
-      await postIngest(options.ingestUrl, options.token, batch);
-    } catch (err) {
-      pendingSamples = batch.slice(-MAX_PENDING_SAMPLES);
-      throw err;
+      for (const bucket of httpBuckets.values()) {
+        const sorted = [...bucket.latencies].sort((a, b) => a - b);
+        httpSamples.push({
+          kind: 'http',
+          appId: options.appId,
+          displayName: options.displayName ?? options.appId,
+          ts: now,
+          method: bucket.method,
+          routePattern: bucket.routePattern,
+          statusClass: bucket.statusClass,
+          count: bucket.count,
+          latencyP50Ms: percentile(sorted, 50),
+          latencyP95Ms: percentile(sorted, 95),
+          latencyMaxMs: sorted[sorted.length - 1],
+        });
+      }
+      httpBuckets.clear();
+
+      // Reserve one slot for the current process heartbeat so high-cardinality HTTP
+      // buckets cannot evict it when the retry queue hits MAX_PENDING_SAMPLES.
+      const nonProcessBudget = Math.max(0, MAX_PENDING_SAMPLES - 1);
+      const nonProcess = [...pendingSamples, ...httpSamples].slice(-nonProcessBudget);
+      const batch = [...nonProcess, processSample];
+      pendingSamples = [];
+      try {
+        await postIngest(options.ingestUrl, options.token, batch);
+      } catch (err) {
+        pendingSamples = [...batch, ...pendingSamples].slice(-MAX_PENDING_SAMPLES);
+        throw err;
+      }
+    } finally {
+      flushing = false;
     }
   };
 

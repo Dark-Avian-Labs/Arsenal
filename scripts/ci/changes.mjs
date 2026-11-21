@@ -76,6 +76,9 @@ function classifyChanges(files) {
 
     if (file.startsWith('apps/arsenal/')) {
       arsenalTouched = true;
+      for (const app of ARSENAL_MEMBERS) {
+        if (app !== 'arsenal') affected[app] = true;
+      }
       continue;
     }
 
@@ -131,6 +134,19 @@ function selfCheck() {
   const sentinelOnly = classifyChanges(['apps/sentinel/server/index.ts']);
   if (sentinelOnly.deploy.arsenal || !sentinelOnly.deploy.sentinel) {
     throw new Error(`sentinel-only wrong: ${JSON.stringify(sentinelOnly.deploy)}`);
+  }
+
+  const arsenalOnly = classifyChanges(['apps/arsenal/server/hostRouter.ts']);
+  if (
+    !arsenalOnly.deploy.arsenal ||
+    arsenalOnly.deploy.sentinel ||
+    !arsenalOnly.affected.codex ||
+    !arsenalOnly.affected.armory ||
+    !arsenalOnly.affected.outfitter ||
+    !arsenalOnly.affected['budget-planner'] ||
+    arsenalOnly.affected.sentinel
+  ) {
+    throw new Error(`arsenal-only wrong: ${JSON.stringify(arsenalOnly)}`);
   }
 
   const wfCat = classifyChanges(['packages/warframe-catalog/src/queries.ts']);

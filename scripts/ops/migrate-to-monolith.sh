@@ -14,12 +14,30 @@ echo "=== Arsenal Monolith Cutover ==="
 echo "Target unified root : $ARSENAL_ROOT"
 echo "Backup destination  : $BACKUP_DIR"
 echo ""
-read -r -p "Proceed with backup + data consolidation? [y/N] " reply
+read -r -p "Proceed with stopping legacy services, backup, and data consolidation? [y/N] " reply
 [[ "$reply" =~ ^[Yy]$ ]] || { echo "Aborted."; exit 0; }
 
 mkdir -p "$BACKUP_DIR" "$ARSENAL_ROOT/data/images/warframe" "$ARSENAL_ROOT/data/images/wor"
 
-echo "==> 1/5 Backing up existing app data directories"
+echo "==> 1/5 Stopping legacy PM2 processes first so SQLite files are quiescent (Sentinel stays running)"
+for proc in Codex Armory Outfitter BudgetPlanner; do
+  sudo -n -u pm2-user /home/pm2-user/bin/pm2-wrapper stop "$proc" 2>/dev/null || true
+done
+
+for port in 3001 3002 3003 3004; do
+  for _ in $(seq 1 15); do
+    if ! curl -fsS --max-time 1 -o /dev/null "http://127.0.0.1:$port/healthz" 2>/dev/null; then
+      break
+    fi
+    sleep 1
+  done
+  if curl -fsS --max-time 1 -o /dev/null "http://127.0.0.1:$port/healthz" 2>/dev/null; then
+    echo "ERROR: legacy service on port $port is still responding after stop; aborting before backup."
+    exit 1
+  fi
+done
+
+echo "==> 2/5 Backing up quiescent app data directories"
 for pair in "codex:$CODEX_ROOT" "armory:$ARMORY_ROOT" "outfitter:$OUTFITTER_ROOT" "budget:$BUDGET_ROOT"; do
   name="${pair%%:*}"
   dir="${pair#*:}"
@@ -29,18 +47,26 @@ for pair in "codex:$CODEX_ROOT" "armory:$ARMORY_ROOT" "outfitter:$OUTFITTER_ROOT
   fi
 done
 
-echo "==> 2/5 Stopping legacy PM2 processes (Sentinel stays running)"
-for proc in Codex Armory Outfitter BudgetPlanner; do
-  sudo -n -u pm2-user /home/pm2-user/bin/pm2-wrapper stop "$proc" 2>/dev/null || true
-done
-
+# Use SQLite VACUUM INTO via Node 26 built-in node:sqlite so any uncheckpointed WAL frames
+# are cleanly consolidated into a self-contained database file.
 copy_db() {
   local src="$1"
   local dst="$2"
   if [ -f "$src" ]; then
-    cp -a "$src" "$dst"
-    rm -f "${dst}-wal" "${dst}-shm"
-    echo "    copied $src -> $dst"
+    rm -f "$dst" "${dst}-wal" "${dst}-shm"
+    node --input-type=module -e '
+      import { DatabaseSync } from "node:sqlite";
+      const [src, dst] = process.argv.slice(1);
+      const db = new DatabaseSync(src);
+      try {
+        db.exec("PRAGMA busy_timeout = 5000");
+        const sqlDst = dst.replaceAll("\x27", "\x27\x27");
+        db.exec(`VACUUM INTO \x27${sqlDst}\x27`);
+      } finally {
+        db.close();
+      }
+    ' "$src" "$dst"
+    echo "    snapshot $src -> $dst"
   else
     echo "    [skip] $src not found"
   fi

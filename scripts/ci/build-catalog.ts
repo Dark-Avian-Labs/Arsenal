@@ -86,7 +86,8 @@ async function main(): Promise<void> {
   fs.mkdirSync(workDir, { recursive: true });
   fs.mkdirSync(stageDir, { recursive: true });
 
-  // Point Codex config paths at an isolated staging workspace so we never touch developer data/.
+  // Point Codex config paths at an isolated staging workspace inside DATA_DIR so we never touch developer data/.
+  process.env.DATA_DIR = workDir;
   process.env.WARFRAME_DB_PATH = path.join(workDir, 'warframe.db');
   process.env.WARFRAME_CATALOG_DB_PATH = path.join(workDir, 'warframe-catalog.db');
   process.env.EPIC7_DB_PATH = path.join(workDir, 'epic7.db');
@@ -120,12 +121,17 @@ async function main(): Promise<void> {
       await import('../../apps/codex/server/import/warframe/startupPipeline.ts');
     const { closeCatalogDb } =
       await import('../../apps/codex/server/import/warframe/db/connection.ts');
-    await runStartupPipeline({
+    const summary = await runStartupPipeline({
       forceImport: force,
       forceImages,
       cliReport: true,
     });
     closeCatalogDb();
+    if (summary.blockingIssues.length > 0) {
+      throw new Error(
+        `Warframe catalog pipeline reported blocking issue(s): ${summary.blockingIssues.join('; ')}`,
+      );
+    }
     const dest = path.join(stageDir, 'warframe-catalog.db');
     vacuumCopy(process.env.WARFRAME_CATALOG_DB_PATH, dest);
     manifest.games.push('warframe');
@@ -154,6 +160,17 @@ async function main(): Promise<void> {
     });
     closeWorCatalogDb();
     closeWorDb();
+    // Stamp a monotonically increasing Unix-epoch catalog_version so production collection DBs
+    // always detect a newly built snapshot (fresh builds would otherwise always emit version 1).
+    const snapshotVersion = Math.floor(Date.now() / 1000);
+    const worMetaDb = new SqliteDatabase(process.env.WOR_CATALOG_DB_PATH, { fileMustExist: true });
+    try {
+      worMetaDb
+        .prepare('UPDATE catalog_meta SET catalog_version = MAX(catalog_version, ?) WHERE id = 1')
+        .run(snapshotVersion);
+    } finally {
+      worMetaDb.close();
+    }
     const dest = path.join(stageDir, 'wor-catalog.db');
     vacuumCopy(process.env.WOR_CATALOG_DB_PATH, dest);
     manifest.games.push('wor');

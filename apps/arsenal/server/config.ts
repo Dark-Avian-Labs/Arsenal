@@ -70,6 +70,7 @@ export function applyUnifiedSubAppEnv(baseDataDir = DATA_DIR): UnifiedDataPaths 
   fs.mkdirSync(paths.worImagesDir, { recursive: true });
 
   process.env.ARSENAL_SKIP_LOAD_ENV = '1';
+  process.env.DATA_DIR = baseDataDir;
   process.env.WARFRAME_DB_PATH = paths.warframeDb;
   process.env.WARFRAME_CATALOG_DB_PATH = paths.warframeCatalogDb;
   process.env.EPIC7_DB_PATH = paths.epic7Db;

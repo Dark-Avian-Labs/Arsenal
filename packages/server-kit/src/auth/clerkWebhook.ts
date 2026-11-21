@@ -7,6 +7,7 @@ import { log } from '../logger.ts';
 const PASSWORD_WRITE_WINDOW_MS = 5_000;
 const RESET_SESSION_SKEW_MS = 2_000;
 const SESSION_PAGE = 100;
+const MAX_SESSION_PAGES = 20;
 
 export type ClerkUserWebhookPayload = {
   id: string;
@@ -50,22 +51,35 @@ export async function revokeSessionsOpenedBefore(
   userId: string,
   cutoff: number,
 ): Promise<number> {
-  const list = await sessions.getSessionList({
-    userId,
-    status: 'active',
-    limit: SESSION_PAGE,
-    offset: 0,
-  });
-  if (list.data.length === SESSION_PAGE) {
-    log('warn', 'Password change session revoke scanned only the first page', {
+  // Collect all matching session IDs across pages before revoking so revocations
+  // do not shift offsets on subsequent pages.
+  const toRevoke: string[] = [];
+  let offset = 0;
+  for (let page = 0; page < MAX_SESSION_PAGES; page += 1) {
+    const list = await sessions.getSessionList({
       userId,
+      status: 'active',
       limit: SESSION_PAGE,
+      offset,
     });
+    for (const session of list.data) {
+      if (session.createdAt < cutoff) {
+        toRevoke.push(session.id);
+      }
+    }
+    if (list.data.length < SESSION_PAGE) break;
+    offset += list.data.length;
+    if (page === MAX_SESSION_PAGES - 1) {
+      log('warn', 'Password change session revoke hit page cap', {
+        userId,
+        scanned: offset,
+      });
+    }
   }
+
   let revoked = 0;
-  for (const session of list.data) {
-    if (session.createdAt >= cutoff) continue;
-    await sessions.revokeSession(session.id);
+  for (const sessionId of toRevoke) {
+    await sessions.revokeSession(sessionId);
     revoked += 1;
   }
   return revoked;
@@ -81,6 +95,10 @@ function readUserPayload(event: WebhookEvent): ClerkUserWebhookPayload | null {
   return { id: data.id, username, raw: data };
 }
 
+/**
+ * Mount behind `express.raw({ type: 'application/json' })` before `express.json()` so
+ * `verifyWebhook` receives the original raw payload required for Svix signature verification.
+ */
 export function createClerkWebhookRouter(handlers: ClerkWebhookHandlers): Router {
   const router = Router();
   const revokeOnPasswordChange = handlers.revokeOnPasswordChange ?? true;

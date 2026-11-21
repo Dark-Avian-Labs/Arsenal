@@ -32,6 +32,7 @@ async function main(): Promise<void> {
   const [
     codexAppMod,
     codexProbesMod,
+    codexCatalogSyncMod,
     codexWfMod,
     codexE7Mod,
     codexWorMod,
@@ -45,6 +46,7 @@ async function main(): Promise<void> {
   ] = await Promise.all([
     import('codex/server'),
     import('codex/probes'),
+    import('codex/catalog-sync'),
     import('codex/warframe-db'),
     import('codex/epic7-db'),
     import('codex/wor-db'),
@@ -56,6 +58,10 @@ async function main(): Promise<void> {
     import('budget-planner/server'),
     import('budget-planner/db'),
   ]);
+
+  if (NODE_ENV !== 'test') {
+    codexCatalogSyncMod.syncCatalogSnapshotsToCollectionsOnBoot();
+  }
 
   const sentinelAgent = createAppSentinelAgent({
     appId: APP_ID,
