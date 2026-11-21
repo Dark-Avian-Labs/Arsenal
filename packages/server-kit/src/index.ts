@@ -56,6 +56,7 @@ export { getRequestId, requestIdMiddleware, sanitizeRequestId } from './http/req
 export { timingSafeEqualString } from './http/timingSafeEqual.ts';
 export { log } from './logger.ts';
 export { getAppPublicBaseUrl } from './middleware/appPublicBaseUrl.ts';
+export type { AppPublicBaseUrlOptions } from './middleware/appPublicBaseUrl.ts';
 export { createAppSentinelAgent } from './sentinelAgent.ts';
 export { startServer } from './startServer.ts';
 export { optionalPositiveInt, positiveInt, validateBody, z, zodEnum } from './validation.ts';

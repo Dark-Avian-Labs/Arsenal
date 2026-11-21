@@ -1,4 +1,4 @@
-function computeAppPublicBaseUrlFromDomainParts(): string | null {
+function computeAppPublicBaseUrlFromDomainParts(subdomainOverride?: string): string | null {
   const baseDomain = process.env.BASE_DOMAIN?.trim().toLowerCase();
   if (!baseDomain) {
     return null;
@@ -13,15 +13,31 @@ function computeAppPublicBaseUrlFromDomainParts(): string | null {
     return null;
   }
   const subdomain =
+    subdomainOverride?.trim().toLowerCase() ||
     process.env.APP_SUBDOMAIN?.trim().toLowerCase() ||
     process.env.APP_ID?.trim().toLowerCase() ||
     'codex';
   return `${protocol}://${subdomain}.${baseDomain}`;
 }
 
-export function getAppPublicBaseUrl(): string {
+export interface AppPublicBaseUrlOptions {
+  /**
+   * Subdomain of the calling app (e.g. `armory`). Inside the unified Arsenal host every mounted
+   * app shares one APP_PUBLIC_BASE_URL (Codex's), so apps that build absolute links for their own
+   * host pass their subdomain to get `${BASE_PROTOCOL}://${subdomain}.${BASE_DOMAIN}` instead.
+   */
+  unifiedHostSubdomain?: string;
+}
+
+export function getAppPublicBaseUrl(options: AppPublicBaseUrlOptions = {}): string {
+  const unifiedOverride =
+    process.env.ARSENAL_UNIFIED_HOST === '1' && options.unifiedHostSubdomain?.trim()
+      ? computeAppPublicBaseUrlFromDomainParts(options.unifiedHostSubdomain)
+      : null;
   const configured =
-    process.env.APP_PUBLIC_BASE_URL?.trim() || computeAppPublicBaseUrlFromDomainParts();
+    unifiedOverride ||
+    process.env.APP_PUBLIC_BASE_URL?.trim() ||
+    computeAppPublicBaseUrlFromDomainParts();
   if (!configured) {
     throw new Error(
       'APP_PUBLIC_BASE_URL must be set, or set BASE_DOMAIN with BASE_PROTOCOL and APP_SUBDOMAIN (or APP_ID).',

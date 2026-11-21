@@ -206,7 +206,12 @@ export function buildSharePreview(
   }
 
   try {
-    const preview = loadSharePreview(deps, buildId, req, getAppPublicBaseUrl());
+    const preview = loadSharePreview(
+      deps,
+      buildId,
+      req,
+      getAppPublicBaseUrl({ unifiedHostSubdomain: 'armory' }),
+    );
     if (!preview) {
       next();
       return;
