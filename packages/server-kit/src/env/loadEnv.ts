@@ -50,6 +50,10 @@ export function loadAppEnv(
   projectRoot: string,
   options?: { overload?: boolean; requireClerkKeys?: boolean },
 ): void {
+  if (process.env.ARSENAL_SKIP_LOAD_ENV === '1') {
+    normalizeClerkEnv({ requireKeys: options?.requireClerkKeys });
+    return;
+  }
   const envKeysPath = path.join(projectRoot, '.env.keys');
   if (fs.existsSync(envKeysPath)) {
     try {

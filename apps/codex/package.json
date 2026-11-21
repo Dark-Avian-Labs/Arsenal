@@ -15,6 +15,14 @@
     "scripts/data"
   ],
   "type": "module",
+  "exports": {
+    "./package.json": "./package.json",
+    "./server": "./server/app.ts",
+    "./probes": "./server/probes.ts",
+    "./warframe-db": "./server/games/warframe/index.ts",
+    "./epic7-db": "./server/games/epic7/index.ts",
+    "./wor-db": "./server/games/wor/index.ts"
+  },
   "scripts": {
     "typecheck": "pnpm run typecheck:server && pnpm run typecheck:client",
     "typecheck:server": "tsc -p tsconfig.server.json --noEmit",

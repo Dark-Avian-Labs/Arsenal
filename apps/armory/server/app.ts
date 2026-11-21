@@ -31,6 +31,7 @@ export interface CreateAppOptions {
   catalogDb?: SqliteDatabase;
   userDb?: SqliteDatabase;
   metricsMiddleware?: express.RequestHandler;
+  clientDir?: string;
 }
 
 const GAME_ASSET_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
@@ -56,6 +57,7 @@ export function createApp(options: CreateAppOptions = {}): AppBundle {
     appId: APP_ID,
     appVersion: APP_VERSION,
     projectRoot: PROJECT_ROOT,
+    clientDir: options.clientDir,
     nodeEnv: NODE_ENV,
     trustProxy: TRUST_PROXY,
     secureCookies: SECURE_COOKIES,

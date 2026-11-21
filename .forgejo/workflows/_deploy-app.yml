@@ -57,7 +57,7 @@ jobs:
           printf '{"version":"%s","sha":"%s","builtAt":"%s"}\n' "$VERSION" "$SHA" "$(date -u +%FT%TZ)" > /tmp/deploy/release.json
           test -f /tmp/deploy/.env.production || cp "apps/$APP/.env.production" /tmp/deploy/.env.production
           test -f /tmp/deploy/ecosystem.config.cjs
-          test -d /tmp/deploy/dist/client
+          test -d /tmp/deploy/dist/client || test -d /tmp/deploy/node_modules/codex/dist/client
           test -d /tmp/deploy/server
           test -f /tmp/deploy/node_modules/@dark-avian-labs/server-kit/dist/index.js
           test -f /tmp/deploy/node_modules/@dark-avian-labs/sentinel-agent/dist/index.js

@@ -1,0 +1,130 @@
+import { openMemorySqlite } from '@dark-avian-labs/server-kit';
+import express from 'express';
+import request from 'supertest';
+import { describe, expect, it } from 'vitest';
+
+import { createArsenalHostApp, parseHostMapEnv } from './hostRouter.ts';
+import { deleteClerkUserAcrossApps } from './userCleanup.ts';
+
+function stubApp(name: string) {
+  const app = express();
+  app.get('/ping', (_req, res) => res.json({ app: name }));
+  return app;
+}
+
+describe('createArsenalHostApp', () => {
+  const hostApp = createArsenalHostApp({
+    appVersion: '2.0.0',
+    trustProxy: true,
+    hostMap: parseHostMapEnv('{"custom.example.com":"outfitter"}'),
+    apps: {
+      codex: stubApp('codex'),
+      armory: stubApp('armory'),
+      outfitter: stubApp('outfitter'),
+      'budget-planner': stubApp('budget-planner'),
+    },
+    readinessChecks: {
+      codex: () => true,
+      armory: () => true,
+      outfitter: () => true,
+      'budget-planner': () => true,
+    },
+  });
+
+  it('dispatches requests by Host subdomain and custom hostMap', async () => {
+    const cases: Array<[string, string]> = [
+      ['codex.darkavianlabs.com', 'codex'],
+      ['armory.darkavianlabs.com', 'armory'],
+      ['outfitter.darkavianlabs.com', 'outfitter'],
+      ['budget.darkavianlabs.com', 'budget-planner'],
+      ['custom.example.com', 'outfitter'],
+    ];
+
+    for (const [host, expected] of cases) {
+      const res = await request(hostApp).get('/ping').set('Host', host);
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ app: expected });
+    }
+  });
+
+  it('supports X-Arsenal-App header routing for local dev/testing', async () => {
+    const res = await request(hostApp).get('/ping').set('Host', '127.0.0.1:3000').set('X-Arsenal-App', 'armory');
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ app: 'armory' });
+  });
+
+  it('serves unified /healthz, /readyz, and /api/version endpoints', async () => {
+    const health = await request(hostApp).get('/healthz');
+    expect(health.status).toBe(200);
+    expect(health.body.ok).toBe(true);
+
+    const version = await request(hostApp).get('/api/version');
+    expect(version.status).toBe(200);
+    expect(version.body).toEqual({ version: '2.0.0' });
+
+    const ready = await request(hostApp).get('/readyz');
+    expect(ready.status).toBe(200);
+    expect(ready.body.ok).toBe(true);
+  });
+
+  it('returns 503 on /readyz if any mounted sub-app fails readiness', async () => {
+    const failing = createArsenalHostApp({
+      appVersion: '2.0.0',
+      trustProxy: false,
+      apps: {
+        codex: stubApp('codex'),
+        armory: stubApp('armory'),
+        outfitter: stubApp('outfitter'),
+        'budget-planner': stubApp('budget-planner'),
+      },
+      readinessChecks: {
+        codex: () => true,
+        armory: () => false,
+        outfitter: () => true,
+        'budget-planner': () => true,
+      },
+    });
+    const res = await request(failing).get('/readyz');
+    expect(res.status).toBe(503);
+    expect(res.body.ok).toBe(false);
+    expect(res.body.apps.armory).toBe(false);
+  });
+});
+
+describe('deleteClerkUserAcrossApps', () => {
+  it('cleans up user records across all mounted databases on Clerk user.deleted', () => {
+    const budgetDb = openMemorySqlite();
+    const outfitterDb = openMemorySqlite();
+    const codexWfDb = openMemorySqlite();
+    let armoryDeleted: string | null = null;
+
+    try {
+      budgetDb.exec('CREATE TABLE users (id TEXT PRIMARY KEY, clerk_user_id TEXT NOT NULL)');
+      budgetDb.prepare('INSERT INTO users (id, clerk_user_id) VALUES (?, ?)').run('u1', 'user_42');
+
+      outfitterDb.exec('CREATE TABLE game_accounts (id INTEGER PRIMARY KEY, clerk_user_id TEXT NOT NULL)');
+      outfitterDb.prepare('INSERT INTO game_accounts (clerk_user_id) VALUES (?)').run('user_42');
+
+      codexWfDb.exec('CREATE TABLE worksheets (id INTEGER PRIMARY KEY, clerk_user_id TEXT NOT NULL)');
+      codexWfDb.prepare('INSERT INTO worksheets (clerk_user_id) VALUES (?)').run('user_42');
+
+      const summary = deleteClerkUserAcrossApps('user_42', {
+        armoryMarkDeleted: (id) => {
+          armoryDeleted = id;
+        },
+        budgetDb: () => budgetDb,
+        outfitterDb: () => outfitterDb,
+        codexWarframeDb: () => codexWfDb,
+      });
+
+      expect(armoryDeleted).toBe('user_42');
+      expect(summary.budgetUsers).toBe(1);
+      expect(summary.outfitterAccounts).toBe(1);
+      expect(summary.codexWarframeSheets).toBe(1);
+    } finally {
+      budgetDb.close();
+      outfitterDb.close();
+      codexWfDb.close();
+    }
+  });
+});

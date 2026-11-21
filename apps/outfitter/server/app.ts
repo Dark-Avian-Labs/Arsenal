@@ -23,6 +23,7 @@ export interface AppBundle {
 export interface CreateAppOptions {
   metricsMiddleware?: express.RequestHandler;
   helmet?: { extraScriptSrc?: string[]; extraConnectSrc?: string[] };
+  clientDir?: string;
 }
 
 export function createApp(options: CreateAppOptions = {}): AppBundle {
@@ -33,6 +34,7 @@ export function createApp(options: CreateAppOptions = {}): AppBundle {
     appId: APP_ID,
     appVersion: APP_VERSION,
     projectRoot: PROJECT_ROOT,
+    clientDir: options.clientDir,
     nodeEnv: NODE_ENV,
     trustProxy: TRUST_PROXY,
     secureCookies: SECURE_COOKIES,

@@ -15,6 +15,7 @@ export interface CreateAppOptions {
   appId: string;
   appVersion: string;
   projectRoot: string;
+  clientDir?: string;
   nodeEnv: string;
   trustProxy: boolean;
   secureCookies: boolean;
@@ -117,9 +118,10 @@ export function createApp(options: CreateAppOptions): AppBundle {
   });
 
   const clientDir =
-    options.nodeEnv !== 'production' && process.env.E2E_CLIENT_DIR?.trim()
+    options.clientDir ??
+    (options.nodeEnv !== 'production' && process.env.E2E_CLIENT_DIR?.trim()
       ? path.resolve(process.env.E2E_CLIENT_DIR.trim())
-      : path.join(options.projectRoot, 'dist', 'client');
+      : path.join(options.projectRoot, 'dist', 'client'));
   const faviconPng = path.join(clientDir, 'favicon.png');
   const sendFavicon: RequestHandler = (_req, res, next) => {
     if (!fs.existsSync(faviconPng)) {

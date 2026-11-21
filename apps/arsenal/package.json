@@ -1,0 +1,41 @@
+{
+  "name": "arsenal",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Arsenal - unified Dark Avian Labs application host (Codex, Armory, Outfitter, BudgetPlanner)",
+  "license": "MIT",
+  "files": [
+    "server",
+    "ecosystem.config.cjs",
+    ".env.production"
+  ],
+  "type": "module",
+  "scripts": {
+    "start": "node server/index.ts",
+    "dev": "node --watch server/index.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "build": "pnpm run typecheck && node scripts/build.mjs",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@clerk/express": "catalog:",
+    "@dark-avian-labs/sentinel-agent": "workspace:*",
+    "@dark-avian-labs/server-kit": "workspace:*",
+    "@dotenvx/dotenvx": "catalog:",
+    "armory": "workspace:*",
+    "budget-planner": "workspace:*",
+    "codex": "workspace:*",
+    "express": "catalog:",
+    "express-rate-limit": "catalog:",
+    "outfitter": "workspace:*"
+  },
+  "devDependencies": {
+    "@dark-avian-labs/config": "workspace:*",
+    "@types/express": "catalog:",
+    "@types/node": "catalog:",
+    "@types/supertest": "^7.2.1",
+    "supertest": "^7.3.2",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

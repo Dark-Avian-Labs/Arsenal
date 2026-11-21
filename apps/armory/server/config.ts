@@ -16,7 +16,6 @@ export const APP_VERSION = readReleaseVersion(PROJECT_ROOT, readPackageVersion(P
 
 export const DATA_DIR = path.join(PROJECT_ROOT, 'data');
 export const EXPORTS_DIR = path.join(DATA_DIR, 'exports');
-export const IMAGES_DIR = path.join(DATA_DIR, 'images');
 
 function resolveProjectPath(configured: string | undefined, fallbackRelative: string): string {
   const value = configured?.trim();
@@ -26,8 +25,13 @@ function resolveProjectPath(configured: string | undefined, fallbackRelative: st
   return path.resolve(PROJECT_ROOT, fallbackRelative);
 }
 
+export const IMAGES_DIR = resolveProjectPath(
+  process.env.ARMORY_IMAGES_DIR || process.env.WARFRAME_IMAGES_DIR,
+  path.join('data', 'images'),
+);
+
 export const ARMORY_DB_PATH = resolveProjectPath(
-  process.env.ARMORY_DB_PATH,
+  process.env.ARMORY_DB_PATH || process.env.WARFRAME_CATALOG_DB_PATH,
   path.join('data', 'armory.db'),
 );
 

@@ -43,11 +43,11 @@ function resolveProjectPath(configured: string | undefined, fallbackRelative: st
 }
 
 export const APP_DB_PATH = resolveProjectPath(
-  process.env.APP_DB_PATH,
+  process.env.OUTFITTER_DB_PATH || process.env.APP_DB_PATH,
   path.join('data', 'outfitter.db'),
 );
 export const HERO_IMAGES_DIR = resolveProjectPath(
-  process.env.HERO_IMAGES_DIR,
+  process.env.HERO_IMAGES_DIR || process.env.WOR_IMAGES_DIR,
   path.join('data', 'hero-images'),
 );
 export const CODEX_WOR_DB_PATH = resolveProjectPath(
