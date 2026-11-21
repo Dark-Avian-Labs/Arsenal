@@ -9,8 +9,33 @@ export {
 } from './auth/middleware.ts';
 export { getClerkAuthorizedParties } from './auth/clerkAuthorizedParties.ts';
 export { APP_ADMIN_ROLE, isAppAdmin, metadataFromSessionClaims } from './auth/clerk.ts';
+export {
+  createClerkWebhookRouter,
+  passwordChangeCutoff,
+  revokeSessionsOpenedBefore,
+  type ClerkSessionPageClient,
+  type ClerkUserWebhookPayload,
+  type ClerkWebhookHandlers,
+} from './auth/clerkWebhook.ts';
 export { createApp, type AppBundle, type CreateAppOptions } from './createApp.ts';
-export { createDbSingleton, openSqlite } from './db/sqlite.ts';
+export {
+  getUserVersion,
+  runUserVersionMigrations,
+  type SchemaMigration,
+  type UserVersionMigratableDb,
+} from './db/migrations.ts';
+export {
+  createDbSingleton,
+  openMemorySqlite,
+  openSqlite,
+  SqliteDatabase,
+  type DbSingleton,
+  type DbSingletonOptions,
+  type SqliteOpenOptions,
+  type SqliteRunResult,
+  type SqliteStatement,
+  type SqliteTransaction,
+} from './db/sqlite.ts';
 export { requireAbsoluteSqlitePath } from './db/sqlitePath.ts';
 export { DEFAULT_SQLITE_PRAGMAS } from './db/sqlitePragmas.ts';
 export { isEncryptedEnvValue, normalizeClerkEnv } from './env/clerkEnv.ts';
@@ -31,6 +56,7 @@ export { getRequestId, requestIdMiddleware, sanitizeRequestId } from './http/req
 export { timingSafeEqualString } from './http/timingSafeEqual.ts';
 export { log } from './logger.ts';
 export { getAppPublicBaseUrl } from './middleware/appPublicBaseUrl.ts';
+export type { AppPublicBaseUrlOptions } from './middleware/appPublicBaseUrl.ts';
 export { createAppSentinelAgent } from './sentinelAgent.ts';
 export { startServer } from './startServer.ts';
 export { optionalPositiveInt, positiveInt, validateBody, z, zodEnum } from './validation.ts';

@@ -15,6 +15,7 @@ export interface CreateAppOptions {
   appId: string;
   appVersion: string;
   projectRoot: string;
+  clientDir?: string;
   nodeEnv: string;
   trustProxy: boolean;
   secureCookies: boolean;
@@ -31,7 +32,6 @@ export interface CreateAppOptions {
 export interface AppBundle {
   app: Express;
   apiRouter: Router;
-  writeLimiter?: RequestHandler;
 }
 
 export function createApp(options: CreateAppOptions): AppBundle {
@@ -52,7 +52,12 @@ export function createApp(options: CreateAppOptions): AppBundle {
     throw new Error('TRUST_PROXY must be enabled in production when SECURE_COOKIES is enabled.');
   }
 
-  app.use(createAppHelmet(options.helmet));
+  app.use(
+    createAppHelmet({
+      ...options.helmet,
+      hsts: options.helmet?.hsts ?? options.nodeEnv === 'production',
+    }),
+  );
   app.use(requestIdMiddleware);
   if (options.metricsMiddleware) {
     app.use(options.metricsMiddleware);
@@ -71,7 +76,8 @@ export function createApp(options: CreateAppOptions): AppBundle {
     skip: (req) =>
       req.path === '/healthz' ||
       req.path === '/readyz' ||
-      req.path === '/api/version' ||
+      req.path === '/api' ||
+      req.path.startsWith('/api/') ||
       req.path === '/favicon.ico' ||
       req.path === '/favicon.png' ||
       req.path === '/favicon.svg' ||
@@ -103,13 +109,6 @@ export function createApp(options: CreateAppOptions): AppBundle {
       });
   });
 
-  const publicPageLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: pageMax,
-    standardHeaders: true,
-    legacyHeaders: false,
-  });
-
   const staticAssetLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: assetMax,
@@ -118,21 +117,22 @@ export function createApp(options: CreateAppOptions): AppBundle {
   });
 
   const clientDir =
-    options.nodeEnv !== 'production' && process.env.E2E_CLIENT_DIR?.trim()
+    options.clientDir ??
+    (options.nodeEnv !== 'production' && process.env.E2E_CLIENT_DIR?.trim()
       ? path.resolve(process.env.E2E_CLIENT_DIR.trim())
-      : path.join(options.projectRoot, 'dist', 'client');
+      : path.join(options.projectRoot, 'dist', 'client'));
   const faviconPng = path.join(clientDir, 'favicon.png');
   const sendFavicon: RequestHandler = (_req, res, next) => {
     if (!fs.existsSync(faviconPng)) {
       res.status(404).end();
       return;
     }
-    res.sendFile(faviconPng, (err) => {
+    res.sendFile('favicon.png', { root: clientDir }, (err) => {
       if (err) next(err);
     });
   };
-  app.get('/favicon.png', publicPageLimiter, sendFavicon);
-  app.get('/favicon.ico', publicPageLimiter, sendFavicon);
+  app.get('/favicon.png', staticAssetLimiter, sendFavicon);
+  app.get('/favicon.ico', staticAssetLimiter, sendFavicon);
 
   if (options.nodeEnv !== 'development') {
     app.use(
@@ -149,6 +149,7 @@ export function createApp(options: CreateAppOptions): AppBundle {
   options.mount?.(app);
 
   app.use('/api', (req, res, next) => {
+    res.setHeader('Cache-Control', 'no-store');
     const startedAt = Date.now();
     res.on('finish', () => {
       const status = res.statusCode;
@@ -169,6 +170,7 @@ export function createApp(options: CreateAppOptions): AppBundle {
     max: apiMax,
     standardHeaders: true,
     legacyHeaders: false,
+    skip: (req) => req.method.toUpperCase() === 'OPTIONS',
   });
 
   const writeLimiter =
@@ -179,7 +181,10 @@ export function createApp(options: CreateAppOptions): AppBundle {
           max: options.rateLimits.write,
           standardHeaders: true,
           legacyHeaders: false,
+          message: { error: 'Too many write requests, please try again later' },
         });
+
+  app.use('/api', appApiLimiter);
 
   app.get('/api/version', (_req, res) => {
     res.setHeader('Cache-Control', 'no-store');
@@ -191,13 +196,23 @@ export function createApp(options: CreateAppOptions): AppBundle {
   });
 
   const apiRouter = express.Router();
-  app.use('/api', appApiLimiter, rejectCrossSiteWrites, apiRouter);
+  if (writeLimiter) {
+    app.use('/api', (req, res, next) => {
+      const method = req.method.toUpperCase();
+      if (method === 'POST' || method === 'PUT' || method === 'PATCH' || method === 'DELETE') {
+        writeLimiter(req, res, next);
+        return;
+      }
+      next();
+    });
+  }
+  app.use('/api', rejectCrossSiteWrites, apiRouter);
 
   app.use('/api', (_req, res) => {
     res.status(404).json({ error: 'Not found' });
   });
 
-  app.get('/legal', publicPageLimiter, (_req, res) => {
+  app.get('/legal', (_req, res) => {
     res.redirect(options.legalPageUrl);
   });
 
@@ -223,11 +238,10 @@ export function createApp(options: CreateAppOptions): AppBundle {
         }
       }
       res.setHeader('Cache-Control', 'no-cache');
-      res.sendFile(clientIndexPath);
+      res.sendFile('index.html', { root: clientDir });
     };
 
     app.use(
-      publicPageLimiter,
       express.static(clientDir, {
         maxAge: '1h',
         index: false,
@@ -277,5 +291,5 @@ export function createApp(options: CreateAppOptions): AppBundle {
     },
   );
 
-  return { app, apiRouter, writeLimiter };
+  return { app, apiRouter };
 }

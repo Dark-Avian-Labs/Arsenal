@@ -1,4 +1,4 @@
-import Database from 'better-sqlite3';
+import { SqliteDatabase } from '@dark-avian-labs/server-kit';
 import express from 'express';
 import request from 'supertest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -11,7 +11,7 @@ const authState = vi.hoisted(() => ({
 }));
 
 const dbState = vi.hoisted(() => ({
-  db: null as Database.Database | null,
+  db: null as SqliteDatabase | null,
 }));
 
 vi.mock('@dark-avian-labs/server-kit', async (importOriginal) => {
@@ -48,8 +48,8 @@ const { accountsRouter } = await import('./accounts.ts');
 const { artifactsRouter } = await import('./artifacts.ts');
 const { gearRouter } = await import('./gear.ts');
 
-function memoryDb(): Database.Database {
-  const db = new Database(':memory:');
+function memoryDb(): SqliteDatabase {
+  const db = new SqliteDatabase(':memory:');
   createAppSchema(db);
   db.prepare(
     `INSERT INTO catalog_heroes (slug, name, class, faction, rarity, star_rating)

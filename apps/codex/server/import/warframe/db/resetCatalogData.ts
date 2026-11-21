@@ -1,5 +1,5 @@
 import { log } from '@dark-avian-labs/server-kit';
-import type Database from 'better-sqlite3';
+import type { SqliteDatabase } from '@dark-avian-labs/server-kit';
 
 import { getCatalogDb } from './connection.ts';
 
@@ -31,7 +31,7 @@ function isAllowedTableName(table: string): boolean {
   return ALLOWED_TABLE_NAMES.has(table);
 }
 
-function tableExists(db: Database.Database, table: string): boolean {
+function tableExists(db: SqliteDatabase, table: string): boolean {
   if (!isAllowedTableName(table)) return false;
   const row = db
     .prepare(`SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?`)
@@ -39,14 +39,14 @@ function tableExists(db: Database.Database, table: string): boolean {
   return row != null;
 }
 
-function deleteTableRows(db: Database.Database, table: string): number {
+function deleteTableRows(db: SqliteDatabase, table: string): number {
   if (!isAllowedTableName(table) || !tableExists(db, table)) return 0;
   const before = db.prepare(`SELECT COUNT(*) AS c FROM ${table}`).get() as { c: number };
   db.prepare(`DELETE FROM ${table}`).run();
   return before.c;
 }
 
-export function resetCatalogData(db: Database.Database = getCatalogDb()): Record<string, number> {
+export function resetCatalogData(db: SqliteDatabase = getCatalogDb()): Record<string, number> {
   const cleared: Record<string, number> = {};
 
   for (const table of USER_TABLE_NAMES) {

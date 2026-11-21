@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 
-import type Database from 'better-sqlite3';
+import type { SqliteDatabase } from '@dark-avian-labs/server-kit';
 
 import { normalizeStartupPipelineSummary } from '../../../shared/warframeImport/pipelineSummary.ts';
 import { getCatalogDb } from './db/connection.ts';
@@ -60,7 +60,7 @@ export class ImportLeaseLostError extends Error {
 
 export type ImportLeaseWatch = { lost: boolean };
 
-export function ensureImportRunsSchema(db: Database.Database = getCatalogDb()): void {
+export function ensureImportRunsSchema(db: SqliteDatabase = getCatalogDb()): void {
   if (schemaReady) return;
   db.exec(`
     CREATE TABLE IF NOT EXISTS import_runs (

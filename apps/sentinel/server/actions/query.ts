@@ -1,4 +1,4 @@
-import type Database from 'better-sqlite3';
+import type { SqliteDatabase } from '@dark-avian-labs/server-kit';
 
 export type ActionsRange = '1h' | '6h' | '24h' | '7d' | '30d' | 'today';
 
@@ -137,7 +137,7 @@ function percentile(sorted: number[], p: number): number | null {
 }
 
 export function listRuns(
-  db: Database.Database,
+  db: SqliteDatabase,
   options: {
     workflow?: string;
     status?: string;
@@ -164,7 +164,7 @@ export function listRuns(
 }
 
 export function summarizeRuns(
-  db: Database.Database,
+  db: SqliteDatabase,
   options: {
     workflow?: string;
     status?: string;
@@ -290,7 +290,7 @@ function medianOf(values: number[]): number | null {
 }
 
 export function querySeries(
-  db: Database.Database,
+  db: SqliteDatabase,
   options: {
     workflow?: string;
     status?: string;
@@ -350,7 +350,7 @@ export function querySeries(
   return buckets;
 }
 
-export function getSyncStatus(db: Database.Database, configured: boolean): SyncStatus {
+export function getSyncStatus(db: SqliteDatabase, configured: boolean): SyncStatus {
   const bootstrapped = Boolean(
     (
       db.prepare(`SELECT value FROM poller_meta WHERE key = 'bootstrapped'`).get() as

@@ -1,7 +1,7 @@
-import Database from 'better-sqlite3';
+import { SqliteDatabase } from '@dark-avian-labs/server-kit';
 import { describe, expect, it, vi } from 'vitest';
 
-const db = vi.hoisted(() => ({ current: null as Database.Database | null }));
+const db = vi.hoisted(() => ({ current: null as SqliteDatabase | null }));
 
 vi.mock('@clerk/express', () => ({ clerkClient: {} }));
 vi.mock('../db/connection.ts', () => ({ getCatalogDb: () => db.current }));
@@ -10,7 +10,7 @@ import { markArmoryUserDeleted, resolveClerkUserIdByUsername, upsertArmoryUser }
 
 describe('armory users', () => {
   it('lets a username move to a new owner after delete or rename', () => {
-    db.current = new Database(':memory:');
+    db.current = new SqliteDatabase(':memory:');
     db.current.exec(`
       CREATE TABLE armory_users (
         clerk_user_id TEXT PRIMARY KEY,

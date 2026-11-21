@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
-import type Database from 'better-sqlite3';
+import type { SqliteDatabase } from '@dark-avian-labs/server-kit';
 
 import {
   FETCH_BYTE_LIMITS,
@@ -138,7 +138,7 @@ async function resolveTierImages(
   return resolved;
 }
 
-function matchWeaponUniqueName(db: Database.Database, weaponName: string): string | null {
+function matchWeaponUniqueName(db: SqliteDatabase, weaponName: string): string | null {
   const row = db
     .prepare(`SELECT unique_name FROM weapons WHERE LOWER(name) = LOWER(?) LIMIT 1`)
     .get(weaponName) as { unique_name: string } | undefined;
@@ -162,7 +162,7 @@ function formatImageDelta(
 }
 
 export async function syncIncarnonFromWiki(
-  db: Database.Database,
+  db: SqliteDatabase,
   onProgress?: (message: string) => void,
 ): Promise<IncarnonWikiSyncResult> {
   const result: IncarnonWikiSyncResult = {

@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import type Database from 'better-sqlite3';
+import type { SqliteDatabase } from '@dark-avian-labs/server-kit';
 
 import { getWikiUserAgent } from '../../scraping/wikiUserAgent.ts';
 import { FETCH_TIMEOUT_MS, fetchTextBounded } from '../warframe/http/fetchWithTimeout.ts';
@@ -95,7 +95,7 @@ function logHeroStatsProgress(
 }
 
 export function applyHeroBaseStats(
-  db: Database.Database,
+  db: SqliteDatabase,
   slug: string,
   stats: WikiHeroBaseStats,
 ): void {
@@ -128,7 +128,7 @@ export function applyHeroBaseStats(
 }
 
 export async function importFandomHeroStats(options: {
-  db: Database.Database;
+  db: SqliteDatabase;
   force?: boolean;
   live?: boolean;
   onLog?: (message: string) => void;

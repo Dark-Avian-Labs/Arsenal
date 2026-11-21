@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import { log } from '@dark-avian-labs/server-kit';
-import type Database from 'better-sqlite3';
+import type { SqliteDatabase } from '@dark-avian-labs/server-kit';
 
 import { WOR_IMAGES_DIR, PROJECT_ROOT } from '../../config.ts';
 import {
@@ -130,7 +130,7 @@ function stepTag(step: WorPipelineStepKey): string {
 }
 
 export function applyWorCatalogUpserts(
-  catalogDb: Database.Database,
+  catalogDb: SqliteDatabase,
   bundle: CatalogBundle | null,
   onLog?: WorStartupPipelineOptions['onLog'],
 ): void {
@@ -164,7 +164,7 @@ export function applyWorCatalogUpserts(
 }
 
 export function syncWorAccountsFromCatalog(
-  appDb: Database.Database,
+  appDb: SqliteDatabase,
   onLog?: WorStartupPipelineOptions['onLog'],
   options?: { rematerializeAliases?: boolean },
 ): void {
@@ -205,8 +205,8 @@ export function syncWorAccountsFromCatalog(
 }
 
 export function applyWorCatalogMutation(
-  catalogDb: Database.Database,
-  appDb: Database.Database,
+  catalogDb: SqliteDatabase,
+  appDb: SqliteDatabase,
   bundle: CatalogBundle | null,
   onLog?: WorStartupPipelineOptions['onLog'],
 ): void {
@@ -220,7 +220,7 @@ function readFixtureBundle(fixturePath: string): CatalogBundle {
   return JSON.parse(raw) as CatalogBundle;
 }
 
-function loadExistingPortraitPaths(db: Database.Database): {
+function loadExistingPortraitPaths(db: SqliteDatabase): {
   heroes: Record<string, string | null>;
   artifacts: Record<string, string | null>;
   demons: Record<string, string | null>;
@@ -253,7 +253,7 @@ function loadExistingPortraitPaths(db: Database.Database): {
 }
 
 function updateSourceHashesInDb(
-  db: Database.Database,
+  db: SqliteDatabase,
   hashes: Record<string, string | undefined>,
 ): void {
   db.prepare(`UPDATE catalog_meta SET source_hashes_json = ? WHERE id = 1`).run(
@@ -265,8 +265,8 @@ export async function runWorStartupPipeline(
   options: WorStartupPipelineOptions = {},
 ): Promise<WorImportSummary> {
   const onLog = options.onLog;
-  const catalogDb = getWorCatalogDb() as Database.Database;
-  const appDb = getWorDb() as Database.Database;
+  const catalogDb = getWorCatalogDb() as SqliteDatabase;
+  const appDb = getWorDb() as SqliteDatabase;
   ensureWorImportDirs();
   fs.mkdirSync(WOR_IMAGES_DIR, { recursive: true });
 
@@ -303,8 +303,8 @@ export async function runWorStartupPipeline(
 }
 
 async function runWorStartupPipelineBody(
-  catalogDb: Database.Database,
-  appDb: Database.Database,
+  catalogDb: SqliteDatabase,
+  appDb: SqliteDatabase,
   options: WorStartupPipelineOptions,
   onLog: WorStartupPipelineOptions['onLog'],
   lockToken: string,
@@ -576,20 +576,20 @@ async function runWorStartupPipelineBody(
   };
 }
 
-export function catalogNeedsImport(db: Database.Database): boolean {
+export function catalogNeedsImport(db: SqliteDatabase): boolean {
   return !worQueries.catalogHasEntries(db);
 }
 
 export function ensureWorCatalogSeededFromCollection(): boolean {
   return seedWorCatalogFromCollectionIfEmpty(
-    getWorCatalogDb() as Database.Database,
-    getWorDb() as Database.Database,
+    getWorCatalogDb() as SqliteDatabase,
+    getWorDb() as SqliteDatabase,
   );
 }
 
 export function copyWorCatalogIntoCollectionIfNeeded(): boolean {
-  const catalogDb = getWorCatalogDb() as Database.Database;
-  const appDb = getWorDb() as Database.Database;
+  const catalogDb = getWorCatalogDb() as SqliteDatabase;
+  const appDb = getWorDb() as SqliteDatabase;
   if (!worQueries.catalogHasEntries(catalogDb)) return false;
   const catalogVersion = worQueries.getCatalogVersion(catalogDb);
   const collectionVersion = worQueries.getCatalogVersion(appDb);

@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-import Database from 'better-sqlite3';
+import { SqliteDatabase } from '@dark-avian-labs/server-kit';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -69,7 +69,7 @@ async function importBuilt(modulePath) {
 }
 
 function initDatabase(dbPath, label, runLifecycle) {
-  const db = new Database(dbPath);
+  const db = new SqliteDatabase(dbPath);
   try {
     runLifecycle(db);
     console.log(`[db:init] ${label}: ${dbPath}`);

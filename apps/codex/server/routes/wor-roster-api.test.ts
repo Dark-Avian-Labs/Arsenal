@@ -1,4 +1,4 @@
-import Database from 'better-sqlite3';
+import { SqliteDatabase } from '@dark-avian-labs/server-kit';
 import express from 'express';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
@@ -12,7 +12,7 @@ const authState = vi.hoisted(() => ({
 }));
 
 const dbState = vi.hoisted(() => ({
-  db: null as Database.Database | null,
+  db: null as SqliteDatabase | null,
 }));
 
 vi.mock('@clerk/express', () => ({
@@ -45,7 +45,7 @@ function createTestApp() {
   return app;
 }
 
-function seedCatalog(db: Database.Database): void {
+function seedCatalog(db: SqliteDatabase): void {
   db.prepare(
     `INSERT INTO catalog_heroes (
       slug, name, class, faction, faction_secondary, rarity, star_rating, is_lord, is_regular, is_ancient, is_limited, display_order, active
@@ -73,7 +73,7 @@ describeWithSqlite('WoR roster API', () => {
   beforeEach(() => {
     authState.userId = null;
     dbState.db?.close();
-    dbState.db = new Database(':memory:');
+    dbState.db = new SqliteDatabase(':memory:');
     createWorSchema(dbState.db);
     seedCatalog(dbState.db);
     q.createGameAccount(dbState.db, 'user_a', 'Main', true);

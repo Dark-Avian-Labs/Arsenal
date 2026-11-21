@@ -3,88 +3,26 @@ import './config.ts';
 import { createAppSentinelAgent, log, startServer } from '@dark-avian-labs/server-kit';
 
 import { createApp } from './app.ts';
-import {
-  APP_ID,
-  APP_NAME,
-  ensureDataDirs,
-  HOST,
-  NODE_ENV,
-  PORT,
-  SHUTDOWN_TIMEOUT_MS,
-} from './config.ts';
-import { refreshEpic7DbAvailability } from './epic7DbState.ts';
-import { closeEpic7Db, getEpic7Db } from './games/epic7/index.ts';
-import { closeWarframeDb, getWarframeDb } from './games/warframe/index.ts';
-import { closeWorCatalogDb, closeWorDb, getWorCatalogDb, getWorDb } from './games/wor/index.ts';
-import {
-  startAdminImportJob as startWarframeAdminImportJob,
-  waitForAdminImportIdle as waitForWarframeImportIdle,
-} from './import/warframe/adminImportJob.ts';
-import { recoverImportLeaseOnStartup as recoverWarframeImportLeaseOnStartup } from './import/warframe/importRuns.ts';
-import { catalogNeedsImport as warframeCatalogNeedsImport } from './import/warframe/startupPipeline.ts';
-import { waitForWorImportIdle } from './import/wor/adminImportJob.ts';
-import { recoverWorImportLeaseOnStartup } from './import/wor/importLease.ts';
-import {
-  catalogNeedsImport,
-  copyWorCatalogIntoCollectionIfNeeded,
-  ensureWorCatalogSeededFromCollection,
-  runWorStartupPipeline,
-} from './import/wor/startupPipeline.ts';
-import {
-  ensureWarframeSyncJobsSchema,
-  failStaleWarframeSyncRuns,
-} from './services/warframeSyncJobs.ts';
-import { waitForWarframeSyncIdle } from './services/warframeSyncState.ts';
-import { refreshWorDbAvailability } from './worDbState.ts';
+import { APP_ID, APP_NAME, HOST, NODE_ENV, PORT, SHUTDOWN_TIMEOUT_MS } from './config.ts';
+import { getWorCatalogDb } from './games/wor/index.ts';
+import { beforeCloseCodex, closeCodex, initCodex } from './init.ts';
 
-ensureDataDirs();
-ensureWarframeSyncJobsSchema();
-failStaleWarframeSyncRuns();
-function assertTableExists(db: { prepare: (sql: string) => unknown }, tableName: string): void {
-  const row = (
-    db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?") as {
-      get: (param: string) => unknown;
-    }
-  ).get(tableName);
-  if (!row) {
-    throw new Error(`Required table "${tableName}" was not found.`);
-  }
-}
+const autoScrapeOnBoot = process.env.CODEX_AUTO_SCRAPE_ON_BOOT === '1';
 
-function ensureGameSchemasReady(): void {
-  const warframeDb = getWarframeDb();
-  const epic7Db = getEpic7Db();
-  assertTableExists(warframeDb, 'worksheets');
-  assertTableExists(warframeDb, 'columns');
-  assertTableExists(warframeDb, 'rows');
-  assertTableExists(warframeDb, 'cell_values');
-
-  assertTableExists(epic7Db, 'game_accounts');
-  assertTableExists(epic7Db, 'base_heroes');
-  assertTableExists(epic7Db, 'base_artifacts');
-  assertTableExists(epic7Db, 'account_heroes');
-  assertTableExists(epic7Db, 'account_artifacts');
-
-  const worDb = getWorDb();
-  assertTableExists(worDb, 'game_accounts');
-  assertTableExists(worDb, 'catalog_heroes');
-  assertTableExists(worDb, 'catalog_artifacts');
-  assertTableExists(worDb, 'catalog_demons');
-  assertTableExists(worDb, 'account_heroes');
-  assertTableExists(worDb, 'account_artifacts');
-  assertTableExists(worDb, 'account_demons');
-}
-ensureGameSchemasReady();
-void refreshEpic7DbAvailability();
-void refreshWorDbAvailability().then(async () => {
+void initCodex({ syncSnapshots: !autoScrapeOnBoot }).then(async () => {
+  if (!autoScrapeOnBoot) return;
   try {
+    const [leaseMod, startupMod] = await Promise.all([
+      import('./import/wor/importLease.ts'),
+      import('./import/wor/startupPipeline.ts'),
+    ]);
     const catalogDb = getWorCatalogDb();
-    recoverWorImportLeaseOnStartup(catalogDb);
-    ensureWorCatalogSeededFromCollection();
-    copyWorCatalogIntoCollectionIfNeeded();
-    if (catalogNeedsImport(catalogDb)) {
+    leaseMod.recoverWorImportLeaseOnStartup(catalogDb);
+    startupMod.ensureWorCatalogSeededFromCollection();
+    startupMod.copyWorCatalogIntoCollectionIfNeeded();
+    if (startupMod.catalogNeedsImport(catalogDb)) {
       log('info', 'WoR catalog empty — running fixture bootstrap import');
-      await runWorStartupPipeline();
+      await startupMod.runWorStartupPipeline();
     }
   } catch (error) {
     log('error', 'WoR startup catalog bootstrap failed', {
@@ -92,13 +30,19 @@ void refreshWorDbAvailability().then(async () => {
     });
   }
 });
+
 void (async () => {
-  if (NODE_ENV === 'test') return;
+  if (NODE_ENV === 'test' || !autoScrapeOnBoot) return;
   try {
-    recoverWarframeImportLeaseOnStartup();
-    if (warframeCatalogNeedsImport()) {
+    const [runsMod, startupMod, jobMod] = await Promise.all([
+      import('./import/warframe/importRuns.ts'),
+      import('./import/warframe/startupPipeline.ts'),
+      import('./import/warframe/adminImportJob.ts'),
+    ]);
+    runsMod.recoverImportLeaseOnStartup();
+    if (startupMod.catalogNeedsImport()) {
       log('info', 'Warframe catalog empty — running import bootstrap');
-      const result = startWarframeAdminImportJob('system:startup');
+      const result = jobMod.startAdminImportJob('system:startup');
       if (!result.started) {
         log('warn', 'Warframe startup import could not start', {
           reason: result.reason ?? 'unknown',
@@ -128,26 +72,10 @@ startServer({
   port: PORT,
   shutdownTimeoutMs: SHUTDOWN_TIMEOUT_MS,
   sentinelAgent,
-  beforeClose: async () => {
-    const timeoutMs = Math.max(SHUTDOWN_TIMEOUT_MS - 2000, 1000);
-    const [syncFinished, warframeImportFinished, worImportFinished] = await Promise.all([
-      waitForWarframeSyncIdle(timeoutMs),
-      waitForWarframeImportIdle(timeoutMs),
-      waitForWorImportIdle(timeoutMs),
-    ]);
-    if (!syncFinished) {
-      log('warn', 'Warframe sync still running; proceeding with shutdown');
-    }
-    if (!warframeImportFinished || !worImportFinished) {
-      log('warn', 'Catalog import still running; proceeding with shutdown');
-    }
-  },
+  beforeClose: () => beforeCloseCodex(SHUTDOWN_TIMEOUT_MS),
   onClose: () => {
     try {
-      closeWarframeDb();
-      closeEpic7Db();
-      closeWorDb();
-      closeWorCatalogDb();
+      closeCodex();
     } catch (err) {
       log('error', 'Failed to close DB connections during shutdown', {
         err: err instanceof Error ? err.message : String(err),

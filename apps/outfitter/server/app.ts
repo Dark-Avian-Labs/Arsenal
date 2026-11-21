@@ -23,6 +23,7 @@ export interface AppBundle {
 export interface CreateAppOptions {
   metricsMiddleware?: express.RequestHandler;
   helmet?: { extraScriptSrc?: string[]; extraConnectSrc?: string[] };
+  clientDir?: string;
 }
 
 export function createApp(options: CreateAppOptions = {}): AppBundle {
@@ -33,13 +34,19 @@ export function createApp(options: CreateAppOptions = {}): AppBundle {
     appId: APP_ID,
     appVersion: APP_VERSION,
     projectRoot: PROJECT_ROOT,
+    clientDir: options.clientDir,
     nodeEnv: NODE_ENV,
     trustProxy: TRUST_PROXY,
     secureCookies: SECURE_COOKIES,
     legalPageUrl: LEGAL_PAGE_URL,
     jsonLimit: '2mb',
     metricsMiddleware: options.metricsMiddleware,
-    helmet: options.helmet,
+    helmet: {
+      ...options.helmet,
+      extraScriptSrc: [
+        ...new Set(["'wasm-unsafe-eval'", ...(options.helmet?.extraScriptSrc ?? [])]),
+      ],
+    },
     readiness: () => {
       getAppDb().prepare('SELECT 1').get();
       return true;

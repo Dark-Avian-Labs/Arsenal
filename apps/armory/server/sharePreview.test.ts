@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-import Database from 'better-sqlite3';
+import { SqliteDatabase } from '@dark-avian-labs/server-kit';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
@@ -69,8 +69,8 @@ describe('toShareImageUrl', () => {
 describe('GET /builder/:id share preview', () => {
   let clientDir: string | undefined;
   let bundle: AppBundle | undefined;
-  let catalogDb: Database.Database | undefined;
-  let userDb: Database.Database | undefined;
+  let catalogDb: SqliteDatabase | undefined;
+  let userDb: SqliteDatabase | undefined;
   let publicId = 0;
   let privateId = 0;
   let unlistedId = 0;
@@ -80,7 +80,7 @@ describe('GET /builder/:id share preview', () => {
     fs.writeFileSync(path.join(clientDir, 'index.html'), SHELL_HTML);
     process.env.E2E_CLIENT_DIR = clientDir;
 
-    catalogDb = new Database(':memory:');
+    catalogDb = new SqliteDatabase(':memory:');
     catalogDb.exec(`
       CREATE TABLE warframes (unique_name TEXT PRIMARY KEY, name TEXT, image_path TEXT);
       CREATE TABLE weapons (unique_name TEXT PRIMARY KEY, name TEXT, image_path TEXT);

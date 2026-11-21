@@ -1,4 +1,4 @@
-import type Database from 'better-sqlite3';
+import type { SqliteDatabase } from '@dark-avian-labs/server-kit';
 
 import {
   fetchHelminthWikiHtml,
@@ -38,7 +38,7 @@ export interface HelminthWikiSyncResult {
 }
 
 export async function syncHelminthFlagsFromWiki(
-  db: Database.Database,
+  db: SqliteDatabase,
   options?: { html?: string | null; onProgress?: (msg: string) => void },
 ): Promise<HelminthWikiSyncResult> {
   const combined = new Set<string>();

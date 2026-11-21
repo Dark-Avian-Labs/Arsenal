@@ -1,12 +1,12 @@
+import type { SqliteDatabase } from '@dark-avian-labs/server-kit';
 import {
   ARCANE_PUBLIC_LIST_SQL,
   bindArcanePublicListParams,
 } from '@dark-avian-labs/warframe-catalog/server';
-import type Database from 'better-sqlite3';
 
 import type { WorksheetCategory } from './resolveHref.ts';
 
-function loadNames(db: Database.Database, sql: string, args: unknown[] = []): string[] {
+function loadNames(db: SqliteDatabase, sql: string, args: unknown[] = []): string[] {
   const rows = db.prepare(sql).all(...args) as { name: string | null }[];
   return rows.map((row) => row.name?.trim() ?? '').filter((name) => name.length > 0);
 }
@@ -16,7 +16,7 @@ type WeaponSourceRow = {
   unique_name: string | null;
 };
 
-function loadModularWeaponNames(armoryDb: Database.Database): Set<string> {
+function loadModularWeaponNames(armoryDb: SqliteDatabase): Set<string> {
   const hasCatalogTable = armoryDb
     .prepare(
       `SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'codex_modular_weapons'`,
@@ -56,7 +56,7 @@ function isCompanionModularMainComponent(row: WeaponSourceRow): boolean {
   return false;
 }
 
-function loadCompanionNames(armoryDb: Database.Database): Set<string> {
+function loadCompanionNames(armoryDb: SqliteDatabase): Set<string> {
   const companionNames = new Set(
     loadNames(armoryDb, "SELECT name FROM companions WHERE name IS NOT NULL AND TRIM(name) <> ''"),
   );
@@ -75,7 +75,7 @@ function loadCompanionNames(armoryDb: Database.Database): Set<string> {
   return companionNames;
 }
 
-function loadArcaneNames(armoryDb: Database.Database): Set<string> {
+function loadArcaneNames(armoryDb: SqliteDatabase): Set<string> {
   return new Set(
     loadNames(
       armoryDb,
@@ -102,7 +102,7 @@ const WORKSHEET_ORDER: WorksheetCategory[] = [
 ];
 
 export function loadArmoryWorksheetSources(
-  armoryDb: Database.Database,
+  armoryDb: SqliteDatabase,
 ): Record<WorksheetCategory, Set<string>> {
   const warframes = new Set(
     loadNames(armoryDb, "SELECT name FROM warframes WHERE product_category = 'Suits'"),

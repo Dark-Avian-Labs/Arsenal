@@ -1,93 +1,22 @@
-import { clerkClient } from '@clerk/express';
-import { verifyWebhook, type WebhookEvent } from '@clerk/express/webhooks';
-import { log } from '@dark-avian-labs/server-kit';
-import { Router, type Request, type Response } from 'express';
+import { createClerkWebhookRouter } from '@dark-avian-labs/server-kit';
+import type { Router } from 'express';
 
 import { markArmoryUserDeleted, upsertArmoryUser } from '../auth/armoryUsers.ts';
-import { passwordChangeCutoff, revokeSessionsOpenedBefore } from '../auth/passwordSessions.ts';
 import { CLERK_WEBHOOK_SIGNING_SECRET } from '../config.ts';
 
-export const clerkWebhookRouter: Router = Router();
-
-type ClerkUserWebhookData = {
-  id?: string;
-  username?: string | null;
-};
-
-function readUserPayload(event: WebhookEvent): ClerkUserWebhookData | null {
-  const data = event.data as ClerkUserWebhookData;
-  if (!data || typeof data.id !== 'string' || data.id.trim().length === 0) {
-    return null;
-  }
-  return data;
-}
-
-clerkWebhookRouter.post('/', async (req: Request, res: Response) => {
-  if (!CLERK_WEBHOOK_SIGNING_SECRET) {
-    res.status(500).json({ error: 'Webhook signing secret not configured' });
-    return;
-  }
-
-  let event: WebhookEvent;
-  try {
-    event = await verifyWebhook(req, {
-      signingSecret: CLERK_WEBHOOK_SIGNING_SECRET,
-    });
-  } catch (err) {
-    log('warn', 'Clerk webhook verification failed', {
-      err: err instanceof Error ? err.message : String(err),
-      stack: err instanceof Error ? err.stack : undefined,
-    });
-    res.status(400).json({ error: 'Webhook verification failed' });
-    return;
-  }
-
-  try {
-    switch (event.type) {
-      case 'user.created': {
-        const data = readUserPayload(event);
-        if (!data?.id) break;
-        const username = typeof data.username === 'string' ? data.username.trim() : '';
-        if (username.length > 0) {
-          upsertArmoryUser(data.id, username);
-        }
-        break;
-      }
-      case 'user.updated': {
-        const data = readUserPayload(event);
-        if (!data?.id) break;
-        const username = typeof data.username === 'string' ? data.username.trim() : '';
-        upsertArmoryUser(data.id, username.length > 0 ? username : null);
-        const cutoff = passwordChangeCutoff(event.data);
-        if (cutoff !== null) {
-          const revoked = await revokeSessionsOpenedBefore(clerkClient.sessions, data.id, cutoff);
-          if (revoked > 0) {
-            log('info', 'Revoked sessions opened before a password change', {
-              userId: data.id,
-              count: revoked,
-            });
-          }
-        }
-        break;
-      }
-      case 'user.deleted': {
-        const data = readUserPayload(event);
-        if (data?.id) {
-          markArmoryUserDeleted(data.id);
-        }
-        break;
-      }
-      default:
-        break;
+export const clerkWebhookRouter: Router = createClerkWebhookRouter({
+  signingSecret: () => CLERK_WEBHOOK_SIGNING_SECRET,
+  onUserCreated: (data) => {
+    const username = typeof data.username === 'string' ? data.username.trim() : '';
+    if (username.length > 0) {
+      upsertArmoryUser(data.id, username);
     }
-
-    res.json({ ok: true });
-  } catch (err) {
-    log('error', 'Clerk webhook processing failed', {
-      eventType: event.type,
-      err: err instanceof Error ? err.message : String(err),
-      stack: err instanceof Error ? err.stack : undefined,
-    });
-    res.status(500).json({ error: 'Webhook processing failed' });
-  }
+  },
+  onUserUpdated: (data) => {
+    const username = typeof data.username === 'string' ? data.username.trim() : '';
+    upsertArmoryUser(data.id, username.length > 0 ? username : null);
+  },
+  onUserDeleted: (userId) => {
+    markArmoryUserDeleted(userId);
+  },
 });

@@ -1,5 +1,5 @@
 import { log } from '@dark-avian-labs/server-kit';
-import type Database from 'better-sqlite3';
+import type { SqliteDatabase } from '@dark-avian-labs/server-kit';
 
 import { getCatalogCounts } from './catalogQueries.ts';
 
@@ -11,8 +11,8 @@ const CATALOG_COPY_TABLES = [
 ] as const;
 
 function copyCatalogTables(
-  source: Database.Database,
-  dest: Database.Database,
+  source: SqliteDatabase,
+  dest: SqliteDatabase,
 ): { heroes: number; artifacts: number; demons: number } {
   if (source === dest) {
     return getCatalogCounts(dest);
@@ -38,8 +38,8 @@ function copyCatalogTables(
 }
 
 export function copyWorCatalogToCollection(
-  catalogDb: Database.Database,
-  appDb: Database.Database,
+  catalogDb: SqliteDatabase,
+  appDb: SqliteDatabase,
 ): { heroes: number; artifacts: number; demons: number } {
   const counts = copyCatalogTables(catalogDb, appDb);
   log('info', 'Copied WoR catalog tables into collection DB', counts);
@@ -47,8 +47,8 @@ export function copyWorCatalogToCollection(
 }
 
 export function seedWorCatalogFromCollectionIfEmpty(
-  catalogDb: Database.Database,
-  appDb: Database.Database,
+  catalogDb: SqliteDatabase,
+  appDb: SqliteDatabase,
 ): boolean {
   if (catalogDb === appDb) return false;
   const catalogHeroes = (

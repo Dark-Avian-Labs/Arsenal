@@ -1,4 +1,4 @@
-import Database from 'better-sqlite3';
+import { SqliteDatabase } from '@dark-avian-labs/server-kit';
 import express from 'express';
 import request from 'supertest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -11,7 +11,7 @@ const authState = vi.hoisted(() => ({
 }));
 
 const dbState = vi.hoisted(() => ({
-  db: null as Database.Database | null,
+  db: null as SqliteDatabase | null,
 }));
 
 vi.mock('../auth/clerkUser.ts', () => ({
@@ -72,7 +72,7 @@ const UPDATED_SLOTS = [
   'AP_UNIVERSAL',
 ];
 
-function createTestCatalogSchema(db: Database.Database): void {
+function createTestCatalogSchema(db: SqliteDatabase): void {
   db.exec(`
     CREATE TABLE warframes (
       unique_name TEXT PRIMARY KEY,
@@ -146,7 +146,7 @@ describe('PATCH /admin/catalog/artifact-slots', () => {
     authState.isArmoryAdmin = true;
     __catalogResponseCacheTest.bust();
     dbState.db?.close();
-    dbState.db = new Database(':memory:');
+    dbState.db = new SqliteDatabase(':memory:');
     createTestCatalogSchema(dbState.db);
   });
 

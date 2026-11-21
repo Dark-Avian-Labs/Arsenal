@@ -2,9 +2,7 @@ import { createAppSentinelAgent, log, startServer } from '@dark-avian-labs/serve
 
 import { createApp } from './app.ts';
 import { APP_ID, APP_NAME, HOST, NODE_ENV, PORT, SHUTDOWN_TIMEOUT_MS } from './config.ts';
-import { closeAppDb, getAppDb } from './db/appDb.ts';
-import { catalogArtifactCount, catalogHeroCount } from './db/queries.ts';
-import { importCodexCatalog } from './import/codexCatalog.ts';
+import { closeOutfitter, initOutfitter } from './init.ts';
 
 const sentinelAgent = createAppSentinelAgent({
   appId: APP_ID,
@@ -14,20 +12,9 @@ const sentinelAgent = createAppSentinelAgent({
 
 const { app } = createApp({
   metricsMiddleware: sentinelAgent?.middleware,
-  helmet: { extraScriptSrc: ["'wasm-unsafe-eval'"] },
 });
 
-try {
-  const db = getAppDb();
-  if (catalogHeroCount(db) === 0 || catalogArtifactCount(db) === 0) {
-    const summary = importCodexCatalog();
-    log('info', 'Imported Codex WoR catalog', summary);
-  }
-} catch (error) {
-  log('warn', 'Codex catalog import skipped', {
-    error: error instanceof Error ? error.message : String(error),
-  });
-}
+initOutfitter();
 
 void startServer({
   app,
@@ -38,7 +25,7 @@ void startServer({
   sentinelAgent,
   onClose: () => {
     try {
-      closeAppDb();
+      closeOutfitter();
     } catch (err) {
       log('error', 'Failed to close app DB during shutdown', { error: String(err) });
     }

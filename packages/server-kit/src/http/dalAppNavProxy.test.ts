@@ -100,4 +100,48 @@ describe('handleDalAppNavProxy', () => {
 
     expect(res.statusCode).toBe(502);
   });
+
+  it('rejects non-JSON 200 responses and does not cache them', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response('<html>502 Bad Gateway</html>', {
+          status: 200,
+          headers: { 'Content-Type': 'text/html' },
+        }),
+      )
+      .mockResolvedValueOnce(okResponse());
+    vi.stubGlobal('fetch', fetchMock);
+
+    const first = mockRes();
+    await handleDalAppNavProxy({} as never, first as never);
+    expect(first.statusCode).toBe(502);
+
+    const second = mockRes();
+    await handleDalAppNavProxy({} as never, second as never);
+    expect(second.statusCode).toBe(200);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('deduplicates concurrent cold-cache upstream requests', async () => {
+    let release!: () => void;
+    const fetchMock = vi.fn(
+      () =>
+        new Promise<Response>((resolve) => {
+          release = () => resolve(okResponse());
+        }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    const a = mockRes();
+    const b = mockRes();
+    const p1 = handleDalAppNavProxy({} as never, a as never);
+    const p2 = handleDalAppNavProxy({} as never, b as never);
+    release();
+    await Promise.all([p1, p2]);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(a.statusCode).toBe(200);
+    expect(b.statusCode).toBe(200);
+  });
 });

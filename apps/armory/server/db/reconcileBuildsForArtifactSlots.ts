@@ -1,5 +1,5 @@
+import type { SqliteDatabase } from '@dark-avian-labs/server-kit';
 import type { EquipmentSlotConfigKey } from '@dark-avian-labs/warframe-catalog';
-import type Database from 'better-sqlite3';
 
 import {
   buildModSlotsAreEquivalent,
@@ -47,7 +47,7 @@ function isEquipmentSlotConfigKey(value: string): value is EquipmentSlotConfigKe
 }
 
 function readCatalogEquipmentRow(
-  catalogDb: Database.Database,
+  catalogDb: SqliteDatabase,
   table: 'warframes' | 'weapons' | 'companions',
   uniqueName: string,
 ): CatalogEquipmentRow | null {
@@ -129,8 +129,8 @@ function parseExistingSlots(modConfig: Record<string, unknown> | null): BuildMod
 }
 
 export function reconcileBuildsForArtifactSlotChange(
-  userDb: Database.Database,
-  catalogDb: Database.Database,
+  userDb: SqliteDatabase,
+  catalogDb: SqliteDatabase,
   table: 'warframes' | 'weapons' | 'companions',
   uniqueName: string,
   artifactSlots: string[],

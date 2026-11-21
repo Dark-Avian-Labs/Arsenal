@@ -1,10 +1,10 @@
 import { createDbSingleton } from '@dark-avian-labs/server-kit';
-import type Database from 'better-sqlite3';
+import type { SqliteDatabase } from '@dark-avian-labs/server-kit';
 
 import { WOR_CATALOG_DB_PATH, WOR_DB_PATH } from '../config.ts';
 import { DEMON_LEVEL_MIN } from '../constants.ts';
 
-export function ensureWorCatalogTables(db: Database.Database): void {
+export function ensureWorCatalogTables(db: SqliteDatabase): void {
   db.exec(`
     CREATE TABLE IF NOT EXISTS catalog_heroes (
       slug TEXT PRIMARY KEY,
@@ -74,7 +74,7 @@ export function ensureWorCatalogTables(db: Database.Database): void {
   ensureWorCatalogMigrations(db);
 }
 
-function ensureColumn(db: Database.Database, table: string, column: string, ddl: string): void {
+function ensureColumn(db: SqliteDatabase, table: string, column: string, ddl: string): void {
   const cols = db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
   if (cols.some((col) => col.name === column)) return;
   try {
@@ -87,7 +87,7 @@ function ensureColumn(db: Database.Database, table: string, column: string, ddl:
   }
 }
 
-function ensureWorCatalogMigrations(db: Database.Database): void {
+function ensureWorCatalogMigrations(db: SqliteDatabase): void {
   ensureColumn(db, 'catalog_artifacts', 'class', 'class TEXT');
   ensureColumn(db, 'catalog_heroes', 'faction_secondary', 'faction_secondary TEXT');
   ensureColumn(db, 'catalog_heroes', 'is_regular', 'is_regular INTEGER NOT NULL DEFAULT 0');
@@ -105,7 +105,7 @@ function ensureWorCatalogMigrations(db: Database.Database): void {
   ensureColumn(db, 'catalog_heroes', 'base_rr_attacked', 'base_rr_attacked REAL');
 }
 
-export function ensureWorAccountTables(db: Database.Database): void {
+export function ensureWorAccountTables(db: SqliteDatabase): void {
   db.exec(`
     CREATE TABLE IF NOT EXISTS game_accounts (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -166,7 +166,7 @@ export function ensureWorAccountTables(db: Database.Database): void {
   ensureWorAccountMigrations(db);
 }
 
-export function ensureWorImportTables(db: Database.Database): void {
+export function ensureWorImportTables(db: SqliteDatabase): void {
   db.exec(`
     CREATE TABLE IF NOT EXISTS import_runs (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -190,17 +190,17 @@ export function ensureWorImportTables(db: Database.Database): void {
   ensureWorImportLeaseMigrations(db);
 }
 
-export function ensureWorCatalogDbTables(db: Database.Database): void {
+export function ensureWorCatalogDbTables(db: SqliteDatabase): void {
   ensureWorCatalogTables(db);
   ensureWorImportTables(db);
 }
 
-function ensureWorAccountMigrations(db: Database.Database): void {
+function ensureWorAccountMigrations(db: SqliteDatabase): void {
   ensureColumn(db, 'account_heroes', 'faction_secondary', 'faction_secondary TEXT');
   repairOwnedDemonMinLevel(db);
 }
 
-function repairOwnedDemonMinLevel(db: Database.Database): void {
+function repairOwnedDemonMinLevel(db: SqliteDatabase): void {
   const table = db
     .prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'account_demons'")
     .get();
@@ -211,7 +211,7 @@ function repairOwnedDemonMinLevel(db: Database.Database): void {
   );
 }
 
-function ensureWorImportLeaseMigrations(db: Database.Database): void {
+function ensureWorImportLeaseMigrations(db: SqliteDatabase): void {
   const cols = db.prepare(`PRAGMA table_info(import_lease)`).all() as { name: string }[];
   if (cols.length === 0) return;
   if (cols.some((col) => col.name === 'lock_token')) return;
@@ -225,7 +225,7 @@ function ensureWorImportLeaseMigrations(db: Database.Database): void {
   }
 }
 
-export function ensureWorCoreTables(db: Database.Database): void {
+export function ensureWorCoreTables(db: SqliteDatabase): void {
   ensureWorCatalogTables(db);
   ensureWorAccountTables(db);
 }
@@ -250,7 +250,7 @@ const REQUIRED_WOR_CATALOG_TABLES = [
   'import_lease',
 ] as const;
 
-function assertTablesExist(db: Database.Database, tables: readonly string[], label: string): void {
+function assertTablesExist(db: SqliteDatabase, tables: readonly string[], label: string): void {
   for (const table of tables) {
     const row = db
       .prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?")
@@ -263,25 +263,25 @@ function assertTablesExist(db: Database.Database, tables: readonly string[], lab
   }
 }
 
-export function assertWorCoreTablesExist(db: Database.Database): void {
+export function assertWorCoreTablesExist(db: SqliteDatabase): void {
   assertTablesExist(db, REQUIRED_WOR_TABLES, 'collection');
 }
 
-export function assertWorCatalogTablesExist(db: Database.Database): void {
+export function assertWorCatalogTablesExist(db: SqliteDatabase): void {
   assertTablesExist(db, REQUIRED_WOR_CATALOG_TABLES, 'catalog');
 }
 
-export function ensureWorSchemaMigrations(db: Database.Database): void {
+export function ensureWorSchemaMigrations(db: SqliteDatabase): void {
   ensureWorCatalogMigrations(db);
   ensureWorAccountMigrations(db);
 }
 
-export function ensureWorCatalogSchemaMigrations(db: Database.Database): void {
+export function ensureWorCatalogSchemaMigrations(db: SqliteDatabase): void {
   ensureWorCatalogMigrations(db);
   ensureWorImportLeaseMigrations(db);
 }
 
-function repairDuplicateActiveAccounts(db: Database.Database): boolean {
+function repairDuplicateActiveAccounts(db: SqliteDatabase): boolean {
   const duplicates = db
     .prepare(
       `SELECT clerk_user_id FROM game_accounts
@@ -313,7 +313,7 @@ function repairDuplicateActiveAccounts(db: Database.Database): boolean {
   return true;
 }
 
-export function ensureSingleActiveAccountIndex(db: Database.Database): void {
+export function ensureSingleActiveAccountIndex(db: SqliteDatabase): void {
   const row = db
     .prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='game_accounts'")
     .get();
@@ -335,7 +335,7 @@ export function ensureSingleActiveAccountIndex(db: Database.Database): void {
   }
 }
 
-export function resetWorSchema(db: Database.Database, confirmReset: boolean): void {
+export function resetWorSchema(db: SqliteDatabase, confirmReset: boolean): void {
   if (!confirmReset) return;
   db.pragma('foreign_keys = ON');
   db.exec(`
@@ -352,7 +352,7 @@ export function resetWorSchema(db: Database.Database, confirmReset: boolean): vo
   ensureSingleActiveAccountIndex(db);
 }
 
-export function resetWorCatalogSchema(db: Database.Database, confirmReset: boolean): void {
+export function resetWorCatalogSchema(db: SqliteDatabase, confirmReset: boolean): void {
   if (!confirmReset) return;
   db.pragma('foreign_keys = ON');
   db.exec(`
@@ -366,25 +366,25 @@ export function resetWorCatalogSchema(db: Database.Database, confirmReset: boole
   ensureWorCatalogDbTables(db);
 }
 
-export function createSchema(db: Database.Database): void {
+export function createSchema(db: SqliteDatabase): void {
   db.pragma('foreign_keys = ON');
   ensureWorCoreTables(db);
   ensureSingleActiveAccountIndex(db);
 }
 
-export function createCatalogSchema(db: Database.Database): void {
+export function createCatalogSchema(db: SqliteDatabase): void {
   db.pragma('foreign_keys = ON');
   ensureWorCatalogDbTables(db);
 }
 
 const { getDb, closeDb } = createDbSingleton(WOR_DB_PATH, {
-  onOpen: (db: Database.Database) => {
+  onOpen: (db: SqliteDatabase) => {
     createSchema(db);
   },
 });
 
 const { getDb: getCatalogDb, closeDb: closeCatalogDb } = createDbSingleton(WOR_CATALOG_DB_PATH, {
-  onOpen: (db: Database.Database) => {
+  onOpen: (db: SqliteDatabase) => {
     createCatalogSchema(db);
   },
 });

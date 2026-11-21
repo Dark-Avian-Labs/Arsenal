@@ -1,4 +1,4 @@
-import Database from 'better-sqlite3';
+import { SqliteDatabase } from '@dark-avian-labs/server-kit';
 import express from 'express';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
@@ -12,7 +12,7 @@ const authState = vi.hoisted(() => ({
 }));
 
 const dbState = vi.hoisted(() => ({
-  db: null as Database.Database | null,
+  db: null as SqliteDatabase | null,
 }));
 
 vi.mock('@clerk/express', () => ({
@@ -49,7 +49,7 @@ describeWithSqlite('Epic7 session isolation', () => {
   beforeEach(() => {
     authState.userId = null;
     dbState.db?.close();
-    dbState.db = new Database(':memory:');
+    dbState.db = new SqliteDatabase(':memory:');
     createEpic7Schema(dbState.db);
     q.createGameAccount(dbState.db, 'user_a', 'Account A', true);
     q.createGameAccount(dbState.db, 'user_b', 'Account B', true);

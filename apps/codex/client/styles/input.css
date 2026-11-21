@@ -4,17 +4,7 @@
 
 @source '../../../../packages/ui/src';
 
-@source '../../../src/**/*.{js,ts,jsx,tsx}';
-
-@source '../../../client/**/*.{js,ts,jsx,tsx}';
-
-@source '../../games/warframe/src/**/*.{js,ts,jsx,tsx}';
-
-@source '../../games/warframe/assets/**/*.{js,ts,jsx,tsx}';
-
-@source '../../games/epic7/src/**/*.{js,ts,jsx,tsx}';
-
-@source '../../games/epic7/assets/**/*.{js,ts,jsx,tsx}';
+@source '../../client/**/*.{js,ts,jsx,tsx}';
 
 @theme {
   --color-accent: oklch(56% 0.24 278);
@@ -106,7 +96,6 @@
     font-family: inherit;
     background: transparent;
     color: var(--color-foreground);
-    backdrop-filter: blur(12px);
   }
 
   .btn-primary,
@@ -119,93 +108,6 @@
   .btn-primary:hover,
   .btn-accent:hover {
     background: var(--color-accent-weak-2);
-  }
-
-  .icon-toggle-btn {
-    height: 40px;
-    width: 40px;
-    border-radius: 999px;
-    border: 1px solid var(--color-glass-border);
-    background: var(--color-glass);
-    color: var(--color-muted);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    transition:
-      color 0.2s ease,
-      background-color 0.2s ease,
-      border-color 0.2s ease;
-    backdrop-filter: blur(12px);
-    cursor: pointer;
-  }
-
-  .select-dropdown-menu {
-    position: absolute;
-    right: 0;
-    padding: 0;
-    overflow: hidden;
-    border-radius: var(--radius-ui);
-    border: 1px solid var(--color-glass-border);
-    background: var(--color-surface-modal);
-    -webkit-backdrop-filter: blur(16px) saturate(1.15);
-    backdrop-filter: blur(16px) saturate(1.15);
-    z-index: 60;
-    isolation: isolate;
-  }
-
-  .select-dropdown-menu--floating {
-    margin-top: 4px;
-    border-radius: var(--radius-ui);
-  }
-
-  .select-dropdown-trigger--open {
-    border-bottom-left-radius: 0;
-    border-bottom-right-radius: 0;
-    border-bottom-color: color-mix(in oklab, var(--color-glass-border) 50%, transparent);
-  }
-
-  .select-dropdown-item {
-    position: relative;
-    width: 100%;
-    display: block;
-    box-sizing: border-box;
-    border: none;
-    background: transparent;
-    border-radius: 0;
-    padding: 8px 10px 8px 13px;
-    color: var(--color-muted);
-    text-align: left;
-    text-decoration: none;
-    font-size: 14px;
-    line-height: 1.2;
-    cursor: pointer;
-    transition:
-      color 0.15s ease,
-      background-color 0.15s ease;
-  }
-
-  .select-dropdown-item::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 3px;
-    border-radius: 0;
-    background: var(--color-accent);
-    opacity: 0;
-    transition: opacity 0.15s ease;
-  }
-
-  .select-dropdown-item:hover::before,
-  .select-dropdown-item:focus-visible::before,
-  .select-dropdown-item.is-selected::before {
-    opacity: 1;
-  }
-
-  .select-dropdown-item.is-selected {
-    color: var(--color-foreground);
-    background: color-mix(in oklab, var(--color-glass-hover) 85%, transparent);
   }
 
   .brand-lockup__title.brand-lockup__title_small {
@@ -399,18 +301,6 @@
     display: none;
   }
 
-  .tabs {
-    display: flex;
-    gap: 4px;
-    margin-bottom: 16px;
-    flex-wrap: wrap;
-    background: var(--color-glass);
-    border: 1px solid var(--color-glass-border);
-    border-radius: var(--radius-ui);
-    padding: 6px;
-    backdrop-filter: blur(12px);
-  }
-
   .tab-content {
     display: none;
   }
@@ -436,7 +326,6 @@
     border-radius: var(--radius-ui);
     outline: none;
     width: 200px;
-    backdrop-filter: blur(12px);
     font-family: inherit;
   }
 
@@ -464,20 +353,6 @@
 
   .search-clear.visible {
     display: flex;
-  }
-
-  .modal {
-    background: var(--color-surface-modal);
-    border: 1px solid var(--color-glass-active);
-    border-radius: var(--radius-ui-lg);
-    backdrop-filter: blur(16px) saturate(130%);
-    -webkit-backdrop-filter: blur(16px) saturate(130%);
-    padding: 24px;
-    max-width: 500px;
-    width: 90%;
-    max-height: 90vh;
-    overflow-y: auto;
-    overscroll-behavior: contain;
   }
 
   .modal-sm {
@@ -1538,17 +1413,6 @@
 }
 
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  html.ui-acrylic .glass-shell,
-  html.ui-acrylic .glass-surface,
-  html.ui-acrylic .glass-modal-surface,
-  html.ui-acrylic .glass-tooltip-surface,
-  html.ui-acrylic .glass-panel,
-  html.ui-acrylic .glass-light,
-  html.ui-acrylic .modal,
-  html.ui-acrylic .user-menu,
-  html.ui-acrylic .select-dropdown-menu,
-  html.ui-acrylic .search-results,
-  html.ui-acrylic .toast-pill,
   html.ui-acrylic .table-container,
   html.ui-acrylic .panel,
   html.ui-acrylic .auth-card,

@@ -1,4 +1,8 @@
-import type Database from 'better-sqlite3';
+import {
+  runUserVersionMigrations,
+  type SchemaMigration,
+  type SqliteDatabase,
+} from '@dark-avian-labs/server-kit';
 
 import {
   ACCOUNT_COLORS,
@@ -31,7 +35,42 @@ const ENTRIES_DDL = `
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 `;
 
-export function createAppSchema(db: Database.Database): void {
+const APP_SCHEMA_MIGRATIONS: readonly SchemaMigration<SqliteDatabase>[] = [
+  {
+    version: 1,
+    name: 'entries-halfyearly-frequency',
+    foreignKeysOff: true,
+    up: (db) => migrateEntriesHalfyearlyFrequency(db),
+  },
+  {
+    version: 2,
+    name: 'accounts-color-column',
+    up: (db) => migrateAccountsColor(db),
+  },
+  {
+    version: 3,
+    name: 'accounts-color-ladder',
+    up: (db) => migrateAccountColorLadder(db),
+  },
+  {
+    version: 4,
+    name: 'entries-once-frequency',
+    foreignKeysOff: true,
+    up: (db) => migrateEntriesOnceFrequency(db),
+  },
+  {
+    version: 5,
+    name: 'entries-archived-at',
+    up: (db) => migrateEntriesArchivedAt(db),
+  },
+  {
+    version: 6,
+    name: 'pending-invite-uniqueness',
+    up: (db) => migratePendingInviteUniqueness(db),
+  },
+];
+
+export function createAppSchema(db: SqliteDatabase): void {
   db.exec(`
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
@@ -107,15 +146,10 @@ export function createAppSchema(db: Database.Database): void {
     CREATE INDEX IF NOT EXISTS idx_entries_plan ON entries(plan_id, category_id, sort_order);
   `);
 
-  migrateEntriesHalfyearlyFrequency(db);
-  migrateAccountsColor(db);
-  migrateAccountColorLadder(db);
-  migrateEntriesOnceFrequency(db);
-  migrateEntriesArchivedAt(db);
-  migratePendingInviteUniqueness(db);
+  runUserVersionMigrations(db, APP_SCHEMA_MIGRATIONS);
 }
 
-function migrateAccountsColor(db: Database.Database): void {
+function migrateAccountsColor(db: SqliteDatabase): void {
   const cols = db.prepare(`PRAGMA table_info(accounts)`).all() as Array<{ name: string }>;
   if (cols.some((c) => c.name === 'color')) return;
 
@@ -138,7 +172,7 @@ function migrateAccountsColor(db: Database.Database): void {
   tx();
 }
 
-function migrateAccountColorLadder(db: Database.Database): void {
+function migrateAccountColorLadder(db: SqliteDatabase): void {
   const table = db
     .prepare(`SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'accounts'`)
     .get() as { name: string } | undefined;
@@ -161,7 +195,7 @@ function migrateAccountColorLadder(db: Database.Database): void {
   tx();
 }
 
-function migrateEntriesHalfyearlyFrequency(db: Database.Database): void {
+function migrateEntriesHalfyearlyFrequency(db: SqliteDatabase): void {
   const row = db
     .prepare(`SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'entries'`)
     .get() as { sql: string } | undefined;
@@ -170,7 +204,7 @@ function migrateEntriesHalfyearlyFrequency(db: Database.Database): void {
   rebuildEntriesTable(db, false);
 }
 
-function migrateEntriesOnceFrequency(db: Database.Database): void {
+function migrateEntriesOnceFrequency(db: SqliteDatabase): void {
   const row = db
     .prepare(`SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'entries'`)
     .get() as { sql: string } | undefined;
@@ -194,7 +228,7 @@ function migrateEntriesOnceFrequency(db: Database.Database): void {
   }
 }
 
-function migrateEntriesArchivedAt(db: Database.Database): void {
+function migrateEntriesArchivedAt(db: SqliteDatabase): void {
   const cols = db.prepare(`PRAGMA table_info(entries)`).all() as Array<{ name: string }>;
   if (!cols.some((c) => c.name === 'archived_at')) {
     db.exec(`ALTER TABLE entries ADD COLUMN archived_at TEXT`);
@@ -202,7 +236,7 @@ function migrateEntriesArchivedAt(db: Database.Database): void {
   db.exec(`CREATE INDEX IF NOT EXISTS idx_entries_archived ON entries(plan_id, archived_at)`);
 }
 
-function migratePendingInviteUniqueness(db: Database.Database): void {
+function migratePendingInviteUniqueness(db: SqliteDatabase): void {
   const tables = db
     .prepare(`SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'plan_invites'`)
     .get() as { name: string } | undefined;
@@ -224,7 +258,7 @@ function migratePendingInviteUniqueness(db: Database.Database): void {
   `);
 }
 
-function rebuildEntriesTable(db: Database.Database, includeOnce: boolean): void {
+function rebuildEntriesTable(db: SqliteDatabase, includeOnce: boolean): void {
   const existingCols = db.prepare(`PRAGMA table_info(entries)`).all() as Array<{ name: string }>;
   const hasArchivedAt = existingCols.some((c) => c.name === 'archived_at');
   const frequencyCheck = includeOnce

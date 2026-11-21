@@ -1,4 +1,4 @@
-import type Database from 'better-sqlite3';
+import type { SqliteDatabase } from '@dark-avian-labs/server-kit';
 
 import { rarityToStarRating } from '../../games/wor/index.ts';
 
@@ -50,7 +50,7 @@ export type CatalogBundle = {
   demons: CatalogDemonRow[];
 };
 
-export function upsertCatalogHeroes(db: Database.Database, heroes: CatalogHeroRow[]): number {
+export function upsertCatalogHeroes(db: SqliteDatabase, heroes: CatalogHeroRow[]): number {
   const stmt = db.prepare(`
     INSERT INTO catalog_heroes (
       slug, name, class, faction, faction_secondary, rarity, star_rating, damage_type, is_lord,
@@ -105,7 +105,7 @@ export function upsertCatalogHeroes(db: Database.Database, heroes: CatalogHeroRo
 }
 
 export function upsertCatalogArtifacts(
-  db: Database.Database,
+  db: SqliteDatabase,
   artifacts: CatalogArtifactRow[],
 ): number {
   const stmt = db.prepare(`
@@ -151,7 +151,7 @@ export function upsertCatalogArtifacts(
   return count;
 }
 
-export function upsertCatalogDemons(db: Database.Database, demons: CatalogDemonRow[]): number {
+export function upsertCatalogDemons(db: SqliteDatabase, demons: CatalogDemonRow[]): number {
   const stmt = db.prepare(`
     INSERT INTO catalog_demons (
       slug, name, rarity, star_rating, faction_group, max_level, portrait_path, display_order, active
@@ -189,13 +189,13 @@ export function upsertCatalogDemons(db: Database.Database, demons: CatalogDemonR
   return count;
 }
 
-export function bumpCatalogVersion(db: Database.Database): void {
+export function bumpCatalogVersion(db: SqliteDatabase): void {
   db.prepare(
     `UPDATE catalog_meta SET catalog_version = catalog_version + 1, last_import_at = datetime('now') WHERE id = 1`,
   ).run();
 }
 
-export function getCatalogCounts(db: Database.Database): {
+export function getCatalogCounts(db: SqliteDatabase): {
   heroes: number;
   artifacts: number;
   demons: number;
@@ -215,7 +215,7 @@ export function getCatalogCounts(db: Database.Database): {
 }
 
 export function deactivateStaleCatalogEntries(
-  db: Database.Database,
+  db: SqliteDatabase,
   bundle: CatalogBundle,
 ): {
   heroes: number;
@@ -236,7 +236,7 @@ export function deactivateStaleCatalogEntries(
 const SQLITE_IN_BATCH_SIZE = 500;
 
 function deactivateMissingSlugs(
-  db: Database.Database,
+  db: SqliteDatabase,
   table: 'catalog_heroes' | 'catalog_artifacts' | 'catalog_demons',
   keepSlugs: string[],
 ): number {
@@ -261,7 +261,7 @@ function deactivateMissingSlugs(
 }
 
 export function rematerializeProspectorAliasOwnership(
-  db: Database.Database,
+  db: SqliteDatabase,
   aliases: Readonly<Record<string, string>>,
 ): number {
   let changes = 0;

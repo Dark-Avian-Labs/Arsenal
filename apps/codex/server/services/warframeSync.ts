@@ -1,5 +1,5 @@
 import { log } from '@dark-avian-labs/server-kit';
-import Database from 'better-sqlite3';
+import { SqliteDatabase } from '@dark-avian-labs/server-kit';
 
 import { WARFRAME_CATALOG_DB_PATH } from '../config.ts';
 import { warframeQueries as q } from '../games/warframe/index.ts';
@@ -172,7 +172,7 @@ function stripKitgunPrimarySuffix(value: string): string {
   return value.replace(/\s*\(primary\)\s*$/i, '').trim();
 }
 
-function loadNames(db: Database.Database, sql: string, args: unknown[] = []): string[] {
+function loadNames(db: SqliteDatabase, sql: string, args: unknown[] = []): string[] {
   const rows = db.prepare(sql).all(...args) as { name: string | null }[];
   return rows.map((row) => row.name?.trim() ?? '').filter((name) => name.length > 0);
 }
@@ -238,7 +238,7 @@ function isCodexModularTrackableWeapon(row: WeaponSourceRow): boolean {
   return /\bprism\b/i.test(name);
 }
 
-function armoryHasCodexModularWeaponsTable(armoryDb: Database.Database): boolean {
+function armoryHasCodexModularWeaponsTable(armoryDb: SqliteDatabase): boolean {
   const row = armoryDb
     .prepare(
       `SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'codex_modular_weapons'`,
@@ -247,7 +247,7 @@ function armoryHasCodexModularWeaponsTable(armoryDb: Database.Database): boolean
   return row !== undefined;
 }
 
-function loadModularWeaponNamesFromCatalogTable(armoryDb: Database.Database): Set<string> {
+function loadModularWeaponNamesFromCatalogTable(armoryDb: SqliteDatabase): Set<string> {
   const rows = armoryDb
     .prepare(
       `SELECT name FROM codex_modular_weapons
@@ -258,7 +258,7 @@ function loadModularWeaponNamesFromCatalogTable(armoryDb: Database.Database): Se
   return new Set(rows.map((row) => row.name?.trim() ?? '').filter((name) => name.length > 0));
 }
 
-function loadModularWeaponNamesFromWeaponsTable(armoryDb: Database.Database): Set<string> {
+function loadModularWeaponNamesFromWeaponsTable(armoryDb: SqliteDatabase): Set<string> {
   const modularRows = armoryDb
     .prepare(
       `SELECT name, unique_name FROM weapons
@@ -276,7 +276,7 @@ function loadModularWeaponNamesFromWeaponsTable(armoryDb: Database.Database): Se
   return names;
 }
 
-function loadModularWeaponNames(armoryDb: Database.Database): Set<string> {
+function loadModularWeaponNames(armoryDb: SqliteDatabase): Set<string> {
   if (armoryHasCodexModularWeaponsTable(armoryDb)) {
     const names = loadModularWeaponNamesFromCatalogTable(armoryDb);
     if (names.size > 0) {
@@ -300,7 +300,7 @@ function isCompanionModularMainComponent(row: WeaponSourceRow): boolean {
   return false;
 }
 
-function loadCompanionNames(armoryDb: Database.Database): Set<string> {
+function loadCompanionNames(armoryDb: SqliteDatabase): Set<string> {
   const companionNames = new Set(
     loadNames(armoryDb, "SELECT name FROM companions WHERE name IS NOT NULL AND TRIM(name) <> ''"),
   );
@@ -322,7 +322,7 @@ function loadCompanionNames(armoryDb: Database.Database): Set<string> {
 const UNRELEASED_ARCANE_UNIQUE_NAME =
   '/Lotus/Upgrades/CosmeticEnhancers/Utility/SlowerBleedOutOnPredeath';
 
-function loadArcaneCatalog(armoryDb: Database.Database): {
+function loadArcaneCatalog(armoryDb: SqliteDatabase): {
   names: Set<string>;
   maxLevelByCanonicalKey: Map<string, number>;
 } {
@@ -356,7 +356,7 @@ function loadArcaneCatalog(armoryDb: Database.Database): {
   return { names, maxLevelByCanonicalKey };
 }
 
-function loadKDriveNames(armoryDb: Database.Database): Set<string> {
+function loadKDriveNames(armoryDb: SqliteDatabase): Set<string> {
   const kDriveRows = armoryDb
     .prepare(
       "SELECT name, unique_name FROM weapons WHERE name IS NOT NULL AND TRIM(name) <> '' AND (LOWER(product_category) LIKE '%hoverboard%' OR LOWER(unique_name) LIKE '%/types/vehicles/hoverboard/%')",
@@ -373,7 +373,7 @@ function loadKDriveNames(armoryDb: Database.Database): Set<string> {
 }
 
 function ensureWorksheetExistsForSync(
-  codexDb: Database.Database,
+  codexDb: SqliteDatabase,
   clerkUserId: string,
   worksheet: WorksheetName,
   execute: boolean,
@@ -400,7 +400,7 @@ function ensureWorksheetExistsForSync(
 }
 
 export function ensureWarframeWorksheetsForUser(
-  codexDb: Database.Database,
+  codexDb: SqliteDatabase,
   clerkUserId: string,
 ): void {
   for (const worksheet of WORKSHEET_NAMES) {
@@ -413,7 +413,7 @@ type WorksheetSourceBundle = {
   arcaneMaxLevelByCanonicalKey: Map<string, number>;
 };
 
-export function loadWorksheetSource(armoryDb: Database.Database): WorksheetSourceBundle {
+export function loadWorksheetSource(armoryDb: SqliteDatabase): WorksheetSourceBundle {
   const warframes = new Set(
     loadNames(armoryDb, "SELECT name FROM warframes WHERE product_category = 'Suits'"),
   );
@@ -479,7 +479,7 @@ export function loadWorksheetSource(armoryDb: Database.Database): WorksheetSourc
 function appendCurrentSpecialItemPlacements(
   sourceByWorksheet: Record<WorksheetName, Set<string>>,
   currentRowsByWorksheet: Map<WorksheetName, string[]>,
-  armoryDb: Database.Database,
+  armoryDb: SqliteDatabase,
 ): void {
   const specialNames = new Set(
     loadNames(
@@ -565,7 +565,7 @@ function createDesiredEntries(
 }
 
 function loadWorksheetCellValues(
-  codexDb: Database.Database,
+  codexDb: SqliteDatabase,
   worksheetId: number,
   clerkUserId: string,
 ): Map<number, Map<number, string>> {
@@ -595,7 +595,7 @@ function loadWorksheetCellValues(
 }
 
 function reconcileVariantAvailability(params: {
-  codexDb: Database.Database;
+  codexDb: SqliteDatabase;
   clerkUserId: string;
   rowId: number;
   desiredEntry: DesiredEntry;
@@ -671,7 +671,7 @@ function rowHasUserProgress(
 }
 
 function cleanupDuplicateVariantRows(params: {
-  codexDb: Database.Database;
+  codexDb: SqliteDatabase;
   clerkUserId: string;
   worksheet: WorksheetName;
   execute: boolean;
@@ -757,7 +757,7 @@ type RunSyncOptions = {
   lockToken?: string;
 };
 
-function loadArmoryUsernameMap(armoryDb: Database.Database): Map<string, string> {
+function loadArmoryUsernameMap(armoryDb: SqliteDatabase): Map<string, string> {
   const map = new Map<string, string>();
   try {
     const rows = armoryDb
@@ -770,14 +770,14 @@ function loadArmoryUsernameMap(armoryDb: Database.Database): Map<string, string>
   return map;
 }
 
-function catalogRowsHasActiveColumn(codexDb: Database.Database): boolean {
+function catalogRowsHasActiveColumn(codexDb: SqliteDatabase): boolean {
   const cols = codexDb.prepare(`PRAGMA table_info(catalog_rows)`).all() as {
     name: string;
   }[];
   return cols.some((c) => c.name === 'active');
 }
 
-function catalogRowsHasMaxLevelColumn(codexDb: Database.Database): boolean {
+function catalogRowsHasMaxLevelColumn(codexDb: SqliteDatabase): boolean {
   const cols = codexDb.prepare(`PRAGMA table_info(catalog_rows)`).all() as {
     name: string;
   }[];
@@ -785,7 +785,7 @@ function catalogRowsHasMaxLevelColumn(codexDb: Database.Database): boolean {
 }
 
 export function syncCatalogMasterFromSource(
-  codexDb: Database.Database,
+  codexDb: SqliteDatabase,
   sourceByWorksheet: Record<WorksheetName, Set<string>>,
   arcaneMaxLevelByCanonicalKey: Map<string, number>,
   execute: boolean,
@@ -869,7 +869,7 @@ function marketLinkKey(canonicalKey: string, worksheet: WorksheetName): string {
   return `${canonicalKey}\0${worksheet}`;
 }
 
-function armoryHasMarketLinksTable(armoryDb: Database.Database): boolean {
+function armoryHasMarketLinksTable(armoryDb: SqliteDatabase): boolean {
   const row = armoryDb
     .prepare(
       `SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'warframe_market_links'`,
@@ -878,7 +878,7 @@ function armoryHasMarketLinksTable(armoryDb: Database.Database): boolean {
   return row !== undefined;
 }
 
-function loadArmoryMarketLinkMap(armoryDb: Database.Database): Map<string, MarketHrefPair> {
+function loadArmoryMarketLinkMap(armoryDb: SqliteDatabase): Map<string, MarketHrefPair> {
   if (!armoryHasMarketLinksTable(armoryDb)) {
     console.warn(
       '[Warframe sync] Armory DB has no warframe_market_links table; skipping market link sync.',
@@ -908,7 +908,7 @@ function loadArmoryMarketLinkMap(armoryDb: Database.Database): Map<string, Marke
 }
 
 function loadCatalogMarketLinkMap(
-  codexDb: Database.Database,
+  codexDb: SqliteDatabase,
   worksheet: WorksheetName,
 ): Map<string, MarketHrefPair> {
   const rows = codexDb
@@ -934,7 +934,7 @@ function loadCatalogMarketLinkMap(
 }
 
 function refreshCatalogMasterMarketHrefs(
-  codexDb: Database.Database,
+  codexDb: SqliteDatabase,
   armoryMarketLinks: Map<string, MarketHrefPair>,
 ): { rowsProcessed: number; rowsWithHref: number } {
   const masterRows = codexDb
@@ -973,7 +973,7 @@ function refreshCatalogMasterMarketHrefs(
 }
 
 function refreshUserRowMarketHrefsFromCatalog(
-  codexDb: Database.Database,
+  codexDb: SqliteDatabase,
   clerkUserId: string,
   worksheetId: number,
   worksheet: WorksheetName,
@@ -1015,7 +1015,7 @@ function refreshUserRowMarketHrefsFromCatalog(
 }
 
 export function provisionUserFromCatalogMaster(
-  codexDb: Database.Database,
+  codexDb: SqliteDatabase,
   clerkUserId: string,
 ): boolean {
   type CatalogRow = {
@@ -1075,13 +1075,13 @@ export function provisionUserFromCatalogMaster(
   return true;
 }
 
-function markRowOrphaned(codexDb: Database.Database, rowId: number, execute: boolean): void {
+function markRowOrphaned(codexDb: SqliteDatabase, rowId: number, execute: boolean): void {
   if (!execute) return;
   codexDb.prepare('UPDATE rows SET orphaned = 1 WHERE id = ?').run(rowId);
 }
 
 export async function runWarframeSync(
-  codexDb: Database.Database,
+  codexDb: SqliteDatabase,
   options: RunSyncOptions,
 ): Promise<WarframeSyncResult> {
   if (
@@ -1093,7 +1093,7 @@ export async function runWarframeSync(
   }
   const mode = options.execute ? 'execute' : 'preview';
   const syncStartedAt = Date.now();
-  const armoryDb = new Database(WARFRAME_CATALOG_DB_PATH, {
+  const armoryDb = new SqliteDatabase(WARFRAME_CATALOG_DB_PATH, {
     readonly: true,
     fileMustExist: true,
   });

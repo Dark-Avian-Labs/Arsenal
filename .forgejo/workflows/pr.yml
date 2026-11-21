@@ -19,6 +19,15 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Detect affected apps
+        id: changes
+        env:
+          BEFORE: ${{ github.event.pull_request.base.sha }}
+          AFTER: ${{ github.sha }}
+        run: node scripts/ci/changes.mjs
 
       - name: Enable pnpm
         run: npm install -g pnpm@$(node -p 'require("./package.json").packageManager.replace(/^pnpm@/, "")')
@@ -32,12 +41,24 @@ jobs:
       - name: Build packages and apps
         run: pnpm --filter "@dark-avian-labs/*" --filter "./apps/*" run --if-present build
 
+      - name: Smoke-test deployed Arsenal host bundle
+        if: steps.changes.outputs.arsenal == 'true'
+        run: node scripts/ci/smoke-arsenal-deploy.mjs
+
       - name: Playwright browser and OS deps
+        if: >-
+          steps.changes.outputs.armory == 'true' ||
+          steps.changes.outputs.budget-planner == 'true' ||
+          steps.changes.outputs.codex == 'true' ||
+          steps.changes.outputs.outfitter == 'true' ||
+          steps.changes.outputs.sentinel == 'true' ||
+          steps.changes.outputs.template == 'true'
         run: |
           pnpm exec playwright install chromium
           pnpm exec playwright install-deps chromium
 
       - name: E2E armory
+        if: steps.changes.outputs.armory == 'true'
         run: pnpm --filter armory run test:e2e
         env:
           DOTENV_PRIVATE_KEY_DEVELOPMENT: ${{ secrets.DOTENV_PRIVATE_KEY_DEVELOPMENT_ARMORY }}
@@ -45,6 +66,7 @@ jobs:
           E2E_CLERK_USER_PASSWORD: ${{ secrets.E2E_CLERK_USER_PASSWORD }}
 
       - name: E2E budget-planner
+        if: steps.changes.outputs.budget-planner == 'true'
         run: pnpm --filter budget-planner run test:e2e
         env:
           DOTENV_PRIVATE_KEY_DEVELOPMENT: ${{ secrets.DOTENV_PRIVATE_KEY_DEVELOPMENT_BUDGET_PLANNER }}
@@ -52,6 +74,7 @@ jobs:
           E2E_CLERK_USER_PASSWORD: ${{ secrets.E2E_CLERK_USER_PASSWORD }}
 
       - name: E2E codex
+        if: steps.changes.outputs.codex == 'true'
         run: pnpm --filter codex run test:e2e
         env:
           DOTENV_PRIVATE_KEY_DEVELOPMENT: ${{ secrets.DOTENV_PRIVATE_KEY_DEVELOPMENT_CODEX }}
@@ -59,6 +82,7 @@ jobs:
           E2E_CLERK_USER_PASSWORD: ${{ secrets.E2E_CLERK_USER_PASSWORD }}
 
       - name: E2E outfitter
+        if: steps.changes.outputs.outfitter == 'true'
         run: pnpm --filter outfitter run test:e2e
         env:
           DOTENV_PRIVATE_KEY_DEVELOPMENT: ${{ secrets.DOTENV_PRIVATE_KEY_DEVELOPMENT_OUTFITTER }}
@@ -66,9 +90,11 @@ jobs:
           E2E_CLERK_USER_PASSWORD: ${{ secrets.E2E_CLERK_USER_PASSWORD }}
 
       - name: E2E sentinel
+        if: steps.changes.outputs.sentinel == 'true'
         run: pnpm --filter sentinel run test:e2e
 
       - name: E2E template
+        if: steps.changes.outputs.template == 'true'
         run: pnpm --filter dal-template run test:e2e
         env:
           DOTENV_PRIVATE_KEY_DEVELOPMENT: ${{ secrets.DOTENV_PRIVATE_KEY_DEVELOPMENT_TEMPLATE }}

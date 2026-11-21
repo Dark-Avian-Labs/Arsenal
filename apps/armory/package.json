@@ -8,14 +8,39 @@
     "server",
     "shared",
     "dist/client",
+    "dist/server",
     "public",
     "icons",
     "ecosystem.config.cjs",
     ".env.production"
   ],
   "type": "module",
+  "exports": {
+    "./package.json": "./package.json",
+    "./server": {
+      "types": "./server/app.ts",
+      "import": "./dist/server/server/app.js",
+      "default": "./dist/server/server/app.js"
+    },
+    "./init": {
+      "types": "./server/init.ts",
+      "import": "./dist/server/server/init.js",
+      "default": "./dist/server/server/init.js"
+    },
+    "./db": {
+      "types": "./server/db/connection.ts",
+      "import": "./dist/server/server/db/connection.js",
+      "default": "./dist/server/server/db/connection.js"
+    },
+    "./users": {
+      "types": "./server/auth/armoryUsers.ts",
+      "import": "./dist/server/server/auth/armoryUsers.js",
+      "default": "./dist/server/server/auth/armoryUsers.js"
+    }
+  },
   "scripts": {
-    "build": "pnpm run typecheck && vite build",
+    "build:server": "tsc -p tsconfig.server.build.json",
+    "build": "pnpm run typecheck && pnpm run build:server && vite build",
     "typecheck": "tsc -p tsconfig.server.json --noEmit && tsc -p tsconfig.json --noEmit",
     "dev": "node --watch server/index.ts",
     "dev:client": "dotenvx run --strict -f .env.development -- vite",
@@ -40,7 +65,6 @@
     "@dark-avian-labs/server-kit": "workspace:*",
     "@dark-avian-labs/warframe-catalog": "workspace:*",
     "@dotenvx/dotenvx": "catalog:",
-    "better-sqlite3": "catalog:",
     "express": "catalog:",
     "express-rate-limit": "catalog:",
     "helmet": "catalog:",
@@ -56,7 +80,6 @@
     "@tailwindcss/vite": "catalog:",
     "@testing-library/dom": "^10.4.2",
     "@testing-library/react": "^16.3.3",
-    "@types/better-sqlite3": "catalog:",
     "@types/express": "catalog:",
     "@types/node": "catalog:",
     "@types/react": "catalog:",

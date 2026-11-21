@@ -33,6 +33,10 @@ function resolveActionsDbPath(): string {
 }
 
 export const ACTIONS_DB_PATH = resolveActionsDbPath();
+export const SENTINEL_DISCORD_WEBHOOK = process.env.SENTINEL_DISCORD_WEBHOOK?.trim() || '';
+const rawPm2Interval = Number.parseInt(process.env.SENTINEL_PM2_BRIDGE_INTERVAL_MS ?? '', 10);
+export const SENTINEL_PM2_BRIDGE_INTERVAL_MS =
+  Number.isFinite(rawPm2Interval) && rawPm2Interval >= 0 ? rawPm2Interval : 60_000;
 export const FORGEJO_BASE_URL = (
   process.env.FORGEJO_BASE_URL?.trim() || 'https://git.darkavianlabs.com'
 ).replace(/\/+$/, '');

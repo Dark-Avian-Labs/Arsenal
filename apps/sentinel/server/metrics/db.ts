@@ -1,25 +1,11 @@
-import Database from 'better-sqlite3';
+import { createDbSingleton } from '@dark-avian-labs/server-kit';
 
 import { METRICS_DB_PATH, NODE_ENV } from '../config.ts';
 import { migrateMetricsSchema } from './schema.ts';
 
-let metricsDb: Database.Database | null = null;
+const dbPath = NODE_ENV === 'test' ? ':memory:' : METRICS_DB_PATH;
+const { getDb: getMetricsDb, closeDb: closeMetricsDb } = createDbSingleton(dbPath, {
+  onOpen: (db) => migrateMetricsSchema(db),
+});
 
-export function getMetricsDb(): Database.Database {
-  if (!metricsDb) {
-    const path = NODE_ENV === 'test' ? ':memory:' : METRICS_DB_PATH;
-    metricsDb = new Database(path);
-    metricsDb.pragma('journal_mode = WAL');
-    metricsDb.pragma('foreign_keys = ON');
-    metricsDb.pragma('busy_timeout = 5000');
-    migrateMetricsSchema(metricsDb);
-  }
-  return metricsDb;
-}
-
-export function closeMetricsDb(): void {
-  if (metricsDb) {
-    metricsDb.close();
-    metricsDb = null;
-  }
-}
+export { getMetricsDb, closeMetricsDb };

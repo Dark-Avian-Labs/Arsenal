@@ -45,8 +45,15 @@
     root.classList.remove('dark');
     if (theme === 'dark') root.classList.add('dark');
 
-    var uiStyles = ['ink', 'acrylic', 'plate', 'folio', 'bronze'];
-    var legacyUi = { prism: 'ink', shadow: 'ink', clear: 'ink' };
+    var uiStyles = ['ink', 'acrylic'];
+    var legacyUi = {
+      plate: 'ink',
+      folio: 'ink',
+      bronze: 'ink',
+      prism: 'ink',
+      shadow: 'ink',
+      clear: 'ink',
+    };
     function isUiStyle(value) {
       return uiStyles.indexOf(value) !== -1;
     }
@@ -55,7 +62,7 @@
     if (!isUiStyle(ui) && !legacyUi[ui]) ui = readStorage(['dal.ui.style', 'bp.ui.style']);
     if (legacyUi[ui]) ui = legacyUi[ui];
     if (!isUiStyle(ui)) ui = 'ink';
-    var known = uiStyles.concat(['prism', 'shadow', 'clear']);
+    var known = uiStyles.concat(['plate', 'folio', 'bronze', 'prism', 'shadow', 'clear']);
     for (var i = 0; i < known.length; i++) {
       root.classList.remove('ui-' + known[i]);
     }

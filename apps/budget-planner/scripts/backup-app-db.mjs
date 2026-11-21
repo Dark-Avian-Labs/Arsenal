@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import Database from 'better-sqlite3';
+import { SqliteDatabase } from '@dark-avian-labs/server-kit';
 
 const sourcePath = path.resolve(
   process.env.APP_DB_PATH || path.join(process.cwd(), 'data', 'app.db'),
@@ -19,7 +19,7 @@ const stamp = new Date().toISOString().replace(/[:.]/g, '-');
 const destPath = path.join(backupDir, `app-${stamp}.db`);
 const destSql = destPath.replaceAll('\\', '/').replaceAll("'", "''");
 
-const db = new Database(sourcePath, { readonly: true, fileMustExist: true });
+const db = new SqliteDatabase(sourcePath, { readonly: true, fileMustExist: true });
 try {
   db.exec(`VACUUM INTO '${destSql}'`);
 } finally {

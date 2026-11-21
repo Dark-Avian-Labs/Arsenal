@@ -8,6 +8,7 @@
     "server",
     "shared",
     "dist/client",
+    "dist/server",
     "public",
     "icons",
     "ecosystem.config.cjs",
@@ -15,11 +16,30 @@
     "scripts/data"
   ],
   "type": "module",
+  "exports": {
+    "./package.json": "./package.json",
+    "./server": {
+      "types": "./server/app.ts",
+      "import": "./dist/server/server/app.js",
+      "default": "./dist/server/server/app.js"
+    },
+    "./init": {
+      "types": "./server/init.ts",
+      "import": "./dist/server/server/init.js",
+      "default": "./dist/server/server/init.js"
+    },
+    "./probes": {
+      "types": "./server/probes.ts",
+      "import": "./dist/server/server/probes.js",
+      "default": "./dist/server/server/probes.js"
+    }
+  },
   "scripts": {
     "typecheck": "pnpm run typecheck:server && pnpm run typecheck:client",
     "typecheck:server": "tsc -p tsconfig.server.json --noEmit",
     "typecheck:client": "tsc -p tsconfig.json --noEmit",
-    "build": "pnpm run typecheck && vite build",
+    "build:server": "tsc -p tsconfig.server.build.json",
+    "build": "pnpm run typecheck && pnpm run build:server && vite build",
     "wor:import": "node scripts/wor-import.mjs",
     "wor:import:cache": "node scripts/generate-wor-import-cache.mjs",
     "start": "node server/index.ts",
@@ -43,14 +63,9 @@
     "@dark-avian-labs/server-kit": "workspace:*",
     "@dark-avian-labs/warframe-catalog": "workspace:*",
     "@dotenvx/dotenvx": "catalog:",
-    "@napi-rs/lzma": "^1.5.3",
-    "better-sqlite3": "catalog:",
-    "cheerio": "^1.2.0",
-    "cuimp": "^2.1.2",
     "express": "catalog:",
     "express-rate-limit": "catalog:",
     "helmet": "catalog:",
-    "undici": "^8.12.4",
     "zod": "catalog:"
   },
   "devDependencies": {
@@ -60,9 +75,9 @@
     "@dark-avian-labs/config": "workspace:*",
     "@dark-avian-labs/ui": "workspace:*",
     "@dark-avian-labs/wor-assets": "workspace:*",
+    "@napi-rs/lzma": "^1.5.3",
     "@playwright/test": "catalog:",
     "@tailwindcss/vite": "catalog:",
-    "@types/better-sqlite3": "catalog:",
     "@types/express": "catalog:",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
@@ -70,7 +85,9 @@
     "@types/supertest": "^7.2.1",
     "@vitejs/plugin-react": "catalog:",
     "@vitest/coverage-v8": "catalog:",
+    "cheerio": "^1.2.0",
     "clsx": "^2.1.1",
+    "cuimp": "^2.1.2",
     "domhandler": "^6.0.1",
     "oxfmt": "catalog:",
     "oxlint": "catalog:",
@@ -81,6 +98,7 @@
     "tailwind-merge": "^3.7.0",
     "tailwindcss": "catalog:",
     "typescript": "catalog:",
+    "undici": "^8.12.4",
     "vite": "catalog:",
     "vitest": "catalog:"
   }

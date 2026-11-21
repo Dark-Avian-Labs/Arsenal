@@ -3,23 +3,20 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import { WOR_IMAGES_DIR } from '../../config.ts';
+import {
+  ALLOWED_IMAGE_EXTENSIONS,
+  contentTypeForImagePath,
+  isAllowedImageExtension,
+  type AllowedImageExtension,
+} from '../../imageMime.ts';
 import { fetchWithTimeout, FETCH_TIMEOUT_MS } from '../warframe/http/fetchWithTimeout.ts';
+
+export { ALLOWED_IMAGE_EXTENSIONS, contentTypeForImagePath, isAllowedImageExtension };
+export type { AllowedImageExtension };
 
 export const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 
-export const ALLOWED_IMAGE_EXTENSIONS = ['.png', '.webp', '.jpg', '.jpeg', '.gif', '.svg'] as const;
-export type AllowedImageExtension = (typeof ALLOWED_IMAGE_EXTENSIONS)[number];
-
 const ALLOWED_IMAGE_EXT_SET = new Set<string>(ALLOWED_IMAGE_EXTENSIONS);
-
-const IMAGE_CONTENT_TYPES: Record<AllowedImageExtension, string> = {
-  '.png': 'image/png',
-  '.webp': 'image/webp',
-  '.jpg': 'image/jpeg',
-  '.jpeg': 'image/jpeg',
-  '.gif': 'image/gif',
-  '.svg': 'image/svg+xml',
-};
 
 const ALLOWED_IMAGE_HOSTS = new Set([
   'fastidious.gg',
@@ -193,15 +190,6 @@ export function resolveWorImagePath(relativePath: string): string | null {
     return null;
   }
   return localPath;
-}
-
-export function contentTypeForImagePath(filePath: string): string | null {
-  const ext = path.extname(filePath).toLowerCase() as AllowedImageExtension;
-  return IMAGE_CONTENT_TYPES[ext] ?? null;
-}
-
-export function isAllowedImageExtension(ext: string): boolean {
-  return ALLOWED_IMAGE_EXT_SET.has(ext.toLowerCase());
 }
 
 export async function downloadImageToWorDir(options: {

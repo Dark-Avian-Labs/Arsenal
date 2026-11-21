@@ -26,12 +26,10 @@
     "rank-exceptions": "node scripts/generate-warframe-rank-exceptions.mjs"
   },
   "dependencies": {
-    "@dark-avian-labs/server-kit": "workspace:*",
-    "better-sqlite3": "catalog:"
+    "@dark-avian-labs/server-kit": "workspace:*"
   },
   "devDependencies": {
     "@dark-avian-labs/config": "workspace:*",
-    "@types/better-sqlite3": "catalog:",
     "@types/node": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"

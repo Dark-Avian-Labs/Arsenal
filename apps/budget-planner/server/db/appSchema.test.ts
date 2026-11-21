@@ -1,11 +1,11 @@
-import Database from 'better-sqlite3';
+import { SqliteDatabase } from '@dark-avian-labs/server-kit';
 import { describe, expect, it } from 'vitest';
 
 import { createAppSchema } from './appSchema.ts';
 
 describe('createAppSchema', () => {
   it('adds archived_at to an existing entries table', () => {
-    const db = new Database(':memory:');
+    const db = new SqliteDatabase(':memory:');
     db.exec(`
       CREATE TABLE users (
         id TEXT PRIMARY KEY,
@@ -60,7 +60,7 @@ describe('createAppSchema', () => {
   });
 
   it('collapses duplicate pending invites then enforces uniqueness', () => {
-    const db = new Database(':memory:');
+    const db = new SqliteDatabase(':memory:');
     db.exec(`
       CREATE TABLE users (
         id TEXT PRIMARY KEY,
@@ -114,7 +114,7 @@ describe('createAppSchema', () => {
   });
 
   it('lowercases mixed-case pending invites before uniqueness', () => {
-    const db = new Database(':memory:');
+    const db = new SqliteDatabase(':memory:');
     db.exec(`
       CREATE TABLE users (
         id TEXT PRIMARY KEY,
@@ -165,7 +165,7 @@ describe('createAppSchema', () => {
   });
 
   it('remaps legacy account colors onto the rarity ladder', () => {
-    const db = new Database(':memory:');
+    const db = new SqliteDatabase(':memory:');
     db.exec(`
       CREATE TABLE users (
         id TEXT PRIMARY KEY,

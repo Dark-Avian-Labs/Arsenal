@@ -20,7 +20,7 @@ import {
   gearSubstats,
   type GearView,
 } from './GearTile';
-import type { ArtifactView, HeroRow, OutfitResult } from './types';
+import type { ArtifactView, HeroRow } from './types';
 
 export function outfitResultStats(
   stats: FinalStats,
@@ -193,57 +193,4 @@ export function artifactStatLines(
     });
   }
   return lines;
-}
-
-export function isOutfitResultList(value: unknown): value is OutfitResult[] {
-  return Array.isArray(value);
-}
-
-type CalcStreamEvent = {
-  progress?: unknown;
-  total?: unknown;
-  results?: unknown;
-  error?: unknown;
-};
-
-export async function readOutfitCalculate(
-  response: Response,
-  onProgress: (done: number, total: number) => void,
-): Promise<{ results: OutfitResult[]; error?: string }> {
-  const contentType = response.headers.get('content-type') ?? '';
-  if (!contentType.includes('ndjson') || !response.body) {
-    const body = (await response.json().catch(() => null)) as {
-      results?: OutfitResult[];
-      error?: string;
-    } | null;
-    return { results: body?.results ?? [], error: body?.error };
-  }
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = '';
-  let results: OutfitResult[] = [];
-  let error: string | undefined;
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split('\n');
-    buffer = lines.pop() ?? '';
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (!trimmed) continue;
-      let event: CalcStreamEvent;
-      try {
-        event = JSON.parse(trimmed) as CalcStreamEvent;
-      } catch {
-        continue;
-      }
-      if (typeof event.progress === 'number' && typeof event.total === 'number') {
-        onProgress(event.progress, event.total);
-      }
-      if (isOutfitResultList(event.results)) results = event.results;
-      if (typeof event.error === 'string') error = event.error;
-    }
-  }
-  return { results, error };
 }

@@ -1,12 +1,12 @@
-import Database from 'better-sqlite3';
+import { SqliteDatabase } from '@dark-avian-labs/server-kit';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../db/connection.ts', () => {
-  let db: Database.Database | null = null;
+  let db: SqliteDatabase | null = null;
   return {
     getCatalogDb: () => {
       if (!db) {
-        db = new Database(':memory:');
+        db = new SqliteDatabase(':memory:');
         db.pragma('foreign_keys = ON');
       }
       return db;

@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 
 import { log } from '@dark-avian-labs/server-kit';
-import type Database from 'better-sqlite3';
+import type { SqliteDatabase } from '@dark-avian-labs/server-kit';
 import * as cheerio from 'cheerio';
 import type { AnyNode, Element } from 'domhandler';
 
@@ -360,7 +360,7 @@ async function fetchAtragraphWikiHtml(onProgress?: (msg: string) => void): Promi
   }
 }
 
-export function countModsMissingAtragraphImages(db: Database.Database = getCatalogDb()): number {
+export function countModsMissingAtragraphImages(db: SqliteDatabase = getCatalogDb()): number {
   const row = db
     .prepare(
       `SELECT COUNT(*) AS c
@@ -375,7 +375,7 @@ export async function syncAtragraphModsFromWiki(
   options: {
     onlyMissing?: boolean;
     onProgress?: (msg: string) => void;
-    db?: Database.Database;
+    db?: SqliteDatabase;
   } = {},
 ): Promise<{
   setsFound: number;

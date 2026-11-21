@@ -1,4 +1,4 @@
-import type Database from 'better-sqlite3';
+import type { SqliteDatabase } from '@dark-avian-labs/server-kit';
 
 export type CodexModularWeaponRow = {
   unique_name: string | null;
@@ -67,7 +67,7 @@ export function isCodexModularTrackableWeapon(row: CodexModularWeaponRow): boole
   return false;
 }
 
-export function syncCodexModularWeaponsTable(db: Database.Database): {
+export function syncCodexModularWeaponsTable(db: SqliteDatabase): {
   upserted: number;
   names: string[];
 } {
@@ -124,7 +124,7 @@ export function syncCodexModularWeaponsTable(db: Database.Database): {
   };
 }
 
-export function ensureCodexModularWeaponsPopulated(db: Database.Database): number {
+export function ensureCodexModularWeaponsPopulated(db: SqliteDatabase): number {
   const table = db
     .prepare(
       `SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'codex_modular_weapons'`,

@@ -10,19 +10,23 @@ import {
 
 export type ThemeMode = 'light' | 'dark';
 
-export const UI_STYLES = ['ink', 'acrylic', 'plate', 'folio', 'bronze'] as const;
+export const UI_STYLES = ['ink', 'acrylic'] as const;
 
 export type UiStyle = (typeof UI_STYLES)[number];
 
 export const UI_STYLE_LABELS: Record<UiStyle, string> = {
   ink: 'Ink',
   acrylic: 'Acrylic',
-  plate: 'Plate',
-  folio: 'Folio',
-  bronze: 'Bronze',
 };
 
-const LEGACY_UI_STYLE_CLASSES = ['ui-prism', 'ui-shadow', 'ui-clear'] as const;
+const LEGACY_UI_STYLE_CLASSES = [
+  'ui-plate',
+  'ui-folio',
+  'ui-bronze',
+  'ui-prism',
+  'ui-shadow',
+  'ui-clear',
+] as const;
 
 interface ThemeContextValue {
   mode: ThemeMode;
@@ -69,7 +73,16 @@ function isUiStyle(raw: string): raw is UiStyle {
 
 function normalizeUiStyle(raw: string | null | undefined): UiStyle | null {
   if (!raw) return null;
-  if (raw === 'prism' || raw === 'shadow' || raw === 'clear') return 'ink';
+  if (
+    raw === 'plate' ||
+    raw === 'folio' ||
+    raw === 'bronze' ||
+    raw === 'prism' ||
+    raw === 'shadow' ||
+    raw === 'clear'
+  ) {
+    return 'ink';
+  }
   return isUiStyle(raw) ? raw : null;
 }
 

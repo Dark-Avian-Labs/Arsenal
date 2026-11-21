@@ -1,5 +1,5 @@
 import { getRequestId, log } from '@dark-avian-labs/server-kit';
-import type Database from 'better-sqlite3';
+import type { SqliteDatabase } from '@dark-avian-labs/server-kit';
 import { type Request, type Response } from 'express';
 
 import { DELETED_USER_LABEL, getOwnerDisplayName } from '../auth/armoryUsers.ts';
@@ -35,7 +35,7 @@ export const WEAPON_CATEGORY_TO_TYPE: Record<string, string> = {
   SpaceMelee: 'archmelee',
 };
 export function fetchPublicLoadoutsForUser(
-  db: Database.Database,
+  db: SqliteDatabase,
   clerkUserId: string,
   ownerNames: Map<string, string | null>,
   pagination?: { limit: number; offset: number },
@@ -241,21 +241,21 @@ export function parseListPagination(
   return { limit, offset };
 }
 
-export function countUserBuilds(db: Database.Database, clerkUserId: string): number {
+export function countUserBuilds(db: SqliteDatabase, clerkUserId: string): number {
   const row = db
     .prepare('SELECT COUNT(*) AS c FROM builds WHERE clerk_user_id = ?')
     .get(clerkUserId) as { c: number };
   return row?.c ?? 0;
 }
 
-export function countUserLoadouts(db: Database.Database, clerkUserId: string): number {
+export function countUserLoadouts(db: SqliteDatabase, clerkUserId: string): number {
   const row = db
     .prepare('SELECT COUNT(*) AS c FROM loadouts WHERE clerk_user_id = ?')
     .get(clerkUserId) as { c: number };
   return row?.c ?? 0;
 }
 
-export function fetchBuildsByIds(db: Database.Database, ids: number[]): BuildRow[] {
+export function fetchBuildsByIds(db: SqliteDatabase, ids: number[]): BuildRow[] {
   const uniqueIds = [...new Set(ids)].filter((id) => Number.isFinite(id) && id > 0);
   if (uniqueIds.length === 0) {
     return [];
@@ -274,7 +274,7 @@ export type ModListQuery = {
 };
 
 export function loadDedupedMods(
-  db: Database.Database,
+  db: SqliteDatabase,
   query: ModListQuery,
 ): Array<Record<string, unknown>> {
   const { typesRaw, typeRaw, rarity, search } = query;

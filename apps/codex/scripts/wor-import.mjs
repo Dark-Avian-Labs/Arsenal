@@ -5,14 +5,14 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 process.chdir(root);
 
-const pipelinePath = path.join(root, 'dist', 'server', 'import', 'wor', 'startupPipeline.js');
+const pipelinePath = path.join(root, 'server', 'import', 'wor', 'startupPipeline.ts');
 if (!fs.existsSync(pipelinePath)) {
-  console.error(`[wor:import] Missing ${pipelinePath}. Run: pnpm run build`);
+  console.error(`[wor:import] Missing ${pipelinePath}.`);
   process.exitCode = 1;
   process.exit(1);
 }
 
-const { runWorStartupPipeline } = await import(pathToFileURL(pipelinePath));
+const { runWorStartupPipeline } = await import(pathToFileURL(pipelinePath).href);
 
 const forceImport = process.argv.includes('--force');
 const forceImages = process.argv.includes('--force-images');

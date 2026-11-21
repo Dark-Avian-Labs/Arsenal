@@ -1,4 +1,4 @@
-import { createSentinelAgent } from '@dark-avian-labs/sentinel-agent';
+import { createSentinelAgent, type SentinelAgentOptions } from '@dark-avian-labs/sentinel-agent';
 
 type AgentHandle = ReturnType<typeof createSentinelAgent>;
 
@@ -7,6 +7,7 @@ export function createAppSentinelAgent(options: {
   displayName: string;
   nodeEnv: string;
   defaultIngestUrl?: string;
+  resolveRequestApp?: SentinelAgentOptions['resolveRequestApp'];
 }): AgentHandle | null {
   if (options.nodeEnv === 'test') return null;
   const token = process.env.SENTINEL_INGEST_TOKEN?.trim() ?? '';
@@ -17,5 +18,6 @@ export function createAppSentinelAgent(options: {
     displayName: options.displayName,
     ingestUrl,
     token,
+    resolveRequestApp: options.resolveRequestApp,
   });
 }

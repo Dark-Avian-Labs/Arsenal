@@ -1,4 +1,4 @@
-import Database from 'better-sqlite3';
+import { SqliteDatabase } from '@dark-avian-labs/server-kit';
 
 import {
   HERO_CLASSES,
@@ -64,7 +64,7 @@ function isValidArtifactGaugeLevel(level: number): boolean {
   return Number.isInteger(level) && level >= 0 && level <= ARTIFACT_GAUGE_MAX;
 }
 
-export function getGameAccountsByUserId(db: Database.Database, clerkUserId: string): GameAccount[] {
+export function getGameAccountsByUserId(db: SqliteDatabase, clerkUserId: string): GameAccount[] {
   return db
     .prepare(
       'SELECT id, account_name, is_active, created_at FROM game_accounts WHERE clerk_user_id = ? ORDER BY is_active DESC, id ASC',
@@ -73,7 +73,7 @@ export function getGameAccountsByUserId(db: Database.Database, clerkUserId: stri
 }
 
 export function getGameAccountByIdAndUser(
-  db: Database.Database,
+  db: SqliteDatabase,
   accountId: number,
   clerkUserId: string,
 ): { id: number; account_name: string } | undefined {
@@ -82,11 +82,7 @@ export function getGameAccountByIdAndUser(
     .get(accountId, clerkUserId) as { id: number; account_name: string } | undefined;
 }
 
-export function setActiveAccount(
-  db: Database.Database,
-  clerkUserId: string,
-  accountId: number,
-): void {
+export function setActiveAccount(db: SqliteDatabase, clerkUserId: string, accountId: number): void {
   const transaction = db.transaction(() => {
     const exists = db
       .prepare('SELECT id FROM game_accounts WHERE id = ? AND clerk_user_id = ?')
@@ -106,7 +102,7 @@ export function setActiveAccount(
 }
 
 export function createGameAccount(
-  db: Database.Database,
+  db: SqliteDatabase,
   clerkUserId: string,
   accountName: string,
   isFirst: boolean,
@@ -118,7 +114,7 @@ export function createGameAccount(
 }
 
 export function getAccountByNameAndUser(
-  db: Database.Database,
+  db: SqliteDatabase,
   clerkUserId: string,
   name: string,
 ): { id: number } | undefined {
@@ -128,7 +124,7 @@ export function getAccountByNameAndUser(
 }
 
 export function deleteGameAccount(
-  db: Database.Database,
+  db: SqliteDatabase,
   accountId: number,
   clerkUserId: string,
 ): boolean {
@@ -139,7 +135,7 @@ export function deleteGameAccount(
 }
 
 export function updateGameAccountName(
-  db: Database.Database,
+  db: SqliteDatabase,
   accountId: number,
   clerkUserId: string,
   accountName: string,
@@ -151,7 +147,7 @@ export function updateGameAccountName(
 }
 
 export function getUserAccountsForApi(
-  db: Database.Database,
+  db: SqliteDatabase,
   clerkUserId: string,
 ): {
   id: number;
@@ -171,7 +167,7 @@ export function getUserAccountsForApi(
   }[];
 }
 
-export function seedAccountHeroesFromBase(db: Database.Database, accountId: number): void {
+export function seedAccountHeroesFromBase(db: SqliteDatabase, accountId: number): void {
   db.prepare(
     `
     INSERT INTO account_heroes (account_id, base_hero_id, name, class, element, star_rating, rating, display_order)
@@ -181,7 +177,7 @@ export function seedAccountHeroesFromBase(db: Database.Database, accountId: numb
   ).run(accountId, accountId);
 }
 
-export function seedAccountArtifactsFromBase(db: Database.Database, accountId: number): void {
+export function seedAccountArtifactsFromBase(db: SqliteDatabase, accountId: number): void {
   db.prepare(
     `
     INSERT INTO account_artifacts (account_id, base_artifact_id, name, class, star_rating, gauge_level, display_order)
@@ -192,7 +188,7 @@ export function seedAccountArtifactsFromBase(db: Database.Database, accountId: n
 }
 
 export function getHeroes(
-  db: Database.Database,
+  db: SqliteDatabase,
   accountId: number,
   classFilter: string,
   elementFilter: string,
@@ -213,7 +209,7 @@ export function getHeroes(
 }
 
 export function getHeroStats(
-  db: Database.Database,
+  db: SqliteDatabase,
   accountId: number,
 ): { total: number; owned: number; maxed: number } {
   const row = db
@@ -235,7 +231,7 @@ export function getHeroStats(
 }
 
 export function getArtifacts(
-  db: Database.Database,
+  db: SqliteDatabase,
   accountId: number,
   classFilter: string,
 ): Artifact[] {
@@ -251,7 +247,7 @@ export function getArtifacts(
 }
 
 export function getArtifactStats(
-  db: Database.Database,
+  db: SqliteDatabase,
   accountId: number,
 ): { total: number; owned: number; maxed: number } {
   const row = db
@@ -276,7 +272,7 @@ export function getArtifactStats(
   };
 }
 
-export function getBaseHeroes(db: Database.Database): BaseHero[] {
+export function getBaseHeroes(db: SqliteDatabase): BaseHero[] {
   return db
     .prepare(
       'SELECT id, name, class, element, star_rating, display_order FROM base_heroes ORDER BY name ASC',
@@ -284,7 +280,7 @@ export function getBaseHeroes(db: Database.Database): BaseHero[] {
     .all() as BaseHero[];
 }
 
-export function getBaseArtifacts(db: Database.Database): BaseArtifact[] {
+export function getBaseArtifacts(db: SqliteDatabase): BaseArtifact[] {
   return db
     .prepare(
       'SELECT id, name, class, star_rating, display_order FROM base_artifacts ORDER BY name ASC',
@@ -293,7 +289,7 @@ export function getBaseArtifacts(db: Database.Database): BaseArtifact[] {
 }
 
 export function updateHeroRating(
-  db: Database.Database,
+  db: SqliteDatabase,
   heroId: number,
   accountId: number,
   rating: string,
@@ -308,7 +304,7 @@ export function updateHeroRating(
 }
 
 export function updateArtifactGauge(
-  db: Database.Database,
+  db: SqliteDatabase,
   artifactId: number,
   accountId: number,
   gaugeLevel: number,
@@ -323,7 +319,7 @@ export function updateArtifactGauge(
 }
 
 export function addHero(
-  db: Database.Database,
+  db: SqliteDatabase,
   accountId: number,
   name: string,
   cls: string,
@@ -341,7 +337,7 @@ export function addHero(
 }
 
 export function addArtifact(
-  db: Database.Database,
+  db: SqliteDatabase,
   accountId: number,
   name: string,
   cls: string,
@@ -357,18 +353,14 @@ export function addArtifact(
   return Number(r.lastInsertRowid);
 }
 
-export function deleteHero(db: Database.Database, heroId: number, accountId: number): boolean {
+export function deleteHero(db: SqliteDatabase, heroId: number, accountId: number): boolean {
   const r = db
     .prepare('DELETE FROM account_heroes WHERE id = ? AND account_id = ?')
     .run(heroId, accountId);
   return r.changes > 0;
 }
 
-export function deleteArtifact(
-  db: Database.Database,
-  artifactId: number,
-  accountId: number,
-): boolean {
+export function deleteArtifact(db: SqliteDatabase, artifactId: number, accountId: number): boolean {
   const r = db
     .prepare('DELETE FROM account_artifacts WHERE id = ? AND account_id = ?')
     .run(artifactId, accountId);
@@ -376,7 +368,7 @@ export function deleteArtifact(
 }
 
 export function updateHeroDetails(
-  db: Database.Database,
+  db: SqliteDatabase,
   heroId: number,
   accountId: number,
   name: string,
@@ -393,7 +385,7 @@ export function updateHeroDetails(
 }
 
 export function updateArtifactDetails(
-  db: Database.Database,
+  db: SqliteDatabase,
   artifactId: number,
   accountId: number,
   name: string,
@@ -409,7 +401,7 @@ export function updateArtifactDetails(
 }
 
 export function addBaseHero(
-  db: Database.Database,
+  db: SqliteDatabase,
   name: string,
   cls: string,
   element: string,
@@ -425,7 +417,7 @@ export function addBaseHero(
 }
 
 export function addBaseArtifact(
-  db: Database.Database,
+  db: SqliteDatabase,
   name: string,
   cls: string,
   starRating: number,
@@ -439,7 +431,7 @@ export function addBaseArtifact(
   return Number(r.lastInsertRowid);
 }
 
-export function deleteBaseHero(db: Database.Database, heroId: number): boolean {
+export function deleteBaseHero(db: SqliteDatabase, heroId: number): boolean {
   const transaction = db.transaction((id: number) => {
     db.prepare('DELETE FROM account_heroes WHERE base_hero_id = ?').run(id);
     const result = db.prepare('DELETE FROM base_heroes WHERE id = ?').run(id);
@@ -448,7 +440,7 @@ export function deleteBaseHero(db: Database.Database, heroId: number): boolean {
   return transaction(heroId);
 }
 
-export function deleteBaseArtifact(db: Database.Database, artifactId: number): boolean {
+export function deleteBaseArtifact(db: SqliteDatabase, artifactId: number): boolean {
   const transaction = db.transaction((id: number) => {
     db.prepare('DELETE FROM account_artifacts WHERE base_artifact_id = ?').run(id);
     const result = db.prepare('DELETE FROM base_artifacts WHERE id = ?').run(id);
@@ -458,7 +450,7 @@ export function deleteBaseArtifact(db: Database.Database, artifactId: number): b
 }
 
 export function addBaseHeroToAllAccounts(
-  db: Database.Database,
+  db: SqliteDatabase,
   baseHeroId: number,
   name: string,
   cls: string,
@@ -475,7 +467,7 @@ export function addBaseHeroToAllAccounts(
 }
 
 export function addBaseArtifactToAllAccounts(
-  db: Database.Database,
+  db: SqliteDatabase,
   baseArtifactId: number,
   name: string,
   cls: string,
@@ -490,14 +482,14 @@ export function addBaseArtifactToAllAccounts(
   ).run(baseArtifactId, name, cls, starRating, displayOrder);
 }
 
-export function getBaseHeroMaxOrder(db: Database.Database): number {
+export function getBaseHeroMaxOrder(db: SqliteDatabase): number {
   const row = db.prepare('SELECT MAX(display_order) as m FROM base_heroes').get() as {
     m: number | null;
   };
   return (row?.m ?? -1) + 1;
 }
 
-export function getBaseArtifactMaxOrder(db: Database.Database): number {
+export function getBaseArtifactMaxOrder(db: SqliteDatabase): number {
   const row = db.prepare('SELECT MAX(display_order) as m FROM base_artifacts').get() as {
     m: number | null;
   };

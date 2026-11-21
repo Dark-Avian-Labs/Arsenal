@@ -2,8 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import { getAppPublicBaseUrl, log } from '@dark-avian-labs/server-kit';
+import type { SqliteDatabase } from '@dark-avian-labs/server-kit';
 import { siriusOrionEquipmentSaveName } from '@dark-avian-labs/warframe-catalog';
-import type Database from 'better-sqlite3';
 import type { NextFunction, Request, Response } from 'express';
 
 import { canReadBuild } from './buildAccess.ts';
@@ -23,8 +23,8 @@ export type SharePreview = {
 };
 
 type SharePreviewDeps = {
-  userDb: () => Database.Database;
-  catalogDb: () => Database.Database;
+  userDb: () => SqliteDatabase;
+  catalogDb: () => SqliteDatabase;
 };
 
 function escapeHtml(value: string): string {
@@ -99,7 +99,7 @@ type EquipmentPreview = {
   imagePath: string | null;
 };
 
-function readCatalogEquipment(catalogDb: Database.Database, uniqueName: string): EquipmentPreview {
+function readCatalogEquipment(catalogDb: SqliteDatabase, uniqueName: string): EquipmentPreview {
   try {
     const row = catalogDb
       .prepare(
@@ -206,7 +206,12 @@ export function buildSharePreview(
   }
 
   try {
-    const preview = loadSharePreview(deps, buildId, req, getAppPublicBaseUrl());
+    const preview = loadSharePreview(
+      deps,
+      buildId,
+      req,
+      getAppPublicBaseUrl({ unifiedHostSubdomain: 'armory' }),
+    );
     if (!preview) {
       next();
       return;

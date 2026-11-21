@@ -1,11 +1,8 @@
 import { appendFileSync } from 'node:fs';
 
 const APPS = [
-  ['Armory', 'ARMORY'],
-  ['Budget', 'BUDGET'],
-  ['Codex', 'CODEX'],
+  ['Arsenal', 'ARSENAL'],
   ['Sentinel', 'SENTINEL'],
-  ['Outfitter', 'OUTFITTER'],
 ];
 
 function join(names) {
@@ -38,64 +35,32 @@ function deployNote(results, changes = 'success') {
 }
 
 function selfCheck() {
-  const all = (status) => ({
-    ARMORY: status,
-    BUDGET: status,
-    CODEX: status,
-    SENTINEL: status,
-    OUTFITTER: status,
-  });
   const expect = (got, wanted) => {
     if (got !== wanted) throw new Error(`${got} !== ${wanted}`);
   };
   expect(
-    deployNote(all('success'), 'success'),
-    'Deployed Armory, Budget, Codex, Sentinel, and Outfitter.',
+    deployNote({ ARSENAL: 'success', SENTINEL: 'success' }, 'success'),
+    'Deployed Arsenal and Sentinel.',
   );
   expect(
-    deployNote(all('skipped'), 'success'),
-    'Skipped Armory, Budget, Codex, Sentinel, and Outfitter.',
-  );
-  expect(deployNote(all('success'), 'failure'), 'Change detection failed.');
-  expect(deployNote(all('skipped'), 'cancelled'), 'Deploy was cancelled.');
-  expect(
-    deployNote(
-      {
-        ARMORY: 'success',
-        BUDGET: 'skipped',
-        CODEX: 'success',
-        SENTINEL: 'skipped',
-        OUTFITTER: 'skipped',
-      },
-      'success',
-    ),
-    'Deployed Armory and Codex. Skipped Budget, Sentinel, and Outfitter.',
+    deployNote({ ARSENAL: 'skipped', SENTINEL: 'skipped' }, 'success'),
+    'Skipped Arsenal and Sentinel.',
   );
   expect(
-    deployNote(
-      {
-        ARMORY: 'success',
-        BUDGET: 'skipped',
-        CODEX: 'failure',
-        SENTINEL: 'skipped',
-        OUTFITTER: 'skipped',
-      },
-      'success',
-    ),
-    'Codex failed. Deployed Armory. Skipped Budget, Sentinel, and Outfitter.',
+    deployNote({ ARSENAL: 'success', SENTINEL: 'success' }, 'failure'),
+    'Change detection failed.',
   );
   expect(
-    deployNote(
-      {
-        ARMORY: 'success',
-        BUDGET: 'success',
-        CODEX: 'timed_out',
-        SENTINEL: 'success',
-        OUTFITTER: 'cancelled',
-      },
-      'success',
-    ),
-    'Codex failed. Outfitter cancelled. Deployed Armory, Budget, and Sentinel.',
+    deployNote({ ARSENAL: 'skipped', SENTINEL: 'skipped' }, 'cancelled'),
+    'Deploy was cancelled.',
+  );
+  expect(
+    deployNote({ ARSENAL: 'success', SENTINEL: 'skipped' }, 'success'),
+    'Deployed Arsenal. Skipped Sentinel.',
+  );
+  expect(
+    deployNote({ ARSENAL: 'failure', SENTINEL: 'success' }, 'success'),
+    'Arsenal failed. Deployed Sentinel.',
   );
   console.log('self-check ok');
 }
@@ -107,11 +72,8 @@ if (process.argv.includes('--self-check')) {
 
 const text = deployNote(
   {
-    ARMORY: process.env.ARMORY,
-    BUDGET: process.env.BUDGET,
-    CODEX: process.env.CODEX,
+    ARSENAL: process.env.ARSENAL,
     SENTINEL: process.env.SENTINEL,
-    OUTFITTER: process.env.OUTFITTER,
   },
   process.env.CHANGES,
 );

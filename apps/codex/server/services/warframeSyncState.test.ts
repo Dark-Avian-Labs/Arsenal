@@ -1,16 +1,16 @@
-import Database from 'better-sqlite3';
+import { SqliteDatabase } from '@dark-avian-labs/server-kit';
 import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('../games/warframe/db/schema.ts', async () => {
   const actual = await vi.importActual<typeof import('../games/warframe/db/schema.ts')>(
     '../games/warframe/db/schema.ts',
   );
-  let sessionDb: Database.Database | null = null;
+  let sessionDb: SqliteDatabase | null = null;
   return {
     ...actual,
     getDb: () => {
       if (!sessionDb) {
-        sessionDb = new Database(':memory:');
+        sessionDb = new SqliteDatabase(':memory:');
         sessionDb.pragma('foreign_keys = ON');
       }
       return sessionDb;

@@ -8,12 +8,31 @@
     "server",
     "shared",
     "dist/client",
+    "dist/server",
     "public",
     "assets",
     "ecosystem.config.cjs",
     ".env.production"
   ],
   "type": "module",
+  "exports": {
+    "./package.json": "./package.json",
+    "./server": {
+      "types": "./server/app.ts",
+      "import": "./dist/server/server/app.js",
+      "default": "./dist/server/server/app.js"
+    },
+    "./init": {
+      "types": "./server/init.ts",
+      "import": "./dist/server/server/init.js",
+      "default": "./dist/server/server/init.js"
+    },
+    "./db": {
+      "types": "./server/db/appDb.ts",
+      "import": "./dist/server/server/db/appDb.js",
+      "default": "./dist/server/server/db/appDb.js"
+    }
+  },
   "scripts": {
     "typecheck": "pnpm run typecheck:server && pnpm run typecheck:client",
     "typecheck:server": "tsc -p tsconfig.server.json --noEmit",
@@ -21,7 +40,8 @@
     "dev": "node scripts/copy-tesseract.ts && dotenvx run --strict -f .env.development -- node ../../scripts/dev.mjs",
     "dev:server": "node --watch server/index.ts",
     "dev:client": "node scripts/copy-tesseract.ts && vite",
-    "build": "pnpm run typecheck && node scripts/copy-tesseract.ts && vite build",
+    "build:server": "tsc -p tsconfig.server.build.json",
+    "build": "pnpm run typecheck && pnpm run build:server && node scripts/copy-tesseract.ts && vite build",
     "start": "node server/index.ts",
     "catalog:import": "node scripts/import-catalog.ts",
     "lint": "oxlint .",
@@ -39,7 +59,6 @@
     "@dark-avian-labs/sentinel-agent": "workspace:*",
     "@dark-avian-labs/server-kit": "workspace:*",
     "@dotenvx/dotenvx": "catalog:",
-    "better-sqlite3": "catalog:",
     "express": "catalog:",
     "express-rate-limit": "catalog:",
     "helmet": "catalog:",
@@ -54,7 +73,6 @@
     "@dark-avian-labs/wor-assets": "workspace:*",
     "@playwright/test": "catalog:",
     "@tailwindcss/vite": "catalog:",
-    "@types/better-sqlite3": "catalog:",
     "@types/express": "catalog:",
     "@types/node": "catalog:",
     "@types/react": "catalog:",

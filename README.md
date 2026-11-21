@@ -106,14 +106,15 @@ The shell is `@dark-avian-labs/ui`. The HTTP stack is `@dark-avian-labs/server-k
 ## Layout
 
 ```
+apps/arsenal            unified host server (Codex, Armory, Outfitter, BudgetPlanner)
 apps/armory
 apps/budget-planner
 apps/codex
 apps/outfitter
-apps/sentinel
+apps/sentinel           standalone host monitor
 apps/_template          AppBase
-packages/server-kit     HTTP stack shared by the apps
-packages/ui             the shell
+packages/server-kit     HTTP stack & node:sqlite adapter shared by the apps
+packages/ui             the shell (Ink + Acrylic themes)
 packages/config         shared TypeScript config
 packages/sentinel-agent in-process metrics agent
 ```

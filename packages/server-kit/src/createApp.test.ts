@@ -61,4 +61,29 @@ describe('favicon', () => {
       expect(await res.text()).toBe('');
     });
   });
+
+  it('defaults Cache-Control: no-store on /api routes', async () => {
+    delete process.env.CLERK_PUBLISHABLE_KEY;
+    delete process.env.CLERK_SECRET_KEY;
+    root = fs.mkdtempSync(path.join(os.tmpdir(), 'api-cache-'));
+    const bundle = createApp({
+      appName: 'test',
+      appId: 'test',
+      appVersion: '0.0.0',
+      projectRoot: root,
+      nodeEnv: 'test',
+      trustProxy: false,
+      secureCookies: false,
+      legalPageUrl: 'https://example.com/legal',
+    });
+    bundle.apiRouter.get('/private-check', (_req, res) => {
+      res.json({ ok: true });
+    });
+
+    await withServer(bundle.app, async (baseUrl) => {
+      const res = await fetch(`${baseUrl}/api/private-check`);
+      expect(res.status).toBe(200);
+      expect(res.headers.get('cache-control')).toBe('no-store');
+    });
+  });
 });

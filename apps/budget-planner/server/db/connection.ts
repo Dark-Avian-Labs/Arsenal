@@ -1,27 +1,13 @@
-import Database from 'better-sqlite3';
+import { createDbSingleton, type SqliteDatabase } from '@dark-avian-labs/server-kit';
 
 import { APP_DB_PATH } from '../config.ts';
 
-let appDb: Database.Database | null = null;
+const appSingleton = createDbSingleton(APP_DB_PATH);
 
-function openDb(filePath: string): Database.Database {
-  const db = new Database(filePath);
-  db.pragma('journal_mode = WAL');
-  db.pragma('foreign_keys = ON');
-  db.pragma('busy_timeout = 5000');
-  return db;
-}
-
-export function getAppDb(): Database.Database {
-  if (!appDb) {
-    appDb = openDb(APP_DB_PATH);
-  }
-  return appDb;
+export function getAppDb(): SqliteDatabase {
+  return appSingleton.getDb();
 }
 
 export function closeAppDb(): void {
-  if (appDb) {
-    appDb.close();
-    appDb = null;
-  }
+  appSingleton.closeDb();
 }

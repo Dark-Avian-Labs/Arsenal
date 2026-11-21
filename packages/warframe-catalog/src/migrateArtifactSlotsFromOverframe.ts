@@ -1,4 +1,4 @@
-import type Database from 'better-sqlite3';
+import type { SqliteDatabase } from '@dark-avian-labs/server-kit';
 
 import {
   WARFRAME_COMPACT_ARTIFACT_SLOT_COUNT,
@@ -130,7 +130,7 @@ export interface ArtifactSlotsMigrationSummary {
 }
 
 export function migrateArtifactSlotsFromOverframe(
-  db: Database.Database,
+  db: SqliteDatabase,
   options?: { dryRun?: boolean },
 ): ArtifactSlotsMigrationSummary {
   const dryRun = options?.dryRun ?? false;

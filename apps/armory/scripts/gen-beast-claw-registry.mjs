@@ -1,8 +1,8 @@
 import fs from 'fs';
 
-import Database from 'better-sqlite3';
+import { SqliteDatabase } from '@dark-avian-labs/server-kit';
 
-const db = new Database('data/armory.db', { readonly: true });
+const db = new SqliteDatabase('data/armory.db', { readonly: true });
 const rows = db
   .prepare(
     `SELECT name, unique_name FROM weapons

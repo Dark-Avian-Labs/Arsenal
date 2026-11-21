@@ -1,12 +1,12 @@
-import type Database from 'better-sqlite3';
+import type { SqliteDatabase } from '@dark-avian-labs/server-kit';
 
-function ensureColumn(db: Database.Database, table: string, column: string, typeSql: string): void {
+function ensureColumn(db: SqliteDatabase, table: string, column: string, typeSql: string): void {
   const rows = db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>;
   if (rows.some((row) => row.name === column)) return;
   db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${typeSql}`);
 }
 
-export function migrateMetricsSchema(db: Database.Database): void {
+export function migrateMetricsSchema(db: SqliteDatabase): void {
   db.exec(`
     CREATE TABLE IF NOT EXISTS apps (
       id TEXT PRIMARY KEY,

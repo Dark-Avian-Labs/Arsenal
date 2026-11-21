@@ -3,7 +3,10 @@ import os from 'node:os';
 
 import { log } from '@dark-avian-labs/server-kit';
 
+import { SENTINEL_PM2_BRIDGE_INTERVAL_MS } from '../config.ts';
+import { notifyExitAlert } from '../metrics/alerts.ts';
 import { getMetricsDb } from '../metrics/db.ts';
+import type { ExitKind } from '../metrics/ingestSchema.ts';
 import { writeExitEvent, writeHostSample, writeProcessSample } from '../metrics/writer.ts';
 
 type Pm2Process = {
@@ -23,6 +26,18 @@ type Pm2Process = {
     memory?: number;
   };
 };
+
+export function classifyPm2Restart(input: {
+  status: string;
+  exitCode?: number;
+  prevUnstableRestarts: number;
+  unstableRestarts: number;
+}): ExitKind {
+  if (typeof input.exitCode === 'number' && input.exitCode !== 0) return 'crash';
+  if (input.unstableRestarts > input.prevUnstableRestarts) return 'crash';
+  if (input.status === 'errored') return 'crash';
+  return 'graceful';
+}
 
 function slugifyAppId(name: string): string {
   return name
@@ -80,59 +95,78 @@ function writeHostSnapshot(now: number): void {
   });
 }
 
-const lastRestartCount = new Map<string, number>();
+const lastRestartState = new Map<string, { restarts: number; unstable: number }>();
 
 async function pollOnce(): Promise<void> {
   const list = await readPm2List();
   const db = getMetricsDb();
   const now = Date.now();
+  const crashAlerts: Array<{ appId: string; displayName: string; message: string }> = [];
 
-  writeHostSnapshot(now);
+  db.transaction(() => {
+    writeHostSnapshot(now);
 
-  for (const proc of list) {
-    const name = proc.name?.trim();
-    if (!name) continue;
-    const appId = slugifyAppId(name);
-    const status = proc.pm2_env?.status ?? 'unknown';
-    const cpu = proc.monit?.cpu;
-    const memory = proc.monit?.memory;
-    const rssMb = typeof memory === 'number' ? memory / (1024 * 1024) : undefined;
-    const restartTime = proc.pm2_env?.restart_time ?? 0;
-    const pmUptime = proc.pm2_env?.pm_uptime;
-    const uptimeSec =
-      typeof pmUptime === 'number' && pmUptime > 0
-        ? Math.max(0, (now - pmUptime) / 1000)
-        : undefined;
+    for (const proc of list) {
+      const name = proc.name?.trim();
+      if (!name) continue;
+      const appId = slugifyAppId(name);
+      const status = proc.pm2_env?.status ?? 'unknown';
+      const cpu = proc.monit?.cpu;
+      const memory = proc.monit?.memory;
+      const rssMb = typeof memory === 'number' ? memory / (1024 * 1024) : undefined;
+      const restartTime = proc.pm2_env?.restart_time ?? 0;
+      const unstableRestarts = proc.pm2_env?.unstable_restarts ?? 0;
+      const pmUptime = proc.pm2_env?.pm_uptime;
+      const uptimeSec =
+        typeof pmUptime === 'number' && pmUptime > 0
+          ? Math.max(0, (now - pmUptime) / 1000)
+          : undefined;
 
-    writeProcessSample(db, {
-      kind: 'process',
-      appId,
-      displayName: name,
-      pm2Name: name,
-      pmxModule: proc.pm2_env?.pmx_module === true,
-      ts: now,
-      cpu: typeof cpu === 'number' ? cpu : undefined,
-      rssMb,
-      uptimeSec,
-      status,
-    });
-
-    const prev = lastRestartCount.get(appId);
-    if (prev != null && restartTime > prev) {
-      const exitCode = proc.pm2_env?.exit_code;
-      const kind = status === 'online' || exitCode === 0 ? 'graceful' : 'crash';
-      writeExitEvent(db, {
-        kind: 'exit',
+      writeProcessSample(db, {
+        kind: 'process',
         appId,
         displayName: name,
+        pm2Name: name,
+        pmxModule: proc.pm2_env?.pmx_module === true,
         ts: now,
-        exitKind: kind,
-        exitCode: typeof exitCode === 'number' ? exitCode : undefined,
-        source: 'pm2',
-        message: `pm2 restart_time ${prev} -> ${restartTime}`,
+        cpu: typeof cpu === 'number' ? cpu : undefined,
+        rssMb,
+        uptimeSec,
+        status,
       });
+
+      const prev = lastRestartState.get(appId);
+      if (prev != null && restartTime > prev.restarts) {
+        const exitCode = proc.pm2_env?.exit_code;
+        const kind = classifyPm2Restart({
+          status,
+          exitCode: typeof exitCode === 'number' ? exitCode : undefined,
+          prevUnstableRestarts: prev.unstable,
+          unstableRestarts,
+        });
+        const message = `pm2 restart_time ${prev.restarts} -> ${restartTime}${
+          typeof exitCode === 'number' ? ` (exit ${exitCode})` : ''
+        }`;
+        writeExitEvent(db, {
+          kind: 'exit',
+          appId,
+          displayName: name,
+          ts: now,
+          exitKind: kind,
+          exitCode: typeof exitCode === 'number' ? exitCode : undefined,
+          source: 'pm2',
+          message,
+        });
+        if (kind === 'crash') {
+          crashAlerts.push({ appId, displayName: name, message });
+        }
+      }
+      lastRestartState.set(appId, { restarts: restartTime, unstable: unstableRestarts });
     }
-    lastRestartCount.set(appId, restartTime);
+  })();
+
+  for (const alert of crashAlerts) {
+    void notifyExitAlert(alert.appId, alert.displayName, alert.message);
   }
 }
 
@@ -140,12 +174,15 @@ export type Pm2BridgeHandle = {
   stop: () => void;
 };
 
-export function startPm2Bridge(intervalMs = 10_000): Pm2BridgeHandle {
+const HOST_SNAPSHOT_INTERVAL_MS = 15_000;
+
+export function startPm2Bridge(intervalMs = SENTINEL_PM2_BRIDGE_INTERVAL_MS): Pm2BridgeHandle {
   let stopped = false;
-  let timer: ReturnType<typeof setInterval> | null = null;
+  let pm2Timer: ReturnType<typeof setInterval> | null = null;
+  let hostTimer: ReturnType<typeof setInterval> | null = null;
   let inFlight = false;
 
-  const tick = () => {
+  const tickPm2 = () => {
     if (inFlight) return;
     inFlight = true;
     void pollOnce()
@@ -162,15 +199,27 @@ export function startPm2Bridge(intervalMs = 10_000): Pm2BridgeHandle {
       });
   };
 
-  tick();
-  timer = setInterval(tick, intervalMs);
+  if (intervalMs > 0) {
+    tickPm2();
+    pm2Timer = setInterval(tickPm2, intervalMs);
+    pm2Timer.unref?.();
+  }
+
+  hostTimer = setInterval(() => {
+    try {
+      writeHostSnapshot(Date.now());
+    } catch {}
+  }, HOST_SNAPSHOT_INTERVAL_MS);
+  hostTimer.unref?.();
 
   return {
     stop: () => {
       if (stopped) return;
       stopped = true;
-      if (timer) clearInterval(timer);
-      timer = null;
+      if (pm2Timer) clearInterval(pm2Timer);
+      if (hostTimer) clearInterval(hostTimer);
+      pm2Timer = null;
+      hostTimer = null;
     },
   };
 }

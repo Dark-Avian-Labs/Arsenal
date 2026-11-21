@@ -12,7 +12,8 @@ import { useEffect, useRef, useState } from 'react';
 
 import { FieldSelect } from './FieldSelect';
 import { GearTile, type GearView } from './GearTile';
-import { OutfitStatsList, readOutfitCalculate } from './tabShared';
+import type { OptimizerWorkerMessage, OptimizerWorkerRequest } from './optimizer.worker';
+import { OutfitStatsList, gearToPieceInput, heroBase } from './tabShared';
 import type { HeroRow, OutfitResult } from './types';
 import { WorIcon, classIconSrc } from './worIcons';
 
@@ -73,7 +74,8 @@ export function OutfitTab({
   const [calcMessage, setCalcMessage] = useState<string | null>(null);
   const [calcProgress, setCalcProgress] = useState<number | null>(null);
   const [calcSearching, setCalcSearching] = useState(false);
-  const calcAbortRef = useRef<AbortController | null>(null);
+  const workerRef = useRef<Worker | null>(null);
+  const calcSeqRef = useRef(0);
   const [heroDraft, setHeroDraft] = useState<HeroRow | null>(null);
   const [statsError, setStatsError] = useState<string | null>(null);
 
@@ -84,6 +86,13 @@ export function OutfitTab({
     setStatsError(null);
   }, [outfitHeroRow]);
 
+  useEffect(() => {
+    return () => {
+      workerRef.current?.terminate();
+      workerRef.current = null;
+    };
+  }, []);
+
   function applyRole(id: OutfitRoleId): void {
     const role = OUTFIT_ROLES.find((entry) => entry.id === id);
     if (!role) return;
@@ -93,66 +102,80 @@ export function OutfitTab({
   }
 
   function cancelCalculate(): void {
-    calcAbortRef.current?.abort();
-    calcAbortRef.current = null;
+    calcSeqRef.current += 1;
+    workerRef.current?.terminate();
+    workerRef.current = null;
     setCalcProgress(null);
     setCalcSearching(false);
   }
 
-  async function calculate(): Promise<void> {
-    if (!outfitHero || calcProgress != null) return;
-    const controller = new AbortController();
-    calcAbortRef.current = controller;
+  function calculate(): void {
+    if (!outfitHero || !outfitHeroRow || calcProgress != null) return;
+    const runId = calcSeqRef.current + 1;
+    calcSeqRef.current = runId;
     setCalcMessage(null);
     setResults([]);
     setCalcProgress(0);
-    setCalcSearching(false);
-    try {
-      const response = await apiFetch('/api/outfit/calculate', {
-        method: 'POST',
-        signal: controller.signal,
-        body: JSON.stringify({
-          hero_slug: outfitHero,
-          weights,
-          minimums,
-          desired_left_set: desiredLeft || null,
-          desired_right_set: desiredRight || null,
-          force_sets: forceSets,
-          include_equipped: includeEquipped,
-          include_others_equipped: includeOthersEquipped,
-        }),
-      });
-      if (controller.signal.aborted) return;
-      if (!response.ok) {
-        const body = (await response.json().catch(() => null)) as { error?: string } | null;
-        setCalcMessage(body?.error ?? 'Calculate failed');
-        return;
+    setCalcSearching(true);
+
+    workerRef.current?.terminate();
+    const worker = new Worker(new URL('./optimizer.worker.ts', import.meta.url), {
+      type: 'module',
+    });
+    workerRef.current = worker;
+
+    const finish = () => {
+      if (workerRef.current === worker) {
+        worker.terminate();
+        workerRef.current = null;
       }
-      const { results: next, error } = await readOutfitCalculate(response, (done, total) => {
-        setCalcSearching(true);
-        setCalcProgress(total > 0 ? done / total : 1);
-      });
-      if (controller.signal.aborted) return;
-      if (error) {
-        setCalcMessage(error);
-        return;
-      }
-      setResults(next);
-      if (next.length === 0) {
-        setCalcMessage('No loadout matches. Relax mins, turn off Force sets, or add more gear.');
-      }
-    } catch (err: unknown) {
-      if (controller.signal.aborted || (err instanceof DOMException && err.name === 'AbortError')) {
-        return;
-      }
-      setCalcMessage('Calculate failed');
-    } finally {
-      if (calcAbortRef.current === controller) {
-        calcAbortRef.current = null;
+      if (calcSeqRef.current === runId) {
         setCalcProgress(null);
         setCalcSearching(false);
       }
-    }
+    };
+
+    worker.onmessage = (event: MessageEvent<OptimizerWorkerMessage>) => {
+      const msg = event.data;
+      if (msg.id !== runId) return;
+      if (msg.type === 'progress') {
+        setCalcProgress(msg.total > 0 ? msg.done / msg.total : 1);
+        return;
+      }
+      if (msg.type === 'error') {
+        setCalcMessage(msg.error);
+        finish();
+        return;
+      }
+      setResults(msg.results);
+      if (msg.results.length === 0) {
+        setCalcMessage('No loadout matches. Relax mins, turn off Force sets, or add more gear.');
+      }
+      finish();
+    };
+
+    worker.onerror = () => {
+      if (calcSeqRef.current !== runId) return;
+      setCalcMessage('Calculate failed');
+      finish();
+    };
+
+    const payload: OptimizerWorkerRequest = {
+      id: runId,
+      request: {
+        hero: heroBase(outfitHeroRow),
+        pieces: gear.map(gearToPieceInput),
+        weights,
+        minimums,
+        desiredLeftSet: desiredLeft || null,
+        desiredRightSet: desiredRight || null,
+        forceSets,
+        includeEquippedHeroSlug: includeEquipped ? outfitHero : null,
+        includeOthersEquipped,
+        heroSlug: outfitHero,
+      },
+    };
+    worker.postMessage(payload);
   }
 
   async function saveResult(result: OutfitResult): Promise<void> {

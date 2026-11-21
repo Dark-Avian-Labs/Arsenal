@@ -24,7 +24,8 @@ function assertNotEncrypted(name: string, value: string): void {
 
 export const APP_VERSION = readReleaseVersion(PROJECT_ROOT, readPackageVersion(PROJECT_ROOT));
 export const DATA_DIR = path.join(PROJECT_ROOT, 'data');
-export const APP_DB_PATH = process.env.APP_DB_PATH || path.join(DATA_DIR, 'app.db');
+export const APP_DB_PATH =
+  process.env.BUDGET_DB_PATH || process.env.APP_DB_PATH || path.join(DATA_DIR, 'app.db');
 
 const serverEnv = readServerEnv({ port: 3003, appName: 'BudgetPlanner', appId: 'budgetplanner' });
 export const PORT = serverEnv.PORT;

@@ -1,4 +1,4 @@
-import Database from 'better-sqlite3';
+import { SqliteDatabase } from '@dark-avian-labs/server-kit';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
 import { createSchema as createWorSchema } from '../../games/wor/db/schema.ts';
@@ -26,7 +26,7 @@ const pipelineControl = vi.hoisted(() => {
 });
 
 const dbState = vi.hoisted(() => ({
-  db: null as Database.Database | null,
+  db: null as SqliteDatabase | null,
 }));
 
 vi.mock('../../games/wor/index.ts', async (importOriginal) => {
@@ -63,7 +63,7 @@ describeWithSqlite('WoR admin import job', () => {
   beforeEach(() => {
     const paths = createTempDbDir('wor-admin-import-');
     tmpDir = paths.tmpDir;
-    dbState.db = new Database(paths.dbPath);
+    dbState.db = new SqliteDatabase(paths.dbPath);
     createWorSchema(dbState.db);
     ensureWorImportTables(dbState.db);
     __resetWorAdminImportForTests();

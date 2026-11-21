@@ -1,7 +1,7 @@
 import path from 'path';
 
 import { createApp as createKitApp, log } from '@dark-avian-labs/server-kit';
-import type Database from 'better-sqlite3';
+import type { SqliteDatabase } from '@dark-avian-labs/server-kit';
 import express from 'express';
 import { rateLimit } from 'express-rate-limit';
 
@@ -28,9 +28,10 @@ export interface AppBundle {
 }
 
 export interface CreateAppOptions {
-  catalogDb?: Database.Database;
-  userDb?: Database.Database;
+  catalogDb?: SqliteDatabase;
+  userDb?: SqliteDatabase;
   metricsMiddleware?: express.RequestHandler;
+  clientDir?: string;
 }
 
 const GAME_ASSET_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
@@ -41,8 +42,8 @@ export function createApp(options: CreateAppOptions = {}): AppBundle {
 
   const catalogDb = options.catalogDb ?? null;
   const userDb = options.userDb ?? null;
-  const resolveCatalogDb = (): Database.Database => catalogDb ?? getCatalogDb();
-  const resolveUserDb = (): Database.Database => userDb ?? getUserDb();
+  const resolveCatalogDb = (): SqliteDatabase => catalogDb ?? getCatalogDb();
+  const resolveUserDb = (): SqliteDatabase => userDb ?? getUserDb();
 
   const webhookLimiter = rateLimit({
     windowMs: RATE_LIMIT_WINDOW_MS,
@@ -50,24 +51,19 @@ export function createApp(options: CreateAppOptions = {}): AppBundle {
     standardHeaders: true,
     legacyHeaders: false,
   });
-  const writeApiLimiter = rateLimit({
-    windowMs: RATE_LIMIT_WINDOW_MS,
-    max: 120,
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: { error: 'Too many write requests, please try again later' },
-  });
 
   const bundle = createKitApp({
     appName: APP_NAME,
     appId: APP_ID,
     appVersion: APP_VERSION,
     projectRoot: PROJECT_ROOT,
+    clientDir: options.clientDir,
     nodeEnv: NODE_ENV,
     trustProxy: TRUST_PROXY,
     secureCookies: SECURE_COOKIES,
     legalPageUrl: LEGAL_PAGE_URL,
     jsonLimit: '1mb',
+    rateLimits: { write: 120 },
     metricsMiddleware: options.metricsMiddleware,
     readiness: () => {
       try {
@@ -95,15 +91,6 @@ export function createApp(options: CreateAppOptions = {}): AppBundle {
           userDb: resolveUserDb,
           catalogDb: resolveCatalogDb,
         });
-      });
-
-      app.use('/api', (req, res, next) => {
-        const method = req.method.toUpperCase();
-        if (method === 'POST' || method === 'PUT' || method === 'PATCH' || method === 'DELETE') {
-          writeApiLimiter(req, res, next);
-          return;
-        }
-        next();
       });
 
       app.use('/images', (req, res, next) => {

@@ -1,10 +1,10 @@
-import type Database from 'better-sqlite3';
+import type { SqliteDatabase } from '@dark-avian-labs/server-kit';
 
 import type { ActionRunRow } from './map.ts';
 
 const RETENTION_MS = 180 * 24 * 60 * 60 * 1000;
 
-export function upsertRun(db: Database.Database, row: ActionRunRow, syncedAt = Date.now()): void {
+export function upsertRun(db: SqliteDatabase, row: ActionRunRow, syncedAt = Date.now()): void {
   db.prepare(
     `INSERT INTO runs (
       owner, repo, run_id, workflow_id, title, status, event, ref, commit_sha,
@@ -50,7 +50,7 @@ export function upsertRun(db: Database.Database, row: ActionRunRow, syncedAt = D
 }
 
 export function recordSyncOk(
-  db: Database.Database,
+  db: SqliteDatabase,
   owner: string,
   repo: string,
   at = Date.now(),
@@ -66,7 +66,7 @@ export function recordSyncOk(
 }
 
 export function recordSyncError(
-  db: Database.Database,
+  db: SqliteDatabase,
   owner: string,
   repo: string,
   error: string,
@@ -81,21 +81,21 @@ export function recordSyncError(
   ).run(owner, repo, error.slice(0, 500), at);
 }
 
-export function getPollerMeta(db: Database.Database, key: string): string | null {
+export function getPollerMeta(db: SqliteDatabase, key: string): string | null {
   const row = db.prepare(`SELECT value FROM poller_meta WHERE key = ?`).get(key) as
     | { value: string }
     | undefined;
   return row?.value ?? null;
 }
 
-export function setPollerMeta(db: Database.Database, key: string, value: string): void {
+export function setPollerMeta(db: SqliteDatabase, key: string, value: string): void {
   db.prepare(
     `INSERT INTO poller_meta (key, value) VALUES (?, ?)
      ON CONFLICT(key) DO UPDATE SET value = excluded.value`,
   ).run(key, value);
 }
 
-export function pruneOldRuns(db: Database.Database, now = Date.now()): number {
+export function pruneOldRuns(db: SqliteDatabase, now = Date.now()): number {
   const cutoff = now - RETENTION_MS;
   const result = db
     .prepare(`DELETE FROM runs WHERE COALESCE(started_at, created_at) < ?`)
@@ -104,7 +104,7 @@ export function pruneOldRuns(db: Database.Database, now = Date.now()): number {
 }
 
 export function listOpenRuns(
-  db: Database.Database,
+  db: SqliteDatabase,
 ): Array<{ owner: string; repo: string; runId: number }> {
   return db
     .prepare(

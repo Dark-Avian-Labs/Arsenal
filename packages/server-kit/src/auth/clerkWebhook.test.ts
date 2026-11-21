@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { passwordChangeCutoff, revokeSessionsOpenedBefore, type SessionPage } from './passwordSessions.ts';
+import { passwordChangeCutoff, revokeSessionsOpenedBefore, type ClerkSessionPageClient } from './clerkWebhook.ts';
 
 describe('passwordChangeCutoff', () => {
   it('returns a cutoff when the password write matches updated_at', () => {
@@ -19,7 +19,7 @@ describe('passwordChangeCutoff', () => {
 describe('revokeSessionsOpenedBefore', () => {
   it('revokes sessions opened before the password change and keeps the reset session', async () => {
     const revoked: string[] = [];
-    const sessions: SessionPage = {
+    const sessions: ClerkSessionPageClient = {
       async getSessionList() {
         return {
           data: [
@@ -37,5 +37,29 @@ describe('revokeSessionsOpenedBefore', () => {
 
     expect(count).toBe(1);
     expect(revoked).toEqual(['sess_other_browser']);
+  });
+
+  it('collects every page before revoking so pagination offsets do not skip sessions', async () => {
+    const active = Array.from({ length: 120 }, (_, i) => ({
+      id: `sess_${i}`,
+      createdAt: i === 119 ? 9_500 : 1_000,
+    }));
+    const revoked: string[] = [];
+    const sessions: ClerkSessionPageClient = {
+      async getSessionList({ limit, offset }) {
+        return { data: active.slice(offset, offset + limit) };
+      },
+      async revokeSession(id) {
+        const idx = active.findIndex((s) => s.id === id);
+        if (idx >= 0) active.splice(idx, 1);
+        revoked.push(id);
+      },
+    };
+
+    const count = await revokeSessionsOpenedBefore(sessions, 'user_1', 8_000);
+
+    expect(count).toBe(119);
+    expect(revoked).toHaveLength(119);
+    expect(active.map((s) => s.id)).toEqual(['sess_119']);
   });
 });

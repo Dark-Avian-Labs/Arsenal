@@ -1,4 +1,4 @@
-import type Database from 'better-sqlite3';
+import type { SqliteDatabase, SqliteRunResult } from '@dark-avian-labs/server-kit';
 
 import type {
   ArtifactSecondaryStat,
@@ -74,16 +74,16 @@ export type GearPieceRow = {
   exclusive_hero_portrait: string | null;
 };
 
-export function deleteAccountGear(db: Database.Database, accountId: number): void {
+export function deleteAccountGear(db: SqliteDatabase, accountId: number): void {
   db.prepare(`DELETE FROM gear_pieces WHERE account_id = ?`).run(accountId);
 }
 
-export function deleteAccountArtifacts(db: Database.Database, accountId: number): void {
+export function deleteAccountArtifacts(db: SqliteDatabase, accountId: number): void {
   db.prepare(`DELETE FROM artifact_pieces WHERE account_id = ?`).run(accountId);
 }
 
 export function setGearGameUid(
-  db: Database.Database,
+  db: SqliteDatabase,
   accountId: number,
   gearId: number,
   gameUid: string,
@@ -96,7 +96,7 @@ export function setGearGameUid(
 }
 
 export function setArtifactGameUid(
-  db: Database.Database,
+  db: SqliteDatabase,
   accountId: number,
   artifactId: number,
   gameUid: string,
@@ -108,7 +108,7 @@ export function setArtifactGameUid(
   );
 }
 
-export function listAccounts(db: Database.Database, clerkUserId: string): AccountRow[] {
+export function listAccounts(db: SqliteDatabase, clerkUserId: string): AccountRow[] {
   return db
     .prepare(
       `SELECT id, account_name, is_active, created_at
@@ -119,7 +119,7 @@ export function listAccounts(db: Database.Database, clerkUserId: string): Accoun
 }
 
 export function getAccount(
-  db: Database.Database,
+  db: SqliteDatabase,
   accountId: number,
   clerkUserId: string,
 ): AccountRow | undefined {
@@ -146,7 +146,7 @@ function rethrowDuplicateName(error: unknown): never {
 }
 
 export function createAccount(
-  db: Database.Database,
+  db: SqliteDatabase,
   clerkUserId: string,
   accountName: string,
 ): AccountRow {
@@ -158,7 +158,7 @@ export function createAccount(
     );
   }
   const isActive = existing.length === 0 ? 1 : 0;
-  let result: Database.RunResult;
+  let result: SqliteRunResult;
   try {
     result = db
       .prepare(
@@ -174,12 +174,12 @@ export function createAccount(
 }
 
 export function renameAccount(
-  db: Database.Database,
+  db: SqliteDatabase,
   accountId: number,
   clerkUserId: string,
   accountName: string,
 ): void {
-  let result: Database.RunResult;
+  let result: SqliteRunResult;
   try {
     result = db
       .prepare(`UPDATE game_accounts SET account_name = ? WHERE id = ? AND clerk_user_id = ?`)
@@ -190,7 +190,7 @@ export function renameAccount(
   if (result.changes === 0) throw notFound('Account not found');
 }
 
-export function deleteAccount(db: Database.Database, accountId: number, clerkUserId: string): void {
+export function deleteAccount(db: SqliteDatabase, accountId: number, clerkUserId: string): void {
   const result = db
     .prepare(`DELETE FROM game_accounts WHERE id = ? AND clerk_user_id = ?`)
     .run(accountId, clerkUserId);
@@ -198,7 +198,7 @@ export function deleteAccount(db: Database.Database, accountId: number, clerkUse
 }
 
 export function setActiveAccount(
-  db: Database.Database,
+  db: SqliteDatabase,
   accountId: number,
   clerkUserId: string,
 ): AccountRow {
@@ -217,14 +217,14 @@ export function setActiveAccount(
   return row;
 }
 
-export function listHeroNames(db: Database.Database): { slug: string; name: string }[] {
+export function listHeroNames(db: SqliteDatabase): { slug: string; name: string }[] {
   return db.prepare(`SELECT slug, name FROM catalog_heroes WHERE active = 1`).all() as {
     slug: string;
     name: string;
   }[];
 }
 
-export function listHeroes(db: Database.Database, accountId: number): HeroWithStats[] {
+export function listHeroes(db: SqliteDatabase, accountId: number): HeroWithStats[] {
   return db
     .prepare(
       `SELECT
@@ -248,7 +248,7 @@ export function listHeroes(db: Database.Database, accountId: number): HeroWithSt
 }
 
 export function getHero(
-  db: Database.Database,
+  db: SqliteDatabase,
   accountId: number,
   slug: string,
 ): HeroWithStats | undefined {
@@ -274,7 +274,7 @@ export function getHero(
 }
 
 export function upsertHeroStats(
-  db: Database.Database,
+  db: SqliteDatabase,
   accountId: number,
   slug: string,
   stats: {
@@ -318,14 +318,14 @@ function gearSelectSql(): string {
       ON xh.slug = g.exclusive_hero_slug`;
 }
 
-export function listGear(db: Database.Database, accountId: number): GearPieceRow[] {
+export function listGear(db: SqliteDatabase, accountId: number): GearPieceRow[] {
   return db
     .prepare(`${gearSelectSql()} WHERE g.account_id = ? ORDER BY g.slot ASC, g.id ASC`)
     .all(accountId) as GearPieceRow[];
 }
 
 export function getGear(
-  db: Database.Database,
+  db: SqliteDatabase,
   accountId: number,
   gearId: number,
 ): GearPieceRow | undefined {
@@ -360,7 +360,7 @@ function subFields(substats: GearSubstat[]): Record<string, string | number | nu
   };
 }
 
-export function insertGear(db: Database.Database, accountId: number, write: GearWrite): number {
+export function insertGear(db: SqliteDatabase, accountId: number, write: GearWrite): number {
   const result = db
     .prepare(
       `INSERT INTO gear_pieces (
@@ -390,7 +390,7 @@ export function insertGear(db: Database.Database, accountId: number, write: Gear
 }
 
 export function updateGear(
-  db: Database.Database,
+  db: SqliteDatabase,
   accountId: number,
   gearId: number,
   write: GearWrite,
@@ -424,7 +424,7 @@ export function updateGear(
   if (result.changes === 0) throw notFound('Gear not found');
 }
 
-export function deleteGear(db: Database.Database, accountId: number, gearId: number): void {
+export function deleteGear(db: SqliteDatabase, accountId: number, gearId: number): void {
   const result = db
     .prepare(`DELETE FROM gear_pieces WHERE id = ? AND account_id = ?`)
     .run(gearId, accountId);
@@ -432,7 +432,7 @@ export function deleteGear(db: Database.Database, accountId: number, gearId: num
 }
 
 /** Call inside the inserting transaction so an over-limit write rolls back. */
-export function assertGearQuota(db: Database.Database, accountId: number): void {
+export function assertGearQuota(db: SqliteDatabase, accountId: number): void {
   const { count } = db
     .prepare(`SELECT COUNT(*) AS count FROM gear_pieces WHERE account_id = ?`)
     .get(accountId) as { count: number };
@@ -447,7 +447,7 @@ export function assertGearQuota(db: Database.Database, accountId: number): void 
 }
 
 export function equipGearSlot(
-  db: Database.Database,
+  db: SqliteDatabase,
   accountId: number,
   gearId: number,
   heroSlug: string | null,
@@ -480,7 +480,7 @@ export function equipGearSlot(
 }
 
 export function updateGearWithEquip(
-  db: Database.Database,
+  db: SqliteDatabase,
   accountId: number,
   gearId: number,
   write: GearWrite,
@@ -497,7 +497,7 @@ export function updateGearWithEquip(
 }
 
 export function saveLoadout(
-  db: Database.Database,
+  db: SqliteDatabase,
   accountId: number,
   heroSlug: string,
   pieceIds: number[],
@@ -559,17 +559,17 @@ export function saveLoadout(
   transaction();
 }
 
-export function catalogHeroCount(db: Database.Database): number {
+export function catalogHeroCount(db: SqliteDatabase): number {
   const row = db.prepare(`SELECT COUNT(*) AS n FROM catalog_heroes`).get() as { n: number };
   return row.n;
 }
 
-export function catalogArtifactCount(db: Database.Database): number {
+export function catalogArtifactCount(db: SqliteDatabase): number {
   const row = db.prepare(`SELECT COUNT(*) AS n FROM catalog_artifacts`).get() as { n: number };
   return row.n;
 }
 
-export function catalogStatus(db: Database.Database): {
+export function catalogStatus(db: SqliteDatabase): {
   heroes: number;
   artifacts: number;
   missingStats: number;
@@ -646,7 +646,7 @@ function artifactSelectSql(): string {
     LEFT JOIN catalog_heroes xh ON xh.slug = c.exclusive_hero_slug`;
 }
 
-export function listCatalogArtifacts(db: Database.Database): CatalogArtifactRow[] {
+export function listCatalogArtifacts(db: SqliteDatabase): CatalogArtifactRow[] {
   return db
     .prepare(
       `SELECT
@@ -662,21 +662,21 @@ export function listCatalogArtifacts(db: Database.Database): CatalogArtifactRow[
     .all() as CatalogArtifactRow[];
 }
 
-export function listArtifactNames(db: Database.Database): { slug: string; name: string }[] {
+export function listArtifactNames(db: SqliteDatabase): { slug: string; name: string }[] {
   return db.prepare(`SELECT slug, name FROM catalog_artifacts WHERE active = 1`).all() as {
     slug: string;
     name: string;
   }[];
 }
 
-export function listArtifacts(db: Database.Database, accountId: number): ArtifactPieceRow[] {
+export function listArtifacts(db: SqliteDatabase, accountId: number): ArtifactPieceRow[] {
   return db
     .prepare(`${artifactSelectSql()} WHERE a.account_id = ? ORDER BY c.name ASC, a.id ASC`)
     .all(accountId) as ArtifactPieceRow[];
 }
 
 export function getArtifact(
-  db: Database.Database,
+  db: SqliteDatabase,
   accountId: number,
   artifactId: number,
 ): ArtifactPieceRow | undefined {
@@ -686,7 +686,7 @@ export function getArtifact(
 }
 
 export function getEquippedArtifact(
-  db: Database.Database,
+  db: SqliteDatabase,
   accountId: number,
   heroSlug: string,
 ): ArtifactPieceRow | undefined {
@@ -709,7 +709,7 @@ export type ArtifactWrite = {
 };
 
 export function insertArtifact(
-  db: Database.Database,
+  db: SqliteDatabase,
   accountId: number,
   write: ArtifactWrite,
 ): number {
@@ -728,7 +728,7 @@ export function insertArtifact(
 }
 
 export function updateArtifact(
-  db: Database.Database,
+  db: SqliteDatabase,
   accountId: number,
   artifactId: number,
   write: ArtifactWrite,
@@ -745,7 +745,7 @@ export function updateArtifact(
   if (result.changes === 0) throw notFound('Artifact not found');
 }
 
-export function deleteArtifact(db: Database.Database, accountId: number, artifactId: number): void {
+export function deleteArtifact(db: SqliteDatabase, accountId: number, artifactId: number): void {
   const result = db
     .prepare(`DELETE FROM artifact_pieces WHERE id = ? AND account_id = ?`)
     .run(artifactId, accountId);
@@ -753,7 +753,7 @@ export function deleteArtifact(db: Database.Database, accountId: number, artifac
 }
 
 export function equipArtifact(
-  db: Database.Database,
+  db: SqliteDatabase,
   accountId: number,
   heroSlug: string,
   artifactId: number | null,

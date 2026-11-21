@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 
-import Database from 'better-sqlite3';
+import { SqliteDatabase } from '@dark-avian-labs/server-kit';
 import type { Request, Response } from 'express';
 
 import { APP_NAME, WARFRAME_CATALOG_DB_PATH, WOR_CATALOG_DB_PATH } from './config.ts';
@@ -17,7 +17,7 @@ export function healthzHandler(_req: Request, res: Response): void {
 function assertCatalogTablesReadable(dbPath: string, requiredTables: string[]): void {
   if (!dbPath.trim()) return;
   fs.accessSync(dbPath, fs.constants.R_OK);
-  const db = new Database(dbPath, { readonly: true, fileMustExist: true });
+  const db = new SqliteDatabase(dbPath, { readonly: true, fileMustExist: true });
   try {
     db.pragma('busy_timeout = 1000');
     for (const table of requiredTables) {
