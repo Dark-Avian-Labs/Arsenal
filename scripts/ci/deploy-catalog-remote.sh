@@ -112,6 +112,9 @@ for db in "${CHANGED_DBS[@]}"; do
   mv -f "$STAGE/$db" "$DATA_DIR/$db"
   # tar preserves the build host's mtime; make the swapped file look new on the server.
   touch "$DATA_DIR/$db"
+  # The tarball mode is 644 (640 after umask 007), but the app (PM2 user, group web) writes
+  # catalog metadata on boot and fails with "attempt to write a readonly database" otherwise.
+  chmod 660 "$DATA_DIR/$db"
   rm -f "$DATA_DIR/$db-wal" "$DATA_DIR/$db-shm"
 done
 
