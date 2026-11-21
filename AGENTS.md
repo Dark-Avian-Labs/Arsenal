@@ -22,6 +22,8 @@ CI conventions live in `docs/org-standards/`. The license for every app is the r
 | Outfitter      | 3004       | 3104           | 4104          | mounted in Arsenal     |
 | Sentinel       | 3005       | 3105           | none          | Sentinel               |
 
+In production Arsenal listens on **127.0.0.1:3006** (set in `apps/arsenal/ecosystem.config.cjs` and `deploy.yml`); port 3000 on shockwave is taken by crowdsec-web-ui.
+
 Vite proxies `/api` to Express.
 
 ## Commands

@@ -50,7 +50,7 @@ jobs:
     with:
       app: arsenal
       pm2_name: Arsenal
-      port: 3000
+      port: 3006
     secrets:
       DOTENV_PRIVATE_KEY_PRODUCTION: ${{ secrets.DOTENV_PRIVATE_KEY_PRODUCTION_ARSENAL }}
       SERVER_PATH: ${{ secrets.SERVER_PATH_ARSENAL }}
