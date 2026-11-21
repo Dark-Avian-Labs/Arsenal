@@ -37,7 +37,8 @@ env:
 jobs:
   sync:
     runs-on: build-node26
-    timeout-minutes: 45
+    # A cold "all" build took ~33 min (wiki scrape of ~800 weapons dominates); keep headroom.
+    timeout-minutes: 75
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
