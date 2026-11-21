@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-import Database from 'better-sqlite3';
+import { SqliteDatabase } from '@dark-avian-labs/server-kit';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const dbPath = path.resolve(process.argv[2] ?? path.join(root, 'data/armory.db'));
@@ -51,7 +51,7 @@ function slugFromName(name) {
     .join('');
 }
 
-const db = new Database(dbPath, { readonly: true });
+const db = new SqliteDatabase(dbPath, { readonly: true });
 const rows = db
   .prepare(
     'SELECT unique_name, name FROM abilities WHERE is_helminth_extractable = 1 ORDER BY name',

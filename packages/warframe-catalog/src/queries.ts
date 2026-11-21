@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 
 import { log } from '@dark-avian-labs/server-kit';
-import type Database from 'better-sqlite3';
+import type { SqliteDatabase } from '@dark-avian-labs/server-kit';
 
 import {
   isUnreleasedArcane,
@@ -19,7 +19,7 @@ export type AtragraphPathRecord = {
 };
 
 export interface CatalogQueryDeps {
-  getDb: () => Database.Database;
+  getDb: () => SqliteDatabase;
   exportsDir: string;
   saveModAtragraphPaths: () => Map<string, AtragraphPathRecord>;
   restoreModAtragraphPaths: (saved: Map<string, AtragraphPathRecord>) => void;
@@ -31,7 +31,7 @@ export function bindCatalogQueries(deps: CatalogQueryDeps): void {
   catalogQueryDeps = deps;
 }
 
-function getCatalogDb(): Database.Database {
+function getCatalogDb(): SqliteDatabase {
   if (!catalogQueryDeps) throw new Error('bindCatalogQueries() was not called');
   return catalogQueryDeps.getDb();
 }

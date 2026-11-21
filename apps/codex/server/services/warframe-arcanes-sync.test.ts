@@ -1,4 +1,4 @@
-import Database from 'better-sqlite3';
+import { SqliteDatabase } from '@dark-avian-labs/server-kit';
 import { afterEach, beforeEach, expect, it } from 'vitest';
 
 import {
@@ -11,7 +11,7 @@ import { createTempDbDir, createWarframeTestDb, removeTempDbDir } from '../testi
 import { runWarframeSync } from './warframeSync.ts';
 
 function seedArmoryArcanes(armoryPath: string): void {
-  const armory = new Database(armoryPath);
+  const armory = new SqliteDatabase(armoryPath);
   armory.exec(`
     CREATE TABLE IF NOT EXISTS warframes (
       unique_name TEXT PRIMARY KEY,
@@ -117,7 +117,7 @@ function seedArmoryArcanes(armoryPath: string): void {
 describeWithSqlite('warframe arcanes sync', () => {
   const armoryPath = process.env.WARFRAME_CATALOG_DB_PATH!;
   let codexTmp: ReturnType<typeof createTempDbDir>;
-  let codexDb: Database.Database;
+  let codexDb: SqliteDatabase;
   let closeCodex: () => void;
 
   beforeEach(() => {

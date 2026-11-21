@@ -10,7 +10,6 @@ overrides:
 
 allowBuilds:
   '@clerk/shared': true
-  better-sqlite3: true
   # postinstall is only the funding banner
   core-js: false
   cuimp: true
@@ -33,14 +32,12 @@ catalog:
   '@fontsource-variable/geist-mono': ^5.3.0
   '@playwright/test': ^1.65.1
   '@tailwindcss/vite': ^4.3.5
-  '@types/better-sqlite3': ^9.6.0
   '@types/express': ^5.0.6
   '@types/node': ^26.6.6
   '@types/react': ^19.3.0
   '@types/react-dom': ^19.3.0
   '@vitejs/plugin-react': ^6.3.0
   '@vitest/coverage-v8': ^5.1.1
-  better-sqlite3: ^13.2.0
   express: ^5.3.0
   express-rate-limit: ^8.7.5
   helmet: ^8.3.0

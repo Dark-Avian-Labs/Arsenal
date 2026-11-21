@@ -1,5 +1,5 @@
 import { createApp as createKitApp } from '@dark-avian-labs/server-kit';
-import type Database from 'better-sqlite3';
+import type { SqliteDatabase } from '@dark-avian-labs/server-kit';
 import express from 'express';
 
 import {
@@ -20,11 +20,11 @@ import { apiRouter } from './routes/api.ts';
 
 export interface AppBundle {
   app: express.Express;
-  appDb: Database.Database;
+  appDb: SqliteDatabase;
 }
 
 export interface CreateAppOptions {
-  appDb?: Database.Database;
+  appDb?: SqliteDatabase;
   metricsMiddleware?: express.RequestHandler;
 }
 

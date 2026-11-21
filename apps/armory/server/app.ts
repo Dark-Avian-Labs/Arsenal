@@ -1,7 +1,7 @@
 import path from 'path';
 
 import { createApp as createKitApp, log } from '@dark-avian-labs/server-kit';
-import type Database from 'better-sqlite3';
+import type { SqliteDatabase } from '@dark-avian-labs/server-kit';
 import express from 'express';
 import { rateLimit } from 'express-rate-limit';
 
@@ -28,8 +28,8 @@ export interface AppBundle {
 }
 
 export interface CreateAppOptions {
-  catalogDb?: Database.Database;
-  userDb?: Database.Database;
+  catalogDb?: SqliteDatabase;
+  userDb?: SqliteDatabase;
   metricsMiddleware?: express.RequestHandler;
 }
 
@@ -41,8 +41,8 @@ export function createApp(options: CreateAppOptions = {}): AppBundle {
 
   const catalogDb = options.catalogDb ?? null;
   const userDb = options.userDb ?? null;
-  const resolveCatalogDb = (): Database.Database => catalogDb ?? getCatalogDb();
-  const resolveUserDb = (): Database.Database => userDb ?? getUserDb();
+  const resolveCatalogDb = (): SqliteDatabase => catalogDb ?? getCatalogDb();
+  const resolveUserDb = (): SqliteDatabase => userDb ?? getUserDb();
 
   const webhookLimiter = rateLimit({
     windowMs: RATE_LIMIT_WINDOW_MS,

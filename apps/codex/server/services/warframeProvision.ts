@@ -1,13 +1,10 @@
 import { log } from '@dark-avian-labs/server-kit';
-import type Database from 'better-sqlite3';
+import type { SqliteDatabase } from '@dark-avian-labs/server-kit';
 
 import { warframeQueries as q } from '../games/warframe/index.ts';
 import { ensureWarframeWorksheetsForUser, provisionUserFromCatalogMaster } from './warframeSync.ts';
 
-export function provisionWarframeUserIfNeeded(
-  codexDb: Database.Database,
-  clerkUserId: string,
-): void {
+export function provisionWarframeUserIfNeeded(codexDb: SqliteDatabase, clerkUserId: string): void {
   if (q.getWorksheets(codexDb, clerkUserId).length > 0) {
     return;
   }

@@ -1,4 +1,4 @@
-import Database from 'better-sqlite3';
+import { SqliteDatabase } from '@dark-avian-labs/server-kit';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
@@ -7,10 +7,10 @@ import { createApp } from './app.ts';
 import { APP_NAME, APP_VERSION } from './config.ts';
 
 let bundle: AppBundle | undefined;
-let appDb: Database.Database | undefined;
+let appDb: SqliteDatabase | undefined;
 
 beforeAll(() => {
-  appDb = new Database(':memory:');
+  appDb = new SqliteDatabase(':memory:');
   appDb.pragma('foreign_keys = ON');
   bundle = createApp({ appDb });
 });
@@ -34,7 +34,7 @@ describe('health endpoints', () => {
   });
 
   it('GET /readyz returns 503 when a database probe fails', async () => {
-    const downAppDb = new Database(':memory:');
+    const downAppDb = new SqliteDatabase(':memory:');
     const down = createApp({ appDb: downAppDb });
     downAppDb.close();
     const res = await request(down.app).get('/readyz');

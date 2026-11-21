@@ -1,7 +1,7 @@
 import path from 'path';
 
+import { SqliteDatabase } from '@dark-avian-labs/server-kit';
 import { migrateArtifactSlotsFromOverframe } from '@dark-avian-labs/warframe-catalog/server';
-import Database from 'better-sqlite3';
 
 function resolveDbPath(): string {
   const arg = process.argv.find((a) => !a.startsWith('-') && a.endsWith('.db'));
@@ -14,7 +14,7 @@ function resolveDbPath(): string {
 function main(): void {
   const dryRun = process.argv.includes('--dry-run');
   const dbPath = resolveDbPath();
-  const db = new Database(dbPath);
+  const db = new SqliteDatabase(dbPath);
   const summary = migrateArtifactSlotsFromOverframe(db, { dryRun });
   db.close();
 

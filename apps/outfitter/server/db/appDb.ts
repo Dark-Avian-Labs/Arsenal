@@ -1,9 +1,9 @@
 import { createDbSingleton } from '@dark-avian-labs/server-kit';
-import type Database from 'better-sqlite3';
+import type { SqliteDatabase } from '@dark-avian-labs/server-kit';
 
 import { APP_DB_PATH } from '../config.ts';
 
-export function createAppSchema(db: Database.Database): void {
+export function createAppSchema(db: SqliteDatabase): void {
   db.pragma('foreign_keys = ON');
   db.exec(`
     CREATE TABLE IF NOT EXISTS game_accounts (
@@ -136,13 +136,13 @@ export function createAppSchema(db: Database.Database): void {
   `);
 }
 
-function ensureColumn(db: Database.Database, table: string, column: string, type: string): void {
+function ensureColumn(db: SqliteDatabase, table: string, column: string, type: string): void {
   const columns = db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
   if (columns.some((entry) => entry.name === column)) return;
   db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`);
 }
 
-function repairDuplicateActiveAccounts(db: Database.Database): void {
+function repairDuplicateActiveAccounts(db: SqliteDatabase): void {
   const duplicates = db
     .prepare(
       `SELECT clerk_user_id FROM game_accounts

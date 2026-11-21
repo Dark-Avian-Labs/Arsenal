@@ -6,6 +6,8 @@ export interface UserVersionMigratableDb {
 export interface SchemaMigration<Db extends UserVersionMigratableDb = UserVersionMigratableDb> {
   version: number;
   name: string;
+  /** Disable foreign_keys around the transaction when a migration must rebuild a referenced table. */
+  foreignKeysOff?: boolean;
   up: (db: Db) => void;
 }
 
@@ -30,7 +32,16 @@ export function runUserVersionMigrations<Db extends UserVersionMigratableDb>(
       migration.up(db);
       db.pragma(`user_version = ${migration.version}`);
     });
-    apply();
+    if (migration.foreignKeysOff) {
+      db.pragma('foreign_keys = OFF');
+      try {
+        apply();
+      } finally {
+        db.pragma('foreign_keys = ON');
+      }
+    } else {
+      apply();
+    }
     current = migration.version;
   }
 

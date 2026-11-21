@@ -1,9 +1,9 @@
 import { createDbSingleton } from '@dark-avian-labs/server-kit';
-import type Database from 'better-sqlite3';
+import type { SqliteDatabase } from '@dark-avian-labs/server-kit';
 
 import { EPIC7_DB_PATH } from '../config.ts';
 
-export function ensureEpic7CoreTables(db: Database.Database): void {
+export function ensureEpic7CoreTables(db: SqliteDatabase): void {
   db.exec(`
     CREATE TABLE IF NOT EXISTS game_accounts (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -67,7 +67,7 @@ export function ensureEpic7CoreTables(db: Database.Database): void {
   `);
 }
 
-export function createSchema(db: Database.Database): void {
+export function createSchema(db: SqliteDatabase): void {
   db.pragma('foreign_keys = ON');
   db.exec(`
     DROP TABLE IF EXISTS account_artifacts;
@@ -140,7 +140,7 @@ export function createSchema(db: Database.Database): void {
   `);
 }
 
-function hasTable(db: Database.Database, name: string): boolean {
+function hasTable(db: SqliteDatabase, name: string): boolean {
   const row = db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?").get(name);
   return !!row;
 }
@@ -152,7 +152,7 @@ export type UniqueIndexStatus = {
   idx_base_artifacts_name_unique: UniqueIndexOutcome;
 };
 
-export function ensureUniqueBaseNameIndexes(db: Database.Database): UniqueIndexStatus {
+export function ensureUniqueBaseNameIndexes(db: SqliteDatabase): UniqueIndexStatus {
   const status: UniqueIndexStatus = {
     idx_base_heroes_name_unique: 'skipped',
     idx_base_artifacts_name_unique: 'skipped',
@@ -210,7 +210,7 @@ export function ensureUniqueBaseNameIndexes(db: Database.Database): UniqueIndexS
   return status;
 }
 
-export function ensureSingleActiveAccountIndex(db: Database.Database): UniqueIndexOutcome {
+export function ensureSingleActiveAccountIndex(db: SqliteDatabase): UniqueIndexOutcome {
   if (!hasTable(db, 'game_accounts')) {
     return 'skipped';
   }
@@ -243,7 +243,7 @@ export function ensureSingleActiveAccountIndex(db: Database.Database): UniqueInd
 }
 
 const { getDb, closeDb } = createDbSingleton(EPIC7_DB_PATH, {
-  onOpen: (db: Database.Database) => {
+  onOpen: (db: SqliteDatabase) => {
     ensureEpic7CoreTables(db);
     ensureUniqueBaseNameIndexes(db);
     ensureSingleActiveAccountIndex(db);

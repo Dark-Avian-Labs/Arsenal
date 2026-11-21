@@ -1,6 +1,6 @@
-import type Database from 'better-sqlite3';
+import type { SqliteDatabase } from '@dark-avian-labs/server-kit';
 
-export function migrateActionsSchema(db: Database.Database): void {
+export function migrateActionsSchema(db: SqliteDatabase): void {
   db.exec(`
     CREATE TABLE IF NOT EXISTS runs (
       owner TEXT NOT NULL,

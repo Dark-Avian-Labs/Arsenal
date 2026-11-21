@@ -1,4 +1,4 @@
-import type Database from 'better-sqlite3';
+import type { SqliteDatabase } from '@dark-avian-labs/server-kit';
 import express from 'express';
 import request from 'supertest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -14,7 +14,7 @@ const authState = vi.hoisted(() => ({
 }));
 
 const dbState = vi.hoisted(() => ({
-  db: null as Database.Database | null,
+  db: null as SqliteDatabase | null,
 }));
 
 vi.mock('../auth/clerkUser.ts', () => ({

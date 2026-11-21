@@ -1,13 +1,13 @@
-import type Database from 'better-sqlite3';
+import type { SqliteDatabase } from '@dark-avian-labs/server-kit';
 
-function hasColumn(db: Database.Database, table: string, column: string): boolean {
+function hasColumn(db: SqliteDatabase, table: string, column: string): boolean {
   const row = db
     .prepare(`SELECT 1 FROM pragma_table_info(?) WHERE name = ? LIMIT 1`)
     .get(table, column);
   return row != null;
 }
 
-export function ensureCatalogKeyColumns(db: Database.Database): void {
+export function ensureCatalogKeyColumns(db: SqliteDatabase): void {
   if (!hasColumn(db, 'archon_shard_buffs', 'armory_key')) {
     db.exec('ALTER TABLE archon_shard_buffs ADD COLUMN armory_key TEXT');
   }

@@ -1,4 +1,4 @@
-import Database from 'better-sqlite3';
+import { SqliteDatabase, type SqliteRunResult } from '@dark-avian-labs/server-kit';
 
 import { resolveAdvancedRowRelevance } from '../advancedRules.ts';
 import {
@@ -144,7 +144,7 @@ function rowHasVariant(
   return candidateColumns.some((column) => (rowValues[column.id] ?? '') !== 'Unavailable');
 }
 
-function loadCatalogMaxLevelMap(db: Database.Database, worksheetName: string): Map<string, number> {
+function loadCatalogMaxLevelMap(db: SqliteDatabase, worksheetName: string): Map<string, number> {
   const map = new Map<string, number>();
   if (worksheetName !== 'Arcanes') return map;
   const rows = db
@@ -169,7 +169,7 @@ function catalogMaxLevelForItem(
 }
 
 function loadRowCellValues(
-  db: Database.Database,
+  db: SqliteDatabase,
   rowId: number,
   clerkUserId: string,
 ): Record<number, string> {
@@ -190,7 +190,7 @@ function loadRowCellValues(
 }
 
 function loadCatalogMaxLevelForItem(
-  db: Database.Database,
+  db: SqliteDatabase,
   worksheetName: string,
   itemName: string,
 ): number | undefined {
@@ -207,7 +207,7 @@ function loadCatalogMaxLevelForItem(
 }
 
 function loadRowAdvancedProgressInputs(
-  db: Database.Database,
+  db: SqliteDatabase,
   rowId: number,
   clerkUserId: string,
 ): {
@@ -393,7 +393,7 @@ export function resolveAdvancedProgressState(
   };
 }
 
-export function getWorksheets(db: Database.Database, clerkUserId: string): Worksheet[] {
+export function getWorksheets(db: SqliteDatabase, clerkUserId: string): Worksheet[] {
   return db
     .prepare(
       'SELECT id, name, display_order FROM worksheets WHERE clerk_user_id = ? ORDER BY display_order',
@@ -402,7 +402,7 @@ export function getWorksheets(db: Database.Database, clerkUserId: string): Works
 }
 
 export function getWorksheetById(
-  db: Database.Database,
+  db: SqliteDatabase,
   id: number,
   clerkUserId: string,
 ): (Worksheet & { display_order: number }) | undefined {
@@ -412,7 +412,7 @@ export function getWorksheetById(
 }
 
 export function getWorksheetByName(
-  db: Database.Database,
+  db: SqliteDatabase,
   clerkUserId: string,
   worksheetName: string,
 ): (Worksheet & { display_order: number }) | undefined {
@@ -425,7 +425,7 @@ export function getWorksheetByName(
     | undefined;
 }
 
-export function getFirstWorksheetId(db: Database.Database, clerkUserId: string): number | null {
+export function getFirstWorksheetId(db: SqliteDatabase, clerkUserId: string): number | null {
   const row = db
     .prepare('SELECT id FROM worksheets WHERE clerk_user_id = ? ORDER BY display_order LIMIT 1')
     .get(clerkUserId) as { id: number } | undefined;
@@ -433,7 +433,7 @@ export function getFirstWorksheetId(db: Database.Database, clerkUserId: string):
 }
 
 export function getColumnById(
-  db: Database.Database,
+  db: SqliteDatabase,
   columnId: number,
   clerkUserId: string,
 ): { id: number; name: string; worksheet_id: number } | undefined {
@@ -447,7 +447,7 @@ export function getColumnById(
 }
 
 export function getWorksheetColumns(
-  db: Database.Database,
+  db: SqliteDatabase,
   worksheetId: number,
   clerkUserId: string,
 ): { id: number; name: string }[] {
@@ -462,7 +462,7 @@ export function getWorksheetColumns(
 }
 
 export function getRowWorksheetId(
-  db: Database.Database,
+  db: SqliteDatabase,
   rowId: number,
   clerkUserId: string,
 ): number | null {
@@ -477,7 +477,7 @@ export function getRowWorksheetId(
 }
 
 export function getRowItemName(
-  db: Database.Database,
+  db: SqliteDatabase,
   rowId: number,
   clerkUserId: string,
 ): string | null {
@@ -492,7 +492,7 @@ export function getRowItemName(
 }
 
 export function getWorksheetRows(
-  db: Database.Database,
+  db: SqliteDatabase,
   worksheetId: number,
   clerkUserId: string,
 ): WorksheetRowRecord[] {
@@ -507,7 +507,7 @@ export function getWorksheetRows(
     .all(worksheetId, clerkUserId) as WorksheetRowRecord[];
 }
 
-export function getWorksheetUserIds(db: Database.Database): string[] {
+export function getWorksheetUserIds(db: SqliteDatabase): string[] {
   return (
     db.prepare('SELECT DISTINCT clerk_user_id FROM worksheets ORDER BY clerk_user_id').all() as {
       clerk_user_id: string;
@@ -516,7 +516,7 @@ export function getWorksheetUserIds(db: Database.Database): string[] {
 }
 
 export function ensureHelminthColumn(
-  db: Database.Database,
+  db: SqliteDatabase,
   worksheetId: number,
   worksheetName: string,
   clerkUserId: string,
@@ -556,7 +556,7 @@ export function ensureHelminthColumn(
 }
 
 export function getWorksheetData(
-  db: Database.Database,
+  db: SqliteDatabase,
   worksheetId: number,
   clerkUserId: string,
   options?: { includeAdvanced?: boolean },
@@ -666,7 +666,7 @@ export function getWorksheetData(
 }
 
 export function getRowAdvancedProgress(
-  db: Database.Database,
+  db: SqliteDatabase,
   rowId: number,
   clerkUserId: string,
 ): AdvancedProgressState | null {
@@ -683,7 +683,7 @@ export function getRowAdvancedProgress(
 }
 
 export function updateRowAdvancedProgress(
-  db: Database.Database,
+  db: SqliteDatabase,
   rowId: number,
   clerkUserId: string,
   patch: AdvancedProgressPatch,
@@ -737,7 +737,7 @@ export function updateRowAdvancedProgress(
 }
 
 export function updateCell(
-  db: Database.Database,
+  db: SqliteDatabase,
   rowId: number,
   columnId: number,
   value: string,
@@ -780,12 +780,12 @@ export function updateCell(
      VALUES (?, ?, ?)
      ON CONFLICT(row_id, column_id) DO UPDATE SET value = excluded.value`,
     )
-    .run(rowId, columnId, sanitizedValue) as Database.RunResult;
+    .run(rowId, columnId, sanitizedValue) as SqliteRunResult;
   return result.changes;
 }
 
 export function getCellValue(
-  db: Database.Database,
+  db: SqliteDatabase,
   rowId: number,
   columnId: number,
   clerkUserId: string,
@@ -802,7 +802,7 @@ export function getCellValue(
 }
 
 export function addRow(
-  db: Database.Database,
+  db: SqliteDatabase,
   worksheetId: number,
   clerkUserId: string,
   itemName: string,
@@ -842,7 +842,7 @@ export function addRow(
 }
 
 export function editRow(
-  db: Database.Database,
+  db: SqliteDatabase,
   rowId: number,
   clerkUserId: string,
   itemName: string | null,
@@ -919,7 +919,7 @@ export function editRow(
 }
 
 export function deleteRow(
-  db: Database.Database,
+  db: SqliteDatabase,
   rowId: number,
   clerkUserId: string,
   orphanedOnly = false,
@@ -945,7 +945,7 @@ export function deleteRow(
 }
 
 export function adminUpdateCell(
-  db: Database.Database,
+  db: SqliteDatabase,
   rowId: number,
   columnId: number,
   value: string,
@@ -976,12 +976,12 @@ export function adminUpdateCell(
      VALUES (?, ?, ?)
      ON CONFLICT(row_id, column_id) DO UPDATE SET value = excluded.value`,
     )
-    .run(rowId, columnId, value) as Database.RunResult;
+    .run(rowId, columnId, value) as SqliteRunResult;
   return result.changes;
 }
 
 export function createWorksheet(
-  db: Database.Database,
+  db: SqliteDatabase,
   clerkUserId: string,
   name: string,
   displayOrder: number,
@@ -993,7 +993,7 @@ export function createWorksheet(
 }
 
 export function addColumn(
-  db: Database.Database,
+  db: SqliteDatabase,
   worksheetId: number,
   clerkUserId: string,
   name: string,
@@ -1008,7 +1008,7 @@ export function addColumn(
 }
 
 export function insertRowRecord(
-  db: Database.Database,
+  db: SqliteDatabase,
   worksheetId: number,
   clerkUserId: string,
   itemName: string,
@@ -1023,7 +1023,7 @@ export function insertRowRecord(
 }
 
 export function addRowWithEmptyValues(
-  db: Database.Database,
+  db: SqliteDatabase,
   worksheetId: number,
   clerkUserId: string,
   itemName: string,
@@ -1032,7 +1032,7 @@ export function addRowWithEmptyValues(
 }
 
 export function addRowFromCatalogMaster(
-  db: Database.Database,
+  db: SqliteDatabase,
   worksheetId: number,
   clerkUserId: string,
   itemName: string,
@@ -1063,7 +1063,7 @@ export function addRowFromCatalogMaster(
 }
 
 export function ensureHelminthNonSubsumableCells(
-  db: Database.Database,
+  db: SqliteDatabase,
   worksheetId: number,
   clerkUserId: string,
 ): void {
@@ -1089,11 +1089,7 @@ export function ensureHelminthNonSubsumableCells(
   tx();
 }
 
-export function setRowUnavailable(
-  db: Database.Database,
-  rowId: number,
-  clerkUserId: string,
-): boolean {
+export function setRowUnavailable(db: SqliteDatabase, rowId: number, clerkUserId: string): boolean {
   const worksheetId = getRowWorksheetId(db, rowId, clerkUserId);
   if (worksheetId === null) return false;
   const columns = getWorksheetColumns(db, worksheetId, clerkUserId);

@@ -1,4 +1,4 @@
-import type Database from 'better-sqlite3';
+import type { SqliteDatabase } from '@dark-avian-labs/server-kit';
 
 import type { EntryFrequency, EntryKind } from '../db/appSchema.ts';
 
@@ -25,7 +25,7 @@ export type PlanEntryRow = {
 };
 
 export function syncOnceArchiveState(
-  db: Database.Database,
+  db: SqliteDatabase,
   planId: string,
   year: number,
   month: number,
@@ -78,7 +78,7 @@ export function syncOnceArchiveState(
 }
 
 export function listPlanEntries(
-  db: Database.Database,
+  db: SqliteDatabase,
   planId: string,
   year: number,
   month: number,

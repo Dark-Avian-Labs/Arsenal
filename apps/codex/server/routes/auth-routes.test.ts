@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-import Database from 'better-sqlite3';
+import { SqliteDatabase } from '@dark-avian-labs/server-kit';
 import express from 'express';
 import request from 'supertest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -90,7 +90,7 @@ function createProbeApp() {
 
 function writeEmptySqlite(filePath: string): void {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  const db = new Database(filePath);
+  const db = new SqliteDatabase(filePath);
   db.close();
 }
 

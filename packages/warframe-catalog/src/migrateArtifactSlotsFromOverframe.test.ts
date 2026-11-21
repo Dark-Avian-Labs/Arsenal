@@ -1,4 +1,4 @@
-import Database from 'better-sqlite3';
+import { SqliteDatabase } from '@dark-avian-labs/server-kit';
 import { describe, expect, it } from 'vitest';
 
 import { EQUIPMENT_SLOT_CONFIGS } from './equipmentSlotConfig.ts';
@@ -82,7 +82,7 @@ describe('convertEquipmentArtifactSlotsFromOverframe', () => {
 
 describe('migrateArtifactSlotsFromOverframe', () => {
   it('converts warframe rows instead of clearing them', () => {
-    const db = new Database(':memory:');
+    const db = new SqliteDatabase(':memory:');
     db.exec(`
       CREATE TABLE warframes (
         unique_name TEXT PRIMARY KEY,

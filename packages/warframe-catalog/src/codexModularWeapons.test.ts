@@ -1,4 +1,4 @@
-import Database from 'better-sqlite3';
+import { SqliteDatabase } from '@dark-avian-labs/server-kit';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -7,8 +7,8 @@ import {
   syncCodexModularWeaponsTable,
 } from './codexModularWeapons.ts';
 
-function createDb(): Database.Database {
-  const db = new Database(':memory:');
+function createDb(): SqliteDatabase {
+  const db = new SqliteDatabase(':memory:');
   db.exec(`
     CREATE TABLE weapons (
       unique_name TEXT PRIMARY KEY,

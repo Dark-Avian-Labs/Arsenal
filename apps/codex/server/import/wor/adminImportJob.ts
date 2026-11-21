@@ -1,4 +1,4 @@
-import type Database from 'better-sqlite3';
+import type { SqliteDatabase } from '@dark-avian-labs/server-kit';
 
 import { getWorCatalogDb } from '../../games/wor/index.ts';
 import {
@@ -111,7 +111,7 @@ export function waitForWorImportIdle(timeoutMs: number): Promise<boolean> {
 export function isWorImportRunning(): boolean {
   if (state.running) return true;
   try {
-    return isWorImportLeaseHeld(getWorCatalogDb() as Database.Database);
+    return isWorImportLeaseHeld(getWorCatalogDb() as SqliteDatabase);
   } catch {
     return false;
   }
@@ -154,7 +154,7 @@ export function startWorAdminImport(options?: {
     };
   }
 
-  const db = getWorCatalogDb() as Database.Database;
+  const db = getWorCatalogDb() as SqliteDatabase;
   if (isWorImportLeaseHeld(db)) {
     return {
       started: false,

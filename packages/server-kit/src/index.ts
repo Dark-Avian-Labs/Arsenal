@@ -24,7 +24,18 @@ export {
   type SchemaMigration,
   type UserVersionMigratableDb,
 } from './db/migrations.ts';
-export { createDbSingleton, openSqlite } from './db/sqlite.ts';
+export {
+  createDbSingleton,
+  openMemorySqlite,
+  openSqlite,
+  SqliteDatabase,
+  type DbSingleton,
+  type DbSingletonOptions,
+  type SqliteOpenOptions,
+  type SqliteRunResult,
+  type SqliteStatement,
+  type SqliteTransaction,
+} from './db/sqlite.ts';
 export { requireAbsoluteSqlitePath } from './db/sqlitePath.ts';
 export { DEFAULT_SQLITE_PRAGMAS } from './db/sqlitePragmas.ts';
 export { isEncryptedEnvValue, normalizeClerkEnv } from './env/clerkEnv.ts';

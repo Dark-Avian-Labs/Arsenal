@@ -1,4 +1,4 @@
-import Database from 'better-sqlite3';
+import { SqliteDatabase } from '@dark-avian-labs/server-kit';
 
 import {
   ARTIFACT_PROMOTION_MAX,
@@ -80,7 +80,7 @@ function isValidArtifactGauge(level: number): boolean {
   return Number.isInteger(level) && level >= 0 && level <= ARTIFACT_PROMOTION_MAX;
 }
 
-export function getGameAccountsByUserId(db: Database.Database, clerkUserId: string): GameAccount[] {
+export function getGameAccountsByUserId(db: SqliteDatabase, clerkUserId: string): GameAccount[] {
   return db
     .prepare(
       'SELECT id, account_name, is_active, created_at FROM game_accounts WHERE clerk_user_id = ? ORDER BY is_active DESC, id ASC',
@@ -89,7 +89,7 @@ export function getGameAccountsByUserId(db: Database.Database, clerkUserId: stri
 }
 
 export function getGameAccountByIdAndUser(
-  db: Database.Database,
+  db: SqliteDatabase,
   accountId: number,
   clerkUserId: string,
 ): { id: number; account_name: string } | undefined {
@@ -98,11 +98,7 @@ export function getGameAccountByIdAndUser(
     .get(accountId, clerkUserId) as { id: number; account_name: string } | undefined;
 }
 
-export function setActiveAccount(
-  db: Database.Database,
-  clerkUserId: string,
-  accountId: number,
-): void {
+export function setActiveAccount(db: SqliteDatabase, clerkUserId: string, accountId: number): void {
   const transaction = db.transaction(() => {
     const exists = db
       .prepare('SELECT id FROM game_accounts WHERE id = ? AND clerk_user_id = ?')
@@ -118,7 +114,7 @@ export function setActiveAccount(
 }
 
 export function createGameAccount(
-  db: Database.Database,
+  db: SqliteDatabase,
   clerkUserId: string,
   accountName: string,
   isFirst: boolean,
@@ -136,7 +132,7 @@ export function createGameAccount(
 }
 
 export function getAccountByNameAndUser(
-  db: Database.Database,
+  db: SqliteDatabase,
   clerkUserId: string,
   name: string,
 ): { id: number } | undefined {
@@ -146,7 +142,7 @@ export function getAccountByNameAndUser(
 }
 
 export function deleteGameAccount(
-  db: Database.Database,
+  db: SqliteDatabase,
   accountId: number,
   clerkUserId: string,
 ): boolean {
@@ -157,7 +153,7 @@ export function deleteGameAccount(
 }
 
 export function updateGameAccountName(
-  db: Database.Database,
+  db: SqliteDatabase,
   accountId: number,
   clerkUserId: string,
   accountName: string,
@@ -168,7 +164,7 @@ export function updateGameAccountName(
   return r.changes > 0;
 }
 
-export function getUserAccountsForApi(db: Database.Database, clerkUserId: string) {
+export function getUserAccountsForApi(db: SqliteDatabase, clerkUserId: string) {
   return db
     .prepare(
       'SELECT id, account_name, is_active, created_at FROM game_accounts WHERE clerk_user_id = ? ORDER BY created_at ASC',
@@ -181,7 +177,7 @@ export function getUserAccountsForApi(db: Database.Database, clerkUserId: string
   }[];
 }
 
-export function seedAccountFromCatalog(db: Database.Database, accountId: number): void {
+export function seedAccountFromCatalog(db: SqliteDatabase, accountId: number): void {
   db.prepare(
     `
     INSERT INTO account_heroes (account_id, catalog_hero_slug, name, class, faction, faction_secondary, rarity, star_rating, owned, gauge_level, display_order)
@@ -213,7 +209,7 @@ export function seedAccountFromCatalog(db: Database.Database, accountId: number)
   ).run(accountId, accountId);
 }
 
-export function syncNewCatalogEntriesToAllAccounts(db: Database.Database): void {
+export function syncNewCatalogEntriesToAllAccounts(db: SqliteDatabase): void {
   const accounts = db.prepare('SELECT id FROM game_accounts').all() as { id: number }[];
   const transaction = db.transaction(() => {
     for (const { id } of accounts) {
@@ -223,7 +219,7 @@ export function syncNewCatalogEntriesToAllAccounts(db: Database.Database): void 
   transaction();
 }
 
-export function syncAccountCatalogMetadata(db: Database.Database): {
+export function syncAccountCatalogMetadata(db: SqliteDatabase): {
   heroes: number;
   artifacts: number;
   demons: number;
@@ -264,7 +260,7 @@ export function syncAccountCatalogMetadata(db: Database.Database): {
   return { heroes, artifacts, demons };
 }
 
-export function pruneInactiveCatalogAccountRows(db: Database.Database): {
+export function pruneInactiveCatalogAccountRows(db: SqliteDatabase): {
   heroes: number;
   artifacts: number;
   demons: number;
@@ -291,7 +287,7 @@ export function pruneInactiveCatalogAccountRows(db: Database.Database): {
 }
 
 export function getHeroes(
-  db: Database.Database,
+  db: SqliteDatabase,
   accountId: number,
   classFilter: string,
   factionFilter: string,
@@ -327,7 +323,7 @@ export function getHeroes(
 }
 
 export function getHeroStats(
-  db: Database.Database,
+  db: SqliteDatabase,
   accountId: number,
 ): { total: number; owned: number; maxed: number } {
   const row = db
@@ -354,7 +350,7 @@ export function getHeroStats(
   };
 }
 
-export function getArtifacts(db: Database.Database, accountId: number): AccountArtifact[] {
+export function getArtifacts(db: SqliteDatabase, accountId: number): AccountArtifact[] {
   return db
     .prepare(
       `
@@ -374,7 +370,7 @@ export function getArtifacts(db: Database.Database, accountId: number): AccountA
 }
 
 export function getArtifactStats(
-  db: Database.Database,
+  db: SqliteDatabase,
   accountId: number,
 ): { total: number; owned: number; maxed: number } {
   const row = db
@@ -397,7 +393,7 @@ export function getArtifactStats(
   };
 }
 
-export function getDemons(db: Database.Database, accountId: number): AccountDemon[] {
+export function getDemons(db: SqliteDatabase, accountId: number): AccountDemon[] {
   return db
     .prepare(
       `
@@ -414,7 +410,7 @@ export function getDemons(db: Database.Database, accountId: number): AccountDemo
 }
 
 export function getDemonStats(
-  db: Database.Database,
+  db: SqliteDatabase,
   accountId: number,
 ): { total: number; owned: number; maxed: number } {
   const row = db
@@ -438,7 +434,7 @@ export function getDemonStats(
 }
 
 export function getDemonMaxLevel(
-  db: Database.Database,
+  db: SqliteDatabase,
   demonId: number,
   accountId: number,
 ): number | null {
@@ -456,7 +452,7 @@ export function getDemonMaxLevel(
 }
 
 export function updateHeroOwned(
-  db: Database.Database,
+  db: SqliteDatabase,
   heroId: number,
   accountId: number,
   owned: number,
@@ -471,7 +467,7 @@ export function updateHeroOwned(
 }
 
 export function updateArtifactOwned(
-  db: Database.Database,
+  db: SqliteDatabase,
   artifactId: number,
   accountId: number,
   owned: number,
@@ -485,7 +481,7 @@ export function updateArtifactOwned(
 }
 
 export function updateDemonOwned(
-  db: Database.Database,
+  db: SqliteDatabase,
   demonId: number,
   accountId: number,
   owned: number,
@@ -505,7 +501,7 @@ export function updateDemonOwned(
 }
 
 export function updateHeroGauge(
-  db: Database.Database,
+  db: SqliteDatabase,
   heroId: number,
   accountId: number,
   gaugeLevel: number,
@@ -520,7 +516,7 @@ export function updateHeroGauge(
 }
 
 export function updateArtifactGauge(
-  db: Database.Database,
+  db: SqliteDatabase,
   artifactId: number,
   accountId: number,
   gaugeLevel: number,
@@ -535,7 +531,7 @@ export function updateArtifactGauge(
 }
 
 export function updateDemonGauge(
-  db: Database.Database,
+  db: SqliteDatabase,
   demonId: number,
   accountId: number,
   gaugeLevel: number,
@@ -557,32 +553,28 @@ export function updateDemonGauge(
   return r.changes > 0;
 }
 
-export function deleteHero(db: Database.Database, heroId: number, accountId: number): boolean {
+export function deleteHero(db: SqliteDatabase, heroId: number, accountId: number): boolean {
   const r = db
     .prepare('DELETE FROM account_heroes WHERE id = ? AND account_id = ?')
     .run(heroId, accountId);
   return r.changes > 0;
 }
 
-export function deleteArtifact(
-  db: Database.Database,
-  artifactId: number,
-  accountId: number,
-): boolean {
+export function deleteArtifact(db: SqliteDatabase, artifactId: number, accountId: number): boolean {
   const r = db
     .prepare('DELETE FROM account_artifacts WHERE id = ? AND account_id = ?')
     .run(artifactId, accountId);
   return r.changes > 0;
 }
 
-export function deleteDemon(db: Database.Database, demonId: number, accountId: number): boolean {
+export function deleteDemon(db: SqliteDatabase, demonId: number, accountId: number): boolean {
   const r = db
     .prepare('DELETE FROM account_demons WHERE id = ? AND account_id = ?')
     .run(demonId, accountId);
   return r.changes > 0;
 }
 
-export function catalogHasEntries(db: Database.Database): boolean {
+export function catalogHasEntries(db: SqliteDatabase): boolean {
   const row = db
     .prepare(
       `SELECT
@@ -594,7 +586,7 @@ export function catalogHasEntries(db: Database.Database): boolean {
   return Number(row.total) > 0;
 }
 
-export function getCatalogVersion(db: Database.Database): number {
+export function getCatalogVersion(db: SqliteDatabase): number {
   try {
     const row = db.prepare('SELECT catalog_version FROM catalog_meta WHERE id = 1').get() as
       | { catalog_version: number }

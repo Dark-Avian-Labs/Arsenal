@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import type Database from 'better-sqlite3';
+import type { SqliteDatabase } from '@dark-avian-labs/server-kit';
 
 import { HERO_RARITIES, type FactionKey } from '../../games/wor/index.ts';
 import { fetchTextBounded, FETCH_TIMEOUT_MS } from '../warframe/http/fetchWithTimeout.ts';
@@ -800,7 +800,7 @@ export type ProspectorHeroStatsFillSummary = {
 };
 
 export function fillMissingHeroStatsFromProspector(
-  db: Database.Database,
+  db: SqliteDatabase,
   snapshot: ProspectorSnapshot,
   onLog?: (message: string) => void,
 ): ProspectorHeroStatsFillSummary {

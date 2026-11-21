@@ -1,9 +1,9 @@
 import { createDbSingleton } from '@dark-avian-labs/server-kit';
-import type Database from 'better-sqlite3';
+import type { SqliteDatabase } from '@dark-avian-labs/server-kit';
 
 import { WARFRAME_DB_PATH } from '../config.ts';
 
-export function ensureWarframeCoreTables(db: Database.Database): void {
+export function ensureWarframeCoreTables(db: SqliteDatabase): void {
   db.exec(`
     CREATE TABLE IF NOT EXISTS worksheets (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -57,7 +57,7 @@ export function ensureWarframeCoreTables(db: Database.Database): void {
   `);
 }
 
-export function createSchema(db: Database.Database, confirmReset: boolean): void {
+export function createSchema(db: SqliteDatabase, confirmReset: boolean): void {
   db.pragma('foreign_keys = ON');
   if (!confirmReset) return;
   db.exec(`
@@ -111,7 +111,7 @@ export function createSchema(db: Database.Database, confirmReset: boolean): void
   `);
 }
 
-export function ensureWarframeRowMarketHrefColumns(db: Database.Database): void {
+export function ensureWarframeRowMarketHrefColumns(db: SqliteDatabase): void {
   const cols = db.prepare(`PRAGMA table_info(rows)`).all() as { name: string }[];
   if (!cols.some((c) => c.name === 'market_href')) {
     db.exec('ALTER TABLE rows ADD COLUMN market_href TEXT');
@@ -121,7 +121,7 @@ export function ensureWarframeRowMarketHrefColumns(db: Database.Database): void 
   }
 }
 
-export function ensureWarframeCatalogMasterTable(db: Database.Database): void {
+export function ensureWarframeCatalogMasterTable(db: SqliteDatabase): void {
   db.exec(`
     CREATE TABLE IF NOT EXISTS catalog_rows (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -138,28 +138,28 @@ export function ensureWarframeCatalogMasterTable(db: Database.Database): void {
   `);
 }
 
-export function ensureWarframeCatalogActiveColumn(db: Database.Database): void {
+export function ensureWarframeCatalogActiveColumn(db: SqliteDatabase): void {
   const cols = db.prepare(`PRAGMA table_info(catalog_rows)`).all() as { name: string }[];
   if (!cols.some((c) => c.name === 'active')) {
     db.exec('ALTER TABLE catalog_rows ADD COLUMN active INTEGER NOT NULL DEFAULT 1');
   }
 }
 
-export function ensureWarframeCatalogMaxLevelColumn(db: Database.Database): void {
+export function ensureWarframeCatalogMaxLevelColumn(db: SqliteDatabase): void {
   const cols = db.prepare(`PRAGMA table_info(catalog_rows)`).all() as { name: string }[];
   if (!cols.some((c) => c.name === 'max_level')) {
     db.exec('ALTER TABLE catalog_rows ADD COLUMN max_level INTEGER');
   }
 }
 
-export function ensureWarframeRowOrphanColumn(db: Database.Database): void {
+export function ensureWarframeRowOrphanColumn(db: SqliteDatabase): void {
   const cols = db.prepare(`PRAGMA table_info(rows)`).all() as { name: string }[];
   if (!cols.some((c) => c.name === 'orphaned')) {
     db.exec('ALTER TABLE rows ADD COLUMN orphaned INTEGER NOT NULL DEFAULT 0');
   }
 }
 
-export function ensureWarframeAdvancedProgressTable(db: Database.Database): void {
+export function ensureWarframeAdvancedProgressTable(db: SqliteDatabase): void {
   db.exec(`
     CREATE TABLE IF NOT EXISTS row_advanced_progress (
       row_id INTEGER PRIMARY KEY,

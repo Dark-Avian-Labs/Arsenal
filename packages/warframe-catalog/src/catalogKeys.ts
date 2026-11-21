@@ -1,4 +1,4 @@
-import type Database from 'better-sqlite3';
+import type { SqliteDatabase } from '@dark-avian-labs/server-kit';
 
 import {
   type ArchonColor,
@@ -8,7 +8,7 @@ import {
 } from './archonShardRegistry.ts';
 import { helminthEntryByDePath } from './helminthRegistry.ts';
 
-export function backfillArchonBuffArmoryKeys(db: Database.Database): number {
+export function backfillArchonBuffArmoryKeys(db: SqliteDatabase): number {
   const types = db.prepare('SELECT id, name FROM archon_shard_types').all() as Array<{
     id: number;
     name: string;
@@ -38,7 +38,7 @@ export function backfillArchonBuffArmoryKeys(db: Database.Database): number {
   return updated;
 }
 
-export function backfillHelminthArmoryKeys(db: Database.Database): number {
+export function backfillHelminthArmoryKeys(db: SqliteDatabase): number {
   const rows = db
     .prepare(
       `SELECT unique_name FROM abilities WHERE is_helminth_extractable = 1 AND armory_helminth_key IS NULL`,

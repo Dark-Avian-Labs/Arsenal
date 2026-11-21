@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import Database from 'better-sqlite3';
+import { SqliteDatabase } from '@dark-avian-labs/server-kit';
 
 import {
   CODEX_WARFRAME_CATALOG_DB_PATH,
@@ -45,7 +45,7 @@ function escapeSqlIdent(name: string): string {
   return name;
 }
 
-function tableExists(db: Database.Database, table: string, schema = 'main'): boolean {
+function tableExists(db: SqliteDatabase, table: string, schema = 'main'): boolean {
   const row = db
     .prepare(
       `SELECT 1 AS ok FROM ${escapeSqlIdent(schema)}.sqlite_master WHERE type = 'table' AND name = ?`,
@@ -54,20 +54,12 @@ function tableExists(db: Database.Database, table: string, schema = 'main'): boo
   return row != null;
 }
 
-function tableColumns(db: Database.Database, table: string, schema = 'main'): string[] {
+function tableColumns(db: SqliteDatabase, table: string, schema = 'main'): string[] {
   return (
     db.prepare(`PRAGMA ${escapeSqlIdent(schema)}.table_info(${escapeSqlIdent(table)})`).all() as {
       name: string;
     }[]
   ).map((column) => column.name);
-}
-
-function commonColumns(dest: Database.Database, table: string): string[] {
-  if (!tableExists(dest, table, 'codex') || !tableExists(dest, table, 'main')) {
-    return [];
-  }
-  const sourceCols = new Set(tableColumns(dest, table, 'codex'));
-  return tableColumns(dest, table, 'main').filter((column) => sourceCols.has(column));
 }
 
 function copyImageTree(
@@ -133,11 +125,9 @@ export function syncCodexWarframeCatalog(options?: {
   }
 
   onLog?.(`Opening Codex catalog (readonly): ${sourcePath}`);
+  const source = new SqliteDatabase(sourcePath, { readonly: true, fileMustExist: true });
+  source.pragma('busy_timeout = 5000');
   const dest = getCatalogDb();
-  const attachAlias = 'codex';
-
-  const escapedPath = sourcePath.replace(/'/g, "''");
-  dest.exec(`ATTACH DATABASE '${escapedPath}' AS ${attachAlias}`);
 
   const tables: Record<string, number> = {};
 
@@ -166,13 +156,16 @@ export function syncCodexWarframeCatalog(options?: {
           tables[table] = 0;
           continue;
         }
-        if (!tableExists(dest, table, attachAlias)) {
+        if (!tableExists(source, table, 'main')) {
           onLog?.(`Skip ${table}: missing in Codex catalog.`);
           tables[table] = 0;
           continue;
         }
 
-        const columns = commonColumns(dest, table);
+        const sourceCols = new Set(tableColumns(source, table, 'main'));
+        const columns = tableColumns(dest, table, 'main').filter((column) =>
+          sourceCols.has(column),
+        );
         if (columns.length === 0) {
           onLog?.(`Skip ${table}: no overlapping columns.`);
           tables[table] = 0;
@@ -180,19 +173,30 @@ export function syncCodexWarframeCatalog(options?: {
         }
 
         const colList = columns.map(escapeSqlIdent).join(', ');
-        dest
-          .prepare(
-            `INSERT INTO main.${escapeSqlIdent(table)} (${colList})
-               SELECT ${colList} FROM ${attachAlias}.${escapeSqlIdent(table)}`,
-          )
-          .run();
-        const count = (
-          dest.prepare(`SELECT COUNT(*) AS c FROM main.${escapeSqlIdent(table)}`).get() as {
-            c: number;
-          }
-        ).c;
-        tables[table] = count;
-        onLog?.(`Synced ${table}: ${count} row(s).`);
+        const placeholders = columns.map(() => '?').join(', ');
+        const insertStmt = dest.prepare(
+          `INSERT INTO main.${escapeSqlIdent(table)} (${colList}) VALUES (${placeholders})`,
+        );
+        const rows = source
+          .prepare(`SELECT ${colList} FROM main.${escapeSqlIdent(table)}`)
+          .all() as Record<string, unknown>[];
+        for (const row of rows) {
+          insertStmt.run(...columns.map((col) => row[col] ?? null));
+        }
+        tables[table] = rows.length;
+        onLog?.(`Synced ${table}: ${rows.length} row(s).`);
+      }
+
+      const violations = dest.prepare('PRAGMA main.foreign_key_check').all() as {
+        table: string;
+        rowid: number | null;
+        parent: string;
+      }[];
+      if (violations.length > 0) {
+        for (const v of violations.slice(0, 20)) {
+          onLog?.(`Foreign key violation: ${v.table} row ${v.rowid} → ${v.parent}.`, 'error');
+        }
+        throw new Error(`Catalog sync aborted: ${violations.length} foreign key violation(s).`);
       }
     });
     // SQLite ignores this pragma inside a transaction.
@@ -202,19 +206,8 @@ export function syncCodexWarframeCatalog(options?: {
     } finally {
       dest.exec('PRAGMA foreign_keys = ON');
     }
-    const violations = dest.prepare('PRAGMA main.foreign_key_check').all() as {
-      table: string;
-      rowid: number | null;
-      parent: string;
-    }[];
-    if (violations.length > 0) {
-      onLog?.(`${violations.length} foreign key violation(s) after sync.`, 'error');
-    }
-    for (const v of violations.slice(0, 20)) {
-      onLog?.(`Foreign key violation: ${v.table} row ${v.rowid} → ${v.parent}.`, 'error');
-    }
   } finally {
-    dest.exec(`DETACH DATABASE ${attachAlias}`);
+    source.close();
   }
 
   const imageResult = copyImageTree(CODEX_WARFRAME_IMAGES_DIR, IMAGES_DIR, onLog);
@@ -228,7 +221,7 @@ export function syncCodexWarframeCatalog(options?: {
   };
 }
 
-export function catalogWarframeCount(db: Database.Database = getCatalogDb()): number {
+export function catalogWarframeCount(db: SqliteDatabase = getCatalogDb()): number {
   if (!tableExists(db, 'warframes')) return 0;
   return (db.prepare('SELECT COUNT(*) AS c FROM warframes').get() as { c: number }).c;
 }

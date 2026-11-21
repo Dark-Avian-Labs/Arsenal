@@ -1,4 +1,5 @@
 import { createRequire } from 'node:module';
+import { DatabaseSync } from 'node:sqlite';
 
 const MIN_NODE_MAJOR = 26;
 const MIN_PNPM_MAJOR = 12;
@@ -17,9 +18,7 @@ function parseMajor(version) {
 
 const nodeMajor = parseMajor(process.version);
 if (nodeMajor < MIN_NODE_MAJOR) {
-  fail(
-    `Node ${MIN_NODE_MAJOR}+ required (current: ${process.version}). Use nvm install ${MIN_NODE_MAJOR} and rebuild native modules.`,
-  );
+  fail(`Node ${MIN_NODE_MAJOR}+ required (current: ${process.version}).`);
 }
 
 try {
@@ -35,14 +34,11 @@ try {
 } catch {}
 
 try {
-  const mod = require('better-sqlite3');
-  const Database = mod.default ?? mod;
-  const db = new Database(':memory:');
+  const db = new DatabaseSync(':memory:');
   db.close();
 } catch (error) {
   const message = error instanceof Error ? error.message : String(error);
-  const hint = message.includes('NODE_MODULE_VERSION') ? ' Run: pnpm rebuild better-sqlite3' : '';
-  fail(`SQLite native module unavailable:${hint}\n  ${message}`);
+  fail(`Built-in node:sqlite unavailable:\n  ${message}`);
 }
 
 console.log(`[preflight] OK — Node ${process.version}`);

@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import Database from 'better-sqlite3';
+import { SqliteDatabase } from '@dark-avian-labs/server-kit';
 
 import { CODEX_WOR_DB_PATH, CODEX_WOR_IMAGES_DIR, HERO_IMAGES_DIR } from '../config.ts';
 import { getAppDb } from '../db/appDb.ts';
@@ -69,7 +69,7 @@ function copyIfChanged(fromPath: string, toPath: string): boolean {
   return true;
 }
 
-function tableColumns(source: Database.Database, table: string): Set<string> {
+function tableColumns(source: SqliteDatabase, table: string): Set<string> {
   return new Set(
     (source.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[]).map(
       (column) => column.name,
@@ -77,7 +77,7 @@ function tableColumns(source: Database.Database, table: string): Set<string> {
   );
 }
 
-function readCodexHeroes(source: Database.Database): CodexHeroRow[] {
+function readCodexHeroes(source: SqliteDatabase): CodexHeroRow[] {
   const available = tableColumns(source, 'catalog_heroes');
   const wanted = [
     'slug',
@@ -128,7 +128,7 @@ function readCodexHeroes(source: Database.Database): CodexHeroRow[] {
   }));
 }
 
-function readCodexArtifacts(source: Database.Database): CodexArtifactRow[] {
+function readCodexArtifacts(source: SqliteDatabase): CodexArtifactRow[] {
   const tables = source
     .prepare(`SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'catalog_artifacts'`)
     .get() as { name: string } | undefined;
@@ -174,7 +174,7 @@ export function importCodexCatalog(): CatalogImportSummary {
     });
   }
 
-  const source = new Database(CODEX_WOR_DB_PATH, { readonly: true, fileMustExist: true });
+  const source = new SqliteDatabase(CODEX_WOR_DB_PATH, { readonly: true, fileMustExist: true });
   source.pragma('busy_timeout = 5000');
   let heroes: CodexHeroRow[] = [];
   let artifacts: CodexArtifactRow[] = [];

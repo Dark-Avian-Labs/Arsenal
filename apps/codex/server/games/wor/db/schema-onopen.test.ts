@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-import Database from 'better-sqlite3';
+import { SqliteDatabase } from '@dark-avian-labs/server-kit';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { createCatalogSchema, createSchema } from './schema.ts';
@@ -16,10 +16,10 @@ describe('WoR schema bootstrap', () => {
     }
   });
 
-  function openEmptyDb(): Database.Database {
+  function openEmptyDb(): SqliteDatabase {
     const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'codex-wor-schema-'));
     tmpDirs.push(tmpDir);
-    return new Database(path.join(tmpDir, 'empty.db'));
+    return new SqliteDatabase(path.join(tmpDir, 'empty.db'));
   }
 
   it('createCatalogSchema creates required tables on an empty file', () => {

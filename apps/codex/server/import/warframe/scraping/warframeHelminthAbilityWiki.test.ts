@@ -1,4 +1,4 @@
-import Database from 'better-sqlite3';
+import { SqliteDatabase } from '@dark-avian-labs/server-kit';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -29,7 +29,7 @@ describe('parseSubsumableAbilitiesFromWarframeAbilitiesHtml', () => {
 
 describe('warframeNamesNeedingHelminthWikiScrape', () => {
   it('omits warframes that already have a helminth-flagged ability', () => {
-    const db = new Database(':memory:');
+    const db = new SqliteDatabase(':memory:');
     db.exec(`
       CREATE TABLE warframes (unique_name TEXT PRIMARY KEY, name TEXT);
       CREATE TABLE abilities (
@@ -50,7 +50,7 @@ describe('warframeNamesNeedingHelminthWikiScrape', () => {
 
 describe('applyHelminthFlagsFromWikiNames', () => {
   it('does not clear existing flags when the wiki name set is empty', () => {
-    const db = new Database(':memory:');
+    const db = new SqliteDatabase(':memory:');
     db.exec(`
       CREATE TABLE abilities (
         unique_name TEXT PRIMARY KEY,

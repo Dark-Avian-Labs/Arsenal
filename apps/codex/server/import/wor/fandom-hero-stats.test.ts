@@ -1,4 +1,4 @@
-import Database from 'better-sqlite3';
+import { SqliteDatabase } from '@dark-avian-labs/server-kit';
 import { afterEach, beforeEach, expect, it } from 'vitest';
 
 import { createSchema as createWorSchema } from '../../games/wor/db/schema.ts';
@@ -7,13 +7,13 @@ import { createTempDbDir, removeTempDbDir } from '../../testing/sqliteTestHarnes
 import { importFandomHeroStats } from './fandomHeroStats.ts';
 
 describeWithSqlite('importFandomHeroStats progress', () => {
-  let db: Database.Database;
+  let db: SqliteDatabase;
   let tmpDir: string;
 
   beforeEach(() => {
     const paths = createTempDbDir('wor-hero-stats-');
     tmpDir = paths.tmpDir;
-    db = new Database(paths.dbPath);
+    db = new SqliteDatabase(paths.dbPath);
     createWorSchema(db);
   });
 

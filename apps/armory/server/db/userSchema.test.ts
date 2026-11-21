@@ -1,10 +1,10 @@
-import Database from 'better-sqlite3';
+import { SqliteDatabase } from '@dark-avian-labs/server-kit';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { applyUserSchema } from './userSchema.ts';
 
 describe('user schema', () => {
-  let db: Database.Database | null = null;
+  let db: SqliteDatabase | null = null;
 
   afterEach(() => {
     db?.close();
@@ -12,7 +12,7 @@ describe('user schema', () => {
   });
 
   it('creates a partial index for public build discovery', () => {
-    db = new Database(':memory:');
+    db = new SqliteDatabase(':memory:');
     applyUserSchema(db);
     const row = db
       .prepare(

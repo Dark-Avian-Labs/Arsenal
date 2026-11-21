@@ -1,5 +1,5 @@
 import { log } from '@dark-avian-labs/server-kit';
-import type Database from 'better-sqlite3';
+import type { SqliteDatabase } from '@dark-avian-labs/server-kit';
 
 import { backfillArchonBuffArmoryKeys, backfillHelminthArmoryKeys } from './catalogKeys.ts';
 import { ensureCatalogKeyColumns } from './catalogMigrations.ts';
@@ -210,14 +210,14 @@ const CATALOG_SCHEMA_SQL = `
     CREATE INDEX IF NOT EXISTS idx_codex_modular_weapons_order ON codex_modular_weapons(display_order);
   `;
 
-export function ensureWarframeCatalogTables(db: Database.Database): void {
+export function ensureWarframeCatalogTables(db: SqliteDatabase): void {
   db.exec(CATALOG_SCHEMA_SQL);
   ensureCatalogKeyColumns(db);
 }
 
 export function createWarframeCatalogSchema(
-  db: Database.Database,
-  options?: { afterTables?: (db: Database.Database) => void },
+  db: SqliteDatabase,
+  options?: { afterTables?: (db: SqliteDatabase) => void },
 ): void {
   ensureWarframeCatalogTables(db);
   options?.afterTables?.(db);

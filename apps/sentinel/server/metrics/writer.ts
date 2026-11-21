@@ -1,4 +1,4 @@
-import type Database from 'better-sqlite3';
+import type { SqliteDatabase } from '@dark-avian-labs/server-kit';
 
 import {
   INGEST_MAX_AGE_MS,
@@ -18,7 +18,7 @@ export type HostSample = {
 };
 
 function upsertApp(
-  db: Database.Database,
+  db: SqliteDatabase,
   appId: string,
   displayName: string | undefined,
   pm2Name: string | undefined,
@@ -38,7 +38,7 @@ function upsertApp(
   ).run(appId, displayName || appId, pm2Name ?? null, flag, ts, flag);
 }
 
-export function writeProcessSample(db: Database.Database, sample: ProcessSample): void {
+export function writeProcessSample(db: SqliteDatabase, sample: ProcessSample): void {
   const ts = sample.ts && sample.ts > 0 ? Math.floor(sample.ts) : Date.now();
   upsertApp(db, sample.appId, sample.displayName, sample.pm2Name, ts, sample.pmxModule);
   db.prepare(
@@ -64,7 +64,7 @@ export function writeProcessSample(db: Database.Database, sample: ProcessSample)
   );
 }
 
-export function writeHttpSample(db: Database.Database, sample: HttpSample): void {
+export function writeHttpSample(db: SqliteDatabase, sample: HttpSample): void {
   const ts = sample.ts && sample.ts > 0 ? Math.floor(sample.ts) : Date.now();
   upsertApp(db, sample.appId, sample.displayName, undefined, ts);
   db.prepare(
@@ -85,7 +85,7 @@ export function writeHttpSample(db: Database.Database, sample: HttpSample): void
   );
 }
 
-export function writeExitEvent(db: Database.Database, sample: ExitEvent): void {
+export function writeExitEvent(db: SqliteDatabase, sample: ExitEvent): void {
   const ts = sample.ts && sample.ts > 0 ? Math.floor(sample.ts) : Date.now();
   upsertApp(db, sample.appId, sample.displayName, undefined, ts);
   db.prepare(
@@ -102,7 +102,7 @@ export function writeExitEvent(db: Database.Database, sample: ExitEvent): void {
   );
 }
 
-export function writeHostSample(db: Database.Database, sample: HostSample): void {
+export function writeHostSample(db: SqliteDatabase, sample: HostSample): void {
   const ts = sample.ts && sample.ts > 0 ? Math.floor(sample.ts) : Date.now();
   db.prepare(
     `INSERT INTO host_raw (ts, load1, load5, load15, mem_used_pct, mem_total_mb, mem_free_mb)
@@ -119,7 +119,7 @@ export function writeHostSample(db: Database.Database, sample: HostSample): void
 }
 
 export function writeIngestSamples(
-  db: Database.Database,
+  db: SqliteDatabase,
   samples: Array<ProcessSample | HttpSample | ExitEvent>,
 ): number {
   const tx = db.transaction((items: typeof samples) => {
@@ -142,11 +142,11 @@ const HOUR_MS = 3_600_000;
 // Covers the oldest ts ingest accepts plus one 5-minute rollup interval, with slack for timer drift.
 const ROLLUP_LOOKBACK_MS = INGEST_MAX_AGE_MS + 10 * 60 * 1000;
 
-export function rollupAndPrune(db: Database.Database, now = Date.now()): void {
+export function rollupAndPrune(db: SqliteDatabase, now = Date.now()): void {
   db.transaction(() => rollupAndPruneTx(db, now))();
 }
 
-function rollupAndPruneTx(db: Database.Database, now: number): void {
+function rollupAndPruneTx(db: SqliteDatabase, now: number): void {
   const rawCutoff = now - RAW_KEEP_MS;
   const oneMCutoff = now - ONE_M_KEEP_MS;
   const oneHCutoff = now - ONE_H_KEEP_MS;

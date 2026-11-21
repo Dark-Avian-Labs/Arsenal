@@ -1,11 +1,11 @@
-import type Database from 'better-sqlite3';
+import type { SqliteDatabase } from '@dark-avian-labs/server-kit';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const TEST_CLERK_ID = 'user_test123';
 
 const mocks = vi.hoisted(() => ({
   getWorksheets: vi.fn<typeof import('../games/warframe/index.ts').warframeQueries.getWorksheets>(),
-  provisionUserFromCatalogMaster: vi.fn<(db: Database.Database, clerkUserId: string) => boolean>(),
+  provisionUserFromCatalogMaster: vi.fn<(db: SqliteDatabase, clerkUserId: string) => boolean>(),
   ensureWarframeWorksheetsForUser: vi.fn(),
 }));
 
@@ -32,7 +32,7 @@ const codexDb = {
     runner.exclusive = (...args: unknown[]) => fn(...args);
     return runner;
   },
-} as unknown as Database.Database;
+} as unknown as SqliteDatabase;
 
 describe('provisionWarframeUserIfNeeded', () => {
   beforeEach(() => {

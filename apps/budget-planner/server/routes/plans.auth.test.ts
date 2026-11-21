@@ -1,7 +1,7 @@
 import { createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
 
-import Database from 'better-sqlite3';
+import { SqliteDatabase } from '@dark-avian-labs/server-kit';
 import express from 'express';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -13,7 +13,7 @@ const authState = vi.hoisted(() => ({
 }));
 
 const dbState = vi.hoisted(() => ({
-  db: null as Database.Database | null,
+  db: null as SqliteDatabase | null,
 }));
 
 vi.mock('../db/connection.ts', () => ({
@@ -118,7 +118,7 @@ describe('plan authorization and invites', () => {
   let otherPlanId: string;
 
   beforeEach(() => {
-    const db = new Database(':memory:');
+    const db = new SqliteDatabase(':memory:');
     createAppSchema(db);
     dbState.db = db;
     owner = insertUser('u-owner', 'clerk-owner', 'owner@example.com');

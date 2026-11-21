@@ -3,12 +3,12 @@ import os from 'node:os';
 import path from 'node:path';
 
 import { createDbSingleton } from '@dark-avian-labs/server-kit';
-import type Database from 'better-sqlite3';
+import type { SqliteDatabase } from '@dark-avian-labs/server-kit';
 
 import { createSchema, ensureWarframeAdvancedProgressTable } from '../games/warframe/db/schema.ts';
 
 export type WarframeTestDb = {
-  db: Database.Database;
+  db: SqliteDatabase;
   closeDb: () => void;
   dbPath: string;
   tmpDir: string;
@@ -39,7 +39,7 @@ export function createWarframeTestDb(dbPath: string): WarframeTestDb {
 }
 
 export function seedMinimalWarframeFixture(
-  db: Database.Database,
+  db: SqliteDatabase,
   clerkUserId = 'user_test',
 ): WarframeFixture {
   const worksheet = db

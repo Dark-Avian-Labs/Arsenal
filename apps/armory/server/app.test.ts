@@ -1,4 +1,4 @@
-import Database from 'better-sqlite3';
+import { SqliteDatabase } from '@dark-avian-labs/server-kit';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
@@ -8,11 +8,11 @@ import { APP_NAME, APP_VERSION } from './config.ts';
 import { createMemoryUserDb } from './testing/memoryUserDb.ts';
 
 let bundle: AppBundle | undefined;
-let catalogDb: Database.Database | undefined;
-let userDb: Database.Database | undefined;
+let catalogDb: SqliteDatabase | undefined;
+let userDb: SqliteDatabase | undefined;
 
 beforeAll(() => {
-  catalogDb = new Database(':memory:');
+  catalogDb = new SqliteDatabase(':memory:');
   catalogDb.pragma('foreign_keys = ON');
   userDb = createMemoryUserDb();
   bundle = createApp({
@@ -46,7 +46,7 @@ describe('health endpoints', () => {
         prepare: () => {
           throw new Error('catalog unavailable');
         },
-      } as unknown as Database.Database,
+      } as unknown as SqliteDatabase,
       userDb,
     });
     const res = await request(down.app).get('/readyz');

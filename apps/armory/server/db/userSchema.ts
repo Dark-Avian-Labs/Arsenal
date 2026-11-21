@@ -1,5 +1,5 @@
 import { log } from '@dark-avian-labs/server-kit';
-import type Database from 'better-sqlite3';
+import type { SqliteDatabase } from '@dark-avian-labs/server-kit';
 
 import { getUserDb } from './connection.ts';
 
@@ -50,7 +50,7 @@ const USER_SCHEMA_SQL = `
     CREATE INDEX IF NOT EXISTS idx_build_favorites_user ON build_favorites(clerk_user_id);
   `;
 
-export function applyUserSchema(db: Database.Database): void {
+export function applyUserSchema(db: SqliteDatabase): void {
   db.exec(USER_SCHEMA_SQL);
 
   const hasColumn = db.prepare(

@@ -1,3 +1,4 @@
+import type { SqliteDatabase } from '@dark-avian-labs/server-kit';
 import * as cheerio from 'cheerio';
 
 import { getCatalogDb } from '../db/connection.ts';
@@ -55,9 +56,7 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export function warframeNamesNeedingHelminthWikiScrape(
-  db: import('better-sqlite3').Database,
-): string[] {
+export function warframeNamesNeedingHelminthWikiScrape(db: SqliteDatabase): string[] {
   const rows = db
     .prepare(
       `SELECT DISTINCT w.name AS name
@@ -106,10 +105,7 @@ export async function collectHelminthAbilityNamesFromWarframeWikiPages(
   return names;
 }
 
-export function applyHelminthFlagsFromWikiNames(
-  db: import('better-sqlite3').Database,
-  names: Set<string>,
-): number {
+export function applyHelminthFlagsFromWikiNames(db: SqliteDatabase, names: Set<string>): number {
   if (names.size === 0) {
     return 0;
   }

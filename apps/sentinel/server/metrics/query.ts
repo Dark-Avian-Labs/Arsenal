@@ -1,4 +1,4 @@
-import type Database from 'better-sqlite3';
+import type { SqliteDatabase } from '@dark-avian-labs/server-kit';
 
 export type FleetAppRow = {
   id: string;
@@ -73,7 +73,7 @@ export function coalesceLatestSampleFields(rows: SampleFields[]): SampleFields {
   return out;
 }
 
-export function listFleet(db: Database.Database, now = Date.now()): FleetAppRow[] {
+export function listFleet(db: SqliteDatabase, now = Date.now()): FleetAppRow[] {
   const since24h = now - 24 * 60 * 60 * 1000;
   const since1h = now - 60 * 60 * 1000;
   const sinceFresh = now - FLEET_SAMPLE_FRESH_MS;
@@ -244,7 +244,7 @@ export type SeriesPoint = {
 };
 
 export function querySeries(
-  db: Database.Database,
+  db: SqliteDatabase,
   appId: string,
   preset: RangePreset,
   now = Date.now(),
@@ -289,7 +289,7 @@ export type HttpPoint = {
 };
 
 export function queryHttpSeries(
-  db: Database.Database,
+  db: SqliteDatabase,
   appId: string,
   preset: RangePreset,
   now = Date.now(),
@@ -344,7 +344,7 @@ export type EventRow = {
 };
 
 export function queryEvents(
-  db: Database.Database,
+  db: SqliteDatabase,
   appId: string,
   preset: RangePreset,
   now = Date.now(),
@@ -369,7 +369,7 @@ export type HostPoint = {
 };
 
 export function queryHostSeries(
-  db: Database.Database,
+  db: SqliteDatabase,
   preset: RangePreset,
   now = Date.now(),
 ): HostPoint[] {
@@ -382,7 +382,7 @@ export function queryHostSeries(
     .all(from, to) as HostPoint[];
 }
 
-export function getLatestHost(db: Database.Database): HostPoint | null {
+export function getLatestHost(db: SqliteDatabase): HostPoint | null {
   const row = db
     .prepare(
       `SELECT ts, load1, load5, mem_used_pct AS memUsedPct
@@ -393,7 +393,7 @@ export function getLatestHost(db: Database.Database): HostPoint | null {
 }
 
 export function getAppMeta(
-  db: Database.Database,
+  db: SqliteDatabase,
   appId: string,
 ): { id: string; displayName: string; pm2Name: string | null } | null {
   const row = db

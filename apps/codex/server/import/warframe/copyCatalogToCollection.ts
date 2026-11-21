@@ -1,5 +1,5 @@
 import { log } from '@dark-avian-labs/server-kit';
-import Database from 'better-sqlite3';
+import { SqliteDatabase } from '@dark-avian-labs/server-kit';
 
 import { WARFRAME_CATALOG_DB_PATH } from '../../config.ts';
 import { getWarframeDb } from '../../games/warframe/index.ts';
@@ -9,7 +9,7 @@ export function copyCatalogToCollection(): {
   worksheets: number;
   totalNames: number;
 } {
-  const catalogDb = new Database(WARFRAME_CATALOG_DB_PATH, {
+  const catalogDb = new SqliteDatabase(WARFRAME_CATALOG_DB_PATH, {
     readonly: true,
     fileMustExist: true,
   });

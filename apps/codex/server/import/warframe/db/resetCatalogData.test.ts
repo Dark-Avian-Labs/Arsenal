@@ -1,10 +1,10 @@
-import Database from 'better-sqlite3';
+import { SqliteDatabase } from '@dark-avian-labs/server-kit';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { resetCatalogData, USER_TABLE_NAMES } from './resetCatalogData.ts';
 
 describe('resetCatalogData', () => {
-  let db: Database.Database | null = null;
+  let db: SqliteDatabase | null = null;
 
   afterEach(() => {
     db?.close();
@@ -12,7 +12,7 @@ describe('resetCatalogData', () => {
   });
 
   it('clears catalog tables but refuses when user tables have rows', () => {
-    db = new Database(':memory:');
+    db = new SqliteDatabase(':memory:');
     db.exec(`
       CREATE TABLE warframes (unique_name TEXT PRIMARY KEY, name TEXT NOT NULL);
       INSERT INTO warframes VALUES ('/Lotus/Test', 'Test');
@@ -29,7 +29,7 @@ describe('resetCatalogData', () => {
   });
 
   it('keeps the import lease and run history', () => {
-    db = new Database(':memory:');
+    db = new SqliteDatabase(':memory:');
     db.exec(`
       CREATE TABLE warframes (unique_name TEXT PRIMARY KEY, name TEXT NOT NULL);
       INSERT INTO warframes VALUES ('/Lotus/Test', 'Test');

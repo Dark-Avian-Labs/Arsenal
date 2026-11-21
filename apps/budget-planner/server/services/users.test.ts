@@ -1,14 +1,14 @@
-import Database from 'better-sqlite3';
+import { SqliteDatabase } from '@dark-avian-labs/server-kit';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { createAppSchema } from '../db/appSchema.ts';
 import { getUserByClerkId, getUserById, updateUserPreferences, upsertUserFromClerk } from './users.ts';
 
 describe('upsertUserFromClerk', () => {
-  let db: Database.Database;
+  let db: SqliteDatabase;
 
   beforeEach(() => {
-    db = new Database(':memory:');
+    db = new SqliteDatabase(':memory:');
     createAppSchema(db);
   });
 

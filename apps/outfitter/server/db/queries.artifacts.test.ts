@@ -1,11 +1,11 @@
-import Database from 'better-sqlite3';
+import { SqliteDatabase } from '@dark-avian-labs/server-kit';
 import { describe, expect, it } from 'vitest';
 
 import { createAppSchema } from './appDb.ts';
 import * as q from './queries.ts';
 
-function memoryDb(): Database.Database {
-  const db = new Database(':memory:');
+function memoryDb(): SqliteDatabase {
+  const db = new SqliteDatabase(':memory:');
   createAppSchema(db);
   db.prepare(`INSERT INTO game_accounts (clerk_user_id, account_name, is_active) VALUES ('u1', 'main', 1)`).run();
   db.prepare(

@@ -1,21 +1,18 @@
 import { randomUUID } from 'node:crypto';
 
-import type Database from 'better-sqlite3';
+import type { SqliteDatabase } from '@dark-avian-labs/server-kit';
 
 const LEASE_ROW_ID = 1;
 const IMPORT_LEASE_TTL_MINUTES = 60;
 
-export function ensureWorImportLeaseColumns(db: Database.Database): void {
+export function ensureWorImportLeaseColumns(db: SqliteDatabase): void {
   const cols = db.prepare(`PRAGMA table_info(import_lease)`).all() as { name: string }[];
   if (!cols.some((col) => col.name === 'lock_token')) {
     db.exec(`ALTER TABLE import_lease ADD COLUMN lock_token TEXT`);
   }
 }
 
-export function tryAcquireWorImportLease(
-  db: Database.Database,
-  runId: number | null,
-): string | null {
+export function tryAcquireWorImportLease(db: SqliteDatabase, runId: number | null): string | null {
   ensureWorImportLeaseColumns(db);
   const lockToken = randomUUID();
   const acquired = db.transaction(() => {
@@ -39,14 +36,14 @@ export function tryAcquireWorImportLease(
   return acquired ? lockToken : null;
 }
 
-export function releaseWorImportLease(db: Database.Database, lockToken: string): void {
+export function releaseWorImportLease(db: SqliteDatabase, lockToken: string): void {
   ensureWorImportLeaseColumns(db);
   db.prepare(
     'UPDATE import_lease SET lock_token = NULL, run_id = NULL, locked_at = NULL WHERE id = ? AND lock_token = ?',
   ).run(LEASE_ROW_ID, lockToken);
 }
 
-export function isWorImportLeaseHeld(db: Database.Database): boolean {
+export function isWorImportLeaseHeld(db: SqliteDatabase): boolean {
   ensureWorImportLeaseColumns(db);
   const row = db
     .prepare(
@@ -60,7 +57,7 @@ export function isWorImportLeaseHeld(db: Database.Database): boolean {
   return Boolean(row?.lock_token);
 }
 
-export function recoverWorImportLeaseOnStartup(db: Database.Database): void {
+export function recoverWorImportLeaseOnStartup(db: SqliteDatabase): void {
   ensureWorImportLeaseColumns(db);
   const row = db.prepare('SELECT lock_token FROM import_lease WHERE id = ?').get(LEASE_ROW_ID) as
     | { lock_token: string | null }
@@ -78,7 +75,7 @@ export function recoverWorImportLeaseOnStartup(db: Database.Database): void {
   })();
 }
 
-export function renewWorImportLease(db: Database.Database, lockToken: string): boolean {
+export function renewWorImportLease(db: SqliteDatabase, lockToken: string): boolean {
   ensureWorImportLeaseColumns(db);
   const updated = db
     .prepare(`UPDATE import_lease SET locked_at = datetime('now') WHERE id = ? AND lock_token = ?`)
@@ -96,7 +93,7 @@ export class WorImportLeaseLostError extends Error {
 export type WorImportLeaseWatch = { lost: boolean };
 
 export function noteWorImportLeaseHeartbeat(
-  db: Database.Database,
+  db: SqliteDatabase,
   lockToken: string,
   watch: WorImportLeaseWatch,
 ): void {
@@ -106,7 +103,7 @@ export function noteWorImportLeaseHeartbeat(
 }
 
 export function requireWorImportLease(
-  db: Database.Database,
+  db: SqliteDatabase,
   lockToken: string,
   watch: WorImportLeaseWatch,
 ): void {

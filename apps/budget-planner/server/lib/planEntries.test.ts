@@ -1,10 +1,10 @@
-import Database from 'better-sqlite3';
+import { SqliteDatabase } from '@dark-avian-labs/server-kit';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { createAppSchema } from '../db/appSchema.ts';
 import { listPlanEntries, syncOnceArchiveState } from './planEntries.ts';
 
-function seedPlan(db: Database.Database): void {
+function seedPlan(db: SqliteDatabase): void {
   db.exec(`
     INSERT INTO users (id, clerk_user_id, email) VALUES ('u1', 'c1', 'a@b.c');
     INSERT INTO plans (id, name, owner_user_id) VALUES ('p1', 'Home', 'u1');
@@ -13,7 +13,7 @@ function seedPlan(db: Database.Database): void {
 }
 
 function insertEntry(
-  db: Database.Database,
+  db: SqliteDatabase,
   row: {
     id: string;
     name: string;
@@ -32,10 +32,10 @@ function insertEntry(
 }
 
 describe('syncOnceArchiveState', () => {
-  let db: Database.Database;
+  let db: SqliteDatabase;
 
   beforeEach(() => {
-    db = new Database(':memory:');
+    db = new SqliteDatabase(':memory:');
     createAppSchema(db);
     seedPlan(db);
   });
@@ -125,10 +125,10 @@ describe('syncOnceArchiveState', () => {
 });
 
 describe('listPlanEntries', () => {
-  let db: Database.Database;
+  let db: SqliteDatabase;
 
   beforeEach(() => {
-    db = new Database(':memory:');
+    db = new SqliteDatabase(':memory:');
     createAppSchema(db);
     seedPlan(db);
     insertEntry(db, {

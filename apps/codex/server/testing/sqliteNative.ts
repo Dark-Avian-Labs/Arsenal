@@ -1,34 +1,24 @@
-import { createRequire } from 'node:module';
+import { DatabaseSync } from 'node:sqlite';
 
-export type SqliteNativeProbe = {
-  available: boolean;
-  reason?: string;
-};
+export type SqliteNativeProbeResult = { available: boolean; reason?: string };
 
-const require = createRequire(import.meta.url);
-
-export function probeSqliteNative(): SqliteNativeProbe {
+export function probeSqliteNative(): SqliteNativeProbeResult {
   try {
-    const mod = require('better-sqlite3') as new (path: string) => { close(): void };
-    const Database = mod;
-    const db = new Database(':memory:');
+    const db = new DatabaseSync(':memory:');
     db.close();
     return { available: true };
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    const hint = message.includes('NODE_MODULE_VERSION')
-      ? ' Run pnpm rebuild better-sqlite3 after changing Node versions.'
-      : '';
-    return { available: false, reason: `${message}${hint}` };
+  } catch (err) {
+    return {
+      available: false,
+      reason: err instanceof Error ? err.message : String(err),
+    };
   }
 }
 
 export function isSqliteNativeAvailable(): boolean {
-  if (process.env.CODEX_SQLITE_NATIVE_AVAILABLE === '1') return true;
-  if (process.env.CODEX_SQLITE_NATIVE_AVAILABLE === '0') return false;
-  return probeSqliteNative().available;
+  return true;
 }
 
 export function getSqliteSkipReason(): string | undefined {
-  return process.env.CODEX_SQLITE_SKIP_REASON;
+  return undefined;
 }

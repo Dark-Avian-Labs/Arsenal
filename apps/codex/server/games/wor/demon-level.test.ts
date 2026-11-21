@@ -1,4 +1,4 @@
-import Database from 'better-sqlite3';
+import { SqliteDatabase } from '@dark-avian-labs/server-kit';
 import { afterEach, beforeEach, expect, it } from 'vitest';
 
 import { describeWithSqlite } from '../../testing/describeWithSqlite.ts';
@@ -6,10 +6,10 @@ import * as q from './db/queries.ts';
 import { createSchema as createWorSchema, ensureWorSchemaMigrations } from './db/schema.ts';
 
 describeWithSqlite('WoR demon owned level', () => {
-  let db: Database.Database;
+  let db: SqliteDatabase;
 
   beforeEach(() => {
-    db = new Database(':memory:');
+    db = new SqliteDatabase(':memory:');
     createWorSchema(db);
     db.prepare(
       `INSERT INTO catalog_demons (slug, name, rarity, star_rating, max_level, display_order, active)

@@ -1,4 +1,4 @@
-import type Database from 'better-sqlite3';
+import type { SqliteDatabase } from '@dark-avian-labs/server-kit';
 
 import { WORKSHEET_ORDER, loadArmoryWorksheetSources } from './armorySources.ts';
 import { isPrimeVariantName, resolveCanonicalKey } from './canonical.ts';
@@ -18,7 +18,7 @@ type MergedRow = {
 };
 
 export async function populateWarframeMarketLinksTable(
-  armoryDb: Database.Database,
+  armoryDb: SqliteDatabase,
 ): Promise<PopulateWarframeMarketLinksResult> {
   const wmSlugs = await fetchWarframeMarketSlugSet();
   const sources = loadArmoryWorksheetSources(armoryDb);

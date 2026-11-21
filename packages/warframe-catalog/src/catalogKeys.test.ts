@@ -1,4 +1,4 @@
-import Database from 'better-sqlite3';
+import { SqliteDatabase } from '@dark-avian-labs/server-kit';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { catalogArmoryKeyForArchonBuff } from './catalogKeys.ts';
@@ -10,7 +10,7 @@ describe('catalogKeys', () => {
 });
 
 describe('backfillArchonBuffArmoryKeys', () => {
-  let db: Database.Database | null = null;
+  let db: SqliteDatabase | null = null;
 
   afterEach(() => {
     db?.close();
@@ -19,7 +19,7 @@ describe('backfillArchonBuffArmoryKeys', () => {
 
   it('sets armory_key on buff rows', async () => {
     const { backfillArchonBuffArmoryKeys } = await import('./catalogKeys.ts');
-    db = new Database(':memory:');
+    db = new SqliteDatabase(':memory:');
     db.exec(`
       CREATE TABLE archon_shard_types (id INTEGER PRIMARY KEY, name TEXT);
       CREATE TABLE archon_shard_buffs (

@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 
-import type Database from 'better-sqlite3';
+import type { SqliteDatabase } from '@dark-avian-labs/server-kit';
 
 import { getDb as getWarframeDb } from '../games/warframe/db/schema.ts';
 import type { WarframeSyncResult } from './warframeSync.ts';
@@ -33,7 +33,7 @@ const LEASE_ROW_ID = 1;
 
 let schemaReady = false;
 
-export function ensureWarframeSyncJobsSchema(db: Database.Database = getWarframeDb()): void {
+export function ensureWarframeSyncJobsSchema(db: SqliteDatabase = getWarframeDb()): void {
   if (schemaReady) return;
   db.exec(`
     CREATE TABLE IF NOT EXISTS warframe_sync_runs (
