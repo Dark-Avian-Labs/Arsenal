@@ -11,8 +11,9 @@ import {
 import { getClerkUserId } from '../auth/clerkUser.ts';
 import { getClerkAuthState } from '../auth/middleware.ts';
 import { canReadBuild, loadoutGrantsBuild } from '../buildAccess.ts';
+import { renderBuildCardSvg } from '../buildCard.ts';
 import { bustCatalogResponseCache, sendCachedCatalogJson } from '../cache/catalogResponseCache.ts';
-import { getUserDb } from '../db/connection.ts';
+import { getCatalogDb, getUserDb } from '../db/connection.ts';
 import {
   buildReadAccessContext,
   parseVisibility,
@@ -450,6 +451,71 @@ buildsRouter.get('/builds/:id/loadouts', async (req: Request, res: Response) => 
     res.json({ loadouts });
   } catch (err) {
     sendInternalError(res, 'builds.loadouts', err);
+  }
+});
+
+buildsRouter.get('/builds/:id/card.svg', async (req: Request, res: Response) => {
+  try {
+    const db = getUserDb();
+    const id = parseNumericId(req.params.id);
+    if (id === null) {
+      res.status(400).json({ error: 'Invalid build id' });
+      return;
+    }
+
+    const row = db.prepare(`SELECT ${BUILD_SELECT_LIST} FROM builds WHERE id = ?`).get(id) as
+      | BuildRow
+      | undefined;
+    if (!row) {
+      res.status(404).json({ error: 'Build not found' });
+      return;
+    }
+
+    const access = buildReadAccessContext(
+      req,
+      getClerkUserId(req),
+      getClerkAuthState(req).isArmoryAdmin,
+    );
+    if (!canReadBuildForRequest(db, req, row, access)) {
+      res.status(404).json({ error: 'Build not found' });
+      return;
+    }
+
+    const ownerUsernames = await resolveOwnerUsernames([row.clerk_user_id]);
+    let equipmentName = row.equipment_type;
+    try {
+      const cat = getCatalogDb()
+        .prepare(
+          `SELECT name FROM warframes WHERE unique_name = ?
+           UNION ALL SELECT name FROM weapons WHERE unique_name = ?
+           UNION ALL SELECT name FROM companions WHERE unique_name = ?
+           LIMIT 1`,
+        )
+        .get(row.equipment_unique_name, row.equipment_unique_name, row.equipment_unique_name) as
+        | { name: string | null }
+        | undefined;
+      if (cat?.name) equipmentName = cat.name;
+    } catch {
+      // Fallback to equipment type label if catalog unavailable.
+    }
+
+    const svg = renderBuildCardSvg({
+      buildName: row.name,
+      equipmentName,
+      equipmentType: row.equipment_type,
+      ownerName: getOwnerDisplayName(row.clerk_user_id, ownerUsernames) ?? 'Tenno',
+      description: row.description ?? null,
+      modConfigRaw: row.mod_config,
+    });
+
+    res.setHeader(
+      'Cache-Control',
+      row.visibility === 'public' ? 'public, max-age=300' : 'private, no-store',
+    );
+    res.setHeader('Content-Type', 'image/svg+xml; charset=utf-8');
+    res.send(svg);
+  } catch (err) {
+    sendInternalError(res, 'builds.card', err);
   }
 });
 

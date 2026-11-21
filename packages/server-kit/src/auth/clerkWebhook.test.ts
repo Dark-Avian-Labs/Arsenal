@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { passwordChangeCutoff, revokeSessionsOpenedBefore, type SessionPage } from './passwordSessions.ts';
+import { passwordChangeCutoff, revokeSessionsOpenedBefore, type ClerkSessionPageClient } from './clerkWebhook.ts';
 
 describe('passwordChangeCutoff', () => {
   it('returns a cutoff when the password write matches updated_at', () => {
@@ -19,7 +19,7 @@ describe('passwordChangeCutoff', () => {
 describe('revokeSessionsOpenedBefore', () => {
   it('revokes sessions opened before the password change and keeps the reset session', async () => {
     const revoked: string[] = [];
-    const sessions: SessionPage = {
+    const sessions: ClerkSessionPageClient = {
       async getSessionList() {
         return {
           data: [
