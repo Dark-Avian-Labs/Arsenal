@@ -3,7 +3,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { SqliteDatabase } from '@dark-avian-labs/server-kit';
+// The repo root has no dependency on server-kit (pnpm only links it into the apps), so import the
+// workspace package's built dist directly (built by the root postinstall). Same module instance
+// the Codex import code loads through apps/codex/node_modules.
+import { SqliteDatabase } from '../../packages/server-kit/dist/index.js';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const CODEX_ROOT = path.join(REPO_ROOT, 'apps', 'codex');
@@ -154,6 +157,11 @@ async function main(): Promise<void> {
   process.env.WARFRAME_IMAGES_DIR = path.join(workDir, 'images', 'warframe');
   process.env.WOR_IMAGES_DIR = path.join(workDir, 'images', 'wor');
   process.env.WOR_IMPORT_LIVE = process.env.WOR_IMPORT_LIVE ?? '1';
+  // The wiki scrapers refuse to run without a descriptive User-Agent (wiki.warframe.com / Fandom
+  // policy). Production Codex had one in its encrypted env; the CI builder has no env file.
+  process.env.WIKI_USER_AGENT =
+    process.env.WIKI_USER_AGENT?.trim() ||
+    'DarkAvianLabs-Arsenal-CatalogSync/1.0 (+https://codex.darkavianlabs.com)';
   process.chdir(CODEX_ROOT);
 
   const { ensureDataDirs } = await import('../../apps/codex/server/config.ts');
