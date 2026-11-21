@@ -18,6 +18,9 @@ type HttpBucket = {
   latencies: number[];
 };
 
+const MAX_LATENCY_SAMPLES = 500;
+const MAX_PENDING_SAMPLES = 200;
+
 function percentile(sorted: number[], p: number): number | undefined {
   if (sorted.length === 0) return undefined;
   const idx = Math.min(sorted.length - 1, Math.max(0, Math.ceil((p / 100) * sorted.length) - 1));
@@ -80,18 +83,22 @@ export function createSentinelAgent(options: SentinelAgentOptions): {
   const gcDurationsMs: number[] = [];
   const gcObserver = new PerformanceObserver((list) => {
     for (const entry of list.getEntries()) {
-      if (gcDurationsMs.length < 500) gcDurationsMs.push(entry.duration);
+      if (gcDurationsMs.length < MAX_LATENCY_SAMPLES) gcDurationsMs.push(entry.duration);
     }
   });
   gcObserver.observe({ entryTypes: ['gc'], buffered: false });
 
   let lastElu = performance.eventLoopUtilization();
+  let lastCpuUsage = process.cpuUsage();
+  let lastCpuHrTime = process.hrtime.bigint();
+  let pendingSamples: unknown[] = [];
   let timer: ReturnType<typeof setInterval> | null = null;
   let stopped = false;
   let exitReport: Promise<void> | null = null;
 
   const flush = async () => {
     const samples: unknown[] = [];
+    const now = Date.now();
     const mem = process.memoryUsage();
     const lagP50 = histogram.percentile(50) / 1e6;
     const lagP95 = histogram.percentile(95) / 1e6;
@@ -102,6 +109,16 @@ export function createSentinelAgent(options: SentinelAgentOptions): {
     lastElu = performance.eventLoopUtilization();
     const elu = latenciesFinite(eluNow.utilization);
 
+    const cpuDelta = process.cpuUsage(lastCpuUsage);
+    const nowHr = process.hrtime.bigint();
+    const elapsedUs = Number(nowHr - lastCpuHrTime) / 1000;
+    lastCpuUsage = process.cpuUsage();
+    lastCpuHrTime = nowHr;
+    const cpuPct =
+      elapsedUs > 0
+        ? latenciesFinite(((cpuDelta.user + cpuDelta.system) / elapsedUs) * 100)
+        : undefined;
+
     const gcSorted = [...gcDurationsMs].sort((a, b) => a - b);
     const gcP95Ms = percentile(gcSorted, 95);
     gcDurationsMs.length = 0;
@@ -110,7 +127,8 @@ export function createSentinelAgent(options: SentinelAgentOptions): {
       kind: 'process',
       appId: options.appId,
       displayName: options.displayName ?? options.appId,
-      ts: Date.now(),
+      ts: now,
+      cpu: cpuPct,
       heapMb: mem.heapUsed / (1024 * 1024),
       heapTotalMb: mem.heapTotal / (1024 * 1024),
       heapExternalMb: mem.external / (1024 * 1024),
@@ -121,6 +139,7 @@ export function createSentinelAgent(options: SentinelAgentOptions): {
       elu,
       uptimeSec: process.uptime(),
       gcP95Ms,
+      status: 'online',
     });
 
     for (const bucket of httpBuckets.values()) {
@@ -129,7 +148,7 @@ export function createSentinelAgent(options: SentinelAgentOptions): {
         kind: 'http',
         appId: options.appId,
         displayName: options.displayName ?? options.appId,
-        ts: Date.now(),
+        ts: now,
         method: bucket.method,
         routePattern: bucket.routePattern,
         statusClass: bucket.statusClass,
@@ -141,7 +160,14 @@ export function createSentinelAgent(options: SentinelAgentOptions): {
     }
     httpBuckets.clear();
 
-    await postIngest(options.ingestUrl, options.token, samples);
+    const batch = [...pendingSamples, ...samples].slice(-MAX_PENDING_SAMPLES);
+    pendingSamples = [];
+    try {
+      await postIngest(options.ingestUrl, options.token, batch);
+    } catch (err) {
+      pendingSamples = batch.slice(-MAX_PENDING_SAMPLES);
+      throw err;
+    }
   };
 
   const sendExit = (
@@ -177,7 +203,13 @@ export function createSentinelAgent(options: SentinelAgentOptions): {
       const existing = httpBuckets.get(key);
       if (existing) {
         existing.count += 1;
-        if (existing.latencies.length < 500) existing.latencies.push(elapsedMs);
+        if (existing.latencies.length < MAX_LATENCY_SAMPLES) {
+          existing.latencies.push(elapsedMs);
+        } else {
+          // Reservoir sample so busy windows reflect the whole interval instead of only its first 500 hits.
+          const slot = Math.floor(Math.random() * existing.count);
+          if (slot < MAX_LATENCY_SAMPLES) existing.latencies[slot] = elapsedMs;
+        }
       } else {
         httpBuckets.set(key, {
           method,
@@ -198,6 +230,7 @@ export function createSentinelAgent(options: SentinelAgentOptions): {
       timer = setInterval(() => {
         void flush().catch(() => {});
       }, flushIntervalMs);
+      timer.unref?.();
     },
     stop: () => {
       stopped = true;

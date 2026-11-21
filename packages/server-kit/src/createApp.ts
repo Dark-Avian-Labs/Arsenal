@@ -52,7 +52,12 @@ export function createApp(options: CreateAppOptions): AppBundle {
     throw new Error('TRUST_PROXY must be enabled in production when SECURE_COOKIES is enabled.');
   }
 
-  app.use(createAppHelmet(options.helmet));
+  app.use(
+    createAppHelmet({
+      ...options.helmet,
+      hsts: options.helmet?.hsts ?? options.nodeEnv === 'production',
+    }),
+  );
   app.use(requestIdMiddleware);
   if (options.metricsMiddleware) {
     app.use(options.metricsMiddleware);
@@ -71,7 +76,8 @@ export function createApp(options: CreateAppOptions): AppBundle {
     skip: (req) =>
       req.path === '/healthz' ||
       req.path === '/readyz' ||
-      req.path === '/api/version' ||
+      req.path === '/api' ||
+      req.path.startsWith('/api/') ||
       req.path === '/favicon.ico' ||
       req.path === '/favicon.png' ||
       req.path === '/favicon.svg' ||
@@ -103,13 +109,6 @@ export function createApp(options: CreateAppOptions): AppBundle {
       });
   });
 
-  const publicPageLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: pageMax,
-    standardHeaders: true,
-    legacyHeaders: false,
-  });
-
   const staticAssetLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: assetMax,
@@ -131,8 +130,8 @@ export function createApp(options: CreateAppOptions): AppBundle {
       if (err) next(err);
     });
   };
-  app.get('/favicon.png', publicPageLimiter, sendFavicon);
-  app.get('/favicon.ico', publicPageLimiter, sendFavicon);
+  app.get('/favicon.png', staticAssetLimiter, sendFavicon);
+  app.get('/favicon.ico', staticAssetLimiter, sendFavicon);
 
   if (options.nodeEnv !== 'development') {
     app.use(
@@ -149,6 +148,7 @@ export function createApp(options: CreateAppOptions): AppBundle {
   options.mount?.(app);
 
   app.use('/api', (req, res, next) => {
+    res.setHeader('Cache-Control', 'no-store');
     const startedAt = Date.now();
     res.on('finish', () => {
       const status = res.statusCode;
@@ -179,6 +179,7 @@ export function createApp(options: CreateAppOptions): AppBundle {
           max: options.rateLimits.write,
           standardHeaders: true,
           legacyHeaders: false,
+          message: { error: 'Too many write requests, please try again later' },
         });
 
   app.get('/api/version', (_req, res) => {
@@ -186,18 +187,28 @@ export function createApp(options: CreateAppOptions): AppBundle {
     res.json({ version: options.appVersion });
   });
 
-  app.get('/api/dal-app-nav', (req, res) => {
+  app.get('/api/dal-app-nav', appApiLimiter, (req, res) => {
     void handleDalAppNavProxy(req, res);
   });
 
   const apiRouter = express.Router();
+  if (writeLimiter) {
+    app.use('/api', (req, res, next) => {
+      const method = req.method.toUpperCase();
+      if (method === 'POST' || method === 'PUT' || method === 'PATCH' || method === 'DELETE') {
+        writeLimiter(req, res, next);
+        return;
+      }
+      next();
+    });
+  }
   app.use('/api', appApiLimiter, rejectCrossSiteWrites, apiRouter);
 
   app.use('/api', (_req, res) => {
     res.status(404).json({ error: 'Not found' });
   });
 
-  app.get('/legal', publicPageLimiter, (_req, res) => {
+  app.get('/legal', (_req, res) => {
     res.redirect(options.legalPageUrl);
   });
 
@@ -227,7 +238,6 @@ export function createApp(options: CreateAppOptions): AppBundle {
     };
 
     app.use(
-      publicPageLimiter,
       express.static(clientDir, {
         maxAge: '1h',
         index: false,

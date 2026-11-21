@@ -50,13 +50,6 @@ export function createApp(options: CreateAppOptions = {}): AppBundle {
     standardHeaders: true,
     legacyHeaders: false,
   });
-  const writeApiLimiter = rateLimit({
-    windowMs: RATE_LIMIT_WINDOW_MS,
-    max: 120,
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: { error: 'Too many write requests, please try again later' },
-  });
 
   const bundle = createKitApp({
     appName: APP_NAME,
@@ -68,6 +61,7 @@ export function createApp(options: CreateAppOptions = {}): AppBundle {
     secureCookies: SECURE_COOKIES,
     legalPageUrl: LEGAL_PAGE_URL,
     jsonLimit: '1mb',
+    rateLimits: { write: 120 },
     metricsMiddleware: options.metricsMiddleware,
     readiness: () => {
       try {
@@ -95,15 +89,6 @@ export function createApp(options: CreateAppOptions = {}): AppBundle {
           userDb: resolveUserDb,
           catalogDb: resolveCatalogDb,
         });
-      });
-
-      app.use('/api', (req, res, next) => {
-        const method = req.method.toUpperCase();
-        if (method === 'POST' || method === 'PUT' || method === 'PATCH' || method === 'DELETE') {
-          writeApiLimiter(req, res, next);
-          return;
-        }
-        next();
       });
 
       app.use('/images', (req, res, next) => {

@@ -9,7 +9,21 @@ export {
 } from './auth/middleware.ts';
 export { getClerkAuthorizedParties } from './auth/clerkAuthorizedParties.ts';
 export { APP_ADMIN_ROLE, isAppAdmin, metadataFromSessionClaims } from './auth/clerk.ts';
+export {
+  createClerkWebhookRouter,
+  passwordChangeCutoff,
+  revokeSessionsOpenedBefore,
+  type ClerkSessionPageClient,
+  type ClerkUserWebhookPayload,
+  type ClerkWebhookHandlers,
+} from './auth/clerkWebhook.ts';
 export { createApp, type AppBundle, type CreateAppOptions } from './createApp.ts';
+export {
+  getUserVersion,
+  runUserVersionMigrations,
+  type SchemaMigration,
+  type UserVersionMigratableDb,
+} from './db/migrations.ts';
 export { createDbSingleton, openSqlite } from './db/sqlite.ts';
 export { requireAbsoluteSqlitePath } from './db/sqlitePath.ts';
 export { DEFAULT_SQLITE_PRAGMAS } from './db/sqlitePragmas.ts';
