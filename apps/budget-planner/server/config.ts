@@ -23,7 +23,11 @@ function assertNotEncrypted(name: string, value: string): void {
 }
 
 export const APP_VERSION = readReleaseVersion(PROJECT_ROOT, readPackageVersion(PROJECT_ROOT));
-export const DATA_DIR = path.join(PROJECT_ROOT, 'data');
+// Arsenal's unified host sets DATA_DIR to its shared data directory; the package directory
+// (inside the release's node_modules) is read-only there.
+export const DATA_DIR = process.env.DATA_DIR?.trim()
+  ? path.resolve(PROJECT_ROOT, process.env.DATA_DIR.trim())
+  : path.join(PROJECT_ROOT, 'data');
 export const APP_DB_PATH =
   process.env.BUDGET_DB_PATH || process.env.APP_DB_PATH || path.join(DATA_DIR, 'app.db');
 
