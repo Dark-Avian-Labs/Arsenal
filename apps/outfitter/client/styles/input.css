@@ -7,21 +7,6 @@
 @source '../../index.html';
 
 @layer components {
-  .form-input {
-    width: 100%;
-    box-sizing: border-box;
-    height: 40px;
-    padding: 8px 10px;
-    font-size: 14px;
-    line-height: 1.2;
-    color: var(--color-foreground);
-    background: var(--color-glass-hover);
-    border: 1px solid var(--color-glass-active);
-    border-radius: var(--radius-ui);
-    font-family: inherit;
-    outline: none;
-  }
-
   .form-input[type='number'] {
     appearance: textfield;
     -moz-appearance: textfield;
@@ -45,31 +30,7 @@
   }
 
   .tabs {
-    display: flex;
-    gap: 4px;
     width: 100%;
-    margin-bottom: 16px;
-    flex-wrap: wrap;
-    background: var(--color-glass);
-    border: 1px solid var(--color-glass-border);
-    border-radius: var(--radius-ui);
-    padding: 6px;
-    -webkit-backdrop-filter: blur(12px);
-    backdrop-filter: blur(12px);
-  }
-
-  .user-menu-select-trigger {
-    width: 100%;
-    box-sizing: border-box;
-    height: 40px;
-    border: 1px solid var(--color-glass-border);
-    border-radius: var(--radius-ui);
-    padding: 8px 10px;
-    background: var(--color-glass-hover);
-    color: var(--color-foreground);
-    transition:
-      border-color 0.15s ease,
-      background-color 0.15s ease;
   }
 
   .select-dropdown-icon {
@@ -80,25 +41,10 @@
   }
 
   .select-dropdown-item {
-    position: relative;
-    width: 100%;
     display: flex;
     align-items: center;
     gap: 8px;
-    box-sizing: border-box;
-    border: none;
-    background: transparent;
-    border-radius: 0;
-    padding: 8px 10px 8px 13px;
     color: var(--color-foreground);
-    text-align: left;
-    text-decoration: none;
-    font-size: 14px;
-    line-height: 1.2;
-    cursor: pointer;
-    transition:
-      color 0.15s ease,
-      background-color 0.15s ease;
   }
 
   input[type='range'] {
@@ -111,17 +57,6 @@ html.ui-acrylic .table-container {
 }
 
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  html.ui-acrylic .glass-shell,
-  html.ui-acrylic .glass-surface,
-  html.ui-acrylic .glass-modal-surface,
-  html.ui-acrylic .glass-tooltip-surface,
-  html.ui-acrylic .glass-panel,
-  html.ui-acrylic .glass-light,
-  html.ui-acrylic .modal,
-  html.ui-acrylic .user-menu,
-  html.ui-acrylic .select-dropdown-menu,
-  html.ui-acrylic .search-results,
-  html.ui-acrylic .toast-pill,
   html.ui-acrylic .table-container {
     background: var(--acrylic-fallback);
     -webkit-backdrop-filter: none;
