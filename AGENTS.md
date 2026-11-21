@@ -6,20 +6,21 @@ CI conventions live in `docs/org-standards/`. The license for every app is the r
 
 ## Packages
 
-`@dark-avian-labs/ui` is the shell, sign-in pages, `apiFetch`, styles, and the feather mark. `@dark-avian-labs/server-kit` is the HTTP stack and `readServerEnv`. `@dark-avian-labs/sentinel-agent` is the in-process metrics agent. `@dark-avian-labs/warframe-catalog` is the shared Warframe catalog code. Armory and Codex each keep their own SQLite file, and Codex keeps the scraper. `@dark-avian-labs/wor-assets` is the Watcher of Realms icons and `triFilter`. `@dark-avian-labs/config` is the shared tsconfig, `defineAppVite`, and `defineAppPlaywright`.
+`@dark-avian-labs/ui` is the shell, sign-in pages, `apiFetch`, styles, and the feather mark. `@dark-avian-labs/server-kit` is the HTTP stack, `SqliteDatabase` (`node:sqlite` adapter), `runUserVersionMigrations`, `createClerkWebhookRouter`, and `readServerEnv`. `@dark-avian-labs/sentinel-agent` is the in-process metrics agent. `@dark-avian-labs/warframe-catalog` is the shared Warframe catalog code. In production, `apps/arsenal` hosts Codex, Armory, Outfitter, and BudgetPlanner in one Node 26 process sharing immutable catalog DBs updated by `.forgejo/workflows/catalog-sync.yml`, while `apps/sentinel` runs standalone. `@dark-avian-labs/wor-assets` is the Watcher of Realms icons and `triFilter`. `@dark-avian-labs/config` is the shared tsconfig, `defineAppVite`, and `defineAppPlaywright`.
 
 `ui`, `wor-assets`, and `config` stay TypeScript because Vite bundles them. `server-kit`, `sentinel-agent`, and `warframe-catalog` emit `dist` JavaScript. Node will not strip types for a file under `node_modules`, and `pnpm deploy` copies those packages there. `pnpm install` builds that dist. After editing one of those three, run its `build` before starting an app. Repos outside this workspace install the agent from the GitHub release `agent-vX.Y.Z`, packed by `.github/workflows/release.yml`.
 
 ## Ports
 
-| App            | Dev server | Signed-out e2e | Signed-in e2e | PM2 name      |
-| -------------- | ---------- | -------------- | ------------- | ------------- |
-| _template      | 3000       | 3100           | 4100          | not deployed  |
-| Codex          | 3001       | 3101           | 4101          | Codex         |
-| Armory         | 3002       | 3102           | 4102          | Armory        |
-| Budget Planner | 3003       | 3103           | 4103          | BudgetPlanner |
-| Outfitter      | 3004       | 3104           | 4104          | Outfitter     |
-| Sentinel       | 3005       | 3105           | none          | Sentinel      |
+| App            | Dev server | Signed-out e2e | Signed-in e2e | PM2 name               |
+| -------------- | ---------- | -------------- | ------------- | ---------------------- |
+| Arsenal        | 3000       | none           | none          | Arsenal (unified host) |
+| _template      | 3000       | 3100           | 4100          | not deployed           |
+| Codex          | 3001       | 3101           | 4101          | mounted in Arsenal     |
+| Armory         | 3002       | 3102           | 4102          | mounted in Arsenal     |
+| Budget Planner | 3003       | 3103           | 4103          | mounted in Arsenal     |
+| Outfitter      | 3004       | 3104           | 4104          | mounted in Arsenal     |
+| Sentinel       | 3005       | 3105           | none          | Sentinel               |
 
 Vite proxies `/api` to Express.
 
@@ -35,7 +36,7 @@ App `vite.config.ts` files call `defineAppVite`. Playwright configs call `define
 
 The rules turned off in `.oxlintrc.json` stay off. Turning the hook rules on would break refetch, form reset, and import-log scroll, and a warning fails validate.
 
-Node 26. pnpm 12.10.1, pinned by `packageManager`. On Windows, after a Node change, run `pnpm rebuild better-sqlite3`.
+Node 26. pnpm 12.10.1, pinned by `packageManager`. SQLite uses Node 26's built-in `node:sqlite` (`SqliteDatabase` in `@dark-avian-labs/server-kit`) with no native SQLite addon.
 
 ## Environment
 
@@ -61,7 +62,7 @@ On the host, `SERVER_PATH` contains `data/`, `.env.keys`, `releases/<version>/`,
 
 ## Shell
 
-Two axes. Color mode is `light` or `dark`, class `html.dark`, default dark. UI style is `ink`, `acrylic`, `plate`, `folio`, or `bronze`, default ink. A stored `prism`, `shadow`, or `clear` value loads as ink. Shared cookies are `dal.theme.mode` and `dal.ui.style`. An app may also keep a local fallback key. `packages/ui/public/theme-init.js` runs before React. `defineAppVite` serves that file and the shared favicons. Do not copy them into an app. `VITE_SHARED_THEME_COOKIE_DOMAIN` syncs the choice across subdomains.
+Two axes. Color mode is `light` or `dark`, class `html.dark`, default dark. UI style is `ink` or `acrylic`, default ink. Legacy stored values (`plate`, `folio`, `bronze`, `prism`, `shadow`, `clear`) normalize to ink. Shared cookies are `dal.theme.mode` and `dal.ui.style`. An app may also keep a local fallback key. `packages/ui/public/theme-init.js` runs before React. `defineAppVite` serves that file and the shared favicons. Do not copy them into an app. `VITE_SHARED_THEME_COOKIE_DOMAIN` syncs the choice across subdomains.
 
 Acrylic is the signed-off Windows 11 flyout: `blur(40px) saturate(200%) contrast(1.08)`, a 55% tint, exclusion grain, and tiled noise. Do not add `brightness()`. A parent with opacity below 1, or with `filter`, `mask`, `clip-path`, or its own `backdrop-filter`, kills the blur. Acrylic skips `#root` blur and the overlay `backdrop-filter` while a modal is open.
 
@@ -69,7 +70,7 @@ Layout width is `max-w-[2000px]` on the header and main. A mobile-first app may 
 
 Use the classes and components in `@dark-avian-labs/ui`. App stylesheets import `@dark-avian-labs/ui/styles.css` and keep only their own rules. A choice list is `SelectDropdown` from that package. A native `<select>` opens the browser menu, which ignores the theme. That menu is white, with a blue highlight, and it does not match the shell. The feather mark is `@dark-avian-labs/ui/feathers.svg`. Game-domain colors `--color-dmg-*` and `--color-riven*` belong in Armory.
 
-Ink paints a fixed monochrome wash. Plate is cool steel with a bright top edge. Folio is matte paper with a hairline and no shadow. Bronze is warm metal with a copper edge and a small wash. Acrylic uses the Ink wash with color, and it is the only style that blurs. The wash sits behind the panels so the blur has something to catch. A fixed generated grain sits on the wash at low opacity. Geist and Geist Mono load from the ui stylesheet. The rarity and primary color steps stay in the shared stylesheet.
+Ink paints a fixed monochrome wash. Acrylic uses the Ink wash with color, and it is the only style that blurs. The wash sits behind the panels so the blur has something to catch. A fixed generated grain sits on the wash at low opacity. Geist and Geist Mono load from the ui stylesheet. The rarity and primary color steps stay in the shared stylesheet.
 
 ## Tests
 

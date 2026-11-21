@@ -3,6 +3,7 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     environment: 'node',
+    isolate: false,
     env: {
       NODE_ENV: 'test',
       APP_PUBLIC_BASE_URL: 'http://127.0.0.1:3005',
