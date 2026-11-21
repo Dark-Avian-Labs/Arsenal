@@ -60,8 +60,12 @@ $SSH "set -e
   ln -sfn 'releases/${VERSION}-${SHORT}' '$SERVER_PATH/current.tmp'
   mv -Tf '$SERVER_PATH/current.tmp' '$SERVER_PATH/current'
 
-  echo '==> restart $PM2_NAME'
-  sudo -n -u pm2-user /home/pm2-user/bin/pm2-wrapper restart '$PM2_NAME'
+  echo '==> restart (or initial start) $PM2_NAME'
+  if ! sudo -n -u pm2-user /home/pm2-user/bin/pm2-wrapper restart '$PM2_NAME'; then
+    echo '==> $PM2_NAME not registered in PM2 yet; starting from ecosystem.config.cjs'
+    sudo -n -u pm2-user /home/pm2-user/bin/pm2-wrapper start '$SERVER_PATH/current/ecosystem.config.cjs'
+    sudo -n -u pm2-user /home/pm2-user/bin/pm2-wrapper save || true
+  fi
 
   echo '==> verify'
   ok=false

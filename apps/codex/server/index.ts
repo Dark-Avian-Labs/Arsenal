@@ -3,73 +3,13 @@ import './config.ts';
 import { createAppSentinelAgent, log, startServer } from '@dark-avian-labs/server-kit';
 
 import { createApp } from './app.ts';
-import { syncCatalogSnapshotsToCollectionsOnBoot } from './catalogSyncOnBoot.ts';
-import {
-  APP_ID,
-  APP_NAME,
-  ensureDataDirs,
-  HOST,
-  NODE_ENV,
-  PORT,
-  SHUTDOWN_TIMEOUT_MS,
-} from './config.ts';
-import { refreshEpic7DbAvailability } from './epic7DbState.ts';
-import { closeEpic7Db, getEpic7Db } from './games/epic7/index.ts';
-import { closeWarframeDb, getWarframeDb } from './games/warframe/index.ts';
-import { closeWorCatalogDb, closeWorDb, getWorCatalogDb, getWorDb } from './games/wor/index.ts';
-import {
-  ensureWarframeSyncJobsSchema,
-  failStaleWarframeSyncRuns,
-} from './services/warframeSyncJobs.ts';
-import { waitForWarframeSyncIdle } from './services/warframeSyncState.ts';
-import { refreshWorDbAvailability } from './worDbState.ts';
+import { APP_ID, APP_NAME, HOST, NODE_ENV, PORT, SHUTDOWN_TIMEOUT_MS } from './config.ts';
+import { getWorCatalogDb } from './games/wor/index.ts';
+import { beforeCloseCodex, closeCodex, initCodex } from './init.ts';
 
-ensureDataDirs();
-ensureWarframeSyncJobsSchema();
-failStaleWarframeSyncRuns();
-function assertTableExists(db: { prepare: (sql: string) => unknown }, tableName: string): void {
-  const row = (
-    db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?") as {
-      get: (param: string) => unknown;
-    }
-  ).get(tableName);
-  if (!row) {
-    throw new Error(`Required table "${tableName}" was not found.`);
-  }
-}
-
-function ensureGameSchemasReady(): void {
-  const warframeDb = getWarframeDb();
-  const epic7Db = getEpic7Db();
-  assertTableExists(warframeDb, 'worksheets');
-  assertTableExists(warframeDb, 'columns');
-  assertTableExists(warframeDb, 'rows');
-  assertTableExists(warframeDb, 'cell_values');
-
-  assertTableExists(epic7Db, 'game_accounts');
-  assertTableExists(epic7Db, 'base_heroes');
-  assertTableExists(epic7Db, 'base_artifacts');
-  assertTableExists(epic7Db, 'account_heroes');
-  assertTableExists(epic7Db, 'account_artifacts');
-
-  const worDb = getWorDb();
-  assertTableExists(worDb, 'game_accounts');
-  assertTableExists(worDb, 'catalog_heroes');
-  assertTableExists(worDb, 'catalog_artifacts');
-  assertTableExists(worDb, 'catalog_demons');
-  assertTableExists(worDb, 'account_heroes');
-  assertTableExists(worDb, 'account_artifacts');
-  assertTableExists(worDb, 'account_demons');
-}
-ensureGameSchemasReady();
-void refreshEpic7DbAvailability();
 const autoScrapeOnBoot = process.env.CODEX_AUTO_SCRAPE_ON_BOOT === '1';
 
-if (!autoScrapeOnBoot && NODE_ENV !== 'test') {
-  syncCatalogSnapshotsToCollectionsOnBoot();
-}
-
-void refreshWorDbAvailability().then(async () => {
+void initCodex({ syncSnapshots: !autoScrapeOnBoot }).then(async () => {
   if (!autoScrapeOnBoot) return;
   try {
     const [leaseMod, startupMod] = await Promise.all([
@@ -90,6 +30,7 @@ void refreshWorDbAvailability().then(async () => {
     });
   }
 });
+
 void (async () => {
   if (NODE_ENV === 'test' || !autoScrapeOnBoot) return;
   try {
@@ -131,19 +72,10 @@ startServer({
   port: PORT,
   shutdownTimeoutMs: SHUTDOWN_TIMEOUT_MS,
   sentinelAgent,
-  beforeClose: async () => {
-    const timeoutMs = Math.max(SHUTDOWN_TIMEOUT_MS - 2000, 1000);
-    const syncFinished = await waitForWarframeSyncIdle(timeoutMs);
-    if (!syncFinished) {
-      log('warn', 'Warframe sync still running; proceeding with shutdown');
-    }
-  },
+  beforeClose: () => beforeCloseCodex(SHUTDOWN_TIMEOUT_MS),
   onClose: () => {
     try {
-      closeWarframeDb();
-      closeEpic7Db();
-      closeWorDb();
-      closeWorCatalogDb();
+      closeCodex();
     } catch (err) {
       log('error', 'Failed to close DB connections during shutdown', {
         err: err instanceof Error ? err.message : String(err),

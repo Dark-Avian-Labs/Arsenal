@@ -7,14 +7,15 @@ import { describe, expect, it } from 'vitest';
 import { createDbSingleton, openMemorySqlite, SqliteDatabase } from './sqlite.ts';
 
 describe('SqliteDatabase (node:sqlite adapter)', () => {
-  it('normalizes row prototypes, named params with extra keys, and array params', () => {
+  it('normalizes row prototypes, named params, and array params, and rejects unknown named params', () => {
     const db = openMemorySqlite();
     try {
       db.exec('CREATE TABLE items (id INTEGER PRIMARY KEY, name TEXT UNIQUE NOT NULL)');
       const ins = db.prepare('INSERT INTO items (name) VALUES (:name)');
-      const res = ins.run({ name: 'alpha', ignored: 123 });
+      const res = ins.run({ name: 'alpha' });
       expect(res.changes).toBe(1);
       expect(res.lastInsertRowid).toBe(1);
+      expect(() => ins.run({ name: 'beta', typo: 123 })).toThrow();
 
       const row = db.prepare('SELECT id, name FROM items WHERE id = ?').get([1]);
       expect(row).toEqual({ id: 1, name: 'alpha' });
@@ -72,6 +73,11 @@ describe('SqliteDatabase (node:sqlite adapter)', () => {
       const bigId = 9007199254740995n;
       const runRes = insert.run(bigId, 'big');
       expect(runRes.lastInsertRowid).toBe(bigId);
+      expect(db.prepare('SELECT id, v FROM t WHERE id = ?').get(bigId)).toEqual({
+        id: bigId,
+        v: 'big',
+      });
+      expect(db.prepare('SELECT id, v FROM t').all()).toEqual([{ id: bigId, v: 'big' }]);
 
       const asyncTx = db.transaction(async () => {
         insert.run(2, 'should-rollback');

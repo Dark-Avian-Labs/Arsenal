@@ -15,6 +15,13 @@ export const MOUNTED_APP_IDS: readonly MountedAppId[] = [
   'budget-planner',
 ];
 
+export const MOUNTED_APP_LABELS: Record<MountedAppId, { appId: string; displayName: string }> = {
+  codex: { appId: 'codex', displayName: 'Codex' },
+  armory: { appId: 'armory', displayName: 'Armory' },
+  outfitter: { appId: 'outfitter', displayName: 'Outfitter' },
+  'budget-planner': { appId: 'budgetplanner', displayName: 'BudgetPlanner' },
+};
+
 export interface HostRouterOptions {
   apps: Record<MountedAppId, Express>;
   appVersion: string;
@@ -66,11 +73,9 @@ export function resolveMountedAppId(
     }
   }
 
-  const forwardedHost =
-    typeof req.headers['x-forwarded-host'] === 'string'
-      ? req.headers['x-forwarded-host']
-      : undefined;
-  const host = normalizeHost(forwardedHost || req.headers.host);
+  // Express's req.hostname honors X-Forwarded-Host ONLY when `trust proxy` is enabled,
+  // preventing header spoofing when trustProxy is false.
+  const host = normalizeHost(req.hostname || req.headers.host);
 
   if (host && options.hostMap[host]) {
     return options.hostMap[host];

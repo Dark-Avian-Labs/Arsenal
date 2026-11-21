@@ -24,11 +24,12 @@ DATA_DIR="$SERVER_PATH/data"
 RUN_ID="$(date -u +%Y%m%d%H%M%S)-$$"
 STAGE="$DATA_DIR/.catalog-incoming-$RUN_ID"
 LOCK_FILE="$SERVER_PATH/.deploy.lock"
+FORCE_SWAP="${FORCE_SWAP:-false}"
 
 echo "==> upload $CATALOG_TGZ to $STAGE"
 $SSH "umask 007; set -e; mkdir -p '$STAGE'; tar -xzf - -C '$STAGE'" < "$CATALOG_TGZ"
 
-echo "==> acquire deploy lock, stop $PM2_NAME, swap catalog DBs, restart and verify /readyz"
+echo "==> acquire deploy lock, check manifest diff, swap changed catalog DBs with rollback"
 $SSH "set -euo pipefail
   mkdir -p '$DATA_DIR/images'
   exec 9>'$LOCK_FILE'
@@ -36,6 +37,7 @@ $SSH "set -euo pipefail
   cleanup() { rm -rf '$STAGE'; }
   trap cleanup EXIT
 
+  # Always sync any newly added image files (non-destructive, zero downtime).
   if [ -d '$STAGE/images/warframe' ]; then
     mkdir -p '$DATA_DIR/images/warframe'
     cp -a '$STAGE/images/warframe/.' '$DATA_DIR/images/warframe/'
@@ -45,27 +47,68 @@ $SSH "set -euo pipefail
     cp -a '$STAGE/images/wor/.' '$DATA_DIR/images/wor/'
   fi
 
-  # Stop PM2 before replacing SQLite files and clearing WAL/SHM sidecars so no open handles remain.
-  sudo -n -u pm2-user /home/pm2-user/bin/pm2-wrapper stop '$PM2_NAME' || true
+  # Determine whether any staged database actually changed compared to catalog-manifest.json.
+  CHANGED_DBS=\$(node --input-type=module -e '
+    import fs from \"node:fs\";
+    const [stageDir, dataDir, forceSwap] = process.argv.slice(1);
+    const readJson = (p) => (fs.existsSync(p) ? JSON.parse(fs.readFileSync(p, \"utf8\")) : null);
+    const incoming = readJson(\`\${stageDir}/catalog-manifest.json\`);
+    const current = readJson(\`\${dataDir}/catalog-manifest.json\`);
+    const changed = [];
+    for (const db of [\"warframe-catalog.db\", \"wor-catalog.db\"]) {
+      if (!fs.existsSync(\`\${stageDir}/\${db}\`)) continue;
+      if (forceSwap === \"true\" || !fs.existsSync(\`\${dataDir}/\${db}\`)) {
+        changed.push(db);
+        continue;
+      }
+      const nextHash = incoming?.databases?.[db]?.contentHash ?? incoming?.databases?.[db]?.sha256;
+      const prevHash = current?.databases?.[db]?.contentHash ?? current?.databases?.[db]?.sha256;
+      if (!nextHash || nextHash !== prevHash) changed.push(db);
+    }
+    process.stdout.write(changed.join(\" \"));
+  ' '$STAGE' '$DATA_DIR' '$FORCE_SWAP')
+
+  if [ -z \"\$CHANGED_DBS\" ]; then
+    echo '==> catalog databases unchanged; skipping PM2 restart (zero downtime)'
+    exit 0
+  fi
+
+  echo \"==> databases changed: \$CHANGED_DBS — stopping $PM2_NAME\"
+  if ! sudo -n -u pm2-user /home/pm2-user/bin/pm2-wrapper stop '$PM2_NAME'; then
+    echo 'ERROR: failed to stop $PM2_NAME; aborting catalog swap before touching DB files'
+    exit 1
+  fi
+
+  stopped=false
   for _ in \$(seq 1 15); do
     if ! curl -fsS --max-time 1 -o /dev/null 'http://127.0.0.1:$PORT/healthz' 2>/dev/null; then
+      stopped=true
       break
     fi
     sleep 1
   done
+  if [ \"\$stopped\" != true ]; then
+    echo 'ERROR: $PM2_NAME is still responding on /healthz after stop; aborting catalog swap'
+    exit 1
+  fi
 
-  for db in warframe-catalog.db wor-catalog.db; do
-    if [ -f '$STAGE/'\"\$db\" ]; then
-      mv -f '$STAGE/'\"\$db\" '$DATA_DIR/'\"\$db\"
-      rm -f '$DATA_DIR/'\"\$db\"'-wal' '$DATA_DIR/'\"\$db\"'-shm'
+  # Back up previous DBs and manifest so we can roll back if /readyz fails.
+  for db in \$CHANGED_DBS; do
+    if [ -f '$DATA_DIR/'\"\$db\" ]; then
+      cp -a '$DATA_DIR/'\"\$db\" '$DATA_DIR/'\"\$db\"'.prev'
     fi
+    mv -f '$STAGE/'\"\$db\" '$DATA_DIR/'\"\$db\"
+    rm -f '$DATA_DIR/'\"\$db\"'-wal' '$DATA_DIR/'\"\$db\"'-shm'
   done
 
+  if [ -f '$DATA_DIR/catalog-manifest.json' ]; then
+    cp -a '$DATA_DIR/catalog-manifest.json' '$DATA_DIR/catalog-manifest.json.prev'
+  fi
   if [ -f '$STAGE/catalog-manifest.json' ]; then
     mv -f '$STAGE/catalog-manifest.json' '$DATA_DIR/catalog-manifest.json'
   fi
 
-  # Starting Arsenal runs boot-time catalog-to-collection sync for WoR & Warframe before /readyz passes.
+  # Starting Arsenal runs boot-time catalog-to-collection sync before /readyz passes.
   sudo -n -u pm2-user /home/pm2-user/bin/pm2-wrapper restart '$PM2_NAME'
 
   ok=false
@@ -76,9 +119,26 @@ $SSH "set -euo pipefail
     fi
     sleep 2
   done
+
   if [ \"\$ok\" != true ]; then
-    echo 'ERROR: $PM2_NAME did not pass /readyz after catalog swap'
+    echo 'ERROR: $PM2_NAME did not pass /readyz after catalog swap — rolling back .prev files'
+    sudo -n -u pm2-user /home/pm2-user/bin/pm2-wrapper stop '$PM2_NAME' || true
+    for db in \$CHANGED_DBS; do
+      if [ -f '$DATA_DIR/'\"\$db\"'.prev' ]; then
+        mv -f '$DATA_DIR/'\"\$db\"'.prev' '$DATA_DIR/'\"\$db\"
+        rm -f '$DATA_DIR/'\"\$db\"'-wal' '$DATA_DIR/'\"\$db\"'-shm'
+      fi
+    done
+    if [ -f '$DATA_DIR/catalog-manifest.json.prev' ]; then
+      mv -f '$DATA_DIR/catalog-manifest.json.prev' '$DATA_DIR/catalog-manifest.json'
+    fi
+    sudo -n -u pm2-user /home/pm2-user/bin/pm2-wrapper restart '$PM2_NAME' || true
     exit 1
   fi
+
+  for db in \$CHANGED_DBS; do
+    rm -f '$DATA_DIR/'\"\$db\"'.prev'
+  done
+  rm -f '$DATA_DIR/catalog-manifest.json.prev'
 "
 echo "==> catalog swap complete and verified"

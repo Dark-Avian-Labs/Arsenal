@@ -15,8 +15,13 @@ import {
   TRUST_PROXY,
   applyUnifiedSubAppEnv,
 } from './config.ts';
-import { createArsenalHostApp, parseHostMapEnv, type MountedAppId } from './hostRouter.ts';
-import { deleteClerkUserAcrossApps } from './userCleanup.ts';
+import {
+  createArsenalHostApp,
+  MOUNTED_APP_LABELS,
+  parseHostMapEnv,
+  resolveMountedAppId,
+  type MountedAppId,
+} from './hostRouter.ts';
 
 function resolvePackageClientDir(packageName: string): string {
   const pkgUrl = import.meta.resolve(`${packageName}/package.json`);
@@ -25,48 +30,61 @@ function resolvePackageClientDir(packageName: string): string {
 }
 
 async function main(): Promise<void> {
-  // 1. Configure shared paths and skip sub-app .env loading BEFORE importing any sub-app.
+  // 1. Configure shared paths and isolate sub-app env BEFORE importing any sub-app.
   applyUnifiedSubAppEnv();
 
-  // 2. Dynamically import all 4 sub-app server factories & lifecycle hooks.
+  // 2. Dynamically import all 4 sub-app server factories & lifecycle hooks (compiled JS in prod).
   const [
     codexAppMod,
+    codexInitMod,
     codexProbesMod,
-    codexCatalogSyncMod,
-    codexWfMod,
-    codexE7Mod,
-    codexWorMod,
     armoryAppMod,
+    armoryInitMod,
     armoryDbMod,
     armoryUsersMod,
     outfitterAppMod,
+    outfitterInitMod,
     outfitterDbMod,
     budgetAppMod,
     budgetDbMod,
   ] = await Promise.all([
     import('codex/server'),
+    import('codex/init'),
     import('codex/probes'),
-    import('codex/catalog-sync'),
-    import('codex/warframe-db'),
-    import('codex/epic7-db'),
-    import('codex/wor-db'),
     import('armory/server'),
+    import('armory/init'),
     import('armory/db'),
     import('armory/users'),
     import('outfitter/server'),
+    import('outfitter/init'),
     import('outfitter/db'),
     import('budget-planner/server'),
     import('budget-planner/db'),
   ]);
 
-  if (NODE_ENV !== 'test') {
-    codexCatalogSyncMod.syncCatalogSnapshotsToCollectionsOnBoot();
-  }
+  // 3. Run each sub-app's startup initialization (schemas, stale job cleanup, catalog syncs).
+  await codexInitMod.initCodex();
+  armoryInitMod.initArmory();
+  outfitterInitMod.initOutfitter();
+
+  const defaultAppRaw = process.env.ARSENAL_DEFAULT_APP?.trim().toLowerCase();
+  const defaultApp: MountedAppId =
+    defaultAppRaw === 'armory' ||
+    defaultAppRaw === 'outfitter' ||
+    defaultAppRaw === 'budget-planner'
+      ? defaultAppRaw
+      : 'codex';
+  const hostMap = parseHostMapEnv(process.env.ARSENAL_HOST_MAP);
+  const allowHeaderOverride = NODE_ENV !== 'production';
 
   const sentinelAgent = createAppSentinelAgent({
     appId: APP_ID,
     displayName: APP_NAME,
     nodeEnv: NODE_ENV,
+    resolveRequestApp: (req) => {
+      const targetId = resolveMountedAppId(req, { hostMap, defaultApp, allowHeaderOverride });
+      return MOUNTED_APP_LABELS[targetId];
+    },
   });
 
   const codexBundle = codexAppMod.createApp({
@@ -82,20 +100,12 @@ async function main(): Promise<void> {
     clientDir: resolvePackageClientDir('budget-planner'),
   });
 
-  const defaultAppRaw = process.env.ARSENAL_DEFAULT_APP?.trim().toLowerCase();
-  const defaultApp: MountedAppId =
-    defaultAppRaw === 'armory' ||
-    defaultAppRaw === 'outfitter' ||
-    defaultAppRaw === 'budget-planner'
-      ? defaultAppRaw
-      : 'codex';
-
   const hostApp = createArsenalHostApp({
     appVersion: APP_VERSION,
     trustProxy: TRUST_PROXY,
     defaultApp,
-    hostMap: parseHostMapEnv(process.env.ARSENAL_HOST_MAP),
-    allowHeaderOverride: NODE_ENV !== 'production',
+    hostMap,
+    allowHeaderOverride,
     metricsMiddleware: sentinelAgent?.middleware,
     apps: {
       codex: codexBundle.app,
@@ -132,34 +142,32 @@ async function main(): Promise<void> {
         const username = typeof data.username === 'string' ? data.username.trim() : '';
         armoryUsersMod.upsertArmoryUser(data.id, username.length > 0 ? username : null);
       },
+      // Match main branch behavior: mark Armory user deleted without hard-deleting Budget
+      // shared plans, Codex worksheets, or Outfitter accounts.
       onUserDeleted: (userId) => {
-        deleteClerkUserAcrossApps(userId, {
-          armoryMarkDeleted: armoryUsersMod.markArmoryUserDeleted,
-          budgetDb: () => budgetDbMod.getAppDb(),
-          outfitterDb: () => outfitterDbMod.getAppDb(),
-          codexWarframeDb: () => codexWfMod.getWarframeDb(),
-          codexEpic7Db: () => codexE7Mod.getEpic7Db(),
-          codexWorDb: () => codexWorMod.getWorDb(),
-        });
+        armoryUsersMod.markArmoryUserDeleted(userId);
       },
     },
   });
 
-  startServer({
+  const server = startServer({
     app: hostApp,
     appName: APP_NAME,
     host: HOST,
     port: PORT,
     shutdownTimeoutMs: SHUTDOWN_TIMEOUT_MS,
     sentinelAgent,
+    beforeClose: async () => {
+      await Promise.all([
+        codexInitMod.beforeCloseCodex(SHUTDOWN_TIMEOUT_MS),
+        armoryInitMod.beforeCloseArmory(SHUTDOWN_TIMEOUT_MS),
+      ]);
+    },
     onClose: () => {
       try {
-        codexWfMod.closeWarframeDb();
-        codexE7Mod.closeEpic7Db();
-        codexWorMod.closeWorDb();
-        codexWorMod.closeWorCatalogDb();
-        armoryDbMod.closeAll();
-        outfitterDbMod.closeAppDb();
+        codexInitMod.closeCodex();
+        armoryInitMod.closeArmory();
+        outfitterInitMod.closeOutfitter();
         budgetDbMod.closeAppDb();
       } catch (err) {
         log('error', 'Failed to close unified Arsenal DB connections during shutdown', {
@@ -169,6 +177,8 @@ async function main(): Promise<void> {
       }
     },
   });
+  server.headersTimeout = 65_000;
+  server.requestTimeout = 120_000;
 }
 
 main().catch((err: unknown) => {

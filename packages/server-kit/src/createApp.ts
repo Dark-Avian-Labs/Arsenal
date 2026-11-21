@@ -127,7 +127,7 @@ export function createApp(options: CreateAppOptions): AppBundle {
       res.status(404).end();
       return;
     }
-    res.sendFile(faviconPng, (err) => {
+    res.sendFile('favicon.png', { root: clientDir }, (err) => {
       if (err) next(err);
     });
   };
@@ -238,7 +238,7 @@ export function createApp(options: CreateAppOptions): AppBundle {
         }
       }
       res.setHeader('Cache-Control', 'no-cache');
-      res.sendFile(clientIndexPath);
+      res.sendFile('index.html', { root: clientDir });
     };
 
     app.use(

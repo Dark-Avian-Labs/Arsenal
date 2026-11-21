@@ -33,6 +33,7 @@ export interface UnifiedDataPaths {
   epic7Db: string;
   worDb: string;
   worCatalogDb: string;
+  armoryDb: string;
   armoryUserDb: string;
   outfitterDb: string;
   budgetDb: string;
@@ -49,6 +50,7 @@ export function resolveUnifiedDataPaths(baseDataDir = DATA_DIR): UnifiedDataPath
     worDb: process.env.WOR_DB_PATH?.trim() || path.join(baseDataDir, 'wor.db'),
     worCatalogDb:
       process.env.WOR_CATALOG_DB_PATH?.trim() || path.join(baseDataDir, 'wor-catalog.db'),
+    armoryDb: process.env.ARMORY_DB_PATH?.trim() || path.join(baseDataDir, 'armory.db'),
     armoryUserDb: process.env.USER_DB_PATH?.trim() || path.join(baseDataDir, 'builds.db'),
     outfitterDb: process.env.OUTFITTER_DB_PATH?.trim() || path.join(baseDataDir, 'outfitter.db'),
     budgetDb: process.env.BUDGET_DB_PATH?.trim() || path.join(baseDataDir, 'budget.db'),
@@ -60,8 +62,8 @@ export function resolveUnifiedDataPaths(baseDataDir = DATA_DIR): UnifiedDataPath
 
 /**
  * Configure shared process.env paths BEFORE dynamically importing sub-apps so Codex, Armory,
- * Outfitter, and BudgetPlanner all share the unified data directory and immutable catalogs
- * directly in-process without disk-copying bridges or conflicting APP_DB_PATH values.
+ * Outfitter, and BudgetPlanner share the unified data directory cleanly while keeping
+ * Armory's armory.db (which stores armory_users) separate from Codex's immutable catalog DBs.
  */
 export function applyUnifiedSubAppEnv(baseDataDir = DATA_DIR): UnifiedDataPaths {
   const paths = resolveUnifiedDataPaths(baseDataDir);
@@ -70,7 +72,16 @@ export function applyUnifiedSubAppEnv(baseDataDir = DATA_DIR): UnifiedDataPaths 
   fs.mkdirSync(paths.worImagesDir, { recursive: true });
 
   process.env.ARSENAL_SKIP_LOAD_ENV = '1';
+  process.env.ARSENAL_UNIFIED_HOST = '1';
+  // Never leak host APP_ID/APP_NAME into mounted sub-apps (admin checks and subdomain defaults
+  // depend on each sub-app's own ID).
+  delete process.env.APP_ID;
+  delete process.env.APP_NAME;
+
   process.env.DATA_DIR = baseDataDir;
+  if (!process.env.BASE_DOMAIN?.trim()) {
+    process.env.BASE_DOMAIN = 'darkavianlabs.com';
+  }
   process.env.WARFRAME_DB_PATH = paths.warframeDb;
   process.env.WARFRAME_CATALOG_DB_PATH = paths.warframeCatalogDb;
   process.env.EPIC7_DB_PATH = paths.epic7Db;
@@ -79,14 +90,15 @@ export function applyUnifiedSubAppEnv(baseDataDir = DATA_DIR): UnifiedDataPaths 
   process.env.WARFRAME_IMAGES_DIR = paths.warframeImagesDir;
   process.env.WOR_IMAGES_DIR = paths.worImagesDir;
 
-  // Armory reads Codex's immutable Warframe catalog and images directly.
-  process.env.ARMORY_DB_PATH = paths.warframeCatalogDb;
+  // Armory keeps its own armory.db (contains armory_users + synced catalog tables) so daily
+  // catalog swaps of warframe-catalog.db never wipe armory_users.
+  process.env.ARMORY_DB_PATH = paths.armoryDb;
   process.env.USER_DB_PATH = paths.armoryUserDb;
   process.env.ARMORY_IMAGES_DIR = paths.warframeImagesDir;
   process.env.CODEX_WARFRAME_CATALOG_DB_PATH = paths.warframeCatalogDb;
   process.env.CODEX_WARFRAME_IMAGES_DIR = paths.warframeImagesDir;
 
-  // Outfitter reads Codex's immutable WoR catalog and portraits directly.
+  // Outfitter reads Codex's WoR catalog and portraits directly.
   process.env.OUTFITTER_DB_PATH = paths.outfitterDb;
   process.env.HERO_IMAGES_DIR = paths.worImagesDir;
   process.env.CODEX_WOR_DB_PATH = paths.worCatalogDb;

@@ -8,6 +8,7 @@
     "server",
     "shared",
     "dist/client",
+    "dist/server",
     "public",
     "icons",
     "ecosystem.config.cjs",
@@ -16,12 +17,30 @@
   "type": "module",
   "exports": {
     "./package.json": "./package.json",
-    "./server": "./server/app.ts",
-    "./db": "./server/db/connection.ts",
-    "./users": "./server/auth/armoryUsers.ts"
+    "./server": {
+      "types": "./server/app.ts",
+      "import": "./dist/server/server/app.js",
+      "default": "./dist/server/server/app.js"
+    },
+    "./init": {
+      "types": "./server/init.ts",
+      "import": "./dist/server/server/init.js",
+      "default": "./dist/server/server/init.js"
+    },
+    "./db": {
+      "types": "./server/db/connection.ts",
+      "import": "./dist/server/server/db/connection.js",
+      "default": "./dist/server/server/db/connection.js"
+    },
+    "./users": {
+      "types": "./server/auth/armoryUsers.ts",
+      "import": "./dist/server/server/auth/armoryUsers.js",
+      "default": "./dist/server/server/auth/armoryUsers.js"
+    }
   },
   "scripts": {
-    "build": "pnpm run typecheck && vite build",
+    "build:server": "tsc -p tsconfig.server.build.json",
+    "build": "pnpm run typecheck && pnpm run build:server && vite build",
     "typecheck": "tsc -p tsconfig.server.json --noEmit && tsc -p tsconfig.json --noEmit",
     "dev": "node --watch server/index.ts",
     "dev:client": "dotenvx run --strict -f .env.development -- vite",

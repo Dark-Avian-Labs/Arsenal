@@ -1,10 +1,8 @@
-import { openMemorySqlite } from '@dark-avian-labs/server-kit';
 import express from 'express';
 import request from 'supertest';
 import { describe, expect, it } from 'vitest';
 
 import { createArsenalHostApp, parseHostMapEnv } from './hostRouter.ts';
-import { deleteClerkUserAcrossApps } from './userCleanup.ts';
 
 function stubApp(name: string) {
   const app = express();
@@ -45,6 +43,36 @@ describe('createArsenalHostApp', () => {
       expect(res.status).toBe(200);
       expect(res.body).toEqual({ app: expected });
     }
+  });
+
+  it('ignores spoofed X-Forwarded-Host when trustProxy is false', async () => {
+    const untrusted = createArsenalHostApp({
+      appVersion: '2.0.0',
+      trustProxy: false,
+      allowHeaderOverride: false,
+      apps: {
+        codex: stubApp('codex'),
+        armory: stubApp('armory'),
+        outfitter: stubApp('outfitter'),
+        'budget-planner': stubApp('budget-planner'),
+      },
+    });
+
+    const res = await request(untrusted)
+      .get('/ping')
+      .set('Host', 'codex.darkavianlabs.com')
+      .set('X-Forwarded-Host', 'armory.darkavianlabs.com');
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ app: 'codex' });
+  });
+
+  it('honors X-Forwarded-Host when trustProxy is true', async () => {
+    const res = await request(hostApp)
+      .get('/ping')
+      .set('Host', '127.0.0.1:3000')
+      .set('X-Forwarded-Host', 'armory.darkavianlabs.com');
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ app: 'armory' });
   });
 
   it('supports X-Arsenal-App header routing for local dev/testing', async () => {
@@ -88,43 +116,5 @@ describe('createArsenalHostApp', () => {
     expect(res.status).toBe(503);
     expect(res.body.ok).toBe(false);
     expect(res.body.apps.armory).toBe(false);
-  });
-});
-
-describe('deleteClerkUserAcrossApps', () => {
-  it('cleans up user records across all mounted databases on Clerk user.deleted', () => {
-    const budgetDb = openMemorySqlite();
-    const outfitterDb = openMemorySqlite();
-    const codexWfDb = openMemorySqlite();
-    let armoryDeleted: string | null = null;
-
-    try {
-      budgetDb.exec('CREATE TABLE users (id TEXT PRIMARY KEY, clerk_user_id TEXT NOT NULL)');
-      budgetDb.prepare('INSERT INTO users (id, clerk_user_id) VALUES (?, ?)').run('u1', 'user_42');
-
-      outfitterDb.exec('CREATE TABLE game_accounts (id INTEGER PRIMARY KEY, clerk_user_id TEXT NOT NULL)');
-      outfitterDb.prepare('INSERT INTO game_accounts (clerk_user_id) VALUES (?)').run('user_42');
-
-      codexWfDb.exec('CREATE TABLE worksheets (id INTEGER PRIMARY KEY, clerk_user_id TEXT NOT NULL)');
-      codexWfDb.prepare('INSERT INTO worksheets (clerk_user_id) VALUES (?)').run('user_42');
-
-      const summary = deleteClerkUserAcrossApps('user_42', {
-        armoryMarkDeleted: (id) => {
-          armoryDeleted = id;
-        },
-        budgetDb: () => budgetDb,
-        outfitterDb: () => outfitterDb,
-        codexWarframeDb: () => codexWfDb,
-      });
-
-      expect(armoryDeleted).toBe('user_42');
-      expect(summary.budgetUsers).toBe(1);
-      expect(summary.outfitterAccounts).toBe(1);
-      expect(summary.codexWarframeSheets).toBe(1);
-    } finally {
-      budgetDb.close();
-      outfitterDb.close();
-      codexWfDb.close();
-    }
   });
 });

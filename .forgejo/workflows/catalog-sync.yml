@@ -52,9 +52,14 @@ jobs:
           GAME: ${{ github.event_name == 'workflow_dispatch' && inputs.game || 'all' }}
           FORCE: ${{ github.event_name == 'workflow_dispatch' && inputs.force || 'false' }}
           FORCE_IMAGES: ${{ github.event_name == 'workflow_dispatch' && inputs.force_images || 'false' }}
+          SERVER_PATH: ${{ secrets.SERVER_PATH_ARSENAL }}
         run: |
           set -euo pipefail
-          args="--game=${GAME} --out=/tmp/catalog-stage"
+          if [ -z "${SERVER_PATH:-}" ] && [ "${GITHUB_EVENT_NAME:-}" = "schedule" ]; then
+            echo "SERVER_PATH_ARSENAL secret is not configured yet; skipping scheduled catalog build."
+            exit 0
+          fi
+          args="--game=${GAME} --out=/tmp/catalog-stage --work-dir=/pnpm-store/arsenal-catalog-work"
           if [ "$FORCE" = "true" ]; then args="$args --force"; fi
           if [ "$FORCE_IMAGES" = "true" ]; then args="$args --force-images"; fi
           node scripts/ci/build-catalog.ts $args
@@ -66,13 +71,20 @@ jobs:
           CATALOG_TGZ: /tmp/catalog-payload.tgz
           PM2_NAME: Arsenal
           PORT: 3000
+          FORCE_SWAP: ${{ github.event_name == 'workflow_dispatch' && inputs.force || 'false' }}
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           SERVER_KNOWN_HOST: ${{ secrets.SERVER_KNOWN_HOST }}
           SERVER_HOST: ${{ secrets.SERVER_HOST }}
           SERVER_USER: ${{ secrets.SERVER_USER }}
           SERVER_PATH: ${{ secrets.SERVER_PATH_ARSENAL }}
           SERVER_SSH_PORT: ${{ secrets.SERVER_SSH_PORT }}
-        run: bash scripts/ci/deploy-catalog.sh
+        run: |
+          set -euo pipefail
+          if [ -z "${SERVER_PATH:-}" ]; then
+            echo "SERVER_PATH_ARSENAL secret is not configured yet; skipping catalog deploy."
+            exit 0
+          fi
+          bash scripts/ci/deploy-catalog.sh
 
       - name: Cleanup SSH key
         if: always()

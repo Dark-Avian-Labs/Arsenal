@@ -8,6 +8,7 @@
     "server",
     "shared",
     "dist/client",
+    "dist/server",
     "public",
     "assets",
     "ecosystem.config.cjs",
@@ -16,8 +17,16 @@
   "type": "module",
   "exports": {
     "./package.json": "./package.json",
-    "./server": "./server/app.ts",
-    "./db": "./server/db/connection.ts"
+    "./server": {
+      "types": "./server/app.ts",
+      "import": "./dist/server/server/app.js",
+      "default": "./dist/server/server/app.js"
+    },
+    "./db": {
+      "types": "./server/db/connection.ts",
+      "import": "./dist/server/server/db/connection.js",
+      "default": "./dist/server/server/db/connection.js"
+    }
   },
   "scripts": {
     "typecheck": "pnpm run typecheck:server && pnpm run typecheck:client",
@@ -26,7 +35,8 @@
     "dev": "dotenvx run --strict -f .env.development -- node ../../scripts/dev.mjs",
     "dev:server": "node --watch server/index.ts",
     "dev:client": "dotenvx run --strict -f .env.development -- vite",
-    "build": "pnpm run typecheck && vite build",
+    "build:server": "tsc -p tsconfig.server.build.json",
+    "build": "pnpm run typecheck && pnpm run build:server && vite build",
     "start": "node server/index.ts",
     "lint": "oxlint .",
     "lint:fix": "oxlint --fix .",

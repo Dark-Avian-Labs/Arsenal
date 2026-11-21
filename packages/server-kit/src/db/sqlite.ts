@@ -54,11 +54,26 @@ function mapSqliteError(error: unknown): never {
   throw error;
 }
 
-function normalizeRow(row: unknown): unknown {
-  if (row !== null && typeof row === 'object' && Object.getPrototypeOf(row) === null) {
-    return Object.assign({}, row);
+const MAX_SAFE_BIGINT = BigInt(Number.MAX_SAFE_INTEGER);
+const MIN_SAFE_BIGINT = BigInt(Number.MIN_SAFE_INTEGER);
+
+function normalizeBigInt(value: unknown): unknown {
+  if (typeof value === 'bigint' && value <= MAX_SAFE_BIGINT && value >= MIN_SAFE_BIGINT) {
+    return Number(value);
   }
-  return row;
+  return value;
+}
+
+function normalizeRow(row: unknown): unknown {
+  if (row !== null && typeof row === 'object') {
+    const src = row as Record<string, unknown>;
+    const out: Record<string, unknown> = {};
+    for (const key of Object.keys(src)) {
+      out[key] = normalizeBigInt(src[key]);
+    }
+    return out;
+  }
+  return normalizeBigInt(row);
 }
 
 function unwrapParams(params: unknown[]): unknown[] {
@@ -90,7 +105,7 @@ class WrappedStatement implements SqliteStatement {
 
   constructor(stmt: StatementSync) {
     stmt.setAllowBareNamedParameters(true);
-    stmt.setAllowUnknownNamedParameters(true);
+    stmt.setReadBigInts(true);
     this.#stmt = stmt;
   }
 
@@ -122,24 +137,13 @@ class WrappedStatement implements SqliteStatement {
 
   run(...params: unknown[]): SqliteRunResult {
     try {
-      this.#stmt.setReadBigInts(true);
-      let res: ReturnType<StatementSync['run']>;
-      try {
-        res = bindAndCall(
-          params,
-          (named) => this.#stmt.run(named),
-          (...pos) => this.#stmt.run(...pos),
-        );
-      } finally {
-        this.#stmt.setReadBigInts(false);
-      }
+      const res = bindAndCall(
+        params,
+        (named) => this.#stmt.run(named),
+        (...pos) => this.#stmt.run(...pos),
+      );
       const changes = Number(res.changes);
-      const lastInsertRowid =
-        typeof res.lastInsertRowid === 'bigint' &&
-        res.lastInsertRowid <= BigInt(Number.MAX_SAFE_INTEGER) &&
-        res.lastInsertRowid >= BigInt(Number.MIN_SAFE_INTEGER)
-          ? Number(res.lastInsertRowid)
-          : res.lastInsertRowid;
+      const lastInsertRowid = normalizeBigInt(res.lastInsertRowid) as number | bigint;
       return { changes, lastInsertRowid };
     } catch (error) {
       mapSqliteError(error);

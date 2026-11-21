@@ -228,7 +228,11 @@ if (!BEFORE || /^0+$/.test(BEFORE) || git(['cat-file', '-e', `${BEFORE}^{commit}
   process.exit(0);
 }
 
-const files = (git(['diff', '--name-only', BEFORE, AFTER]) ?? '').split('\n').filter(Boolean);
+const diffArgs =
+  git(['merge-base', BEFORE, AFTER]) !== null
+    ? ['diff', '--name-only', `${BEFORE}...${AFTER}`]
+    : ['diff', '--name-only', BEFORE, AFTER];
+const files = (git(diffArgs) ?? '').split('\n').filter(Boolean);
 console.log(`Changed files:\n${files.join('\n')}`);
 
 const { affected, deploy, global, globalHits } = classifyChanges(files);

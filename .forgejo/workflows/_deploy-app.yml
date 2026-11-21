@@ -55,11 +55,18 @@ jobs:
           rm -rf /tmp/deploy
           pnpm --filter "$APP" deploy --prod /tmp/deploy
           printf '{"version":"%s","sha":"%s","builtAt":"%s"}\n' "$VERSION" "$SHA" "$(date -u +%FT%TZ)" > /tmp/deploy/release.json
-          test -f /tmp/deploy/.env.production || cp "apps/$APP/.env.production" /tmp/deploy/.env.production
+          if [ ! -f /tmp/deploy/.env.production ]; then
+            if [ ! -f "apps/$APP/.env.production" ]; then
+              echo "ERROR: apps/$APP/.env.production is missing. Create and encrypt it with dotenvx before deploying $APP."
+              exit 1
+            fi
+            cp "apps/$APP/.env.production" /tmp/deploy/.env.production
+          fi
           test -f /tmp/deploy/ecosystem.config.cjs
           if [ "$APP" = "arsenal" ]; then
             for sub in codex armory outfitter budget-planner; do
               test -f "/tmp/deploy/node_modules/$sub/dist/client/index.html"
+              test -f "/tmp/deploy/node_modules/$sub/dist/server/server/app.js"
             done
           else
             test -f /tmp/deploy/dist/client/index.html

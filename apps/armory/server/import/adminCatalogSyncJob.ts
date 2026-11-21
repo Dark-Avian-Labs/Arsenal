@@ -8,7 +8,12 @@ import { bustCatalogResponseCache } from '../cache/catalogResponseCache.ts';
 import { bustModListCache } from '../cache/modListCache.ts';
 import type { CatalogSyncSummary } from './codexCatalog.ts';
 
-const RUN_CATALOG_SYNC_PATH = fileURLToPath(new URL('./runCatalogSync.ts', import.meta.url));
+const RUN_CATALOG_SYNC_PATH = fileURLToPath(
+  new URL(
+    import.meta.url.endsWith('.js') ? './runCatalogSync.js' : './runCatalogSync.ts',
+    import.meta.url,
+  ),
+);
 
 export interface SyncLogLine {
   ts: string;

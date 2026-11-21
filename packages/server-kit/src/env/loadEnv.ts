@@ -9,9 +9,18 @@ import { normalizeClerkEnv } from './clerkEnv.ts';
 const { config: loadEnvFile } = dotenvx;
 
 export function resolveProjectRoot(importMetaUrl: string): string {
-  const dir = path.dirname(fileURLToPath(importMetaUrl));
-  const parentName = path.basename(path.resolve(dir, '..'));
-  return path.resolve(dir, parentName === 'dist' ? '../..' : '..');
+  const startDir = path.dirname(fileURLToPath(importMetaUrl));
+  let dir = startDir;
+  for (let depth = 0; depth < 6; depth += 1) {
+    if (fs.existsSync(path.join(dir, 'package.json'))) {
+      return dir;
+    }
+    const parent = path.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  const parentName = path.basename(path.resolve(startDir, '..'));
+  return path.resolve(startDir, parentName === 'dist' ? '../..' : '..');
 }
 
 function resolveEnvFilePath(projectRoot: string): string | null {
@@ -133,13 +142,14 @@ export interface ServerEnv {
 
 export function readServerEnv(options: ServerEnvOptions): ServerEnv {
   const nodeEnv = process.env.NODE_ENV?.trim() || 'development';
+  const unifiedHost = process.env.ARSENAL_UNIFIED_HOST === '1';
   return {
     PORT: parseIntEnv(process.env.PORT, options.port),
     SHUTDOWN_TIMEOUT_MS: parseIntEnv(process.env.SHUTDOWN_TIMEOUT_MS, 10_000),
     HOST: process.env.HOST?.trim() || '127.0.0.1',
     NODE_ENV: nodeEnv,
-    APP_NAME: process.env.APP_NAME?.trim() || options.appName,
-    APP_ID: process.env.APP_ID?.trim() || options.appId,
+    APP_NAME: unifiedHost ? options.appName : process.env.APP_NAME?.trim() || options.appName,
+    APP_ID: unifiedHost ? options.appId : process.env.APP_ID?.trim() || options.appId,
     TRUST_PROXY: parseBooleanEnv(process.env.TRUST_PROXY) ?? false,
     SECURE_COOKIES: parseBooleanEnv(process.env.SECURE_COOKIES) ?? nodeEnv === 'production',
     APP_PUBLIC_BASE_URL: process.env.APP_PUBLIC_BASE_URL?.trim() || '',

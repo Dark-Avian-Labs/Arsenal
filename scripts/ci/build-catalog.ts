@@ -13,11 +13,13 @@ type TargetGame = 'all' | 'warframe' | 'wor';
 function parseArgs(argv: string[]): {
   game: TargetGame;
   outDir: string;
+  workDir: string | null;
   force: boolean;
   forceImages: boolean;
 } {
   let game: TargetGame = 'all';
   let outDir = path.join(REPO_ROOT, '.catalog-stage');
+  let workDir: string | null = null;
   let force = false;
   let forceImages = false;
 
@@ -31,13 +33,15 @@ function parseArgs(argv: string[]): {
       }
     } else if (arg.startsWith('--out=')) {
       outDir = path.resolve(arg.slice('--out='.length));
+    } else if (arg.startsWith('--work-dir=')) {
+      workDir = path.resolve(arg.slice('--work-dir='.length));
     } else if (arg === '--force') {
       force = true;
     } else if (arg === '--force-images') {
       forceImages = true;
     }
   }
-  return { game, outDir, force, forceImages };
+  return { game, outDir, workDir, force, forceImages };
 }
 
 function vacuumCopy(sourceDbPath: string, destDbPath: string): void {
@@ -55,6 +59,30 @@ function vacuumCopy(sourceDbPath: string, destDbPath: string): void {
 function sha256File(filePath: string): string {
   const hash = createHash('sha256');
   hash.update(fs.readFileSync(filePath));
+  return hash.digest('hex');
+}
+
+function computeTableContentHash(dbPath: string, tables: readonly string[]): string {
+  const hash = createHash('sha256');
+  const db = new SqliteDatabase(dbPath, { readonly: true, fileMustExist: true });
+  try {
+    for (const table of tables) {
+      const exists = db
+        .prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?")
+        .get(table);
+      if (!exists) continue;
+      const cols = (db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>).map(
+        (c) => c.name,
+      );
+      const orderBy = cols[0] ? `ORDER BY ${cols[0]}` : '';
+      const rows = db.prepare(`SELECT * FROM ${table} ${orderBy}`).all();
+      hash.update(`${table}\n`);
+      hash.update(JSON.stringify(rows));
+      hash.update('\n');
+    }
+  } finally {
+    db.close();
+  }
   return hash.digest('hex');
 }
 
@@ -79,14 +107,30 @@ function copyTreeIfPresent(fromDir: string, toDir: string): number {
 }
 
 async function main(): Promise<void> {
-  const { game, outDir, force, forceImages } = parseArgs(process.argv.slice(2));
-  const workDir = path.join(outDir, '_work');
+  const {
+    game,
+    outDir,
+    workDir: explicitWorkDir,
+    force,
+    forceImages,
+  } = parseArgs(process.argv.slice(2));
+  const persistentWorkDir = explicitWorkDir !== null;
+  const workDir = explicitWorkDir ?? path.join(outDir, '_work');
   const stageDir = path.join(outDir, 'payload');
-  fs.rmSync(outDir, { recursive: true, force: true });
+
+  // Always start with a clean payload directory, but preserve persistent --work-dir across runs
+  // so unchanged exports/images are skipped unless --force / --force-images is passed.
+  fs.rmSync(stageDir, { recursive: true, force: true });
+  if (!persistentWorkDir) {
+    fs.rmSync(workDir, { recursive: true, force: true });
+  }
   fs.mkdirSync(workDir, { recursive: true });
   fs.mkdirSync(stageDir, { recursive: true });
 
-  // Point Codex config paths at an isolated staging workspace inside DATA_DIR so we never touch developer data/.
+  // Skip dotenvx decryption in CI (no production secrets needed for public catalog scraping)
+  // and isolate all Codex paths inside workDir so DATA_DIR containment validation holds.
+  process.env.ARSENAL_SKIP_LOAD_ENV = '1';
+  process.env.BASE_DOMAIN = process.env.BASE_DOMAIN?.trim() || 'darkavianlabs.com';
   process.env.DATA_DIR = workDir;
   process.env.WARFRAME_DB_PATH = path.join(workDir, 'warframe.db');
   process.env.WARFRAME_CATALOG_DB_PATH = path.join(workDir, 'warframe-catalog.db');
@@ -105,7 +149,7 @@ async function main(): Promise<void> {
     builtAt: string;
     sha: string;
     games: string[];
-    databases: Record<string, { sizeBytes: number; sha256: string }>;
+    databases: Record<string, { sizeBytes: number; sha256: string; contentHash: string }>;
     images: Record<string, number>;
   } = {
     builtAt: new Date().toISOString(),
@@ -134,10 +178,24 @@ async function main(): Promise<void> {
     }
     const dest = path.join(stageDir, 'warframe-catalog.db');
     vacuumCopy(process.env.WARFRAME_CATALOG_DB_PATH, dest);
+    const contentHash = computeTableContentHash(dest, [
+      'warframes',
+      'weapons',
+      'companions',
+      'mods',
+      'mod_sets',
+      'arcanes',
+      'abilities',
+      'archon_shard_types',
+      'archon_shard_buffs',
+      'warframe_market_links',
+      'codex_modular_weapons',
+    ]);
     manifest.games.push('warframe');
     manifest.databases['warframe-catalog.db'] = {
       sizeBytes: fs.statSync(dest).size,
       sha256: sha256File(dest),
+      contentHash,
     };
     manifest.images.warframe = copyTreeIfPresent(
       process.env.WARFRAME_IMAGES_DIR,
@@ -160,23 +218,43 @@ async function main(): Promise<void> {
     });
     closeWorCatalogDb();
     closeWorDb();
-    // Stamp a monotonically increasing Unix-epoch catalog_version so production collection DBs
-    // always detect a newly built snapshot (fresh builds would otherwise always emit version 1).
-    const snapshotVersion = Math.floor(Date.now() / 1000);
-    const worMetaDb = new SqliteDatabase(process.env.WOR_CATALOG_DB_PATH, { fileMustExist: true });
-    try {
-      worMetaDb
-        .prepare('UPDATE catalog_meta SET catalog_version = MAX(catalog_version, ?) WHERE id = 1')
-        .run(snapshotVersion);
-    } finally {
-      worMetaDb.close();
+
+    const worHashFile = path.join(workDir, '.wor-content.sha256');
+    const previousWorHash = fs.existsSync(worHashFile)
+      ? fs.readFileSync(worHashFile, 'utf8').trim()
+      : '';
+    const contentHash = computeTableContentHash(process.env.WOR_CATALOG_DB_PATH, [
+      'catalog_heroes',
+      'catalog_artifacts',
+      'catalog_demons',
+    ]);
+
+    // Only advance catalog_version when WoR catalog content actually changed (or --force was set),
+    // preventing daily no-op swaps and restarts when upstream data is unchanged.
+    if (force || contentHash !== previousWorHash) {
+      const snapshotVersion = Math.floor(Date.now() / 1000);
+      const worMetaDb = new SqliteDatabase(process.env.WOR_CATALOG_DB_PATH, {
+        fileMustExist: true,
+      });
+      try {
+        worMetaDb
+          .prepare(
+            'UPDATE catalog_meta SET catalog_version = MAX(catalog_version + 1, ?) WHERE id = 1',
+          )
+          .run(snapshotVersion);
+      } finally {
+        worMetaDb.close();
+      }
+      fs.writeFileSync(worHashFile, `${contentHash}\n`, 'utf8');
     }
+
     const dest = path.join(stageDir, 'wor-catalog.db');
     vacuumCopy(process.env.WOR_CATALOG_DB_PATH, dest);
     manifest.games.push('wor');
     manifest.databases['wor-catalog.db'] = {
       sizeBytes: fs.statSync(dest).size,
       sha256: sha256File(dest),
+      contentHash,
     };
     manifest.images.wor = copyTreeIfPresent(
       process.env.WOR_IMAGES_DIR,
@@ -192,7 +270,9 @@ async function main(): Promise<void> {
     `${JSON.stringify(manifest, null, 2)}\n`,
     'utf8',
   );
-  fs.rmSync(workDir, { recursive: true, force: true });
+  if (!persistentWorkDir) {
+    fs.rmSync(workDir, { recursive: true, force: true });
+  }
   console.log(`[catalog-builder] Staged catalog payload at ${stageDir}`);
 }
 

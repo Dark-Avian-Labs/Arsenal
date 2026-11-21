@@ -41,6 +41,10 @@ jobs:
       - name: Build packages and apps
         run: pnpm --filter "@dark-avian-labs/*" --filter "./apps/*" run --if-present build
 
+      - name: Smoke-test deployed Arsenal host bundle
+        if: steps.changes.outputs.arsenal == 'true'
+        run: node scripts/ci/smoke-arsenal-deploy.mjs
+
       - name: Playwright browser and OS deps
         if: >-
           steps.changes.outputs.armory == 'true' ||

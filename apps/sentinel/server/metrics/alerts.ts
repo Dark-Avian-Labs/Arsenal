@@ -28,6 +28,7 @@ async function postDiscordAlert(title: string, detail: string): Promise<void> {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
         content: `**[Sentinel] ${title}**\n${detail}`,
+        allowed_mentions: { parse: [] },
       }),
       signal: AbortSignal.timeout(4000),
     });

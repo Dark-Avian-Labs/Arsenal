@@ -8,9 +8,12 @@ export type SentinelAgentOptions = {
   ingestUrl: string;
   token: string;
   flushIntervalMs?: number;
+  resolveRequestApp?: (req: Request) => { appId: string; displayName: string };
 };
 
 type HttpBucket = {
+  appId: string;
+  displayName: string;
   method: string;
   routePattern: string;
   statusClass: string;
@@ -150,8 +153,8 @@ export function createSentinelAgent(options: SentinelAgentOptions): {
         const sorted = [...bucket.latencies].sort((a, b) => a - b);
         httpSamples.push({
           kind: 'http',
-          appId: options.appId,
-          displayName: options.displayName ?? options.appId,
+          appId: bucket.appId,
+          displayName: bucket.displayName,
           ts: now,
           method: bucket.method,
           routePattern: bucket.routePattern,
@@ -207,10 +210,13 @@ export function createSentinelAgent(options: SentinelAgentOptions): {
     const started = process.hrtime.bigint();
     res.on('finish', () => {
       const elapsedMs = Number(process.hrtime.bigint() - started) / 1e6;
+      const resolvedApp = options.resolveRequestApp?.(req);
+      const appId = resolvedApp?.appId ?? options.appId;
+      const displayName = resolvedApp?.displayName ?? options.displayName ?? options.appId;
       const method = req.method.toUpperCase();
       const routePattern = routePatternFrom(req);
       const cls = statusClass(res.statusCode);
-      const key = `${method}\0${routePattern}\0${cls}`;
+      const key = `${appId}\0${method}\0${routePattern}\0${cls}`;
       const existing = httpBuckets.get(key);
       if (existing) {
         existing.count += 1;
@@ -223,6 +229,8 @@ export function createSentinelAgent(options: SentinelAgentOptions): {
         }
       } else {
         httpBuckets.set(key, {
+          appId,
+          displayName,
           method,
           routePattern,
           statusClass: cls,

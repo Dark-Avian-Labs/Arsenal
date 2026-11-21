@@ -41,7 +41,12 @@ export function createApp(options: CreateAppOptions = {}): AppBundle {
     legalPageUrl: LEGAL_PAGE_URL,
     jsonLimit: '2mb',
     metricsMiddleware: options.metricsMiddleware,
-    helmet: options.helmet,
+    helmet: {
+      ...options.helmet,
+      extraScriptSrc: [
+        ...new Set(["'wasm-unsafe-eval'", ...(options.helmet?.extraScriptSrc ?? [])]),
+      ],
+    },
     readiness: () => {
       getAppDb().prepare('SELECT 1').get();
       return true;

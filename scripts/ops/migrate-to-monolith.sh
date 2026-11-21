@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Interactive VPS cutover script: consolidates Codex, Armory, Outfitter, and BudgetPlanner
 # into the unified Arsenal PM2 service on port 3000 (leaving Sentinel standalone on port 3005).
+#
+# Run as a user with write access to ARSENAL_ROOT and BACKUP_DIR (e.g. deploy or root).
 set -euo pipefail
 
 ARSENAL_ROOT="${ARSENAL_ROOT:-/var/www/arsenal}"
@@ -8,20 +10,37 @@ CODEX_ROOT="${CODEX_ROOT:-/var/www/codex}"
 ARMORY_ROOT="${ARMORY_ROOT:-/var/www/armory}"
 OUTFITTER_ROOT="${OUTFITTER_ROOT:-/var/www/outfitter}"
 BUDGET_ROOT="${BUDGET_ROOT:-/var/www/budget-planner}"
-BACKUP_DIR="/var/backups/arsenal-migration-$(date -u +%Y%m%d-%H%M%S)"
+BACKUP_DIR="${BACKUP_DIR:-${HOME}/backups/arsenal-migration-$(date -u +%Y%m%d-%H%M%S)}"
+PM2_WRAPPER="${PM2_WRAPPER:-/home/pm2-user/bin/pm2-wrapper}"
 
 echo "=== Arsenal Monolith Cutover ==="
 echo "Target unified root : $ARSENAL_ROOT"
+echo "Legacy roots        : $CODEX_ROOT, $ARMORY_ROOT, $OUTFITTER_ROOT, $BUDGET_ROOT"
 echo "Backup destination  : $BACKUP_DIR"
 echo ""
 read -r -p "Proceed with stopping legacy services, backup, and data consolidation? [y/N] " reply
 [[ "$reply" =~ ^[Yy]$ ]] || { echo "Aborted."; exit 0; }
 
+# Verify target directories are writable BEFORE stopping any running services.
 mkdir -p "$BACKUP_DIR" "$ARSENAL_ROOT/data/images/warframe" "$ARSENAL_ROOT/data/images/wor"
 
+STOPPED_LEGACY=false
+rollback_legacy() {
+  local exit_code=$?
+  if [ "$STOPPED_LEGACY" = true ] && [ "$exit_code" -ne 0 ]; then
+    echo ""
+    echo "ERROR: Cutover failed (exit $exit_code). Restarting legacy PM2 processes so services stay up..."
+    for proc in Codex Armory Outfitter BudgetPlanner; do
+      sudo -n -u pm2-user "$PM2_WRAPPER" restart "$proc" 2>/dev/null || true
+    done
+  fi
+}
+trap rollback_legacy EXIT
+
 echo "==> 1/5 Stopping legacy PM2 processes first so SQLite files are quiescent (Sentinel stays running)"
+STOPPED_LEGACY=true
 for proc in Codex Armory Outfitter BudgetPlanner; do
-  sudo -n -u pm2-user /home/pm2-user/bin/pm2-wrapper stop "$proc" 2>/dev/null || true
+  sudo -n -u pm2-user "$PM2_WRAPPER" stop "$proc" 2>/dev/null || true
 done
 
 for port in 3001 3002 3003 3004; do
@@ -78,6 +97,7 @@ copy_db "$CODEX_ROOT/data/warframe-catalog.db" "$ARSENAL_ROOT/data/warframe-cata
 copy_db "$CODEX_ROOT/data/epic7.db" "$ARSENAL_ROOT/data/epic7.db"
 copy_db "$CODEX_ROOT/data/wor.db" "$ARSENAL_ROOT/data/wor.db"
 copy_db "$CODEX_ROOT/data/wor-catalog.db" "$ARSENAL_ROOT/data/wor-catalog.db"
+copy_db "$ARMORY_ROOT/data/armory.db" "$ARSENAL_ROOT/data/armory.db"
 copy_db "$ARMORY_ROOT/data/builds.db" "$ARSENAL_ROOT/data/builds.db"
 copy_db "$OUTFITTER_ROOT/data/outfitter.db" "$ARSENAL_ROOT/data/outfitter.db"
 copy_db "$BUDGET_ROOT/data/app.db" "$ARSENAL_ROOT/data/budget.db"
@@ -93,6 +113,32 @@ if [ -d "$CODEX_ROOT/data/wor-images" ]; then
 elif [ -d "$OUTFITTER_ROOT/data/hero-images" ]; then
   cp -a "$OUTFITTER_ROOT/data/hero-images/." "$ARSENAL_ROOT/data/images/wor/"
 fi
+
+# Start Arsenal immediately if a release is already deployed at $ARSENAL_ROOT/current.
+if [ -f "$ARSENAL_ROOT/current/ecosystem.config.cjs" ]; then
+  echo "==> Starting unified Arsenal PM2 process from $ARSENAL_ROOT/current/ecosystem.config.cjs"
+  sudo -n -u pm2-user "$PM2_WRAPPER" start "$ARSENAL_ROOT/current/ecosystem.config.cjs"
+  sudo -n -u pm2-user "$PM2_WRAPPER" save || true
+  ok=false
+  for _ in $(seq 1 30); do
+    if curl -fsS --max-time 3 -o /dev/null "http://127.0.0.1:3000/readyz" 2>/dev/null; then
+      ok=true
+      break
+    fi
+    sleep 2
+  done
+  if [ "$ok" != true ]; then
+    echo "ERROR: Arsenal did not pass /readyz on port 3000; rolling back to legacy PM2 apps."
+    sudo -n -u pm2-user "$PM2_WRAPPER" stop Arsenal 2>/dev/null || true
+    exit 1
+  fi
+  echo "    Arsenal is online and passing /readyz on 127.0.0.1:3000"
+else
+  echo "==> NOTE: $ARSENAL_ROOT/current/ecosystem.config.cjs not found yet."
+  echo "    Deploy Arsenal first (Forgejo deploy.yml), or legacy apps will remain stopped until you start Arsenal."
+fi
+
+STOPPED_LEGACY=false
 
 echo "==> 4/5 Update Caddyfile to route all 4 subdomains to 127.0.0.1:3000"
 cat <<'CADDY'
@@ -112,7 +158,7 @@ cat <<'CADDY'
 CADDY
 
 echo "==> 5/5 Next steps:"
-echo "  1. Place unified .env.production and .env.keys in $ARSENAL_ROOT"
-echo "  2. Update Caddyfile as shown above and run: sudo systemctl reload caddy"
-echo "  3. Deploy Arsenal via Forgejo Actions (deploy.yml) and verify http://127.0.0.1:3000/readyz"
+echo "  1. Ensure encrypted apps/arsenal/.env.production is committed and Forgejo secrets SERVER_PATH_ARSENAL + DOTENV_PRIVATE_KEY_PRODUCTION_ARSENAL are set"
+echo "  2. If Arsenal was not already started above, trigger deploy.yml (or run: sudo -u pm2-user $PM2_WRAPPER start $ARSENAL_ROOT/current/ecosystem.config.cjs && sudo -u pm2-user $PM2_WRAPPER save)"
+echo "  3. Update Caddyfile as shown above and run: sudo systemctl reload caddy"
 echo "  4. Once verified, delete the stopped legacy PM2 entries: pm2 delete Codex Armory Outfitter BudgetPlanner && pm2 save"

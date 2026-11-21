@@ -21,9 +21,15 @@ export function processExportsIsolated(skipPreserve: boolean): Promise<IsolatedE
   // each export if one file no longer fits in the worker.
   closeCatalogDb();
   return new Promise((resolve, reject) => {
-    const worker = new Worker(new URL('./processExportsWorker.ts', import.meta.url), {
-      workerData: { skipPreserve },
-    });
+    const worker = new Worker(
+      new URL(
+        import.meta.url.endsWith('.js') ? './processExportsWorker.js' : './processExportsWorker.ts',
+        import.meta.url,
+      ),
+      {
+        workerData: { skipPreserve },
+      },
+    );
     let settled = false;
     const fail = (error: Error) => {
       if (settled) return;
