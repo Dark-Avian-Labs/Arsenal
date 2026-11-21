@@ -1,4 +1,5 @@
-import Database from 'better-sqlite3';
+import { createDbSingleton } from '@dark-avian-labs/server-kit';
+import type Database from 'better-sqlite3';
 
 import { APP_DB_PATH } from '../config.ts';
 
@@ -168,22 +169,8 @@ function repairDuplicateActiveAccounts(db: Database.Database): void {
   transaction();
 }
 
-let appDb: Database.Database | null = null;
+const { getDb: getAppDb, closeDb: closeAppDb } = createDbSingleton(APP_DB_PATH, {
+  onOpen: (db) => createAppSchema(db),
+});
 
-export function getAppDb(): Database.Database {
-  if (!appDb) {
-    appDb = new Database(APP_DB_PATH);
-    appDb.pragma('journal_mode = WAL');
-    appDb.pragma('foreign_keys = ON');
-    appDb.pragma('busy_timeout = 5000');
-    createAppSchema(appDb);
-  }
-  return appDb;
-}
-
-export function closeAppDb(): void {
-  if (appDb) {
-    appDb.close();
-    appDb = null;
-  }
-}
+export { getAppDb, closeAppDb };

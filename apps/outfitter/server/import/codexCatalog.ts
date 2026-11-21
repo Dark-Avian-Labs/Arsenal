@@ -55,8 +55,15 @@ function relativeFromWorPath(portraitPath: string | null): string | null {
   return relative;
 }
 
-function copyIfExists(fromPath: string, toPath: string): boolean {
+function copyIfChanged(fromPath: string, toPath: string): boolean {
   if (!fs.existsSync(fromPath)) return false;
+  const fromStat = fs.statSync(fromPath);
+  if (fs.existsSync(toPath)) {
+    const toStat = fs.statSync(toPath);
+    if (toStat.size === fromStat.size && toStat.mtimeMs >= fromStat.mtimeMs) {
+      return false;
+    }
+  }
   fs.mkdirSync(path.dirname(toPath), { recursive: true });
   fs.copyFileSync(fromPath, toPath);
   return true;
@@ -230,17 +237,47 @@ export function importCodexCatalog(): CatalogImportSummary {
 
   let portraitsCopied = 0;
   let missingStats = 0;
-  const transaction = db.transaction(() => {
-    for (const hero of heroes) {
-      const relative = relativeFromWorPath(hero.portrait_path);
-      if (relative) {
-        const copied = copyIfExists(
+
+  // Copy changed portrait files outside the SQLite write transaction so we never hold a DB lock across disk I/O.
+  const heroPortraits = new Map<string, string | null>();
+  for (const hero of heroes) {
+    const relative = relativeFromWorPath(hero.portrait_path);
+    if (relative) {
+      if (
+        copyIfChanged(
           path.join(CODEX_WOR_IMAGES_DIR, relative),
           path.join(HERO_IMAGES_DIR, relative),
-        );
-        if (copied) portraitsCopied += 1;
+        )
+      ) {
+        portraitsCopied += 1;
       }
-      if (hero.base_hp == null || hero.base_atk == null) missingStats += 1;
+      heroPortraits.set(hero.slug, `/hero-images/${relative.replace(/\\/g, '/')}`);
+    } else {
+      heroPortraits.set(hero.slug, null);
+    }
+    if (hero.base_hp == null || hero.base_atk == null) missingStats += 1;
+  }
+
+  const artifactPortraits = new Map<string, string | null>();
+  for (const artifact of artifacts) {
+    const relative = relativeFromWorPath(artifact.portrait_path);
+    if (relative) {
+      if (
+        copyIfChanged(
+          path.join(CODEX_WOR_IMAGES_DIR, relative),
+          path.join(HERO_IMAGES_DIR, relative),
+        )
+      ) {
+        portraitsCopied += 1;
+      }
+      artifactPortraits.set(artifact.slug, `/hero-images/${relative.replace(/\\/g, '/')}`);
+    } else {
+      artifactPortraits.set(artifact.slug, null);
+    }
+  }
+
+  const transaction = db.transaction(() => {
+    for (const hero of heroes) {
       upsert.run({
         slug: hero.slug,
         name: hero.name,
@@ -250,7 +287,7 @@ export function importCodexCatalog(): CatalogImportSummary {
         rarity: hero.rarity,
         star_rating: hero.star_rating,
         is_lord: hero.is_lord,
-        portrait_path: relative ? `/hero-images/${relative.replace(/\\/g, '/')}` : null,
+        portrait_path: heroPortraits.get(hero.slug) ?? null,
         base_hp: hero.base_hp ?? 0,
         base_atk: hero.base_atk ?? 0,
         base_def: hero.base_def ?? 0,
@@ -263,14 +300,6 @@ export function importCodexCatalog(): CatalogImportSummary {
       });
     }
     for (const artifact of artifacts) {
-      const relative = relativeFromWorPath(artifact.portrait_path);
-      if (relative) {
-        const copied = copyIfExists(
-          path.join(CODEX_WOR_IMAGES_DIR, relative),
-          path.join(HERO_IMAGES_DIR, relative),
-        );
-        if (copied) portraitsCopied += 1;
-      }
       upsertArtifact.run({
         slug: artifact.slug,
         name: artifact.name,
@@ -279,7 +308,7 @@ export function importCodexCatalog(): CatalogImportSummary {
         star_rating: artifact.star_rating,
         exclusive_hero_slug: artifact.exclusive_hero_slug,
         is_universal: artifact.is_universal,
-        portrait_path: relative ? `/hero-images/${relative.replace(/\\/g, '/')}` : null,
+        portrait_path: artifactPortraits.get(artifact.slug) ?? null,
         display_order: artifact.display_order,
         active: artifact.active ?? 1,
       });

@@ -279,4 +279,83 @@ describe('optimizeLoadouts', () => {
     ).rejects.toThrow();
     expect(lastDone).toBeLessThan(8 ** 5);
   });
+
+  it('matches exhaustive brute-force across mixed sets, substats, and minimums', () => {
+    const sets = ['calamity', 'warlord', 'soulboundArcana', 'infernalRoar', 'wisdom', 'whirlwind'];
+    const pieces: GearPieceInput[] = [];
+    let id = 1;
+    let seed = 1337;
+    const nextRand = () => {
+      seed = (seed * 1664525 + 1013904223) >>> 0;
+      return seed / 0x100000000;
+    };
+    for (const slot of GEAR_SLOTS) {
+      for (let i = 0; i < 4; i += 1) {
+        const setKey = sets[Math.floor(nextRand() * sets.length)] ?? 'calamity';
+        pieces.push({
+          id: id++,
+          slot,
+          setKey,
+          mainStat: slot === 'weapon' ? 'atk' : slot === 'armor' ? 'hp' : i % 2 === 0 ? 'atkBonus' : 'critDmg',
+          mainValue: slot === 'weapon' ? 350 + i * 25 : slot === 'armor' ? 1800 + i * 100 : 30 + i * 5,
+          mainBonus: i % 3 === 0 ? 5 : 0,
+          substats: [
+            { stat: 'critRate', value: Math.round(nextRand() * 25) },
+            { stat: 'critDmg', value: Math.round(nextRand() * 30) },
+            { stat: 'atkBonus', value: Math.round(nextRand() * 20) },
+            { stat: 'atkSpd', value: Math.round(nextRand() * 45) },
+          ],
+          equippedHeroSlug: null,
+        });
+      }
+    }
+
+    const weights = {
+      atk: 10,
+      critRate: 8,
+      critDmg: 7,
+      atkSpd: 6,
+      damageOnUlt: 9,
+      basicAtkDamage: 5,
+    };
+    const minimums = { critRate: 40 };
+
+    const actual = optimizeLoadouts({
+      hero,
+      pieces,
+      weights,
+      minimums,
+      forceSets: false,
+    });
+
+    // Reference brute-force: score every 5-piece combination individually (no pruning possible).
+    const bySlot = Object.fromEntries(
+      GEAR_SLOTS.map((slot) => [slot, pieces.filter((p) => p.slot === slot)]),
+    ) as Record<(typeof GEAR_SLOTS)[number], GearPieceInput[]>;
+    const brute: number[] = [];
+    for (const w of bySlot.weapon) {
+      for (const a of bySlot.armor) {
+        for (const b of bySlot.bangle) {
+          for (const m of bySlot.amulet) {
+            for (const r of bySlot.ring) {
+              const single = optimizeLoadouts({
+                hero,
+                pieces: [w, a, b, m, r],
+                weights,
+                minimums,
+                forceSets: false,
+              });
+              if (single[0]) brute.push(single[0].score);
+            }
+          }
+        }
+      }
+    }
+    brute.sort((x, y) => y - x);
+    expect(brute.length).toBeGreaterThanOrEqual(3);
+    expect(actual).toHaveLength(3);
+    expect(actual[0]?.score).toBeCloseTo(brute[0] ?? 0, 5);
+    expect(actual[1]?.score).toBeCloseTo(brute[1] ?? 0, 5);
+    expect(actual[2]?.score).toBeCloseTo(brute[2] ?? 0, 5);
+  });
 });
