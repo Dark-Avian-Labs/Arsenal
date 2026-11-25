@@ -23,9 +23,9 @@ update:
 
 catalog:
   '@clerk/express': ^2.1.96
-  '@clerk/react': ^6.19.4
-  '@clerk/testing': ^2.3.6
-  '@clerk/ui': ^1.44.3
+  '@clerk/react': ^6.19.5
+  '@clerk/testing': ^2.3.7
+  '@clerk/ui': ^1.44.4
   '@dotenvx/dotenvx': ^2.38.2
   '@fontsource-variable/cascadia-mono': ^5.3.0
   '@fontsource-variable/geist': ^5.3.0
@@ -41,8 +41,8 @@ catalog:
   express: ^5.3.0
   express-rate-limit: ^8.7.5
   helmet: ^8.3.0
-  oxfmt: ^0.79.0
-  oxlint: ^1.94.0
+  oxfmt: ^0.80.0
+  oxlint: ^1.95.0
   react: ^19.3.1
   react-dom: ^19.3.1
   react-router: ^8.5.2
