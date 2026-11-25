@@ -80,7 +80,7 @@
     "@types/supertest": "^7.2.1",
     "@vitejs/plugin-react": "catalog:",
     "@vitest/coverage-v8": "catalog:",
-    "i18next": "^27.2.4",
+    "i18next": "^27.2.6",
     "oxfmt": "catalog:",
     "oxlint": "catalog:",
     "react": "catalog:",
