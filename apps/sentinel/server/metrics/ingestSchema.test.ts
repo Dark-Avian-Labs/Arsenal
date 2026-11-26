@@ -72,7 +72,17 @@ describe('parseIngestBody', () => {
     ]);
   });
 
-  it('rejects text fields over 128 characters', () => {
+  it('rejects text fields over 128 characters, empty/oversized sample arrays, and case-variant PII keys', () => {
     expect(parseIngestBody({ samples: [{ kind: 'process', appId: 'codex', status: 'x'.repeat(129) }] }).ok).toBe(false);
+    expect(parseIngestBody({ samples: [] }).ok).toBe(false);
+    expect(
+      parseIngestBody({
+        samples: Array.from({ length: 201 }, () => ({ kind: 'process', appId: 'codex', cpu: 1 })),
+      }).ok,
+    ).toBe(false);
+    expect(parseIngestBody({ samples: [{ kind: 'process', appId: 'codex', Email: 'a@b.c' }] }).ok).toBe(false);
+    expect(parseIngestBody({ samples: [{ kind: 'process', appId: 'codex', authorization: 'Bearer x' }] }).ok).toBe(
+      false,
+    );
   });
 });

@@ -143,13 +143,14 @@ describe('optimizeLoadouts', () => {
     expect(results).toEqual([]);
   });
 
-  it('keeps a high-HP armor that an ATK-only beam would drop when combos exceed 2M', () => {
+  it('keeps a high-HP armor that an ATK-only beam would drop when combos exceed 20M', () => {
     const pieces: GearPieceInput[] = [];
     let id = 1;
     let hpArmorId = 0;
+    // 30^5 = 24.3M > FULL_ENUM_LIMIT (20M), so beam pruning actually runs.
     for (const slot of GEAR_SLOTS) {
-      for (let index = 0; index < 20; index += 1) {
-        const isHpArmor = slot === 'armor' && index === 19;
+      for (let index = 0; index < 30; index += 1) {
+        const isHpArmor = slot === 'armor' && index === 29;
         if (isHpArmor) hpArmorId = id;
         pieces.push(
           piece(id, slot, slot === 'weapon' || slot === 'armor' ? 'calamity' : 'fatality', {
@@ -171,7 +172,7 @@ describe('optimizeLoadouts', () => {
     expect(results.length).toBeGreaterThan(0);
     expect(results[0]?.stats.hp).toBeGreaterThanOrEqual(13000);
     expect(results[0]?.pieces.find((entry) => entry.slot === 'armor')?.id).toBe(hpArmorId);
-  }, 60_000);
+  });
 
   it('does not rank extra crit above 100% over ATK when both loadouts already cap', () => {
     const request: OptimizerRequest = {
@@ -280,8 +281,9 @@ describe('optimizeLoadouts', () => {
     expect(lastDone).toBeLessThan(8 ** 5);
   });
 
-  it('matches exhaustive brute-force across mixed sets, substats, and minimums', () => {
-    const sets = ['calamity', 'warlord', 'soulboundArcana', 'infernalRoar', 'wisdom', 'whirlwind'];
+  it('matches exhaustive brute-force and async results across real sets, glacier, and minimums', async () => {
+    const leftSets = ['calamity', 'warlord', 'whirlwind'];
+    const rightSets = ['soulbound_arcana', 'infernal_roar', 'the_wisdom', 'the_glacier'];
     const pieces: GearPieceInput[] = [];
     let id = 1;
     let seed = 1337;
@@ -290,8 +292,9 @@ describe('optimizeLoadouts', () => {
       return seed / 0x100000000;
     };
     for (const slot of GEAR_SLOTS) {
+      const pool = slot === 'weapon' || slot === 'armor' ? leftSets : rightSets;
       for (let i = 0; i < 4; i += 1) {
-        const setKey = sets[Math.floor(nextRand() * sets.length)] ?? 'calamity';
+        const setKey = pool[Math.floor(nextRand() * pool.length)] ?? pool[0]!;
         pieces.push({
           id: id++,
           slot,
@@ -315,18 +318,14 @@ describe('optimizeLoadouts', () => {
       critRate: 8,
       critDmg: 7,
       atkSpd: 6,
-      damageOnUlt: 9,
+      damageAfterUlt: 9,
       basicAtkDamage: 5,
     };
     const minimums = { critRate: 40 };
 
-    const actual = optimizeLoadouts({
-      hero,
-      pieces,
-      weights,
-      minimums,
-      forceSets: false,
-    });
+    const req = { hero, pieces, weights, minimums, forceSets: false };
+    const actual = optimizeLoadouts(req);
+    const asyncActual = await optimizeLoadoutsAsync(req);
 
     // Reference brute-force: score every 5-piece combination individually (no pruning possible).
     const bySlot = Object.fromEntries(
@@ -357,5 +356,6 @@ describe('optimizeLoadouts', () => {
     expect(actual[0]?.score).toBeCloseTo(brute[0] ?? 0, 5);
     expect(actual[1]?.score).toBeCloseTo(brute[1] ?? 0, 5);
     expect(actual[2]?.score).toBeCloseTo(brute[2] ?? 0, 5);
+    expect(asyncActual.map((r) => r.score)).toEqual(actual.map((r) => r.score));
   });
 });

@@ -10,8 +10,11 @@ describe('decodeGearScreenshot', () => {
     expect(decodeGearScreenshot(png)).toBe(png);
   });
 
-  it('rejects missing or huge payloads', () => {
+  it('rejects missing, non-image, and >5MB payloads', () => {
     expect(decodeGearScreenshot(null)).toBe('Paste a gear screenshot.');
     expect(decodeGearScreenshot('not-an-image')).toBe('Paste a PNG or JPEG screenshot.');
+
+    const huge = `data:image/png;base64,${'A'.repeat(7_000_000)}`;
+    expect(decodeGearScreenshot(huge)).toMatch(/too large|5\s*mb/i);
   });
 });

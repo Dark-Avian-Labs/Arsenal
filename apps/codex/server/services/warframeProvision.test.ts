@@ -1,64 +1,60 @@
-import type { SqliteDatabase } from '@dark-avian-labs/server-kit';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { SqliteDatabase } from '@dark-avian-labs/server-kit';
+import { afterEach, expect, it } from 'vitest';
 
-const TEST_CLERK_ID = 'user_test123';
-
-const mocks = vi.hoisted(() => ({
-  getWorksheets: vi.fn<typeof import('../games/warframe/index.ts').warframeQueries.getWorksheets>(),
-  provisionUserFromCatalogMaster: vi.fn<(db: SqliteDatabase, clerkUserId: string) => boolean>(),
-  ensureWarframeWorksheetsForUser: vi.fn(),
-}));
-
-vi.mock('../games/warframe/index.ts', () => ({
-  warframeQueries: { getWorksheets: mocks.getWorksheets },
-}));
-
-vi.mock('./warframeSync.ts', () => ({
-  provisionUserFromCatalogMaster: mocks.provisionUserFromCatalogMaster,
-  ensureWarframeWorksheetsForUser: mocks.ensureWarframeWorksheetsForUser,
-}));
-
-vi.mock('../logger.ts', () => ({
-  log: vi.fn(),
-}));
-
+import {
+  createSchema,
+  ensureWarframeCatalogMasterTable,
+  ensureWarframeCatalogMaxLevelColumn,
+  ensureWarframeRowOrphanColumn,
+} from '../games/warframe/db/schema.ts';
+import { warframeQueries } from '../games/warframe/index.ts';
+import { describeWithSqlite } from '../testing/describeWithSqlite.ts';
 import { provisionWarframeUserIfNeeded } from './warframeProvision.ts';
 
-const codexDb = {
-  transaction(fn: (...args: unknown[]) => unknown) {
-    const runner = (...args: unknown[]) => fn(...args);
-    runner.immediate = (...args: unknown[]) => fn(...args);
-    runner.deferred = (...args: unknown[]) => fn(...args);
-    runner.exclusive = (...args: unknown[]) => fn(...args);
-    return runner;
-  },
-} as unknown as SqliteDatabase;
+describeWithSqlite('provisionWarframeUserIfNeeded', () => {
+  let db: SqliteDatabase | null = null;
 
-describe('provisionWarframeUserIfNeeded', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
+  afterEach(() => {
+    db?.close();
+    db = null;
   });
 
-  it('does nothing when the user already has worksheets', () => {
-    mocks.getWorksheets.mockReturnValue([{ id: 1, name: 'Warframes', display_order: 0 }]);
-    provisionWarframeUserIfNeeded(codexDb, TEST_CLERK_ID);
-    expect(mocks.provisionUserFromCatalogMaster).not.toHaveBeenCalled();
-    expect(mocks.ensureWarframeWorksheetsForUser).not.toHaveBeenCalled();
+  function createFreshDb(): SqliteDatabase {
+    const fresh = new SqliteDatabase(':memory:');
+    createSchema(fresh, true);
+    ensureWarframeCatalogMasterTable(fresh);
+    ensureWarframeCatalogMaxLevelColumn(fresh);
+    ensureWarframeRowOrphanColumn(fresh);
+    return fresh;
+  }
+
+  it('creates empty worksheet shells when catalog_rows is empty and is idempotent', () => {
+    db = createFreshDb();
+
+    provisionWarframeUserIfNeeded(db, 'user_empty');
+    const first = warframeQueries.getWorksheets(db, 'user_empty');
+    expect(first.length).toBeGreaterThan(0);
+
+    // Second call must not duplicate worksheets.
+    provisionWarframeUserIfNeeded(db, 'user_empty');
+    expect(warframeQueries.getWorksheets(db, 'user_empty')).toHaveLength(first.length);
   });
 
-  it('provisions from the Codex master catalog when available', () => {
-    mocks.getWorksheets.mockReturnValue([]);
-    mocks.provisionUserFromCatalogMaster.mockReturnValue(true);
-    provisionWarframeUserIfNeeded(codexDb, TEST_CLERK_ID);
-    expect(mocks.provisionUserFromCatalogMaster).toHaveBeenCalledWith(codexDb, TEST_CLERK_ID);
-    expect(mocks.ensureWarframeWorksheetsForUser).not.toHaveBeenCalled();
-  });
+  it('provisions worksheets and rows from catalog_rows when master catalog is populated', () => {
+    db = createFreshDb();
+    db.prepare(
+      `INSERT INTO catalog_rows (worksheet_name, canonical_key, item_name, display_order, max_level)
+       VALUES (?, ?, ?, ?, ?)`,
+    ).run('Warframes', 'excalibur', 'Excalibur', 0, 30);
 
-  it('creates empty worksheet shells when the master catalog is empty', () => {
-    mocks.getWorksheets.mockReturnValue([]);
-    mocks.provisionUserFromCatalogMaster.mockReturnValue(false);
-    provisionWarframeUserIfNeeded(codexDb, TEST_CLERK_ID);
-    expect(mocks.provisionUserFromCatalogMaster).toHaveBeenCalledWith(codexDb, TEST_CLERK_ID);
-    expect(mocks.ensureWarframeWorksheetsForUser).toHaveBeenCalledWith(codexDb, TEST_CLERK_ID);
+    provisionWarframeUserIfNeeded(db, 'user_seeded');
+    const worksheets = warframeQueries.getWorksheets(db, 'user_seeded');
+    const wfSheet = worksheets.find((w) => w.name === 'Warframes');
+    expect(wfSheet).toBeDefined();
+
+    const rows = db.prepare('SELECT item_name FROM rows WHERE worksheet_id = ?').all(wfSheet!.id) as Array<{
+      item_name: string;
+    }>;
+    expect(rows.map((r) => r.item_name)).toContain('Excalibur');
   });
 });

@@ -1,5 +1,6 @@
-import { sanitizeRequestId } from '@dark-avian-labs/server-kit';
 import { describe, expect, it } from 'vitest';
+
+import { sanitizeRequestId } from './requestId.ts';
 
 describe('sanitizeRequestId', () => {
   it('accepts valid ids', () => {
@@ -13,7 +14,7 @@ describe('sanitizeRequestId', () => {
     expect(sanitizeRequestId('short')).toMatch(uuidRe);
     expect(sanitizeRequestId('a'.repeat(65))).toMatch(uuidRe);
     expect(sanitizeRequestId('../etc/passwd')).toMatch(uuidRe);
-    expect(sanitizeRequestId('has spaces!')).toMatch(uuidRe);
+    expect(sanitizeRequestId('bad\r\nheader')).toMatch(uuidRe);
     expect(sanitizeRequestId(undefined)).toMatch(uuidRe);
   });
 });

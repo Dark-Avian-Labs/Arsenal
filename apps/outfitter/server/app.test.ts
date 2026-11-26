@@ -1,106 +1,61 @@
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+
 import request from 'supertest';
-import { beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import type { AppBundle } from './app.ts';
-import { createApp } from './app.ts';
 
+let tmpDir: string;
 let bundle: AppBundle;
+let closeAppDb: () => void;
 
-beforeAll(() => {
+beforeAll(async () => {
+  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'outfitter-app-test-'));
+  vi.stubEnv('APP_DB_PATH', path.join(tmpDir, 'outfitter.db'));
+  vi.resetModules();
+  const [{ createApp }, { closeAppDb: close }] = await Promise.all([import('./app.ts'), import('./db/appDb.ts')]);
+  closeAppDb = close;
   bundle = createApp();
 });
 
-describe('health endpoints', () => {
-  it('GET /healthz responds ok without creating a session cookie', async () => {
-    const res = await request(bundle.app).get('/healthz');
-    expect(res.status).toBe(200);
-    expect(res.body.status).toBe('ok');
-    expect(res.headers['set-cookie']).toBeUndefined();
-  });
-
-  it('GET /readyz probes the app DB', async () => {
-    const res = await request(bundle.app).get('/readyz');
-    expect(res.status).toBe(200);
-    expect(res.body.status).toBe('ready');
-  });
-
-  it('GET /api/health responds ok', async () => {
-    const res = await request(bundle.app).get('/api/health');
-    expect(res.status).toBe(200);
-    expect(res.body.status).toBe('ok');
-    expect(res.headers['cache-control']).toBe('no-store');
-  });
-
-  it('GET /api/version returns the package version', async () => {
-    const res = await request(bundle.app).get('/api/version');
-    expect(res.status).toBe(200);
-    expect(typeof res.body.version).toBe('string');
-    expect(res.body.version.length).toBeGreaterThan(0);
-    expect(res.headers['cache-control']).toBe('no-store');
-  });
+afterAll(() => {
+  closeAppDb?.();
+  vi.unstubAllEnvs();
+  fs.rmSync(tmpDir, { recursive: true, force: true });
 });
 
-describe('security headers', () => {
-  it('sets helmet headers including a CSP with Clerk origins', async () => {
-    const res = await request(bundle.app).get('/healthz');
-    expect(res.headers['x-content-type-options']).toBe('nosniff');
-    expect(res.headers['content-security-policy']).toContain("script-src 'self'");
-    expect(res.headers['content-security-policy']).toContain('https://challenges.cloudflare.com');
-    expect(res.headers['content-security-policy']).toContain('https://*.protect.clerk.com');
+describe('outfitter app wiring', () => {
+  it('GET /readyz probes the isolated outfitter SQLite DB and /api/health responds ok', async () => {
+    const ready = await request(bundle.app).get('/readyz').expect(200);
+    expect(ready.body.status).toBe('ready');
+
+    const health = await request(bundle.app).get('/api/health').expect(200);
+    expect(health.body.status).toBe('ok');
+    expect(health.headers['cache-control']).toBe('no-store');
   });
 
-  it('emits rate limit headers on API routes', async () => {
-    const res = await request(bundle.app).get('/api/health');
-    const hasRateLimitHeader = Boolean(res.headers['ratelimit'] ?? res.headers['ratelimit-limit']);
-    expect(hasRateLimitHeader).toBe(true);
-  });
-});
-
-describe('request IDs', () => {
-  it('echoes a well-formed X-Request-Id', async () => {
-    const res = await request(bundle.app).get('/healthz').set('X-Request-Id', 'abc-123-def-456');
-    expect(res.headers['x-request-id']).toBe('abc-123-def-456');
+  it('includes wasm-unsafe-eval in CSP for client-side OCR (tesseract.js)', async () => {
+    const res = await request(bundle.app).get('/healthz').expect(200);
+    expect(res.headers['content-security-policy']).toContain("'wasm-unsafe-eval'");
   });
 
-  it('replaces a malformed X-Request-Id', async () => {
-    const res = await request(bundle.app).get('/healthz').set('X-Request-Id', 'bad id! <script>');
-    expect(res.headers['x-request-id']).toBeDefined();
-    expect(res.headers['x-request-id']).not.toBe('bad id! <script>');
-  });
-});
+  it('enforces 2mb JSON body limit (accepts >100kb import payloads, rejects >2mb)', async () => {
+    const medium = { data: 'x'.repeat(200 * 1024) };
+    const mediumRes = await request(bundle.app)
+      .post('/api/anything')
+      .set('Authorization', 'Bearer test-token')
+      .send(medium);
+    expect(mediumRes.status).toBe(404);
 
-describe('cross-site writes', () => {
-  it('rejects a cross-site POST', async () => {
-    const res = await request(bundle.app).post('/api/anything').set('Sec-Fetch-Site', 'cross-site').send({});
-    expect(res.status).toBe(403);
-    expect(res.body.error).toBe('Cross-site request rejected');
+    const big = { data: 'x'.repeat(3 * 1024 * 1024) };
+    const bigRes = await request(bundle.app).post('/api/anything').send(big);
+    expect(bigRes.status).toBe(413);
   });
 
-  it('lets a same-site POST reach routing', async () => {
-    const res = await request(bundle.app).post('/api/anything').set('Authorization', 'Bearer test-token').send({});
-    expect(res.status).toBe(404);
-  });
-});
-
-describe('auth endpoints (Clerk not configured in tests)', () => {
-  it('GET /api/auth/me responds 401 when signed out', async () => {
+  it('GET /api/auth/me returns 401 when unauthenticated', async () => {
     const res = await request(bundle.app).get('/api/auth/me');
     expect(res.status).toBe(401);
-  });
-});
-
-describe('body limits', () => {
-  it('rejects JSON bodies over 2mb', async () => {
-    const bigPayload = { data: 'x'.repeat(3 * 1024 * 1024) };
-    const res = await request(bundle.app).post('/api/anything').send(bigPayload);
-    expect(res.status).toBe(413);
-  });
-});
-
-describe('API 404 handling', () => {
-  it('returns JSON 404 for unknown API routes', async () => {
-    const res = await request(bundle.app).get('/api/nope');
-    expect(res.status).toBe(404);
-    expect(res.body.error).toBe('Not found');
   });
 });

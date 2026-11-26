@@ -117,4 +117,67 @@ describe('migrateArtifactSlotsFromOverframe', () => {
     expect(ash).toHaveLength(10);
     db.close();
   });
+
+  it('migrates Jade to 11 slots, Necramechs to 12 slots, and leaves DB untouched on dryRun', () => {
+    const db = new SqliteDatabase(':memory:');
+    db.exec(`
+      CREATE TABLE warframes (
+        unique_name TEXT PRIMARY KEY,
+        name TEXT,
+        product_category TEXT,
+        artifact_slots TEXT
+      );
+      CREATE TABLE weapons (
+        unique_name TEXT PRIMARY KEY,
+        product_category TEXT,
+        slot INTEGER,
+        artifact_slots TEXT
+      );
+      CREATE TABLE companions (unique_name TEXT PRIMARY KEY, artifact_slots TEXT);
+    `);
+    const raw12 = JSON.stringify([
+      ...Array(8).fill('AP_UNIVERSAL'),
+      'AP_ANY',
+      'AP_DEFENSE',
+      'AP_TACTIC',
+      'AP_UNIVERSAL',
+    ]);
+    db.prepare(`INSERT INTO warframes VALUES (?, ?, ?, ?)`).run('/Lotus/Powersuits/Jade/Jade', 'Jade', 'Suits', raw12);
+    db.prepare(`INSERT INTO warframes VALUES (?, ?, ?, ?)`).run(
+      '/Lotus/Powersuits/EntratiMech/NechroTech',
+      'Voidrig',
+      'MechSuits',
+      raw12,
+    );
+
+    const dry = migrateArtifactSlotsFromOverframe(db, { dryRun: true });
+    expect(dry.warframesJadeUpdated).toBe(1);
+    expect(dry.warframesNecramechUpdated).toBe(1);
+    expect(
+      (
+        db.prepare(`SELECT artifact_slots FROM warframes WHERE name='Jade'`).get() as {
+          artifact_slots: string;
+        }
+      ).artifact_slots,
+    ).toBe(raw12);
+
+    migrateArtifactSlotsFromOverframe(db);
+    const jade = JSON.parse(
+      (
+        db.prepare(`SELECT artifact_slots FROM warframes WHERE name='Jade'`).get() as {
+          artifact_slots: string;
+        }
+      ).artifact_slots,
+    ) as string[];
+    const voidrig = JSON.parse(
+      (
+        db.prepare(`SELECT artifact_slots FROM warframes WHERE name='Voidrig'`).get() as {
+          artifact_slots: string;
+        }
+      ).artifact_slots,
+    ) as string[];
+    expect(jade).toHaveLength(11);
+    expect(voidrig).toHaveLength(12);
+    db.close();
+  });
 });

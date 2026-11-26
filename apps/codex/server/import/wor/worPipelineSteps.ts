@@ -1,15 +1,6 @@
-export const WOR_PIPELINE_STEPS = [
-  'schema',
-  'fastidiousCatalog',
-  'prospectorCatalog',
-  'fandomImages',
-  'fandomHeroStats',
-  'manualOverrides',
-  'seedValidation',
-  'sync_accounts',
-] as const;
+import { WOR_PIPELINE_STEPS, type WorPipelineStepKey } from '../../../shared/worPipelineSteps.ts';
 
-export type WorPipelineStepKey = (typeof WOR_PIPELINE_STEPS)[number];
+export { WOR_PIPELINE_STEPS, type WorPipelineStepKey };
 
 export const WOR_PIPELINE_STEP_LABELS: Record<WorPipelineStepKey, string> = {
   schema: 'Schema',

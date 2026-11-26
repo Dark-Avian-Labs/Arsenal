@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
 import { mockResponse } from './testing/mockResponse.ts';
-import { optionalPositiveInt, positiveInt, validateBody } from './validation.ts';
+import { optionalPositiveInt, positiveInt, validateBody, zodEnum } from './validation.ts';
 
 describe('validateBody', () => {
   const schema = z.object({
@@ -31,26 +31,22 @@ describe('validateBody', () => {
   });
 });
 
-describe('positiveInt', () => {
-  it('coerces string ids', () => {
-    expect(positiveInt.safeParse('5').success).toBe(true);
-  });
-
-  it('rejects zero and non-numeric values', () => {
+describe('positiveInt and optionalPositiveInt', () => {
+  it('coerces positive integers and rejects zero or non-numeric values', () => {
+    expect(positiveInt.parse('5')).toBe(5);
     expect(positiveInt.safeParse(0).success).toBe(false);
     expect(positiveInt.safeParse('nope').success).toBe(false);
-  });
-});
 
-describe('optionalPositiveInt', () => {
-  it('accepts null and empty string as null', () => {
-    expect(optionalPositiveInt.safeParse(null).success).toBe(true);
-    expect(optionalPositiveInt.safeParse('').success).toBe(true);
+    expect(optionalPositiveInt.parse(null)).toBeNull();
+    expect(optionalPositiveInt.parse('')).toBeNull();
+    expect(optionalPositiveInt.parse('4')).toBe(4);
+    expect(optionalPositiveInt.safeParse(0).success).toBe(false);
+    expect(optionalPositiveInt.safeParse(-1).success).toBe(false);
+    expect(optionalPositiveInt.safeParse('abc').success).toBe(false);
   });
 
-  it('coerces positive integers', () => {
-    const result = optionalPositiveInt.safeParse('4');
-    expect(result.success).toBe(true);
-    if (result.success) expect(result.data).toBe(4);
+  it('zodEnum rejects empty value lists', () => {
+    expect(() => zodEnum([])).toThrow();
+    expect(zodEnum(['a', 'b']).parse('a')).toBe('a');
   });
 });

@@ -1,5 +1,5 @@
 import { SqliteDatabase } from '@dark-avian-labs/server-kit';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../games/warframe/db/schema.ts', async () => {
   const actual = await vi.importActual<typeof import('../games/warframe/db/schema.ts')>(
@@ -26,11 +26,8 @@ import {
   waitForWarframeSyncIdle,
 } from './warframeSyncState.ts';
 
-describe('warframe sync state setup', () => {
-  it('initializes job schema', () => {
-    ensureWarframeSyncJobsSchema();
-    expect(isWarframeSyncRunning()).toBe(false);
-  });
+beforeAll(() => {
+  ensureWarframeSyncJobsSchema();
 });
 
 describe('runWarframeSyncGuarded', () => {

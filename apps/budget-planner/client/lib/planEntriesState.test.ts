@@ -39,10 +39,14 @@ function plan(entries: Entry[]): PlanDetail {
 }
 
 describe('applyEntryToPlan', () => {
-  it('inserts a new monthly entry and recomputes totals', () => {
-    const next = applyEntryToPlan(plan([]), entry({ id: 'e1', name: 'Rent', amount_cents: 500 }));
-    expect(next.entries.map((row) => row.id)).toEqual(['e1']);
-    expect(next.totals.expenseCents).toBe(500);
+  it('inserts and updates entries in place while recomputing totals', () => {
+    const inserted = applyEntryToPlan(plan([]), entry({ id: 'e1', name: 'Rent', amount_cents: 500 }));
+    expect(inserted.entries.map((row) => row.id)).toEqual(['e1']);
+    expect(inserted.totals.expenseCents).toBe(500);
+
+    const updated = applyEntryToPlan(inserted, entry({ id: 'e1', name: 'Rent', amount_cents: 800 }));
+    expect(updated.entries).toHaveLength(1);
+    expect(updated.totals.expenseCents).toBe(800);
   });
 
   it('drops a once entry archived for a different month', () => {

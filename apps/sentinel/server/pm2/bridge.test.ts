@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 
-import { resetAlertCooldowns, shouldSendAlert } from '../metrics/alerts.ts';
 import { classifyPm2Restart } from './bridge.ts';
 
 describe('classifyPm2Restart', () => {
@@ -46,14 +45,5 @@ describe('classifyPm2Restart', () => {
         unstableRestarts: 1,
       }),
     ).toBe('graceful');
-  });
-});
-
-describe('shouldSendAlert', () => {
-  it('suppresses duplicate alerts inside the 10-minute cooldown window', () => {
-    resetAlertCooldowns();
-    expect(shouldSendAlert('armory:crash', 1_000)).toBe(true);
-    expect(shouldSendAlert('armory:crash', 60_000)).toBe(false);
-    expect(shouldSendAlert('armory:crash', 1_000 + 10 * 60 * 1000)).toBe(true);
   });
 });

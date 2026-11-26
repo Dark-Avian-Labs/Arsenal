@@ -2,6 +2,7 @@ import { spawnSync } from 'node:child_process';
 import { appendFileSync } from 'node:fs';
 
 const SUB_APPS = ['armory', 'budget-planner', 'codex', 'outfitter', 'sentinel', 'template'];
+const SUB_APP_DIR = { template: '_template' };
 const DEPLOY_SERVICES = ['arsenal', 'sentinel'];
 const ARSENAL_MEMBERS = ['arsenal', 'armory', 'budget-planner', 'codex', 'outfitter'];
 
@@ -83,7 +84,8 @@ function classifyChanges(files) {
     }
 
     for (const app of SUB_APPS) {
-      if (file.startsWith(`apps/${app}/`)) {
+      const dir = SUB_APP_DIR[app] ?? app;
+      if (file.startsWith(`apps/${dir}/`)) {
         affected[app] = true;
       }
     }
@@ -134,6 +136,15 @@ function selfCheck() {
   const sentinelOnly = classifyChanges(['apps/sentinel/server/index.ts']);
   if (sentinelOnly.deploy.arsenal || !sentinelOnly.deploy.sentinel) {
     throw new Error(`sentinel-only wrong: ${JSON.stringify(sentinelOnly.deploy)}`);
+  }
+
+  const templateOnly = classifyChanges(['apps/_template/server/app.ts']);
+  if (
+    !templateOnly.affected.template ||
+    templateOnly.deploy.arsenal ||
+    templateOnly.deploy.sentinel
+  ) {
+    throw new Error(`template-only wrong: ${JSON.stringify(templateOnly)}`);
   }
 
   const arsenalOnly = classifyChanges(['apps/arsenal/server/hostRouter.ts']);

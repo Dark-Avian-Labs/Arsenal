@@ -7,7 +7,7 @@ import {
   hydrateSlotsWithModCatalog,
   slimSlotsForSave,
 } from '../modCatalogHydration';
-import { createRivenMod } from '../riven';
+import { createRivenMod, RIVEN_MOD_UNIQUE } from '../riven';
 
 describe('mergeModWithCatalog', () => {
   it('fills set_stats and mod_set from catalog when missing on stored mod', () => {
@@ -171,5 +171,27 @@ describe('hydrateSlotsWithModCatalog', () => {
     const out = hydrateSlotsWithModCatalog(slots, byUnique, byNameType);
     expect(out[0].mod?.set_stats).toBe(JSON.stringify(['+100 Health']));
     expect(out[0].mod?.mod_set).toBe('UmbraModSet');
+  });
+
+  it('never overwrites stored Riven mods from the catalog', () => {
+    const stored: Mod = {
+      unique_name: RIVEN_MOD_UNIQUE,
+      name: 'Riven Mod',
+      description: JSON.stringify(['custom']),
+      fusion_limit: 8,
+    };
+    const catalogEntry: Mod = {
+      unique_name: '/lotus/riven',
+      name: 'Should not apply',
+      description: JSON.stringify(['from catalog']),
+      fusion_limit: 8,
+    };
+    expect(mergeModWithCatalog(stored, catalogEntry)).toBe(stored);
+
+    const out = hydrateSlotsWithModCatalog(
+      [{ index: 0, type: 'general' as const, mod: stored }],
+      new Map([[catalogEntry.unique_name, catalogEntry]]),
+    );
+    expect(out[0].mod).toBe(stored);
   });
 });

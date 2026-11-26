@@ -194,4 +194,29 @@ describe('http_1h rollup', () => {
       [7, 0],
     ]);
   });
+
+  it('rolls up process samples into samples_1m/samples_1h and prunes expired raw rows', () => {
+    const db = getMetricsDb();
+    const now = 1_700_000_000_000;
+    const oldTs = now - 3 * 86_400_000; // older than raw 24h retention
+    writeProcessSample(db, { kind: 'process', appId: 'armory', displayName: 'Armory', ts: oldTs, cpu: 10, rssMb: 100 });
+    writeProcessSample(db, {
+      kind: 'process',
+      appId: 'armory',
+      displayName: 'Armory',
+      ts: now - 120_000,
+      cpu: 20,
+      rssMb: 120,
+    });
+
+    rollupAndPrune(db, now);
+
+    expect((db.prepare('SELECT COUNT(*) AS c FROM samples_raw WHERE ts = ?').get(oldTs) as { c: number }).c).toBe(0);
+    expect(
+      (db.prepare('SELECT COUNT(*) AS c FROM samples_1m WHERE app_id = ?').get('armory') as { c: number }).c,
+    ).toBeGreaterThanOrEqual(1);
+    expect(
+      (db.prepare('SELECT COUNT(*) AS c FROM samples_1h WHERE app_id = ?').get('armory') as { c: number }).c,
+    ).toBeGreaterThanOrEqual(1);
+  });
 });

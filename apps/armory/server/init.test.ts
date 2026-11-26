@@ -45,32 +45,37 @@ describe('initArmory catalog sync detection', () => {
     }
   });
 
-  it('re-syncs Armory when warframe-catalog.db changes even with an older mtime, and preserves armory_users', async () => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'armory-init-sync-'));
-    const codexCatalogPath = path.join(tmpDir, 'warframe-catalog.db');
-    const armoryDbPath = path.join(tmpDir, 'armory.db');
-    const buildsDbPath = path.join(tmpDir, 'builds.db');
-
+  function setupTempEnv(dir: string) {
     const envKeys = [
       'ARSENAL_SKIP_LOAD_ENV',
       'DATA_DIR',
       'ARMORY_DB_PATH',
-      'ARMORY_BUILDS_DB_PATH',
+      'USER_DB_PATH',
       'CODEX_WARFRAME_CATALOG_DB_PATH',
       'ARMORY_IMAGES_DIR',
       'CODEX_WARFRAME_IMAGES_DIR',
     ];
     for (const k of envKeys) savedEnv[k] = process.env[k];
 
-    process.env.ARSENAL_SKIP_LOAD_ENV = '1';
-    process.env.DATA_DIR = tmpDir;
-    process.env.ARMORY_DB_PATH = armoryDbPath;
-    process.env.ARMORY_BUILDS_DB_PATH = buildsDbPath;
-    process.env.CODEX_WARFRAME_CATALOG_DB_PATH = codexCatalogPath;
-    process.env.ARMORY_IMAGES_DIR = path.join(tmpDir, 'images');
-    process.env.CODEX_WARFRAME_IMAGES_DIR = path.join(tmpDir, 'images');
+    const codexCatalogPath = path.join(dir, 'warframe-catalog.db');
+    const armoryDbPath = path.join(dir, 'armory.db');
+    const buildsDbPath = path.join(dir, 'builds.db');
 
-    // Initial catalog with 1 warframe.
+    process.env.ARSENAL_SKIP_LOAD_ENV = '1';
+    process.env.DATA_DIR = dir;
+    process.env.ARMORY_DB_PATH = armoryDbPath;
+    process.env.USER_DB_PATH = buildsDbPath;
+    process.env.CODEX_WARFRAME_CATALOG_DB_PATH = codexCatalogPath;
+    process.env.ARMORY_IMAGES_DIR = path.join(dir, 'images');
+    process.env.CODEX_WARFRAME_IMAGES_DIR = path.join(dir, 'images');
+
+    return { codexCatalogPath, armoryDbPath, buildsDbPath };
+  }
+
+  it('re-syncs Armory when warframe-catalog.db changes even with an older mtime, preserves armory_users, and isolates builds.db', async () => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'armory-init-sync-'));
+    const { codexCatalogPath, buildsDbPath } = setupTempEnv(tmpDir);
+
     writeCatalogSnapshot(codexCatalogPath, [{ uniqueName: '/wf/Excalibur', name: 'Excalibur' }]);
 
     vi.resetModules();
@@ -79,6 +84,7 @@ describe('initArmory catalog sync detection', () => {
     const { upsertArmoryUser } = await import('./auth/armoryUsers.ts');
 
     initArmory();
+    expect(fs.existsSync(buildsDbPath)).toBe(true);
     expect((getCatalogDb().prepare('SELECT COUNT(*) AS c FROM warframes').get() as { c: number }).c).toBe(1);
 
     // Simulate a Clerk webhook writing to armory_users (which advances armory.db mtime).
@@ -95,7 +101,6 @@ describe('initArmory catalog sync detection', () => {
     initArmory();
     expect((getCatalogDb().prepare('SELECT COUNT(*) AS c FROM warframes').get() as { c: number }).c).toBe(2);
 
-    // Verify armory_users survived the catalog sync intact.
     const user = getCatalogDb().prepare('SELECT username FROM armory_users WHERE clerk_user_id = ?').get('user_123') as
       | { username: string }
       | undefined;
@@ -108,6 +113,21 @@ describe('initArmory catalog sync detection', () => {
 
     initArmory();
     expect((getCatalogDb().prepare('SELECT COUNT(*) AS c FROM warframes').get() as { c: number }).c).toBe(1);
+
+    closeArmory();
+  });
+
+  it('boots cleanly and initializes builds.db when Codex catalog DB does not exist yet', async () => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'armory-init-missing-'));
+    const { buildsDbPath } = setupTempEnv(tmpDir);
+
+    vi.resetModules();
+    const { initArmory, closeArmory } = await import('./init.ts');
+    const { getCatalogDb } = await import('./db/connection.ts');
+
+    expect(() => initArmory()).not.toThrow();
+    expect(fs.existsSync(buildsDbPath)).toBe(true);
+    expect((getCatalogDb().prepare('SELECT COUNT(*) AS c FROM warframes').get() as { c: number }).c).toBe(0);
 
     closeArmory();
   });

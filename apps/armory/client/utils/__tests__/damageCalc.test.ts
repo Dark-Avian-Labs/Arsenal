@@ -137,4 +137,12 @@ describe('calculateWeaponDps', () => {
     expect(result.base.totalDamage).toBeCloseTo(118);
     expect(result.modded.totalDamage).toBeCloseTo(118);
   });
+
+  it('treats malformed or non-array fire_behaviors JSON as default ammo cost', () => {
+    const broken = makeWeapon({ fire_behaviors: '{broken' });
+    expect(calculateWeaponDps(broken, []).ammoCost).toBe(1);
+
+    const nonArray = makeWeapon({ fire_behaviors: JSON.stringify({ notAnArray: true }) });
+    expect(calculateWeaponDps(nonArray, []).ammoCost).toBe(1);
+  });
 });

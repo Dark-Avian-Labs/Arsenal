@@ -37,7 +37,15 @@ export interface HostRouterOptions {
 function normalizeHost(raw: string | undefined): string {
   if (!raw) return '';
   const first = raw.split(',')[0]?.trim().toLowerCase() ?? '';
-  return first.replace(/:\d+$/, '');
+  if (first.startsWith('[')) {
+    return first.replace(/\]:\d+$/, ']');
+  }
+  const colonIdx = first.indexOf(':');
+  // Bare IPv6 literals contain multiple colons (e.g. "::1") and must not be stripped.
+  if (colonIdx !== -1 && first.indexOf(':', colonIdx + 1) === -1) {
+    return first.slice(0, colonIdx);
+  }
+  return first;
 }
 
 export function parseHostMapEnv(raw: string | undefined): Record<string, MountedAppId> {

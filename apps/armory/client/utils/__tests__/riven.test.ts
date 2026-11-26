@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import type { RivenConfig } from '../../types/warframe';
 import {
   formatRivenLine,
   getDispositionPips,
@@ -8,6 +9,7 @@ import {
   getRivenStatBounds,
   getRivenStatsForType,
   resolveRivenConfig,
+  validateRivenConfig,
   verifyAndAdjustRivenConfig,
 } from '../riven';
 
@@ -170,5 +172,54 @@ describe('resolveRivenConfig', () => {
     expect(rank).toBe(3);
     expect(config.positive[0]!.value).toBeGreaterThan(50);
     expect(config.rivenRank).toBe(3);
+  });
+
+  it('handles non-finite disposition, clamps excessive manual rank, and validates polarity/duplicate stats', () => {
+    expect(getEffectiveRivenDisposition({ omega_attenuation: Number.NaN })).toBeNull();
+    expect(getEffectiveRivenDisposition({ riven_disposition: Number.POSITIVE_INFINITY })).toBeNull();
+
+    const nanResolved = resolveRivenConfig(
+      {
+        polarity: 'AP_ATTACK',
+        positive: [
+          { stat: 'Damage', value: 50, isNegative: false },
+          { stat: 'Multishot', value: 40, isNegative: false },
+        ],
+      },
+      { weaponType: 'primary', disposition: Number.NaN, assumeValuesAreMaxRank: true, manualRank: 8 },
+    );
+    expect(nanResolved.config.positive.every((s) => Number.isFinite(s.value))).toBe(true);
+
+    const clamped = resolveRivenConfig(
+      {
+        polarity: 'AP_ATTACK',
+        positive: [
+          { stat: 'Damage', value: 20, isNegative: false },
+          { stat: 'Multishot', value: 15, isNegative: false },
+        ],
+      },
+      { weaponType: 'primary', disposition: 1, assumeValuesAreMaxRank: false, manualRank: 900 },
+    );
+    expect(clamped.rank).toBe(8);
+
+    expect(
+      validateRivenConfig({
+        polarity: 'AP_FAKE',
+        positive: [
+          { stat: 'Damage', value: 1, isNegative: false },
+          { stat: 'Multishot', value: 1, isNegative: false },
+        ],
+      } as unknown as RivenConfig),
+    ).toMatch(/polarity/i);
+
+    expect(
+      validateRivenConfig({
+        polarity: 'AP_ATTACK',
+        positive: [
+          { stat: 'Damage', value: 1, isNegative: false },
+          { stat: 'Damage', value: 2, isNegative: false },
+        ],
+      }),
+    ).toMatch(/unique/i);
   });
 });

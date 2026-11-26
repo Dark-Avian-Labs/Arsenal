@@ -1,12 +1,7 @@
 import { describe, it, expect } from 'vitest';
 
 import type { Mod } from '../../types/warframe';
-import {
-  filterCompatibleMods,
-  normalizeWeaponIdentityName,
-  stanceMatchesEquipment,
-  WEAPON_CATEGORY_TO_MOD_COMPAT,
-} from '../modFiltering';
+import { filterCompatibleMods, normalizeWeaponIdentityName, stanceMatchesEquipment } from '../modFiltering';
 
 describe('normalizeWeaponIdentityName', () => {
   it('strips Kuva, Tenet, and Coda prefixes for augment matching', () => {
@@ -230,10 +225,6 @@ describe('Launcher mod compatibility', () => {
       product_category: 'Launcher',
     };
     expect(filterCompatibleMods([mod], 'primary', weapon)).toHaveLength(1);
-  });
-
-  it('does not map Sniper via WEAPON_CATEGORY_TO_MOD_COMPAT.Launcher (uses path/name helper instead)', () => {
-    expect(WEAPON_CATEGORY_TO_MOD_COMPAT.Launcher).not.toContain('Sniper');
   });
 
   it('accepts Sniper-category mods on Launchers via primaryWeaponAcceptsSniperCategoryMods', () => {

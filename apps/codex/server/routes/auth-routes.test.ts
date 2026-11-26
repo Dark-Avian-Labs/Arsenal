@@ -7,10 +7,10 @@ import express from 'express';
 import request from 'supertest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { APP_NAME } from '../config.ts';
-import { healthzHandler, readyzHandler } from '../probes.ts';
-import { testRateLimiter } from '../testing/testExpress.ts';
-import { authRouter } from './auth.ts';
+const authState = vi.hoisted(() => ({
+  userId: null as string | null,
+  sessionClaims: undefined as Record<string, unknown> | undefined,
+}));
 
 const dbMocks = vi.hoisted(() => ({
   warframeOk: true,
@@ -18,6 +18,11 @@ const dbMocks = vi.hoisted(() => ({
   worOk: true,
   catalogDbPath: '',
   worCatalogDbPath: '',
+}));
+
+vi.mock('@clerk/express', () => ({
+  getAuth: () => ({ userId: authState.userId, sessionClaims: authState.sessionClaims }),
+  clerkMiddleware: () => (_req: unknown, _res: unknown, next: () => void) => next(),
 }));
 
 vi.mock('../config.ts', async (importOriginal) => {
@@ -78,6 +83,11 @@ vi.mock('../worDbState.ts', () => ({
   ensureWorDbAvailable: () => dbMocks.worOk,
 }));
 
+import { APP_NAME } from '../config.ts';
+import { healthzHandler, readyzHandler } from '../probes.ts';
+import { testRateLimiter } from '../testing/testExpress.ts';
+import { authRouter } from './auth.ts';
+
 function createProbeApp() {
   const app = express();
   app.use(testRateLimiter);
@@ -94,10 +104,12 @@ function writeEmptySqlite(filePath: string): void {
   db.close();
 }
 
-describe('auth and probe routes', () => {
+describe('Codex auth and probe routes', () => {
   const tmpRoot = path.join(os.tmpdir(), `codex-auth-routes-${process.pid}`);
 
   beforeEach(() => {
+    authState.userId = null;
+    authState.sessionClaims = undefined;
     dbMocks.warframeOk = true;
     dbMocks.epic7Ok = true;
     dbMocks.worOk = true;
@@ -108,63 +120,55 @@ describe('auth and probe routes', () => {
   });
 
   afterEach(() => {
+    vi.unstubAllEnvs();
     fs.rmSync(tmpRoot, { recursive: true, force: true });
     vi.restoreAllMocks();
   });
 
-  it('GET /healthz returns ok', async () => {
+  it('GET /healthz and /readyz report healthy when databases respond', async () => {
     const app = createProbeApp();
-    await request(app)
-      .get('/healthz')
-      .expect(200)
-      .expect((res) => {
-        expect(res.body).toEqual({ status: 'ok', app: APP_NAME });
-      });
+    await request(app).get('/healthz').expect(200, { status: 'ok', app: APP_NAME });
+    const ready = await request(app).get('/readyz').expect(200);
+    expect(ready.body).toMatchObject({ status: 'ready', app: APP_NAME });
   });
 
-  it('GET /readyz returns ready when databases respond', async () => {
+  it('GET /readyz returns 503 when warframe DB or Warframe/WoR catalog DBs fail checks', async () => {
     const app = createProbeApp();
-    await request(app)
-      .get('/readyz')
-      .expect(200)
-      .expect((res) => {
-        expect(res.body.status).toBe('ready');
-        expect(res.body.app).toBe(APP_NAME);
-      });
-  });
 
-  it('GET /readyz returns 503 when a database probe fails', async () => {
     dbMocks.warframeOk = false;
-    const app = createProbeApp();
-    await request(app)
-      .get('/readyz')
-      .expect(503)
-      .expect((res) => {
-        expect(res.body.status).toBe('not_ready');
-      });
-  });
+    expect((await request(app).get('/readyz')).status).toBe(503);
+    dbMocks.warframeOk = true;
 
-  it('GET /readyz returns 503 when Warframe catalog DB is configured but unreadable', async () => {
     dbMocks.catalogDbPath = path.join(tmpRoot, 'missing-warframe-catalog.db');
-    const app = createProbeApp();
-    await request(app)
-      .get('/readyz')
-      .expect(503)
-      .expect((res) => {
-        expect(res.body.status).toBe('not_ready');
-      });
+    expect((await request(app).get('/readyz')).status).toBe(503);
+
+    const emptyWf = path.join(tmpRoot, 'empty-warframe-catalog.db');
+    writeEmptySqlite(emptyWf);
+    dbMocks.catalogDbPath = emptyWf;
+    expect((await request(app).get('/readyz')).status).toBe(503);
+    dbMocks.catalogDbPath = '';
+
+    const emptyWor = path.join(tmpRoot, 'empty-wor-catalog.db');
+    writeEmptySqlite(emptyWor);
+    dbMocks.worCatalogDbPath = emptyWor;
+    expect((await request(app).get('/readyz')).status).toBe(503);
   });
 
-  it('GET /readyz returns 503 when Warframe catalog DB lacks required tables', async () => {
-    const catalogPath = path.join(tmpRoot, 'empty-warframe-catalog.db');
-    writeEmptySqlite(catalogPath);
-    dbMocks.catalogDbPath = catalogPath;
+  it('GET /api/auth/me returns 401 signed out and user/admin payload when signed in', async () => {
+    vi.stubEnv('CLERK_PUBLISHABLE_KEY', 'pk_test_codex');
+    vi.stubEnv('CLERK_SECRET_KEY', 'sk_test_codex');
     const app = createProbeApp();
-    await request(app)
-      .get('/readyz')
-      .expect(503)
-      .expect((res) => {
-        expect(res.body.status).toBe('not_ready');
-      });
+
+    expect((await request(app).get('/api/auth/me')).status).toBe(401);
+
+    authState.userId = 'user_admin';
+    authState.sessionClaims = { metadata: { apps: { codex: 'admin' } } };
+    const signedIn = await request(app).get('/api/auth/me').expect(200);
+    expect(signedIn.body).toMatchObject({
+      authenticated: true,
+      userId: 'user_admin',
+      isAdmin: true,
+      isCodexAdmin: true,
+    });
   });
 });

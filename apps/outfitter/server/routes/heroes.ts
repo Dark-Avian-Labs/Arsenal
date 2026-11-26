@@ -60,14 +60,19 @@ heroesRouter.patch(
       return;
     }
     const body = raw as Record<string, unknown>;
+    const parseNonNeg = (value: unknown): number => {
+      if (typeof value === 'number') return value;
+      if (typeof value === 'string' && value.trim() !== '') return Number(value);
+      return Number.NaN;
+    };
     const stats = {
-      hp: Number(body.hp),
-      atk: Number(body.atk),
-      def: Number(body.def),
-      atk_interval: Number(body.atk_interval),
-      rr_auto: Number(body.rr_auto),
-      rr_attack: Number(body.rr_attack),
-      rr_attacked: Number(body.rr_attacked),
+      hp: parseNonNeg(body.hp),
+      atk: parseNonNeg(body.atk),
+      def: parseNonNeg(body.def),
+      atk_interval: parseNonNeg(body.atk_interval),
+      rr_auto: parseNonNeg(body.rr_auto),
+      rr_attack: parseNonNeg(body.rr_attack),
+      rr_attacked: parseNonNeg(body.rr_attacked),
     };
     if (Object.values(stats).some((value) => !Number.isFinite(value) || value < 0)) {
       sendError(res, 'Stats must be non-negative numbers.');

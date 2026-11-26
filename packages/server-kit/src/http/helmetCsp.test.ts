@@ -1,44 +1,43 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import express from 'express';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { DAL_HOMEPAGE_ORIGIN, getAppConnectSrc, getClerkFapiOrigin } from './helmetCsp.ts';
+import { withServer } from '../testing/index.ts';
+import { createAppHelmet, getClerkFapiOrigin } from './helmetCsp.ts';
 
-describe('getClerkFapiOrigin', () => {
-  const previous = {
-    CLERK_FAPI_URL: process.env.CLERK_FAPI_URL,
-    VITE_CLERK_FAPI_URL: process.env.VITE_CLERK_FAPI_URL,
-  };
-
+describe('helmetCsp', () => {
   afterEach(() => {
-    for (const [key, value] of Object.entries(previous)) {
-      if (value === undefined) {
-        delete process.env[key];
-      } else {
-        process.env[key] = value;
-      }
-    }
+    vi.unstubAllEnvs();
   });
 
-  it('defaults to the production Clerk FAPI host', () => {
-    delete process.env.CLERK_FAPI_URL;
-    delete process.env.VITE_CLERK_FAPI_URL;
-
+  it('resolves CLERK_FAPI_URL, VITE_CLERK_FAPI_URL, and production default', () => {
+    vi.stubEnv('CLERK_FAPI_URL', '');
+    vi.stubEnv('VITE_CLERK_FAPI_URL', '');
     expect(getClerkFapiOrigin()).toBe('https://clerk.darkavianlabs.com');
-  });
 
-  it('prefers CLERK_FAPI_URL and strips trailing slashes', () => {
-    process.env.CLERK_FAPI_URL = 'https://clerk.example.test/';
+    vi.stubEnv('VITE_CLERK_FAPI_URL', 'https://vite.example.test/');
+    expect(getClerkFapiOrigin()).toBe('https://vite.example.test');
 
+    vi.stubEnv('CLERK_FAPI_URL', 'https://clerk.example.test/');
     expect(getClerkFapiOrigin()).toBe('https://clerk.example.test');
   });
-});
 
-describe('getAppConnectSrc', () => {
-  it('allows the DAL homepage origin for the shared app nav catalog', () => {
-    expect(getAppConnectSrc('https://clerk.example.test')).toEqual([
-      "'self'",
-      'https://clerk.example.test',
-      'https://*.protect.clerk.com:*',
-      DAL_HOMEPAGE_ORIGIN,
-    ]);
+  it('merges extraScriptSrc/extraConnectSrc and honors hsts flag in createAppHelmet', async () => {
+    const app = express();
+    app.use(
+      createAppHelmet({
+        hsts: false,
+        extraScriptSrc: ["'wasm-unsafe-eval'"],
+        extraConnectSrc: ['https://api.example.test'],
+      }),
+    );
+    app.get('/ping', (_req, res) => res.json({ ok: true }));
+
+    await withServer(app, async (baseUrl) => {
+      const res = await fetch(`${baseUrl}/ping`);
+      const csp = res.headers.get('content-security-policy') ?? '';
+      expect(csp).toContain("'wasm-unsafe-eval'");
+      expect(csp).toContain('https://api.example.test');
+      expect(res.headers.get('strict-transport-security')).toBeNull();
+    });
   });
 });

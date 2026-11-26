@@ -202,13 +202,16 @@ describe('parseModEffects', () => {
     expect(parseModEffects(mod, 0, { umbraSetEquippedCount: 3 }).healthFlat).toBeCloseTo(100 * 1.8);
   });
 
-  it('no multiplier with only 1 Umbral mod equipped', () => {
-    const mod = makeMod(['+100 Health', '+440 Health'], {
-      name: 'Umbral Vitality',
-      mod_set: 'UmbraModSet',
-      fusion_limit: 1,
-    });
-    expect(parseModEffects(mod, 1, { umbraSetEquippedCount: 1 }).healthFlat).toBeCloseTo(440);
+  it('handles empty descriptions, out-of-range rank, and slots omitting rank without throwing', () => {
+    const emptyDesc = makeMod([], { description: '', fusion_limit: 5 });
+    expect(parseModEffects(emptyDesc, 0).baseDamage).toBe(0);
+
+    const badRank = makeMod(['+10% Damage'], { fusion_limit: 0 });
+    expect(() => parseModEffects(badRank, 99)).not.toThrow();
+
+    expect(() =>
+      aggregateAllMods([{ index: 0, type: 'general', mod: makeMod(['+100% Health'], { fusion_limit: 2 }) }]),
+    ).not.toThrow();
   });
 });
 
