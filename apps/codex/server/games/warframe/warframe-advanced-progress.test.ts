@@ -12,7 +12,11 @@ import {
   VALENCE_COMPLETE_THRESHOLD,
   VALENCE_PERCENT_MAX_STORED,
   VALENCE_PERCENT_MIN,
+  arcaneMaxRankFromLevelStats,
+  isExaltedWeaponItem,
+  resolveAdvancedRowRelevance,
   resolveCanonicalKey,
+  shouldAutoCompleteOrokin,
   warframeQueries,
 } from './index.ts';
 
@@ -199,5 +203,30 @@ describeWithSqlite('Warframe advanced-progress queries', () => {
     const updated = updateRowAdvancedProgress(harness.db, rowId, clerkUserId, { level: 3 });
     expect(updated.normal.level).toBe(3);
     expect(getRowAdvancedProgress(harness.db, rowId, clerkUserId)?.normal.level).toBe(3);
+  });
+});
+
+describe('arcane max rank and exalted weapon rules', () => {
+  it('derives arcane max rank from level_stats JSON or defaults to 5', () => {
+    expect(arcaneMaxRankFromLevelStats(JSON.stringify([{}, {}, {}, {}]))).toBe(3);
+    expect(arcaneMaxRankFromLevelStats(null)).toBe(5);
+    expect(arcaneMaxRankFromLevelStats('not-json')).toBe(5);
+    expect(arcaneMaxRankFromLevelStats('[]')).toBe(5);
+    expect(resolveAdvancedRowRelevance('Arcanes', 'Arcane Energize', { catalogMaxLevel: 3 })).toMatchObject({
+      maxLevel: 3,
+      valence: false,
+      orokin: false,
+      arcane: false,
+      exilus: false,
+    });
+    expect(resolveAdvancedRowRelevance('Arcanes', 'Arcane Aegis').maxLevel).toBe(5);
+  });
+
+  it('auto-completes Orokin only for exalted weapons on weapon worksheets', () => {
+    expect(isExaltedWeaponItem('Exalted Blade')).toBe(true);
+    expect(isExaltedWeaponItem('Artemis Bow Prime')).toBe(true);
+    expect(isExaltedWeaponItem('Braton Prime')).toBe(false);
+    expect(shouldAutoCompleteOrokin('Melee Weapons', 'Exalted Blade')).toBe(true);
+    expect(shouldAutoCompleteOrokin('Warframes', 'Exalted Blade')).toBe(false);
   });
 });

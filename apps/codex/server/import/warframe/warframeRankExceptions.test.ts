@@ -1,32 +1,34 @@
-import fs from 'fs';
+import fs from 'node:fs';
+import path from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
+import { PROJECT_ROOT } from '../../config.ts';
 import {
-  generateWarframeRankExceptions,
   hashWarframeRankExceptionsSource,
   isWarframeRankExceptionsSourceAvailable,
   WARFRAME_RANK_EXCEPTIONS_OUT_PATH,
-  warframeRankExceptionsSourceChanged,
 } from './warframeRankExceptions.ts';
 
+const SOURCE_JSON_PATH = path.join(
+  PROJECT_ROOT,
+  '../../packages/warframe-catalog/scripts/warframe-rank-exceptions.json',
+);
+
 describe('warframeRankExceptions', () => {
-  it('has a committed source JSON in the repo', () => {
+  it('keeps committed generated TS registry in sync with source JSON without mutating disk', () => {
     expect(isWarframeRankExceptionsSourceAvailable()).toBe(true);
-  });
+    const hash = hashWarframeRankExceptionsSource();
+    expect(hash).toMatch(/^[a-f0-9]{64}$/);
+    expect(hashWarframeRankExceptionsSource()).toBe(hash);
 
-  it('hashes the source JSON deterministically', () => {
-    const first = hashWarframeRankExceptionsSource();
-    const second = hashWarframeRankExceptionsSource();
-    expect(first).toMatch(/^[a-f0-9]{64}$/);
-    expect(second).toBe(first);
-  });
-
-  it('regenerates the TypeScript registry from source JSON', () => {
-    const before = fs.readFileSync(WARFRAME_RANK_EXCEPTIONS_OUT_PATH, 'utf8');
-    const result = generateWarframeRankExceptions();
-    expect(result.entryCount).toBeGreaterThan(0);
-    expect(warframeRankExceptionsSourceChanged()).toBe(false);
-    expect(fs.readFileSync(WARFRAME_RANK_EXCEPTIONS_OUT_PATH, 'utf8')).toBe(before);
+    const sourceRows = JSON.parse(fs.readFileSync(SOURCE_JSON_PATH, 'utf8')) as Array<{
+      uniqueName: string;
+    }>;
+    const generatedTs = fs.readFileSync(WARFRAME_RANK_EXCEPTIONS_OUT_PATH, 'utf8');
+    expect(sourceRows.length).toBeGreaterThan(0);
+    for (const row of sourceRows) {
+      expect(generatedTs).toContain(row.uniqueName);
+    }
   });
 });

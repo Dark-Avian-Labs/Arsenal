@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
-import { MAX_MOD_CONFIG_JSON_BYTES, MAX_MOD_CONFIG_SLOTS } from './modConfigLimits.ts';
+import { MAX_MOD_CONFIG_JSON_BYTES, MAX_MOD_CONFIG_SLOTS, modConfigExceedsSizeLimit } from './modConfigLimits.ts';
 import { MAX_MOD_CONFIG_NAME_LENGTH, minimalModConfig, ModConfigSchema, ModSlotSchema } from './modConfigValidation.ts';
 
 describe('ModConfigSchema', () => {
@@ -97,18 +97,29 @@ describe('ModSlotSchema', () => {
 });
 
 describe('ModConfigSchema non-serializable', () => {
-  it('rejects circular references via size refinement', () => {
+  it('rejects circular references and BigInt payloads via size refinement', () => {
     const circular: { self?: unknown } = {};
     circular.self = circular;
     const payload = minimalModConfig();
     (payload as { note?: unknown }).note = circular;
     expect(ModConfigSchema.safeParse(payload).success).toBe(false);
+    expect(modConfigExceedsSizeLimit({ value: 1n })).toBe(true);
   });
 
-  it('adds custom issue code for oversize payloads', () => {
-    const result = ModConfigSchema.safeParse(
-      minimalModConfig({ note: '😀'.repeat(Math.floor(MAX_MOD_CONFIG_JSON_BYTES / 2)) }),
-    );
+  it('allows configs at exact MAX_MOD_CONFIG_SLOTS and adds custom issue for UTF-8 oversize payloads', () => {
+    const exactSlots = Array.from({ length: MAX_MOD_CONFIG_SLOTS }, (_, index) => ({
+      index,
+      type: 'general' as const,
+    }));
+    expect(ModConfigSchema.safeParse(minimalModConfig({ slots: exactSlots })).success).toBe(true);
+
+    const repeats = Math.floor(MAX_MOD_CONFIG_JSON_BYTES / 4) + 1;
+    const emojiPayload = minimalModConfig({ note: '😀'.repeat(repeats) });
+    const serialized = JSON.stringify(emojiPayload);
+    expect(Buffer.byteLength(serialized, 'utf8')).toBeGreaterThan(MAX_MOD_CONFIG_JSON_BYTES);
+    expect(serialized.length).toBeLessThan(MAX_MOD_CONFIG_JSON_BYTES);
+
+    const result = ModConfigSchema.safeParse(emojiPayload);
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error.issues.some((i) => i.code === z.ZodIssueCode.custom)).toBe(true);

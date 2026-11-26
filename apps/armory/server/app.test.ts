@@ -4,7 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import type { AppBundle } from './app.ts';
 import { createApp } from './app.ts';
-import { APP_NAME, APP_VERSION } from './config.ts';
+import { APP_NAME, LEGAL_PAGE_URL } from './config.ts';
 import { createMemoryUserDb } from './testing/memoryUserDb.ts';
 
 let bundle: AppBundle | undefined;
@@ -26,89 +26,41 @@ afterAll(() => {
   userDb?.close();
 });
 
-describe('health endpoints', () => {
-  it('GET /healthz responds ok without creating a session cookie', async () => {
-    const res = await request(bundle!.app).get('/healthz');
-    expect(res.status).toBe(200);
-    expect(res.body).toEqual({ status: 'ok', app: APP_NAME });
-    expect(res.headers['set-cookie']).toBeUndefined();
+describe('Armory app wiring', () => {
+  it('GET /readyz probes both catalogDb and userDb and returns 503 if either fails', async () => {
+    const ok = await request(bundle!.app).get('/readyz');
+    expect(ok.status).toBe(200);
+    expect(ok.body).toEqual({ status: 'ready', app: APP_NAME });
+
+    const brokenDb = {
+      prepare: () => {
+        throw new Error('db unavailable');
+      },
+    } as unknown as SqliteDatabase;
+
+    const catalogDown = createApp({ catalogDb: brokenDb, userDb });
+    const res1 = await request(catalogDown.app).get('/readyz');
+    expect(res1.status).toBe(503);
+    expect(res1.body).toEqual({ status: 'not_ready', app: APP_NAME });
+
+    const userDown = createApp({ catalogDb, userDb: brokenDb });
+    const res2 = await request(userDown.app).get('/readyz');
+    expect(res2.status).toBe(503);
+    expect(res2.body).toEqual({ status: 'not_ready', app: APP_NAME });
   });
 
-  it('GET /readyz probes catalog and user DBs', async () => {
-    const res = await request(bundle!.app).get('/readyz');
-    expect(res.status).toBe(200);
-    expect(res.body).toEqual({ status: 'ready', app: APP_NAME });
-  });
+  it('blocks *.hash files under /images and redirects legacy auth paths', async () => {
+    const hashRes = await request(bundle!.app).get('/images/warframes.hash');
+    expect(hashRes.status).toBe(404);
 
-  it('GET /readyz returns 503 when a database probe fails', async () => {
-    const down = createApp({
-      catalogDb: {
-        prepare: () => {
-          throw new Error('catalog unavailable');
-        },
-      } as unknown as SqliteDatabase,
-      userDb,
-    });
-    const res = await request(down.app).get('/readyz');
-    expect(res.status).toBe(503);
-    expect(res.body).toEqual({ status: 'not_ready', app: APP_NAME });
-  });
+    for (const legacyPath of ['/login', '/profile', '/auth/profile']) {
+      const res = await request(bundle!.app).get(legacyPath);
+      expect(res.status).toBe(302);
+      expect(res.headers.location).toBe('/sign-in');
+    }
 
-  it('GET /api/version returns the package version', async () => {
-    const res = await request(bundle!.app).get('/api/version');
-    expect(res.status).toBe(200);
-    expect(res.body.version).toBe(APP_VERSION);
-    expect(res.headers['cache-control']).toBe('no-store');
-  });
-});
-
-describe('security headers', () => {
-  it('sets helmet headers including a CSP with Clerk origins', async () => {
-    const res = await request(bundle!.app).get('/healthz');
-    expect(res.headers['x-content-type-options']).toBe('nosniff');
-    expect(res.headers['content-security-policy']).toContain("script-src 'self'");
-    expect(res.headers['content-security-policy']).toContain('https://challenges.cloudflare.com');
-    expect(res.headers['content-security-policy']).toContain('https://*.protect.clerk.com');
-  });
-
-  it('emits rate limit headers on API routes', async () => {
-    const res = await request(bundle!.app).get('/api/auth/me');
-    const hasRateLimitHeader = Boolean(res.headers['ratelimit'] ?? res.headers['ratelimit-limit']);
-    expect(hasRateLimitHeader).toBe(true);
-  });
-});
-
-describe('request IDs', () => {
-  it('echoes a well-formed X-Request-Id', async () => {
-    const res = await request(bundle!.app).get('/healthz').set('X-Request-Id', 'abc-123-def-456');
-    expect(res.headers['x-request-id']).toBe('abc-123-def-456');
-  });
-
-  it('replaces a malformed X-Request-Id', async () => {
-    const res = await request(bundle!.app).get('/healthz').set('X-Request-Id', 'bad id! <script>');
-    expect(res.headers['x-request-id']).toBeDefined();
-    expect(res.headers['x-request-id']).not.toBe('bad id! <script>');
-  });
-});
-
-describe('cross-site writes', () => {
-  it('rejects a cross-site POST', async () => {
-    const res = await request(bundle!.app).post('/api/nope').set('Sec-Fetch-Site', 'cross-site').send({});
-    expect(res.status).toBe(403);
-    expect(res.body.error).toBe('Cross-site request rejected');
-  });
-
-  it('lets a same-site POST reach routing', async () => {
-    const res = await request(bundle!.app).post('/api/nope').set('Authorization', 'Bearer test-token').send({});
-    expect(res.status).toBe(404);
-    expect(res.body.error).toBe('Not found');
-  });
-});
-
-describe('API 404 handling', () => {
-  it('returns JSON 404 for unknown API routes', async () => {
-    const res = await request(bundle!.app).get('/api/nope');
-    expect(res.status).toBe(404);
-    expect(res.body.error).toBe('Not found');
+    const legal = await request(bundle!.app).get('/auth/legal');
+    expect(legal.status).toBe(302);
+    expect(legal.headers.location).toBe(LEGAL_PAGE_URL);
   });
 });

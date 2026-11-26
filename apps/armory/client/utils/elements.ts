@@ -54,6 +54,9 @@ export function calculateFinalDamage(
     const existing = output.get(target) || 0;
     output.set(target, existing + modTotal);
   } else if (sortedMods.length > 0) {
+    for (const ie of innateElements) {
+      output.delete(ie.element);
+    }
     const elementSequence = buildElementSequence(sortedMods, innateElements);
     const combinedElements = combineElements(elementSequence);
 

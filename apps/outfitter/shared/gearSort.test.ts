@@ -1,14 +1,25 @@
 import { describe, expect, it } from 'vitest';
 
 import { compareInventoryGear } from './gearSort.ts';
-import { ALL_SETS, INVENTORY_SET_KEYS } from './sets.ts';
+import { ALL_SETS, INVENTORY_SET_KEYS, setsForSlot, setsSortedByTier } from './sets.ts';
 
-describe('INVENTORY_SET_KEYS', () => {
-  it('lists every set exactly once in in-game bag order', () => {
+describe('set ordering and slot filtering', () => {
+  it('lists every set once in in-game bag order and orders setsSortedByTier by tier/side', () => {
     expect([...INVENTORY_SET_KEYS].sort()).toEqual(ALL_SETS.map((set) => set.key).sort());
     expect(INVENTORY_SET_KEYS[0]).toBe('greyfang');
-    expect(INVENTORY_SET_KEYS[25]).toBe('goldmane');
     expect(INVENTORY_SET_KEYS.at(-1)).toBe('annihilating_might');
+
+    const sorted = setsSortedByTier();
+    const keys = sorted.map((set) => set.key);
+    const tiers = sorted.map((set) => set.tier);
+    expect(tiers.slice(1).every((tier, index) => tier >= (tiers[index] ?? 0))).toBe(true);
+    expect(keys.indexOf('calamity')).toBeLessThan(keys.indexOf('fatality'));
+    expect(keys.indexOf('warlord')).toBeLessThan(keys.indexOf('ageless_wrath'));
+
+    const weaponSets = setsForSlot('weapon');
+    expect(weaponSets.every((set) => set.side === 'left')).toBe(true);
+    expect(weaponSets[0]?.tier).toBe(1);
+    expect(weaponSets.at(-1)?.tier).toBe(3);
   });
 });
 

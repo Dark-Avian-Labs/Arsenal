@@ -7,15 +7,21 @@ describe('isDueInMonth', () => {
     expect(isDueInMonth({ frequency: 'monthly', due_month: null, end_date: null }, 2026, 8)).toBe(true);
   });
 
-  it('includes quarterly only on cadence months', () => {
+  it('includes quarterly only on cadence months, including wrap-around when month < due_month', () => {
     const entry = { frequency: 'quarterly' as const, due_month: 4, end_date: null };
+    expect(isDueInMonth(entry, 2026, 1)).toBe(true);
     expect(isDueInMonth(entry, 2026, 4)).toBe(true);
     expect(isDueInMonth(entry, 2026, 7)).toBe(true);
+    expect(isDueInMonth(entry, 2026, 10)).toBe(true);
     expect(isDueInMonth(entry, 2026, 8)).toBe(false);
+    // Negative-modulo wrap: due_month 11 -> due in Feb (2), May (5), Aug (8), Nov (11)
+    const nov = { frequency: 'quarterly' as const, due_month: 11, end_date: null };
+    expect(isDueInMonth(nov, 2026, 2)).toBe(true);
+    expect(isDueInMonth(nov, 2026, 3)).toBe(false);
   });
 
-  it('includes halfyearly only every 6 months from anchor', () => {
-    const entry = { frequency: 'halfyearly' as const, due_month: 2, end_date: null };
+  it('includes halfyearly only every 6 months from anchor, including wrap-around', () => {
+    const entry = { frequency: 'halfyearly' as const, due_month: 8, end_date: null };
     expect(isDueInMonth(entry, 2026, 2)).toBe(true);
     expect(isDueInMonth(entry, 2026, 8)).toBe(true);
     expect(isDueInMonth(entry, 2026, 5)).toBe(false);
@@ -59,7 +65,7 @@ describe('isDueInMonth', () => {
 });
 
 describe('amountForMonth', () => {
-  it('uses final_amount_cents in the credit end month', () => {
+  it('uses final_amount_cents (including 0) in the credit end month', () => {
     const entry = {
       kind: 'credit' as const,
       frequency: 'monthly' as const,
@@ -72,11 +78,12 @@ describe('amountForMonth', () => {
     expect(amountForMonth(entry, 2028, 2)).toBe(95_000);
     expect(amountForMonth(entry, 2028, 3)).toBe(89_197);
     expect(amountForMonth(entry, 2028, 4)).toBeNull();
+    expect(amountForMonth({ ...entry, final_amount_cents: 0 }, 2028, 3)).toBe(0);
   });
 });
 
 describe('computeMonthTotals', () => {
-  it('sums only entries due this month', () => {
+  it('sums expense, credit (with final_amount_cents), and income due this month', () => {
     const totals = computeMonthTotals(
       [
         {
@@ -87,6 +94,15 @@ describe('computeMonthTotals', () => {
           due_month: null,
           end_date: null,
           final_amount_cents: null,
+        },
+        {
+          kind: 'credit',
+          frequency: 'monthly',
+          amount_cents: 250_00,
+          due_day: 5,
+          due_month: null,
+          end_date: '2026-08-05',
+          final_amount_cents: 50_00,
         },
         {
           kind: 'expense',
@@ -110,8 +126,8 @@ describe('computeMonthTotals', () => {
       2026,
       8,
     );
-    expect(totals.expenseCents).toBe(100_00);
+    expect(totals.expenseCents).toBe(150_00);
     expect(totals.incomeCents).toBe(300_000);
-    expect(totals.netCents).toBe(300_000 - 100_00);
+    expect(totals.netCents).toBe(300_000 - 150_00);
   });
 });

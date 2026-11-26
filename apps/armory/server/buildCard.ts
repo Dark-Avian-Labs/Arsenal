@@ -1,3 +1,5 @@
+import { helminthEntryByArmoryKey, helminthEntryByDePath } from '@dark-avian-labs/warframe-catalog';
+
 import { parseBuildConfig } from './routes/apiShared.ts';
 
 type CardSlot = {
@@ -71,13 +73,16 @@ function extractCardSummary(modConfigRaw: string): {
     const rank = typeof s.rank === 'number' && Number.isFinite(s.rank) ? s.rank : null;
     const polarity =
       typeof s.polarity === 'string' ? (POLARITY_LABEL[s.polarity] ?? s.polarity) : null;
-    const slotType = typeof s.slotType === 'string' ? s.slotType : 'normal';
+    const slotType =
+      typeof s.type === 'string' ? s.type : typeof s.slotType === 'string' ? s.slotType : 'general';
     slots.push({ name: modName, rank, polarity, slotType });
   }
 
-  const rawArcanes = Array.isArray(parsed?.arcanes)
-    ? (parsed.arcanes as Record<string, unknown>[])
-    : [];
+  const rawArcanes = Array.isArray(parsed?.arcaneSlots)
+    ? (parsed.arcaneSlots as Record<string, unknown>[])
+    : Array.isArray(parsed?.arcanes)
+      ? (parsed.arcanes as Record<string, unknown>[])
+      : [];
   const arcanes: string[] = [];
   for (const a of rawArcanes) {
     const arcane = a?.arcane as Record<string, unknown> | undefined;
@@ -91,10 +96,20 @@ function extractCardSummary(modConfigRaw: string): {
   }
 
   const helminthObj = parsed?.helminth as Record<string, unknown> | undefined;
-  const helminth =
-    typeof helminthObj?.abilityName === 'string' && helminthObj.abilityName.trim()
-      ? helminthObj.abilityName.trim()
-      : null;
+  let helminth: string | null = null;
+  if (typeof helminthObj?.replacement_ability_key === 'string') {
+    helminth =
+      helminthEntryByArmoryKey(helminthObj.replacement_ability_key)?.name ??
+      helminthObj.replacement_ability_key.split('/').pop() ??
+      null;
+  } else if (typeof helminthObj?.replacement_ability_unique_name === 'string') {
+    helminth =
+      helminthEntryByDePath(helminthObj.replacement_ability_unique_name)?.name ??
+      helminthObj.replacement_ability_unique_name.split('/').pop() ??
+      null;
+  } else if (typeof helminthObj?.abilityName === 'string' && helminthObj.abilityName.trim()) {
+    helminth = helminthObj.abilityName.trim();
+  }
 
   return {
     slots: slots.slice(0, 10),

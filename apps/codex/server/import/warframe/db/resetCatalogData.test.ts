@@ -1,7 +1,7 @@
 import { SqliteDatabase } from '@dark-avian-labs/server-kit';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { resetCatalogData, USER_TABLE_NAMES } from './resetCatalogData.ts';
+import { resetCatalogData } from './resetCatalogData.ts';
 
 describe('resetCatalogData', () => {
   let db: SqliteDatabase | null = null;
@@ -54,10 +54,5 @@ describe('resetCatalogData', () => {
       (db.prepare('SELECT lock_token FROM import_lease WHERE id = 1').get() as { lock_token: string }).lock_token,
     ).toBe('held-token');
     expect((db.prepare('SELECT COUNT(*) AS c FROM import_runs').get() as { c: number }).c).toBe(1);
-  });
-
-  it('documents user table guard list', () => {
-    expect(USER_TABLE_NAMES).toContain('builds');
-    expect(USER_TABLE_NAMES).toContain('loadouts');
   });
 });

@@ -285,4 +285,66 @@ describe('plan authorization and invites', () => {
       expect(data.archivedEntryCounts[categoryId]).toBe(1);
     });
   });
+
+  it('covers category CRUD/reorder, entry PATCH/DELETE, pendingInvites privacy, and plan deletion', async () => {
+    await withServer(async (base) => {
+      // Viewer sees empty pendingInvites even when owner has created one
+      authState.user = owner;
+      const invRes = await http(base, 'POST', `/api/plans/${planId}/invites`, {
+        email: 'secret@example.com',
+        role: 'viewer',
+      });
+      expect(invRes.status).toBe(201);
+      const inviteId = (invRes.data as { invite: { id: string } }).invite.id;
+
+      authState.user = viewer;
+      const viewerPlan = await http(base, 'GET', `/api/plans/${planId}`);
+      expect((viewerPlan.data as { pendingInvites: unknown[] }).pendingInvites).toEqual([]);
+
+      // Viewer cannot create a category
+      const viewerCat = await http(base, 'POST', `/api/plans/${planId}/categories`, { name: 'Blocked' });
+      expect(viewerCat.status).toBe(403);
+
+      // Editor can create, rename, and delete a category, and PATCH/DELETE entries
+      authState.user = editor;
+      const createdCat = await http(base, 'POST', `/api/plans/${planId}/categories`, { name: 'Utilities' });
+      expect(createdCat.status).toBe(201);
+      const catId = (createdCat.data as { category: { id: string } }).category.id;
+
+      const renamedCat = await http(base, 'PATCH', `/api/plans/${planId}/categories/${catId}`, {
+        name: 'Bills',
+      });
+      expect(renamedCat.status).toBe(200);
+
+      const createdEntry = await http(base, 'POST', `/api/plans/${planId}/entries`, monthlyEntry(catId, 'Power'));
+      expect(createdEntry.status).toBe(201);
+      const entryId = (createdEntry.data as { entry: { id: string } }).entry.id;
+
+      const patchedEntry = await http(base, 'PATCH', `/api/plans/${planId}/entries/${entryId}`, {
+        amount_cents: 4500,
+        frequency: 'quarterly',
+        due_month: 2,
+      });
+      expect(patchedEntry.status).toBe(200);
+      expect((patchedEntry.data as { entry: { amount_cents: number; frequency: string } }).entry).toMatchObject({
+        amount_cents: 4500,
+        frequency: 'quarterly',
+      });
+
+      const deletedEntry = await http(base, 'DELETE', `/api/plans/${planId}/entries/${entryId}`);
+      expect(deletedEntry.status).toBe(204);
+
+      const deletedCat = await http(base, 'DELETE', `/api/plans/${planId}/categories/${catId}`);
+      expect(deletedCat.status).toBe(204);
+
+      // Owner can revoke an invite, remove a member, and delete a plan (editor cannot)
+      const editorDeletePlan = await http(base, 'DELETE', `/api/plans/${planId}`);
+      expect(editorDeletePlan.status).toBe(403);
+
+      authState.user = owner;
+      expect((await http(base, 'DELETE', `/api/plans/${planId}/invites/${inviteId}`)).status).toBe(204);
+      expect((await http(base, 'DELETE', `/api/plans/${planId}/members/${viewer.id}`)).status).toBe(204);
+      expect((await http(base, 'DELETE', `/api/plans/${planId}`)).status).toBe(204);
+    });
+  });
 });

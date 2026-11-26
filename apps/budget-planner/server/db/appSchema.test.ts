@@ -216,6 +216,10 @@ describe('createAppSchema', () => {
       { id: 'a4', color: 'purple' },
       { id: 'a5', color: 'orange' },
     ]);
+
+    // Running createAppSchema again on an already-migrated DB is idempotent and preserves data.
+    expect(() => createAppSchema(db)).not.toThrow();
+    expect(db.prepare('SELECT COUNT(*) AS c FROM accounts').get()).toEqual({ c: 5 });
     db.close();
   });
 });

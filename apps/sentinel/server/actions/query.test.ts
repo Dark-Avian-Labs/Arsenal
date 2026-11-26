@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { closeActionsDb, getActionsDb } from './db.ts';
 import { durationNsToMs, mapForgejoRun } from './map.ts';
 import { listRuns, querySeries, summarizeRuns } from './query.ts';
-import { upsertRun } from './writer.ts';
+import { pruneOldRuns, upsertRun } from './writer.ts';
 
 afterEach(() => {
   closeActionsDb();
@@ -183,5 +183,28 @@ describe('actions query', () => {
     const exact = listRuns(db, { repo: 'Dark-Avian-Labs/Arsenal', range: '24h', now });
     expect(exact.length).toBeGreaterThan(0);
     expect(exact.every((row) => row.repo === 'Arsenal')).toBe(true);
+
+    // Older runs are pruned by pruneOldRuns while recent runs remain.
+    upsertRun(db, {
+      owner: 'Dark-Avian-Labs',
+      repo: 'Arsenal',
+      runId: 99,
+      workflowId: 'pr.yml',
+      title: 'Ancient',
+      status: 'success',
+      event: 'push',
+      ref: 'main',
+      commitSha: 'ffffffffffffffffffffffffffffffffffffffff',
+      runNumber: 99,
+      htmlUrl: 'https://git.darkavianlabs.com/Dark-Avian-Labs/Arsenal/actions/runs/99',
+      startedAt: now - 200 * 86_400_000,
+      stoppedAt: now - 200 * 86_400_000 + 1_000,
+      durationMs: 1_000,
+      createdAt: now - 200 * 86_400_000,
+      updatedAt: now - 200 * 86_400_000,
+    });
+    pruneOldRuns(db, now);
+    expect(db.prepare('SELECT 1 FROM runs WHERE run_id = 99').get()).toBeUndefined();
+    expect(db.prepare('SELECT 1 FROM runs WHERE run_id = 3').get()).toBeDefined();
   });
 });

@@ -1,4 +1,5 @@
-import type { SqliteDatabase } from '@dark-avian-labs/server-kit';
+import { openMemorySqlite, type SqliteDatabase } from '@dark-avian-labs/server-kit';
+import { createWarframeCatalogSchema } from '@dark-avian-labs/warframe-catalog/server';
 import express from 'express';
 import request from 'supertest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -14,6 +15,7 @@ const authState = vi.hoisted(() => ({
 }));
 
 const dbState = vi.hoisted(() => ({
+  catalogDb: null as SqliteDatabase | null,
   db: null as SqliteDatabase | null,
 }));
 
@@ -43,11 +45,11 @@ vi.mock('../auth/armoryUsers.ts', () => ({
 
 vi.mock('../db/connection.ts', () => ({
   getCatalogDb: () => {
-    if (!dbState.db) throw new Error('Test DB not initialized');
-    return dbState.db;
+    if (!dbState.catalogDb) throw new Error('Test catalog DB not initialized');
+    return dbState.catalogDb;
   },
   getUserDb: () => {
-    if (!dbState.db) throw new Error('Test DB not initialized');
+    if (!dbState.db) throw new Error('Test user DB not initialized');
     return dbState.db;
   },
 }));
@@ -65,12 +67,17 @@ describe('builds API routes', () => {
   beforeEach(() => {
     authState.userId = null;
     authState.isArmoryAdmin = false;
+    dbState.catalogDb?.close();
     dbState.db?.close();
+    dbState.catalogDb = openMemorySqlite();
+    createWarframeCatalogSchema(dbState.catalogDb);
     dbState.db = createMemoryUserDb();
   });
 
   afterEach(() => {
     __catalogResponseCacheTest.bust();
+    dbState.catalogDb?.close();
+    dbState.catalogDb = null;
     dbState.db?.close();
     dbState.db = null;
   });
@@ -257,5 +264,70 @@ describe('builds API routes', () => {
     const afterWrite = await request(createTestApp()).get('/api/builds/catalog');
     expect(afterWrite.status).toBe(200);
     expect(afterWrite.body.entries).toHaveLength(2);
+  });
+
+  it('enforces ownership on PUT/DELETE, rotates share_token across visibility changes, and cascades loadout links', async () => {
+    const db = dbState.db!;
+    const buildId = insertTestBuild(db, { name: 'Mine', visibility: 'unlisted', shareToken: 'tok-1' });
+    const loadoutId = insertTestLoadout(db);
+    linkLoadoutBuild(db, loadoutId, buildId, 'warframe');
+
+    authState.userId = 'user_other';
+    expect(
+      (
+        await request(createTestApp())
+          .put(`/api/builds/${buildId}`)
+          .send({ name: 'Hijack', mod_config: minimalModConfig() })
+      ).status,
+    ).toBe(404);
+    expect((await request(createTestApp()).delete(`/api/builds/${buildId}`)).status).toBe(404);
+
+    authState.userId = 'user_owner';
+    const toPrivate = await request(createTestApp())
+      .put(`/api/builds/${buildId}`)
+      .send({ name: 'Now Private', visibility: 'private', mod_config: minimalModConfig() });
+    expect(toPrivate.status).toBe(200);
+    expect(
+      (db.prepare('SELECT share_token FROM builds WHERE id = ?').get(buildId) as { share_token: string | null })
+        .share_token,
+    ).toBeNull();
+
+    const del = await request(createTestApp()).delete(`/api/builds/${buildId}`);
+    expect(del.status).toBe(200);
+    expect(db.prepare('SELECT 1 FROM loadout_builds WHERE build_id = ?').get(buildId)).toBeUndefined();
+  });
+
+  it('hides favorited builds from non-owners if the owner makes them private and gates card.svg with Cache-Control', async () => {
+    const db = dbState.db!;
+    dbState
+      .catalogDb!.prepare(
+        'INSERT INTO warframes (unique_name, name, health, shield, armor, power, sprint_speed, mastery_req) VALUES (?, ?, 100, 100, 100, 100, 1.0, 0)',
+      )
+      .run('/Lotus/Powersuits/Excalibur/Excalibur', 'Excalibur');
+    const buildId = insertTestBuild(db, { name: 'Shared Frame', visibility: 'public' });
+
+    authState.userId = 'user_other';
+    const app = createTestApp();
+    expect((await request(app).post(`/api/builds/${buildId}/favorite`)).status).toBe(200);
+    const favBefore = await request(app).get('/api/builds/favorites');
+    expect(favBefore.body.builds).toHaveLength(1);
+
+    const cardPublic = await request(app).get(`/api/builds/${buildId}/card.svg`);
+    expect(cardPublic.status).toBe(200);
+    expect(cardPublic.headers['content-type']).toContain('image/svg+xml');
+    expect(cardPublic.headers['cache-control']).toBe('public, max-age=300');
+    const cardSvg =
+      typeof cardPublic.text === 'string' && cardPublic.text.length > 0
+        ? cardPublic.text
+        : Buffer.isBuffer(cardPublic.body)
+          ? cardPublic.body.toString('utf8')
+          : String(cardPublic.body);
+    expect(cardSvg).toContain('Excalibur');
+
+    // Owner flips build to private -> disappears from non-owner favorites and card.svg returns 404.
+    db.prepare("UPDATE builds SET visibility = 'private' WHERE id = ?").run(buildId);
+    const favAfter = await request(app).get('/api/builds/favorites');
+    expect(favAfter.body.builds).toHaveLength(0);
+    expect((await request(app).get(`/api/builds/${buildId}/card.svg`)).status).toBe(404);
   });
 });

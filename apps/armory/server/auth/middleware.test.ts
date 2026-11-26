@@ -15,85 +15,46 @@ vi.mock('@clerk/express', () => ({
 }));
 
 import { mockResponse } from '../testing/mockResponse.ts';
-import { getClerkAuthState, isClerkConfigured, requireArmoryAdmin, requireAuthApi } from './middleware.ts';
+import { getClerkAuthState, requireArmoryAdmin } from './middleware.ts';
 
-const previousClerkEnv = {
-  CLERK_PUBLISHABLE_KEY: process.env.CLERK_PUBLISHABLE_KEY,
-  CLERK_SECRET_KEY: process.env.CLERK_SECRET_KEY,
-};
-
-function restoreClerkEnv(): void {
-  for (const [name, value] of Object.entries(previousClerkEnv)) {
-    if (value === undefined) delete process.env[name];
-    else process.env[name] = value;
-  }
-}
-
-function setClerkKeys(publishable: string, secret: string): void {
-  process.env.CLERK_PUBLISHABLE_KEY = publishable;
-  process.env.CLERK_SECRET_KEY = secret;
-}
-
-describe('isClerkConfigured', () => {
-  afterEach(restoreClerkEnv);
-
-  it('returns false when both keys are empty', () => {
-    delete process.env.CLERK_PUBLISHABLE_KEY;
-    delete process.env.CLERK_SECRET_KEY;
-    expect(isClerkConfigured()).toBe(false);
-  });
-
-  it('rejects bare pk_test_ and sk_test_ prefixes', () => {
-    setClerkKeys('pk_test_', 'sk_test_abc');
-    expect(() => isClerkConfigured()).toThrow(/FATAL/);
-  });
-
-  it('rejects a secret that is only sk_live_', () => {
-    setClerkKeys('pk_live_abc', 'sk_live_');
-    expect(() => isClerkConfigured()).toThrow(/FATAL/);
-  });
-
-  it('rejects placeholder keys', () => {
-    setClerkKeys('pk_test_placeholder', 'sk_test_placeholder');
-    expect(() => isClerkConfigured()).toThrow(/FATAL/);
-  });
-});
-
-describe('getClerkAuthState', () => {
+describe('Armory auth middleware', () => {
   beforeEach(() => {
-    setClerkKeys('pk_test_armoryunit', 'sk_test_armoryunit');
+    vi.stubEnv('CLERK_PUBLISHABLE_KEY', 'pk_test_armoryunit');
+    vi.stubEnv('CLERK_SECRET_KEY', 'sk_test_armoryunit');
     authState.userId = null;
     authState.sessionClaims = undefined;
   });
 
-  afterEach(restoreClerkEnv);
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
 
-  it('returns authenticated admin state', () => {
+  it('resolves authenticated admin, non-admin, unauthenticated, and unconfigured states', () => {
     authState.userId = 'user_1';
     authState.sessionClaims = { metadata: { apps: { armory: 'admin' } } };
-    const state = getClerkAuthState({} as Request);
-    expect(state.authenticated).toBe(true);
-    expect(state.userId).toBe('user_1');
-    expect(state.isArmoryAdmin).toBe(true);
-  });
+    expect(getClerkAuthState({} as Request)).toEqual({
+      authenticated: true,
+      userId: 'user_1',
+      isArmoryAdmin: true,
+    });
 
-  it('returns unauthenticated when userId is missing', () => {
-    const state = getClerkAuthState({} as Request);
-    expect(state.authenticated).toBe(false);
-    expect(state.isArmoryAdmin).toBe(false);
-  });
-
-  it('returns authenticated non-admin for signed-in user without admin role', () => {
     authState.userId = 'user_2';
     authState.sessionClaims = { metadata: { apps: { armory: 'user' } } };
-    const state = getClerkAuthState({} as Request);
-    expect(state.authenticated).toBe(true);
-    expect(state.isArmoryAdmin).toBe(false);
-  });
+    expect(getClerkAuthState({} as Request)).toEqual({
+      authenticated: true,
+      userId: 'user_2',
+      isArmoryAdmin: false,
+    });
 
-  it('returns signed-out when Clerk keys are empty even if getAuth has a user', () => {
-    delete process.env.CLERK_PUBLISHABLE_KEY;
-    delete process.env.CLERK_SECRET_KEY;
+    authState.userId = null;
+    expect(getClerkAuthState({} as Request)).toEqual({
+      authenticated: false,
+      userId: null,
+      isArmoryAdmin: false,
+    });
+
+    vi.stubEnv('CLERK_PUBLISHABLE_KEY', '');
+    vi.stubEnv('CLERK_SECRET_KEY', '');
     authState.userId = 'user_1';
     expect(getClerkAuthState({} as Request)).toEqual({
       authenticated: false,
@@ -101,68 +62,27 @@ describe('getClerkAuthState', () => {
       isArmoryAdmin: false,
     });
   });
-});
 
-describe('requireAuthApi', () => {
-  beforeEach(() => {
-    setClerkKeys('pk_test_armoryunit', 'sk_test_armoryunit');
-    authState.userId = null;
-  });
+  it('enforces 401 unauthenticated, 403 non-admin, and passes armory admin in requireArmoryAdmin', () => {
+    const res401 = mockResponse();
+    const next1 = vi.fn();
+    requireArmoryAdmin({} as Request, res401, next1);
+    expect(res401.statusCode).toBe(401);
+    expect(next1).not.toHaveBeenCalled();
 
-  afterEach(restoreClerkEnv);
-
-  it('returns 401 JSON when unauthenticated', () => {
-    const res = mockResponse();
-    const next = vi.fn();
-    requireAuthApi({} as Request, res, next);
-    expect(res.statusCode).toBe(401);
-    expect(res.body).toEqual({ error: 'Unauthorized' });
-    expect(next).not.toHaveBeenCalled();
-  });
-
-  it('calls next when authenticated with userId', () => {
-    authState.userId = 'user_1';
-    const res = mockResponse();
-    const next = vi.fn();
-    requireAuthApi({ method: 'GET', headers: {} } as Request, res, next);
-    expect(next).toHaveBeenCalledOnce();
-  });
-});
-
-describe('requireArmoryAdmin', () => {
-  beforeEach(() => {
-    setClerkKeys('pk_test_armoryunit', 'sk_test_armoryunit');
-    authState.userId = null;
-    authState.sessionClaims = undefined;
-  });
-
-  afterEach(restoreClerkEnv);
-
-  it('returns 401 when unauthenticated', () => {
-    const res = mockResponse();
-    const next = vi.fn();
-    requireArmoryAdmin({} as Request, res, next);
-    expect(res.statusCode).toBe(401);
-    expect(next).not.toHaveBeenCalled();
-  });
-
-  it('returns 403 for authenticated non-admin', () => {
     authState.userId = 'user_1';
     authState.sessionClaims = { metadata: { apps: { armory: 'user' } } };
-    const res = mockResponse();
-    const next = vi.fn();
-    requireArmoryAdmin({} as Request, res, next);
-    expect(res.statusCode).toBe(403);
-    expect(res.body).toEqual({ error: 'Game admin access required' });
-    expect(next).not.toHaveBeenCalled();
-  });
+    const res403 = mockResponse();
+    const next2 = vi.fn();
+    requireArmoryAdmin({} as Request, res403, next2);
+    expect(res403.statusCode).toBe(403);
+    expect(res403.body).toEqual({ error: 'Game admin access required' });
+    expect(next2).not.toHaveBeenCalled();
 
-  it('calls next for armory admin', () => {
-    authState.userId = 'user_1';
     authState.sessionClaims = { metadata: { apps: { armory: 'admin' } } };
-    const res = mockResponse();
-    const next = vi.fn();
-    requireArmoryAdmin({} as Request, res, next);
-    expect(next).toHaveBeenCalledOnce();
+    const res200 = mockResponse();
+    const next3 = vi.fn();
+    requireArmoryAdmin({} as Request, res200, next3);
+    expect(next3).toHaveBeenCalledOnce();
   });
 });

@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 
 import { ACCOUNT_COLORS, nextAccountColor, remapAccountColor } from './accountColors.ts';
 
-describe('remapAccountColor', () => {
-  it('maps legacy picker names to the closest rarity hue', () => {
+describe('accountColors', () => {
+  it('remaps legacy picker names, keeps ladder names, and falls back for unknown values', () => {
     expect(remapAccountColor('rose')).toBe('red');
     expect(remapAccountColor('amber')).toBe('gold');
     expect(remapAccountColor('lime')).toBe('green');
@@ -11,17 +11,14 @@ describe('remapAccountColor', () => {
     expect(remapAccountColor('indigo')).toBe('blue');
     expect(remapAccountColor('violet')).toBe('purple');
     expect(remapAccountColor('fuchsia')).toBe('pink');
-  });
-
-  it('keeps ladder names', () => {
     for (const color of ACCOUNT_COLORS) {
       expect(remapAccountColor(color)).toBe(color);
     }
+    expect(remapAccountColor('totally-unknown')).toBeNull();
   });
-});
 
-describe('nextAccountColor', () => {
-  it('skips taken ladder colors', () => {
+  it('picks the next unused ladder color and wraps cleanly when all colors are taken', () => {
     expect(nextAccountColor(['red', 'orange'])).toBe('gold');
+    expect(ACCOUNT_COLORS).toContain(nextAccountColor([...ACCOUNT_COLORS]));
   });
 });

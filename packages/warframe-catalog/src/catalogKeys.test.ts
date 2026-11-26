@@ -1,15 +1,14 @@
 import { SqliteDatabase } from '@dark-avian-labs/server-kit';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { catalogArmoryKeyForArchonBuff } from './catalogKeys.ts';
+import {
+  backfillArchonBuffArmoryKeys,
+  backfillHelminthArmoryKeys,
+  catalogArmoryKeyForArchonBuff,
+} from './catalogKeys.ts';
+import { HELMINTH_REGISTRY_ENTRIES } from './helminthRegistry.ts';
 
 describe('catalogKeys', () => {
-  it('builds canonical Common archon key from color and sort order', () => {
-    expect(catalogArmoryKeyForArchonBuff('Crimson', 4)).toBe('/Armory/Archon/Crimson/Common/AbilityStrength');
-  });
-});
-
-describe('backfillArchonBuffArmoryKeys', () => {
   let db: SqliteDatabase | null = null;
 
   afterEach(() => {
@@ -17,8 +16,15 @@ describe('backfillArchonBuffArmoryKeys', () => {
     db = null;
   });
 
-  it('sets armory_key on buff rows', async () => {
-    const { backfillArchonBuffArmoryKeys } = await import('./catalogKeys.ts');
+  it('builds canonical Common archon keys and rejects invalid colors or sort orders', () => {
+    expect(catalogArmoryKeyForArchonBuff('Crimson', 4)).toBe('/Armory/Archon/Crimson/Common/AbilityStrength');
+    expect(catalogArmoryKeyForArchonBuff('NotAColor', 1)).toBeNull();
+    expect(catalogArmoryKeyForArchonBuff('Crimson', 99)).toBeNull();
+  });
+
+  it('backfills archon_shard_buffs and helminth abilities armory keys without touching unrelated rows', () => {
+    const sampleHelminth = HELMINTH_REGISTRY_ENTRIES[0]!;
+    const sampleDePath = sampleHelminth.de_paths[0]!;
     db = new SqliteDatabase(':memory:');
     db.exec(`
       CREATE TABLE archon_shard_types (id INTEGER PRIMARY KEY, name TEXT);
@@ -28,14 +34,40 @@ describe('backfillArchonBuffArmoryKeys', () => {
         sort_order INTEGER,
         armory_key TEXT
       );
-      INSERT INTO archon_shard_types (id, name) VALUES (1, 'Violet');
-      INSERT INTO archon_shard_buffs (id, shard_type_id, sort_order) VALUES (1, 1, 4);
+      CREATE TABLE abilities (
+        unique_name TEXT PRIMARY KEY,
+        is_helminth_extractable INTEGER DEFAULT 0,
+        armory_helminth_key TEXT
+      );
+      INSERT INTO archon_shard_types (id, name) VALUES (1, 'Violet'), (2, 'Unknown');
+      INSERT INTO archon_shard_buffs (id, shard_type_id, sort_order) VALUES (1, 1, 4), (2, 2, 1);
     `);
-    const n = backfillArchonBuffArmoryKeys(db);
-    expect(n).toBe(1);
-    const row = db.prepare('SELECT armory_key FROM archon_shard_buffs WHERE id = 1').get() as {
-      armory_key: string;
-    };
-    expect(row.armory_key).toBe('/Armory/Archon/Violet/Common/Equilibrium');
+    db.prepare(
+      'INSERT INTO abilities (unique_name, is_helminth_extractable, armory_helminth_key) VALUES (?, ?, ?)',
+    ).run(sampleDePath, 1, null);
+    db.prepare(
+      'INSERT INTO abilities (unique_name, is_helminth_extractable, armory_helminth_key) VALUES (?, ?, ?)',
+    ).run('/Lotus/Powersuits/Unknown/Nope', 1, null);
+    db.prepare(
+      'INSERT INTO abilities (unique_name, is_helminth_extractable, armory_helminth_key) VALUES (?, ?, ?)',
+    ).run('/Lotus/Powersuits/Other/NotHelminth', 0, null);
+
+    expect(backfillArchonBuffArmoryKeys(db)).toBe(1);
+    expect(
+      (
+        db.prepare('SELECT armory_key FROM archon_shard_buffs WHERE id = 1').get() as {
+          armory_key: string;
+        }
+      ).armory_key,
+    ).toBe('/Armory/Archon/Violet/Common/Equilibrium');
+
+    expect(backfillHelminthArmoryKeys(db)).toBe(1);
+    expect(
+      (
+        db.prepare('SELECT armory_helminth_key FROM abilities WHERE unique_name = ?').get(sampleDePath) as {
+          armory_helminth_key: string;
+        }
+      ).armory_helminth_key,
+    ).toBe(sampleHelminth.armory_key);
   });
 });

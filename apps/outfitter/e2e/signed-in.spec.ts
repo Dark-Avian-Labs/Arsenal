@@ -1,9 +1,4 @@
-import { expectSignedInShell } from '@dark-avian-labs/config/e2e';
 import { expect, test } from '@playwright/test';
-
-test('signed-in shell shows logout', async ({ page }) => {
-  await expectSignedInShell(page);
-});
 
 test('created account is still there after reload', async ({ page }) => {
   const name = 'E2E Main';

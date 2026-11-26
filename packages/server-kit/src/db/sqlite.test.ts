@@ -5,6 +5,7 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { createDbSingleton, openMemorySqlite, SqliteDatabase } from './sqlite.ts';
+import { requireAbsoluteSqlitePath } from './sqlitePath.ts';
 
 describe('SqliteDatabase (node:sqlite adapter)', () => {
   it('normalizes row prototypes, named params, and array params, and rejects unknown named params', () => {
@@ -117,5 +118,16 @@ describe('SqliteDatabase (node:sqlite adapter)', () => {
     } finally {
       fs.rmSync(dir, { recursive: true, force: true });
     }
+  });
+
+  it('validates absolute sqlite paths and rejects missing or relative paths', () => {
+    const absolute = path.resolve('session.db');
+    expect(requireAbsoluteSqlitePath('SESSION_DB_PATH', ` ${absolute} `)).toBe(absolute);
+    expect(() => requireAbsoluteSqlitePath('SESSION_DB_PATH', undefined)).toThrow(
+      'SESSION_DB_PATH must be set to an absolute SQLite path.',
+    );
+    expect(() => requireAbsoluteSqlitePath('WARFRAME_CATALOG_DB_PATH', './data/warframe-catalog.db')).toThrow(
+      'WARFRAME_CATALOG_DB_PATH must be absolute; relative paths are not supported.',
+    );
   });
 });

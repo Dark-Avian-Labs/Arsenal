@@ -1,24 +1,19 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { getClerkAuthorizedParties } from './clerkAuthorizedParties.ts';
 
 describe('getClerkAuthorizedParties', () => {
-  const previousEnv = {
-    NODE_ENV: process.env.NODE_ENV,
-    APP_PUBLIC_BASE_URL: process.env.APP_PUBLIC_BASE_URL,
-    ALLOWED_APP_ORIGINS: process.env.ALLOWED_APP_ORIGINS,
-  };
-
   afterEach(() => {
-    process.env.NODE_ENV = previousEnv.NODE_ENV;
-    process.env.APP_PUBLIC_BASE_URL = previousEnv.APP_PUBLIC_BASE_URL;
-    process.env.ALLOWED_APP_ORIGINS = previousEnv.ALLOWED_APP_ORIGINS;
+    vi.unstubAllEnvs();
   });
 
-  it('includes app public URL and configured sibling origins', () => {
-    process.env.NODE_ENV = 'production';
-    process.env.APP_PUBLIC_BASE_URL = 'https://appbase.example.com/';
-    process.env.ALLOWED_APP_ORIGINS = 'https://codex.example.com,https://armory.example.com';
+  it('includes app public URL and configured sibling origins in production, dropping http siblings', () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    vi.stubEnv('APP_PUBLIC_BASE_URL', 'https://appbase.example.com/');
+    vi.stubEnv(
+      'ALLOWED_APP_ORIGINS',
+      'https://codex.example.com,http://insecure.example.com,https://armory.example.com',
+    );
 
     expect(getClerkAuthorizedParties()).toEqual([
       'https://appbase.example.com',
@@ -27,10 +22,21 @@ describe('getClerkAuthorizedParties', () => {
     ]);
   });
 
+  it('rejects non-https APP_PUBLIC_BASE_URL and missing APP_PUBLIC_BASE_URL in production', () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    vi.stubEnv('ALLOWED_APP_ORIGINS', '');
+
+    vi.stubEnv('APP_PUBLIC_BASE_URL', 'http://appbase.example.com');
+    expect(() => getClerkAuthorizedParties()).toThrow();
+
+    vi.stubEnv('APP_PUBLIC_BASE_URL', '');
+    expect(() => getClerkAuthorizedParties()).toThrow();
+  });
+
   it('includes localhost origins in development', () => {
-    process.env.NODE_ENV = 'development';
-    process.env.APP_PUBLIC_BASE_URL = 'http://localhost:3000';
-    delete process.env.ALLOWED_APP_ORIGINS;
+    vi.stubEnv('NODE_ENV', 'development');
+    vi.stubEnv('APP_PUBLIC_BASE_URL', 'http://localhost:3000');
+    vi.stubEnv('ALLOWED_APP_ORIGINS', '');
 
     const parties = getClerkAuthorizedParties();
     expect(parties).toContain('http://localhost:3000');

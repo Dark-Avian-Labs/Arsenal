@@ -168,4 +168,43 @@ describe('loadouts API routes', () => {
     expect(names).toHaveLength(2);
     expect(allowed.body.loadout.share_token).toBeUndefined();
   });
+
+  it('publishes loadout + builds atomically, rejects linking another user build, and enforces owner-only copy/delete', async () => {
+    const db = dbState.db!;
+    const loadoutId = insertTestLoadout(db, { visibility: 'private' });
+    const ownBuild = insertTestBuild(db, { visibility: 'private', clerkUserId: 'user_owner' });
+    const otherBuild = insertTestBuild(db, { visibility: 'public', clerkUserId: 'user_other' });
+
+    authState.userId = 'user_owner';
+    const app = createTestApp();
+
+    // Reject linking a build owned by someone else.
+    const badLink = await request(app)
+      .post(`/api/loadouts/${loadoutId}/builds`)
+      .send({ build_id: otherBuild, slot_type: 'primary' });
+    expect(badLink.status).toBe(404);
+
+    // Link own private build and publish atomically.
+    const okLink = await request(app)
+      .post(`/api/loadouts/${loadoutId}/builds`)
+      .send({ build_id: ownBuild, slot_type: 'warframe' });
+    expect(okLink.status).toBe(200);
+
+    const published = await request(app).post(`/api/loadouts/${loadoutId}/publish`).send({ visibility: 'public' });
+    expect(published.status).toBe(200);
+    expect(
+      (db.prepare('SELECT visibility FROM builds WHERE id = ?').get(ownBuild) as { visibility: string }).visibility,
+    ).toBe('public');
+
+    // Non-owner cannot delete; owner can copy as private and delete.
+    authState.userId = 'user_other';
+    expect((await request(app).delete(`/api/loadouts/${loadoutId}`)).status).toBe(404);
+
+    authState.userId = 'user_owner';
+    const copied = await request(app).post(`/api/loadouts/${loadoutId}/copy`);
+    expect(copied.status).toBe(200);
+    expect(copied.body.id).not.toBe(loadoutId);
+
+    expect((await request(app).delete(`/api/loadouts/${loadoutId}`)).status).toBe(200);
+  });
 });

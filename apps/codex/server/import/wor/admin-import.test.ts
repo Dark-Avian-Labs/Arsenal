@@ -44,9 +44,13 @@ vi.mock('../../games/wor/index.ts', async (importOriginal) => {
   };
 });
 
-vi.mock('./startupPipeline.ts', () => ({
-  runWorStartupPipeline: pipelineControl.run,
-}));
+vi.mock('./startupPipeline.ts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./startupPipeline.ts')>();
+  return {
+    ...actual,
+    runWorStartupPipeline: pipelineControl.run,
+  };
+});
 
 import {
   __resetWorAdminImportForTests,
@@ -55,7 +59,14 @@ import {
   subscribeWorAdminImport,
   type WorAdminImportEvent,
 } from './adminImportJob.ts';
-import { isWorImportLeaseHeld, recoverWorImportLeaseOnStartup, tryAcquireWorImportLease } from './importLease.ts';
+import {
+  isWorImportLeaseHeld,
+  recoverWorImportLeaseOnStartup,
+  requireWorImportLease,
+  tryAcquireWorImportLease,
+  WorImportLeaseLostError,
+} from './importLease.ts';
+import { applyWorCatalogMutation } from './startupPipeline.ts';
 
 describeWithSqlite('WoR admin import job', () => {
   let tmpDir: string;
@@ -146,5 +157,31 @@ describeWithSqlite('WoR admin import job', () => {
     };
     expect(row.status).toBe('failed');
     expect(row.error).toMatch(/Interrupted/);
+  });
+
+  it('aborts catalog mutation once the lease token is stolen', () => {
+    const db = dbState.db!;
+    const token = tryAcquireWorImportLease(db, null)!;
+    const watch = { lost: false };
+
+    requireWorImportLease(db, token, watch);
+    applyWorCatalogMutation(db, db, {
+      heroes: [{ slug: 'lian', name: 'Lian', class: 'marksman', faction: 'watchguard', rarity: 'legendary' }],
+      artifacts: [],
+      demons: [],
+    });
+
+    db.prepare('UPDATE import_lease SET lock_token = ? WHERE id = 1').run('stolen');
+    expect(() => {
+      requireWorImportLease(db, token, watch);
+      applyWorCatalogMutation(db, db, {
+        heroes: [{ slug: 'hex', name: 'Hex', class: 'fighter', faction: 'chaos_dominion', rarity: 'legendary' }],
+        artifacts: [],
+        demons: [],
+      });
+    }).toThrow(WorImportLeaseLostError);
+
+    const slugs = db.prepare('SELECT slug FROM catalog_heroes ORDER BY slug').all() as Array<{ slug: string }>;
+    expect(slugs.map((r) => r.slug)).toEqual(['lian']);
   });
 });
